@@ -1,5 +1,5 @@
 // ======================================================
-// InputMaster.cs
+// InputManager.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-09-24
 // 更新日時 : 2025-12-08
@@ -9,22 +9,21 @@
 
 using UnityEngine;
 using InputSystem.Data;
-using InputSystem.Manager;
 
-namespace InputSystem.Master
+namespace InputSystem.Manager
 {
     /// <summary>
     /// 入力管理マスタークラス
     /// 物理ゲームパッドとキーボード・マウス入力を統合
     /// </summary>
-    public class InputMaster : MonoBehaviour
+    public class InputManager : MonoBehaviour
     {
         // ======================================================
         // シングルトンインスタンス
         // ======================================================
 
-        /// <summary>InputMaster のインスタンス</summary>
-        public static InputMaster Instance { get; private set; }
+        /// <summary>InputManager のインスタンス</summary>
+        public static InputManager Instance { get; private set; }
 
         // ======================================================
         // インスペクタ設定

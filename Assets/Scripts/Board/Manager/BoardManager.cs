@@ -10,7 +10,7 @@ using UnityEngine;
 using BoardSystem.Data;
 using BoardSystem.Service;
 using InputSystem.Controller;
-using InputSystem.Master;
+using InputSystem.Manager;
 
 namespace BoardSystem.Manager
 {
@@ -129,10 +129,10 @@ namespace BoardSystem.Manager
         private void Update()
         {
             // 入力検知
-            if (InputMaster.Instance.ButtonA.Down)
+            if (InputManager.Instance.ButtonA.Down)
             {
                 // キーボードマウス操作でなければ処理なし
-                if (InputMaster.Instance.DeviceManager.ActiveController is not VirtualGamepadInputController virtualController)
+                if (InputManager.Instance.DeviceManager.ActiveController is not VirtualGamepadInputController virtualController)
                 {
                     return;
                 }
