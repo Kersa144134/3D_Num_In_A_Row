@@ -20,10 +20,10 @@ namespace InputSystem.Controller
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>キーボード入力を取得するコントローラクラス</summary>
+        /// <summary>キーボード入力を取得するコントローラークラス</summary>
         private readonly KeyboardInputController _keyboard;
 
-        /// <summary>マウス入力を取得するコントローラクラス</summary>
+        /// <summary>マウス入力を取得するコントローラークラス</summary>
         private readonly MouseInputController _mouse;
 
         /// <summary>入力マッピング情報</summary>
@@ -85,8 +85,8 @@ namespace InputSystem.Controller
         /// <summary>
         /// 仮想ゲームパッド入力を初期化
         /// </summary>
-        /// <param name="keyboard">キーボード入力コントローラ</param>
-        /// <param name="mouse">マウス入力コントローラ</param>
+        /// <param name="keyboard">キーボード入力コントローラー</param>
+        /// <param name="mouse">マウス入力コントローラー</param>
         /// <param name="mappings">InputMappingConfig から取得したマッピング配列</param>
         public VirtualGamepadInputController(
             in KeyboardInputController keyboard,

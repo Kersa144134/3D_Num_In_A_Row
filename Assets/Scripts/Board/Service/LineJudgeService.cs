@@ -1,8 +1,10 @@
 // ======================================================
-// WinJudgeService.cs
+// LineJudgeService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 概要     : 勝利判定処理（任意サイズ盤面・連続マス指定）
+// 更新日時 : 2026-03-06
+// 概要     : ライン判定処理
+//            任意サイズ盤面や連続マス指定に対応
 // ======================================================
 
 using System.Collections.Generic;
@@ -12,9 +14,9 @@ using BoardSystem.Data;
 namespace BoardSystem.Service
 {
     /// <summary>
-    /// 勝利判定サービス
+    /// ライン判定サービス
     /// </summary>
-    public sealed class WinJudgeService
+    public sealed class LineJudgeService
     {
         // ======================================================
         // フィールド
@@ -26,19 +28,14 @@ namespace BoardSystem.Service
         private readonly int _boardSize;
 
         /// <summary>
-        /// 勝利条件の連続マス数
+        /// ライン成立条件の連続マス数
         /// </summary>
         private readonly int _connectCount;
 
         /// <summary>
-        /// 中央座標
+        /// ラインリスト
         /// </summary>
-        private readonly int _center;
-
-        /// <summary>
-        /// 勝利ラインリスト
-        /// </summary>
-        private readonly List<int[][]> _winLines;
+        private readonly List<int[][]> _lineList;
 
         // ======================================================
         // コンストラクタ
@@ -48,13 +45,12 @@ namespace BoardSystem.Service
         /// コンストラクタ
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
-        /// <param name="connectCount">勝利条件の連続マス数</param>
-        public WinJudgeService(int boardSize, int connectCount)
+        /// <param name="connectCount">ライン成立条件の連続マス数</param>
+        public LineJudgeService(int boardSize, int connectCount)
         {
             _boardSize = boardSize;
             _connectCount = connectCount;
-            _center = _boardSize / 2;
-            _winLines = new List<int[][]>();
+            _lineList = new List<int[][]>();
 
             GenerateLines();
         }
@@ -64,14 +60,14 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// 指定プレイヤーが勝利しているか判定
+        /// 指定プレイヤーのライン成立を判定
         /// </summary>
         /// <param name="board">盤面データ</param>
         /// <param name="player">プレイヤー番号</param>
-        /// <returns>勝利している場合はtrue</returns>
+        /// <returns>ライン成立している場合はtrue</returns>
         public bool Check(BoardState board, int player)
         {
-            foreach (var line in _winLines)
+            foreach (var line in _lineList)
             {
                 int consecutive = 0;
 
@@ -102,7 +98,7 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// 勝利ライン生成（X,Y,Z方向および対角線）
+        /// ライン生成
         /// 中央や内部列は除外
         /// </summary>
         private void GenerateLines()
@@ -134,12 +130,13 @@ namespace BoardSystem.Service
                 }
             }
 
-            // 対角線（任意サイズに拡張可能）
+            // 対角線
             AddDiagonalLines();
         }
 
         /// <summary>
-        /// 2端点からライン作成（中央や内部列は除外）
+        /// 2端点からライン作成
+        /// 中央や内部列は除外
         /// </summary>
         /// <param name="x1">端点1のX</param>
         /// <param name="y1">端点1のY</param>
@@ -164,11 +161,11 @@ namespace BoardSystem.Service
                 line[i] = new int[] { x, y, z };
             }
 
-            _winLines.Add(line);
+            _lineList.Add(line);
         }
 
         /// <summary>
-        /// 対角線ライン追加（任意サイズ対応）
+        /// 対角線ライン追加
         /// </summary>
         private void AddDiagonalLines()
         {

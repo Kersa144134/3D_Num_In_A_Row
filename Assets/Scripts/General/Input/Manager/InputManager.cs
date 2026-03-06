@@ -37,26 +37,21 @@ namespace InputSystem.Manager
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>入力デバイス切替を管理するマネージャ</summary>
+        /// <summary>入力デバイス切替を管理するマネージャー</summary>
         private DeviceManager _deviceManager;
 
-        /// <summary>ボタン状態を管理するマネージャ</summary>
-        private ButtonStateManager _buttonStateManager;
+        /// <summary>ボタン状態を管理するマネージャー</summary>
+        private ButtonStateManager _buttonStateManager = new ButtonStateManager();
 
-        /// <summary>スティック/D-Pad状態を管理するマネージャ</summary>
-        private StickStateManager _stickStateManager;
+        /// <summary>スティック/D-Pad状態を管理するマネージャー</summary>
+        private StickStateManager _stickStateManager = new StickStateManager();
 
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>入力デバイス切替を管理するマネージャ</summary>
+        /// <summary>入力デバイス切替を管理するマネージャー</summary>
         public DeviceManager DeviceManager => _deviceManager;
-
-        /// <summary>
-        /// 現在適用中の入力マッピング配列のインデックス
-        /// </summary>
-        public int CurrentMappingIndex { get; private set; } = 0;
         
         /// <summary>ボタンAの状態</summary>
         public ButtonState ButtonA => _buttonStateManager.ButtonA;
@@ -103,22 +98,16 @@ namespace InputSystem.Manager
         /// <summary>Selectボタンの状態</summary>
         public ButtonState SelectButton => _buttonStateManager.SelectButton;
 
+        /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
+        public int CurrentMappingIndex { get; private set; } = 0;
+
         // ======================================================
         // Unity イベント
         // ======================================================
 
         private void Awake()
         {
-            // シングルトン制御
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-
-            // 配列取得チェック
+            // 入力マッピングが登録されていない場合の強制終了処理
             if (_inputMappingConfigs == null || _inputMappingConfigs.Length == 0)
             {
                 Debug.LogError("[InputManager] InputMappingConfigs が設定されていません。");
@@ -130,10 +119,16 @@ namespace InputSystem.Manager
                 return;
             }
 
-            // マネージャー初期化
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+
             _deviceManager = new DeviceManager(_inputMappingConfigs);
-            _buttonStateManager = new ButtonStateManager();
-            _stickStateManager = new StickStateManager();
         }
 
         private void Update()

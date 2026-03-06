@@ -35,7 +35,7 @@ namespace InputSystem.Manager
         // ======================================================
 
         /// <summary>
-        /// 指定コントローラのスティックおよびD-Pad状態を更新
+        /// 指定コントローラーのスティックおよび D-Pad 状態を更新
         /// </summary>
         /// <param name="controller">物理または仮想ゲームパッド入力ソース</param>
         public void UpdateStickStates(in IGamepadInputSource controller)

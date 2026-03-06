@@ -93,7 +93,7 @@ namespace InputSystem.Manager
         /// <summary>
         /// ゲームパッド入力からボタン状態を更新する
         /// </summary>
-        /// <param name="controller">IGamepadInputSource を実装した入力コントローラ</param>
+        /// <param name="controller">IGamepadInputSource を実装した入力コントローラー</param>
         public void UpdateButtonStates(in IGamepadInputSource controller)
         {
             _buttonStates[(int)GamepadInputType.ButtonA].Update(controller.ButtonA);

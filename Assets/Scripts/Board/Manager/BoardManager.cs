@@ -57,7 +57,7 @@ namespace BoardSystem.Manager
         private BoardState _boardState;
 
         /// <summary>
-        /// 勝利判定クラス
+        /// 盤面の座標と列インデックスの変換クラス
         /// </summary>
         private BoardPositionConvertService _positionConvertService;
 
@@ -67,9 +67,9 @@ namespace BoardSystem.Manager
         private ColumnDropService _columnDrop;
 
         /// <summary>
-        /// 勝利判定クラス
+        /// ライン判定クラス
         /// </summary>
-        private WinJudgeService _winJudge;
+        private LineJudgeService _lineJudge;
 
         // ======================================================
         // フィールド
@@ -117,7 +117,7 @@ namespace BoardSystem.Manager
             _boardState = new BoardState(_boardSize);
             _positionConvertService = new BoardPositionConvertService(_boardSize);
             _columnDrop = new ColumnDropService();
-            _winJudge = new WinJudgeService(_boardSize, _connectCount);
+            _lineJudge = new LineJudgeService(_boardSize, _connectCount);
 
             _cellSpacing = transform.localScale.x / _boardSize;
             _currentPlayer = PLAYER_ONE;
@@ -188,13 +188,13 @@ namespace BoardSystem.Manager
             // 表示生成
             SpawnPieceVisual(x, y, z, _currentPlayer);
 
-            // 勝利判定
-            bool isWin = _winJudge.Check(_boardState, _currentPlayer);
+            // ライン判定
+            bool isChain = _lineJudge.Check(_boardState, _currentPlayer);
 
-            // 勝利している場合ログ出力
-            if (isWin)
+            // ラインがそろった場合ログ出力
+            if (isChain)
             {
-                Debug.Log("Player " + _currentPlayer + " Win");
+                Debug.Log("Player " + _currentPlayer + " Chain");
             }
 
             // プレイヤー交代

@@ -23,14 +23,17 @@ namespace InputSystem.Manager
         // フィールド
         // ======================================================
 
-        /// <summary>物理ゲームパッド用コントローラ</summary>
+        /// <summary>物理ゲームパッド用コントローラー</summary>
         private GamepadInputController _gamepadController;
 
-        /// <summary>仮想ゲームパッド用コントローラ（キーボード＋マウス統合）</summary>
+        /// <summary>仮想ゲームパッド用コントローラー（キーボード＋マウス）</summary>
         private VirtualGamepadInputController _virtualController;
 
         /// <summary>入力マッピング設定配列</summary>
         private InputMappingConfig[] _mappingConfigs;
+
+        /// <summary>物理ゲームパッドを使用しているかどうか</summary>
+        private bool _useGamepad = false;
 
         // ======================================================
         // プロパティ
@@ -39,16 +42,13 @@ namespace InputSystem.Manager
         /// <summary>現在アクティブな入力コントローラー</summary>
         public IGamepadInputSource ActiveController { get; private set; }
 
-        /// <summary>物理ゲームパッドを使用している場合は true</summary>
-        public bool UseGamepad { get; private set; }
-
         // ======================================================
         // コンストラクタ
         // ======================================================
 
         /// <summary>
         /// DeviceManager コンストラクタ
-        /// 入力マッピング設定をもとに仮想コントローラを初期化
+        /// 入力マッピング設定をもとに仮想コントローラーを初期化
         /// </summary>
         /// <param name="mappingConfigs">入力マッピング設定配列</param>
         public DeviceManager(in InputMappingConfig[] mappingConfigs)
@@ -60,7 +60,7 @@ namespace InputSystem.Manager
 
             _mappingConfigs = mappingConfigs;
 
-            // デフォルトは要素0のインゲーム用マッピング
+            // デフォルトは要素0のマッピング
             InitializeControllers(_mappingConfigs[0]);
         }
 
@@ -69,7 +69,7 @@ namespace InputSystem.Manager
         // ======================================================
 
         /// <summary>
-        /// 配列の指定インデックスのマッピング設定でコントローラを再初期化
+        /// 配列の指定インデックスのマッピング設定でコントローラーを再初期化
         /// </summary>
         /// <param name="index">マッピング配列のインデックス</param>
         public void SetMapping(in InputMappingConfig mappingConfig)
@@ -88,9 +88,9 @@ namespace InputSystem.Manager
         public void UpdateDevices()
         {
             // 物理ゲームパッドが接続されているか判定
-            UseGamepad = Gamepad.current != null;
+            _useGamepad = Gamepad.current != null;
 
-            if (UseGamepad)
+            if (_useGamepad)
             {
                 _gamepadController.UpdateInputs();
                 ActiveController = _gamepadController;
@@ -107,23 +107,23 @@ namespace InputSystem.Manager
         // ======================================================
 
         /// <summary>
-        /// 指定マッピングでコントローラを初期化
+        /// 指定マッピングでコントローラーを初期化
         /// </summary>
         /// <param name="mappingConfig">入力マッピング設定</param>
         private void InitializeControllers(in InputMappingConfig mappingConfig)
         {
-            // 物理ゲームパッドコントローラ初期化
+            // 物理ゲームパッドコントローラー初期化
             _gamepadController = new GamepadInputController();
 
-            // キーボード・マウスコントローラ初期化
+            // キーボード・マウスコントローラー初期化
             KeyboardInputController keyboard = new KeyboardInputController(mappingConfig.Mappings);
             MouseInputController mouse = new MouseInputController(mappingConfig.Mappings);
 
-            // 仮想ゲームパッドコントローラ初期化
+            // 仮想ゲームパッドコントローラー初期化
             _virtualController = new VirtualGamepadInputController(keyboard, mouse, mappingConfig.Mappings);
 
             // デフォルトでアクティブを設定
-            ActiveController = UseGamepad ? _gamepadController : _virtualController;
+            ActiveController = _useGamepad ? _gamepadController : _virtualController;
         }
     }
 }
