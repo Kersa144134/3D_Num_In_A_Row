@@ -1,0 +1,18 @@
+{
+    "name": "SceneUtility",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
+        "GUID:17a42a21b9c64fc4fb784e39e7890356",
+        "GUID:d1bb8686503669547971dcf786e7b533"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

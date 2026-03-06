@@ -67,11 +67,11 @@ namespace BoardSystem.Service
         /// <returns>ƒ‰ƒCƒ“¬—§‚µ‚Ä‚¢‚éê‡‚Ítrue</returns>
         public bool Check(BoardState board, int player)
         {
-            foreach (var line in _lineList)
+            foreach (int[][] line in _lineList)
             {
                 int consecutive = 0;
 
-                foreach (var cell in line)
+                foreach (int[] cell in line)
                 {
                     int x = cell[0];
                     int y = cell[1];
