@@ -1,8 +1,9 @@
 // ======================================================
-// BoardPositionConverter.cs
+// BoardPositionConvertService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 概要     : 盤面サイズに応じたワールド座標と列インデックス変換
+// 更新日時 : 2026-03-06
+// 概要     : 盤面サイズに応じたワールド座標と列インデックス変換サービス
 // ======================================================
 
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace BoardSystem.Service
     /// <summary>
     /// 盤面ワールド座標と列インデックスの変換サービス
     /// </summary>
-    public sealed class BoardPositionConverter
+    public sealed class BoardPositionConvertService
     {
         // ======================================================
         // フィールド
@@ -36,7 +37,7 @@ namespace BoardSystem.Service
         /// コンストラクタ
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
-        public BoardPositionConverter(in int boardSize)
+        public BoardPositionConvertService(in int boardSize)
         {
             _boardSize = boardSize;
 

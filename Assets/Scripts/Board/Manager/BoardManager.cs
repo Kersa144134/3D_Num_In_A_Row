@@ -9,6 +9,8 @@
 using UnityEngine;
 using BoardSystem.Data;
 using BoardSystem.Service;
+using InputSystem.Controller;
+using InputSystem.Master;
 
 namespace BoardSystem.Manager
 {
@@ -57,7 +59,7 @@ namespace BoardSystem.Manager
         /// <summary>
         /// 勝利判定クラス
         /// </summary>
-        private BoardPositionConverter _positionConverter;
+        private BoardPositionConvertService _positionConvertService;
 
         /// <summary>
         /// 落下処理クラス
@@ -113,7 +115,7 @@ namespace BoardSystem.Manager
             }
 
             _boardState = new BoardState(_boardSize);
-            _positionConverter = new BoardPositionConverter(_boardSize);
+            _positionConvertService = new BoardPositionConvertService(_boardSize);
             _columnDrop = new ColumnDropService();
             _winJudge = new WinJudgeService(_boardSize, _connectCount);
 
@@ -126,11 +128,17 @@ namespace BoardSystem.Manager
         /// </summary>
         private void Update()
         {
-            // 左クリック検知
-            if (Input.GetMouseButtonDown(0))
+            // 入力検知
+            if (InputMaster.Instance.ButtonA.Down)
             {
+                // キーボードマウス操作でなければ処理なし
+                if (InputMaster.Instance.DeviceManager.ActiveController is not VirtualGamepadInputController virtualController)
+                {
+                    return;
+                }
+                
                 // カメラからのRayを作成
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = Camera.main.ScreenPointToRay(virtualController.GetPointerPosition());
 
                 // Raycast実行
                 if (Physics.Raycast(ray, out RaycastHit hit))
@@ -138,8 +146,8 @@ namespace BoardSystem.Manager
                     // クリック位置のワールド座標を取得
                     Vector3 hitPos = hit.point;
 
-                    // BoardPositionConverter を使って列インデックス計算
-                    _positionConverter.WorldPositionToColumn(
+                    // BoardPositionConvertService を使って列インデックス計算
+                    _positionConvertService.WorldPositionToColumn(
                         _cellSpacing,
                         hitPos.x,
                         hitPos.z,
@@ -148,7 +156,7 @@ namespace BoardSystem.Manager
                     );
 
                     // ログ出力：クリック位置と列番号
-                    Debug.Log($"Calculated Column: X={x}, Z={z}");
+                    // Debug.Log($"Calculated Column: X={x}, Z={z}");
 
                     // 計算した列座標を使って駒落下
                     HandleDrop(x, z);
@@ -198,12 +206,12 @@ namespace BoardSystem.Manager
         /// </summary>
         private void SpawnPieceVisual(in int x, in int y, in int z, in int player)
         {
-            // BoardPositionConverter を用いて列インデックスからワールド座標に変換
+            // BoardPositionConvertService を用いて列インデックスからワールド座標に変換
             float worldX;
             float worldY;
             float worldZ;
 
-            _positionConverter.ColumnToWorldPosition(
+            _positionConvertService.ColumnToWorldPosition(
                 _cellSpacing,
                 x,
                 y,

@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e1f0c7760324aa49ad60036502383f0, type: 3}
+  m_Name: IngameInputMapping
+  m_EditorClassIdentifier: InputData::InputSystem.Data.InputMappingConfig
+  Mappings:
+  - gamepadInput: 0
+    keyCode: 0
+    mouseInput: 1
+  - gamepadInput: 1
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 2
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 3
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 4
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 5
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 6
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 7
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 8
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 9
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 10
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 11
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 12
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 13
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 14
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 15
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 16
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 17
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 18
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 19
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 20
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 21
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 22
+    keyCode: 0
+    mouseInput: 0
+  - gamepadInput: 23
+    keyCode: 0
+    mouseInput: 0

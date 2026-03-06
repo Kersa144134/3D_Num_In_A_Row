@@ -36,7 +36,7 @@ namespace InputSystem.Manager
         // プロパティ
         // ======================================================
 
-        /// <summary>現在アクティブな入力コントローラ</summary>
+        /// <summary>現在アクティブな入力コントローラー</summary>
         public IGamepadInputSource ActiveController { get; private set; }
 
         /// <summary>物理ゲームパッドを使用している場合は true</summary>

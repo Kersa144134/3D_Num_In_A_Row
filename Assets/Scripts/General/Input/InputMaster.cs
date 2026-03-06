@@ -1,5 +1,5 @@
 // ======================================================
-// InputManager.cs
+// InputMaster.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-09-24
 // 更新日時 : 2025-12-08
@@ -9,28 +9,29 @@
 
 using UnityEngine;
 using InputSystem.Data;
+using InputSystem.Manager;
 
-namespace InputSystem.Manager
+namespace InputSystem.Master
 {
     /// <summary>
-    /// 入力管理クラス
+    /// 入力管理マスタークラス
     /// 物理ゲームパッドとキーボード・マウス入力を統合
     /// </summary>
-    public class InputManager : MonoBehaviour
+    public class InputMaster : MonoBehaviour
     {
         // ======================================================
         // シングルトンインスタンス
         // ======================================================
 
-        /// <summary>InputManager のグローバルインスタンス</summary>
-        public static InputManager Instance { get; private set; }
+        /// <summary>InputMaster のインスタンス</summary>
+        public static InputMaster Instance { get; private set; }
 
         // ======================================================
         // インスペクタ設定
         // ======================================================
 
         [Header("入力マッピング設定")]
-        /// <summary>配列で取得。要素0はインゲーム用、要素1はUI用</summary>
+        /// <summary>配列で取得</summary>
         [SerializeField] private InputMappingConfig[] _inputMappingConfigs;
 
         // ======================================================
@@ -50,9 +51,11 @@ namespace InputSystem.Manager
         // プロパティ
         // ======================================================
 
+        /// <summary>入力デバイス切替を管理するマネージャ</summary>
+        public DeviceManager DeviceManager => _deviceManager;
+
         /// <summary>
         /// 現在適用中の入力マッピング配列のインデックス
-        /// 0 = インゲーム, 1 = UI
         /// </summary>
         public int CurrentMappingIndex { get; private set; } = 0;
         
@@ -128,7 +131,7 @@ namespace InputSystem.Manager
                 return;
             }
 
-            // サブマネージャ初期化
+            // マネージャー初期化
             _deviceManager = new DeviceManager(_inputMappingConfigs);
             _buttonStateManager = new ButtonStateManager();
             _stickStateManager = new StickStateManager();

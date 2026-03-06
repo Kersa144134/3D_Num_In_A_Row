@@ -77,7 +77,7 @@ namespace InputSystem.Controller
 
         /// <summary>Select ボタンの仮想入力状態</summary>
         public bool SelectButton { get; private set; }
-        
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -169,6 +169,14 @@ namespace InputSystem.Controller
 
             StartButton = startButton;
             SelectButton = selectButton;
+        }
+
+        /// <summary>
+        /// マウスの現在座標（スクリーン座標）を取得
+        /// </summary>
+        public Vector2 GetPointerPosition()
+        {
+            return _mouse.GetPointerPosition();
         }
 
         // ======================================================

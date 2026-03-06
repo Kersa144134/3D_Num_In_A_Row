@@ -1,10 +1,7 @@
 {
-    "name": "Input",
+    "name": "InputData",
     "rootNamespace": "",
-    "references": [
-        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
-        "GUID:9a899e7d95ced0b4d880cdbe8499328d"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
