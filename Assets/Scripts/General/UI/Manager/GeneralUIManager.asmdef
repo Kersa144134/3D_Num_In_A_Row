@@ -1,13 +1,14 @@
 {
-    "name": "BoardManager",
+    "name": "GeneralUIManager",
     "rootNamespace": "",
     "references": [
-        "GUID:51f55471d491ff0449cad5ef05817479",
-        "GUID:01787b01995c2ce47acd6d5ddd2c5455",
+        "GUID:2bafac87e7f4b9b418d9448d219b01ab",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:c579267770062bf448e75eb160330b7f",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
         "GUID:d1bb8686503669547971dcf786e7b533",
-        "GUID:a549de8da4de8df45b3c99bedc27a4f1",
-        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
-        "GUID:9a899e7d95ced0b4d880cdbe8499328d"
+        "GUID:c0dd0c9fdfbcfea4190ef6093e05a04f",
+        "GUID:7f298fa99d37b494797bde85e70431f1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

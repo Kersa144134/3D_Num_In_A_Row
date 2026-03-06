@@ -1,10 +1,13 @@
 {
-    "name": "SceneUtility",
+    "name": "GeneralSceneManager",
     "rootNamespace": "",
     "references": [
-        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
         "GUID:17a42a21b9c64fc4fb784e39e7890356",
-        "GUID:d1bb8686503669547971dcf786e7b533"
+        "GUID:d1bb8686503669547971dcf786e7b533",
+        "GUID:f9fa41c4e15615b4ebb03470d2d3c429",
+        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
+        "GUID:5d652e922018dc24c9edbd95d87bdb80"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

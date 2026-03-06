@@ -762,7 +762,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
   _components:
   - {fileID: 1009972881}
-  _startPhase: 0
+  - {fileID: 1437038923}
+  _startPhase: 3
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

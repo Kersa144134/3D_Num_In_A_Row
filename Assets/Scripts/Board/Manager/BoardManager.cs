@@ -11,13 +11,14 @@ using BoardSystem.Data;
 using BoardSystem.Service;
 using InputSystem.Controller;
 using InputSystem.Manager;
+using SceneSystem.Data;
 
 namespace BoardSystem.Manager
 {
     /// <summary>
     /// 3D 三目並べ統括クラス
     /// </summary>
-    public sealed class BoardManager : MonoBehaviour
+    public sealed class BoardManager : MonoBehaviour, IUpdatable
     {
         // ======================================================
         // インスペクタ設定
@@ -100,13 +101,10 @@ namespace BoardSystem.Manager
         private const int PLAYER_TWO = 2;
 
         // ======================================================
-        // Unity イベント
+        // IUpdatable イベント
         // ======================================================
 
-        /// <summary>
-        /// Unity Awake
-        /// </summary>
-        private void Awake()
+        public void OnEnter()
         {
             // 勝利条件が盤面サイズを超えていた場合、盤面サイズに合わせる
             if (_connectCount > _boardSize)
@@ -123,10 +121,7 @@ namespace BoardSystem.Manager
             _currentPlayer = PLAYER_ONE;
         }
 
-        /// <summary>
-        /// テスト用入力処理
-        /// </summary>
-        private void Update()
+        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
         {
             // 入力検知
             if (InputManager.Instance.ButtonA.Down)

@@ -1,7 +1,10 @@
 {
-    "name": "SceneData",
+    "name": "SceneUtility",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
+        "GUID:d1bb8686503669547971dcf786e7b533"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
