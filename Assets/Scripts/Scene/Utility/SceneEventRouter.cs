@@ -9,6 +9,7 @@
 using System;
 using InputSystem.Manager;
 using SceneSystem.Data;
+using UISystem.Manager;
 
 namespace SceneSystem.Utility
 {
@@ -30,6 +31,11 @@ namespace SceneSystem.Utility
         /// SceneObjectRegistry キャッシュ
         /// </summary>
         private readonly SceneObjectRegistry _sceneObjectRegistry;
+
+        /// <summary>
+        /// MainUIManager キャッシュ
+        /// </summary>
+        private readonly MainUIManager _mainUIManager;
 
         /// <summary>
         /// イベント購読状態
@@ -62,6 +68,7 @@ namespace SceneSystem.Utility
             // Contextから必要サービスを取得
             // --------------------------------------------------
             _sceneObjectRegistry = _context.Get<SceneObjectRegistry>();
+            _mainUIManager = _context.Get<MainUIManager>();
         }
 
         // ======================================================
@@ -131,6 +138,19 @@ namespace SceneSystem.Utility
 
             // 入力マッピングを切り替え
             InputManager.Instance.SetInputMapping(next);
+        }
+
+        // --------------------------------------------------
+        // UI
+        // --------------------------------------------------
+        /// <summary>
+        /// 経過時間と制限時間から残り時間を計算し、UI に表示する
+        /// </summary>
+        /// <param name="elapsedTime">現在までの経過時間（秒）</param>
+        /// <param name="limitTime">制限時間（秒）</param>
+        public void UpdateLimitTimeDisplay(in float elapsedTime, in float limitTime)
+        {
+            _mainUIManager?.UpdateLimitTimeDisplay(elapsedTime, limitTime);
         }
 
         // ======================================================

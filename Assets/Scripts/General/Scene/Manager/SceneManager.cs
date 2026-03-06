@@ -187,8 +187,8 @@ namespace SceneSystem.Manager
             // Play フェーズ中のみタイマー表示更新
             if (_currentPhase == PhaseType.Play)
             {
-                // float limitTime = PhaseManager.PLAY_TO_FINISH_WAIT_TIME;
-                // _sceneEventRouter.UpdateLimitTimeDisplay(_elapsedTime, limitTime);
+                float limitTime = PhaseManager.PLAY_TO_FINISH_WAIT_TIME;
+                _sceneEventRouter.UpdateLimitTimeDisplay(_elapsedTime, limitTime);
             }
             
             // LateUpdate 実行
