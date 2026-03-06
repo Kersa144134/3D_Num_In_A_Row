@@ -7,7 +7,6 @@
 //            物理ゲームパッドと仮想ゲームパッドの切替を統一的に提供
 // ======================================================
 
-using UnityEngine;
 using UnityEngine.InputSystem;
 using InputSystem.Controller;
 using InputSystem.Data;
