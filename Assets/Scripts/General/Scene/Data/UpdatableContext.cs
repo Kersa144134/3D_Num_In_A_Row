@@ -65,7 +65,7 @@ namespace SceneSystem.Data
         }
 
         /// <summary>
-        /// Œ^æ“¾iTryj
+        /// Try Œ^æ“¾
         /// </summary>
         public bool TryGet<T>(out T value)
         {

@@ -2,8 +2,8 @@
 // PhaseData.cs
 // 作成者 : 高橋一翔
 // 作成日時 : 2025-12-08
-// 更新日時 : 2025-12-08
-// 概要     : フェーズごとの実行対象を型名（string）で登録する ScriptableObject
+// 更新日時 : 2026-03-06
+// 概要     : フェーズごとの実行対象を型名で登録する ScriptableObject
 // ======================================================
 
 using System;
@@ -13,7 +13,7 @@ namespace SceneSystem.Data
 {
     /// <summary>
     /// フェーズごとの設定内容を保持する ScriptableObject
-    /// 型名（string）を元に IUpdatable を解決する
+    /// 型名を元に IUpdatable を解決する
     /// </summary>
     [CreateAssetMenu(fileName = "PhaseData", menuName = "SceneSystem/PhaseData")]
     public class PhaseData : ScriptableObject
@@ -30,7 +30,6 @@ namespace SceneSystem.Data
 
         /// <summary>
         /// 実行対象となる IUpdatable 実装クラスの完全修飾型名
-        /// 例 : SceneSystem.Update.PlayerUpdate
         /// </summary>
         [SerializeField]
         private string[] _updatableTypeNames;
@@ -51,7 +50,7 @@ namespace SceneSystem.Data
         }
 
         // ======================================================
-        // 型名取得
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
@@ -59,18 +58,16 @@ namespace SceneSystem.Data
         /// </summary>
         public string[] GetUpdatableTypeNames()
         {
-            // null 安全のため空配列を返却
             if (_updatableTypeNames == null)
             {
+                // 空配列を返却
                 return Array.Empty<string>();
             }
 
-            // 直接参照を返さずコピーを返却
             string[] names = new string[_updatableTypeNames.Length];
 
             for (int i = 0; i < _updatableTypeNames.Length; i++)
             {
-                // インスペクタ設定値をそのままコピー
                 names[i] = _updatableTypeNames[i];
             }
 

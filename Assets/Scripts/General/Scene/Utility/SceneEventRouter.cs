@@ -61,8 +61,6 @@ namespace SceneSystem.Utility
             // --------------------------------------------------
             // Contextから必要サービスを取得
             // --------------------------------------------------
-
-            // SceneObjectRegistry取得
             _sceneObjectRegistry = _context.Get<SceneObjectRegistry>();
         }
 
@@ -84,8 +82,6 @@ namespace SceneSystem.Utility
             // --------------------------------------------------
             // オブジェクト群
             // --------------------------------------------------
-
-            // SceneObjectRegistryが存在する場合
             if (_sceneObjectRegistry != null)
             {
                 // ここにイベント登録を書く
@@ -109,8 +105,6 @@ namespace SceneSystem.Utility
             // --------------------------------------------------
             // オブジェクト群
             // --------------------------------------------------
-
-            // SceneObjectRegistryが存在する場合
             if (_sceneObjectRegistry != null)
             {
                 // ここにイベント解除を書く
