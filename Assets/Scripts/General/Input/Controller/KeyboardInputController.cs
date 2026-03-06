@@ -7,7 +7,6 @@
 //            キーボード入力を取得するコントローラクラス
 // ======================================================
 
-using System.Linq;
 using UnityEngine;
 using InputSystem.Data;
 
