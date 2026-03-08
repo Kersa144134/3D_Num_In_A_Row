@@ -1,0 +1,19 @@
+﻿<Solution>
+  <Project Path="InputController.csproj" />
+  <Project Path="InputManager.csproj" />
+  <Project Path="ShaderController.csproj" />
+  <Project Path="GeneralSceneManager.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="BoardService.csproj" />
+  <Project Path="GeneralSceneData.csproj" />
+  <Project Path="GeneralUIController.csproj" />
+  <Project Path="GeneralSceneUtility.csproj" />
+  <Project Path="UIManager.csproj" />
+  <Project Path="GeneralSceneController.csproj" />
+  <Project Path="InputData.csproj" />
+  <Project Path="SceneUtility.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="BoardManager.csproj" />
+  <Project Path="GeneralUIManager.csproj" />
+  <Project Path="BoardData.csproj" />
+</Solution>
