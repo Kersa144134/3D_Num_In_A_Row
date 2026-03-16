@@ -1,0 +1,114 @@
+// ======================================================
+// BoardModel.cs
+// 作成者   : 高橋一翔
+// 作成日時 : 2026-03-16
+// 更新日時 : 2026-03-16
+// 概要     : 目並べゲームロジックを統括するクラス
+// ======================================================
+
+using BoardSystem.Data;
+using BoardSystem.Service;
+
+namespace BoardSystem
+{
+    /// <summary>
+    /// 目並べモデル
+    /// </summary>
+    public sealed class BoardModel
+    {
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>
+        /// 盤面状態
+        /// </summary>
+        private readonly BoardState _boardState;
+
+        /// <summary>
+        /// 落下処理
+        /// </summary>
+        private readonly ColumnDropService _columnDrop;
+
+        /// <summary>
+        /// ライン判定
+        /// </summary>
+        private readonly LineJudgeService _lineJudge;
+
+        // ======================================================
+        // コンストラクタ
+        // ======================================================
+
+        /// <summary>
+        /// モデル生成
+        /// </summary>
+        public BoardModel(
+            in int boardSize,
+            in int connectCount)
+        {
+            int safeConnect = connectCount;
+
+            if (safeConnect > boardSize)
+            {
+                safeConnect = boardSize;
+            }
+
+            _boardState =
+                new BoardState(boardSize);
+
+            _columnDrop =
+                new ColumnDropService();
+
+            _lineJudge =
+                new LineJudgeService(
+                    boardSize,
+                    safeConnect);
+        }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 落下可能判定
+        /// </summary>
+        public bool CanDrop(
+            in int x,
+            in int z)
+        {
+            return
+                _columnDrop.CanDrop(
+                    _boardState,
+                    x,
+                    z);
+        }
+
+        /// <summary>
+        /// 落下処理
+        /// </summary>
+        public int Drop(
+            in int x,
+            in int z,
+            in int player)
+        {
+            return
+                _columnDrop.Drop(
+                    _boardState,
+                    x,
+                    z,
+                    player);
+        }
+
+        /// <summary>
+        /// 勝利判定
+        /// </summary>
+        public bool CheckLine(
+            in int player)
+        {
+            return
+                _lineJudge.Check(
+                    _boardState,
+                    player);
+        }
+    }
+}

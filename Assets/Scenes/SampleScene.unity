@@ -787,7 +787,7 @@ GameObject:
   - component: {fileID: 1437038925}
   - component: {fileID: 1437038928}
   m_Layer: 0
-  m_Name: BoardManager
+  m_Name: Board
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -874,11 +874,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1437038923}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f60ab933e9bd4db4698052aa634d616b, type: 3}
+  m_Script: {fileID: 11500000, guid: 79cc80371a8c361499d5204d98d42736, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Board::BoardSystem.BoardPresenter
   _boardSize: 5
-  _connectCount: 5
+  _connectCount: 4
   _playerOnePrefab: {fileID: 1356692423057582240, guid: 4031a7a223f17ca499cf4fc97f04a2ee, type: 3}
   _playerTwoPrefab: {fileID: 1645494674838047751, guid: fcdf60da9a82fb84486bc6b68d0fc006, type: 3}
 --- !u!1 &1594460766
