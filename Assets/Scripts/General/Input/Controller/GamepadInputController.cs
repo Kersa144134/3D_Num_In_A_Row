@@ -69,6 +69,12 @@ namespace InputSystem.Controller
         /// <summary>右スティックボタンが押されているか</summary>
         public bool RightStickButton { get; private set; }
 
+        /// <summary>スタートボタンが押されているか</summary>
+        public bool StartButton { get; private set; }
+
+        /// <summary>セレクトボタンが押されているか</summary>
+        public bool SelectButton { get; private set; }
+
         /// <summary>左スティックの入力ベクトル</summary>
         public Vector2 LeftStick { get; private set; } = Vector2.zero;
 
@@ -78,11 +84,8 @@ namespace InputSystem.Controller
         /// <summary>十字キーの入力ベクトル</summary>
         public Vector2 DPad { get; private set; } = Vector2.zero;
 
-        /// <summary>スタートボタンが押されているか</summary>
-        public bool StartButton { get; private set; }
-
-        /// <summary>セレクトボタンが押されているか</summary>
-        public bool SelectButton { get; private set; }
+        /// <summary>ポインター の仮想入力値</summary>
+        public Vector2 Pointer { get; private set; }
 
         // ======================================================
         // パブリックメソッド
@@ -121,17 +124,17 @@ namespace InputSystem.Controller
             RightStickButton = pad.rightStickButton.isPressed;
 
             // --------------------------------------------------
+            // スタート・セレクトボタン入力取得
+            // --------------------------------------------------
+            StartButton = pad.startButton.isPressed;
+            SelectButton = pad.selectButton.isPressed;
+
+            // --------------------------------------------------
             // スティック入力取得＆デッドゾーン適用
             // --------------------------------------------------
             LeftStick = ApplyDeadZone(pad.leftStick.ReadValue(), LEFT_STICK_DEAD_ZONE);
             RightStick = ApplyDeadZone(pad.rightStick.ReadValue(), RIGHT_STICK_DEAD_ZONE);
             DPad = pad.dpad.ReadValue();
-
-            // --------------------------------------------------
-            // スタート・セレクトボタン入力取得
-            // --------------------------------------------------
-            StartButton = pad.startButton.isPressed;
-            SelectButton = pad.selectButton.isPressed;
         }
 
         // ======================================================

@@ -141,20 +141,10 @@ namespace BoardSystem
         private void HandleDropColumn()
         {
             // --------------------------------------------------
-            // 入力デバイス確認
-            // --------------------------------------------------
-            if (InputManager.Instance.DeviceManager.ActiveController
-                is not VirtualGamepadInputController virtualController)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
             // Ray生成
             // --------------------------------------------------
             Ray ray =
-                Camera.main.ScreenPointToRay(
-                    virtualController.GetPointerPosition());
+                Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
 
             // --------------------------------------------------
             // Raycast

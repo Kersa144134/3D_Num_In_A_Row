@@ -3,20 +3,21 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-11-11
 // 更新日時 : 2025-12-08
-// 概要     : 入力デバイスの更新・切替を管理するクラス
+// 概要     : 入力デバイスの更新・切替を管理するサービス
 //            物理ゲームパッドと仮想ゲームパッドの切替を統一的に提供
 // ======================================================
 
+using UnityEngine.InputSystem;
 using InputSystem.Controller;
 using InputSystem.Data;
 
-namespace InputSystem.Manager
+namespace InputSystem.Service
 {
     /// <summary>
-    /// 入力デバイスの更新・切替を管理するクラス
+    /// 入力デバイスの更新・切替を管理するサービス
     /// 物理ゲームパッドが接続されていれば優先使用、未接続時は仮想ゲームパッドを使用
     /// </summary>
-    public class DeviceManager
+    public class DeviceSwitchService
     {
         // ======================================================
         // フィールド
@@ -30,9 +31,6 @@ namespace InputSystem.Manager
 
         /// <summary>入力マッピング設定配列</summary>
         private InputMappingConfig[] _mappingConfigs;
-
-        /// <summary>物理ゲームパッドを使用しているかどうか</summary>
-        private bool _useGamepad = false;
 
         // ======================================================
         // プロパティ
@@ -50,7 +48,7 @@ namespace InputSystem.Manager
         /// 入力マッピング設定をもとに仮想コントローラーを初期化
         /// </summary>
         /// <param name="mappingConfigs">入力マッピング設定配列</param>
-        public DeviceManager(in InputMappingConfig[] mappingConfigs)
+        public DeviceSwitchService(in InputMappingConfig[] mappingConfigs)
         {
             if (mappingConfigs == null || mappingConfigs.Length == 0)
             {
@@ -86,15 +84,16 @@ namespace InputSystem.Manager
         /// </summary>
         public void UpdateDevices()
         {
-            if (_useGamepad)
+            // 物理ゲームパッドが接続されているか判定
+            if (Gamepad.current != null)
             {
-                _gamepadController.UpdateInputs();
                 ActiveController = _gamepadController;
+                _gamepadController.UpdateInputs();
             }
             else
             {
-                _virtualController.UpdateInputs();
                 ActiveController = _virtualController;
+                _virtualController.UpdateInputs();
             }
         }
 
@@ -117,9 +116,6 @@ namespace InputSystem.Manager
 
             // 仮想ゲームパッドコントローラー初期化
             _virtualController = new VirtualGamepadInputController(keyboard, mouse, mappingConfig.Mappings);
-
-            // デフォルトでアクティブを設定
-            ActiveController = _useGamepad ? _gamepadController : _virtualController;
         }
     }
 }

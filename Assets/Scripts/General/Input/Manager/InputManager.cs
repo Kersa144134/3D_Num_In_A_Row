@@ -7,9 +7,10 @@
 //            配列取得した InputMappingConfig による入力マッピングを切り替え
 // ======================================================
 
+using System;
 using UnityEngine;
 using InputSystem.Data;
-using System;
+using InputSystem.Service;
 
 namespace InputSystem.Manager
 {
@@ -39,13 +40,13 @@ namespace InputSystem.Manager
         // ======================================================
 
         /// <summary>入力デバイス切替を管理するマネージャー</summary>
-        private DeviceManager _deviceManager;
+        private DeviceSwitchService _deviceSwitchService;
 
         /// <summary>ボタン状態を更新するサービス</summary>
         private ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
 
         /// <summary>スティック/D-Pad状態を管理するマネージャー</summary>
-        private StickStateManager _stickStateManager = new StickStateManager();
+        private StickStateUpdateService _stickStateUpdateService = new StickStateUpdateService();
 
         // ======================================================
         // フィールド
@@ -62,7 +63,7 @@ namespace InputSystem.Manager
         // ======================================================
 
         /// <summary>入力デバイス切替を管理するマネージャー</summary>
-        public DeviceManager DeviceManager => _deviceManager;
+        public DeviceSwitchService DeviceSwitchService => _deviceSwitchService;
 
         /// <summary>ボタンAの状態</summary>
         public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
@@ -101,13 +102,16 @@ namespace InputSystem.Manager
         public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
         /// <summary>左スティックの入力ベクトル</summary>
-        public Vector2 LeftStick => _stickStateManager.LeftStick;
+        public Vector2 LeftStick => _stickStateUpdateService.LeftStick;
 
         /// <summary>右スティックの入力ベクトル</summary>
-        public Vector2 RightStick => _stickStateManager.RightStick;
+        public Vector2 RightStick => _stickStateUpdateService.RightStick;
 
         /// <summary>D-Pad の入力ベクトル</summary>
-        public Vector2 DPad => _stickStateManager.DPad;
+        public Vector2 DPad => _stickStateUpdateService.DPad;
+
+        /// <summary>ポインター の座標</summary>
+        public Vector2 Pointer => _deviceSwitchService.ActiveController.Pointer;
 
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
         public int CurrentMappingIndex { get; private set; } = 0;
@@ -139,7 +143,7 @@ namespace InputSystem.Manager
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            _deviceManager = new DeviceManager(_inputMappingConfigs);
+            _deviceSwitchService = new DeviceSwitchService(_inputMappingConfigs);
 
             // enum の数だけ配列を確保
             int enumLength = Enum.GetValues(typeof(GamepadInputType)).Length;
@@ -161,7 +165,7 @@ namespace InputSystem.Manager
             }
 
             // デバイス入力更新
-            _deviceManager.UpdateDevices();
+            _deviceSwitchService.UpdateDevices();
 
             // ボタン状態更新
             for (int i = 0; i < _buttonStates.Length; i++)
@@ -169,14 +173,14 @@ namespace InputSystem.Manager
                 GamepadInputType type = (GamepadInputType)i;
 
                 _buttonStateUpdateService.UpdateButtonState(
-                    _deviceManager.ActiveController,
+                    _deviceSwitchService.ActiveController,
                     type,
                     _buttonStates[i]
                 );
             }
 
             // スティック状態更新
-            _stickStateManager.UpdateStickStates(_deviceManager.ActiveController);
+            _stickStateUpdateService.UpdateStickState(_deviceSwitchService.ActiveController);
         }
 
         // ======================================================
@@ -194,7 +198,7 @@ namespace InputSystem.Manager
                 return;
             }
 
-            _deviceManager.SetMapping(_inputMappingConfigs[index]);
+            _deviceSwitchService.SetMapping(_inputMappingConfigs[index]);
 
             // 適用中のインデックスを更新
             CurrentMappingIndex = index;

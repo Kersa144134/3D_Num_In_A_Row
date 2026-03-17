@@ -29,6 +29,8 @@ namespace InputSystem.Data
         RightTrigger,
         LeftStickButton,
         RightStickButton,
+        Start,
+        Select,
         LeftStickLeft,
         LeftStickRight,
         LeftStickUp,
@@ -40,9 +42,7 @@ namespace InputSystem.Data
         DPadLeft,
         DPadRight,
         DPadUp,
-        DPadDown,
-        Start,
-        Select
+        DPadDown
     }
 
     /// <summary>ƒ}ƒEƒX“ü—ÍŽí•Ê</summary>

@@ -63,6 +63,12 @@ namespace InputSystem.Controller
         /// <summary>右スティックボタンの仮想入力状態</summary>
         public bool RightStickButton { get; private set; }
 
+        /// <summary>Start ボタンの仮想入力状態</summary>
+        public bool StartButton { get; private set; }
+
+        /// <summary>Select ボタンの仮想入力状態</summary>
+        public bool SelectButton { get; private set; }
+
         /// <summary>左スティックの仮想入力値</summary>
         public Vector2 LeftStick { get; private set; }
 
@@ -72,11 +78,8 @@ namespace InputSystem.Controller
         /// <summary>D-Pad の仮想入力値</summary>
         public Vector2 DPad { get; private set; }
 
-        /// <summary>Start ボタンの仮想入力状態</summary>
-        public bool StartButton { get; private set; }
-
-        /// <summary>Select ボタンの仮想入力状態</summary>
-        public bool SelectButton { get; private set; }
+        /// <summary>ポインター の仮想入力値</summary>
+        public Vector2 Pointer { get; private set; }
 
         // ======================================================
         // コンストラクタ
@@ -119,12 +122,12 @@ namespace InputSystem.Controller
             bool leftStickButton = false;
             bool rightStickButton = false;
 
+            bool startButton = false;
+            bool selectButton = false;
+
             Vector2 leftStick = Vector2.zero;
             Vector2 rightStick = Vector2.zero;
             Vector2 dpad = Vector2.zero;
-
-            bool startButton = false;
-            bool selectButton = false;
 
             // --------------------------------------------------
             // キーボード入力の反映
@@ -134,8 +137,8 @@ namespace InputSystem.Controller
                 ref leftShoulder, ref rightShoulder,
                 ref leftTrigger, ref rightTrigger,
                 ref leftStickButton, ref rightStickButton,
-                ref leftStick, ref rightStick, ref dpad,
-                ref startButton, ref selectButton);
+                ref startButton, ref selectButton,
+                ref leftStick, ref rightStick, ref dpad);
 
             // --------------------------------------------------
             // マウス入力の反映
@@ -145,16 +148,12 @@ namespace InputSystem.Controller
                 ref leftShoulder, ref rightShoulder,
                 ref leftTrigger, ref rightTrigger,
                 ref leftStickButton, ref rightStickButton,
-                ref leftStick, ref rightStick, ref dpad,
-                ref startButton, ref selectButton);
+                ref startButton, ref selectButton,
+                ref leftStick, ref rightStick, ref dpad);
 
             // --------------------------------------------------
-            // ベクトル正規化
+            // 入力反映
             // --------------------------------------------------
-            LeftStick = leftStick.magnitude > 1f ? leftStick.normalized : leftStick;
-            RightStick = Vector2.ClampMagnitude(rightStick, 1f);
-            DPad = dpad.magnitude > 1f ? dpad.normalized : dpad;
-
             ButtonA = buttonA;
             ButtonB = buttonB;
             ButtonX = buttonX;
@@ -169,14 +168,16 @@ namespace InputSystem.Controller
 
             StartButton = startButton;
             SelectButton = selectButton;
-        }
+            
+            // ベクトル正規化
+            LeftStick = leftStick.magnitude > 1f ? leftStick.normalized : leftStick;
+            RightStick = rightStick.magnitude > 1f ? rightStick.normalized : rightStick;
+            DPad = dpad.magnitude > 1f ? dpad.normalized : dpad;
 
-        /// <summary>
-        /// マウスの現在座標（スクリーン座標）を取得
-        /// </summary>
-        public Vector2 GetPointerPosition()
-        {
-            return _mouse.GetPointerPosition();
+            // --------------------------------------------------
+            // ポインター更新
+            // --------------------------------------------------
+            Pointer = _mouse.GetMousePosition();
         }
 
         // ======================================================
@@ -196,18 +197,18 @@ namespace InputSystem.Controller
         /// <param name="rightTrigger">RightTrigger の状態参照</param>
         /// <param name="leftStickButton">左スティックボタンの状態参照</param>
         /// <param name="rightStickButton">右スティックボタンの状態参照</param>
+        /// <param name="startButton">Start ボタンの状態参照</param>
+        /// <param name="selectButton">Select ボタンの状態参照</param>
         /// <param name="leftStick">左スティック入力ベクトル参照</param>
         /// <param name="rightStick">右スティック入力ベクトル参照</param>
         /// <param name="dpad">D-Pad 入力ベクトル参照</param>
-        /// <param name="startButton">Start ボタンの状態参照</param>
-        /// <param name="selectButton">Select ボタンの状態参照</param>
         private void ApplyKeyboardMappings(
             ref bool buttonA, ref bool buttonB, ref bool buttonX, ref bool buttonY,
             ref bool leftShoulder, ref bool rightShoulder,
             ref bool leftTrigger, ref bool rightTrigger,
             ref bool leftStickButton, ref bool rightStickButton,
-            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad,
-            ref bool startButton, ref bool selectButton)
+            ref bool startButton, ref bool selectButton,
+            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad)
         {
             // 全マッピングを列挙してキーボードバインディングがあるものを反映
             foreach (InputMapping map in _mappings)
@@ -239,8 +240,8 @@ namespace InputSystem.Controller
                     ref leftShoulder, ref rightShoulder,
                     ref leftTrigger, ref rightTrigger,
                     ref leftStickButton, ref rightStickButton,
-                    ref leftStick, ref rightStick, ref dpad,
                     ref startButton, ref selectButton,
+                    ref leftStick, ref rightStick, ref dpad,
                     map.gamepadInput, value);
             }
         }
@@ -258,18 +259,18 @@ namespace InputSystem.Controller
         /// <param name="rightTrigger">RightTrigger の状態参照</param>
         /// <param name="leftStickButton">左スティックボタンの状態参照</param>
         /// <param name="rightStickButton">右スティックボタンの状態参照</param>
+        /// <param name="startButton">Start ボタンの状態参照</param>
+        /// <param name="selectButton">Select ボタンの状態参照</param>
         /// <param name="leftStick">左スティック入力ベクトル参照</param>
         /// <param name="rightStick">右スティック入力ベクトル参照</param>
         /// <param name="dpad">D-Pad 入力ベクトル参照</param>
-        /// <param name="startButton">Start ボタンの状態参照</param>
-        /// <param name="selectButton">Select ボタンの状態参照</param>
         private void ApplyMouseMappings(
             ref bool buttonA, ref bool buttonB, ref bool buttonX, ref bool buttonY,
             ref bool leftShoulder, ref bool rightShoulder,
             ref bool leftTrigger, ref bool rightTrigger,
             ref bool leftStickButton, ref bool rightStickButton,
-            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad,
-            ref bool startButton, ref bool selectButton)
+            ref bool startButton, ref bool selectButton,
+            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad)
         {
             // 前フレームとの差分を方向別に取得
             MouseInputController.MouseDelta delta = _mouse.GetMouseDelta();
@@ -320,8 +321,8 @@ namespace InputSystem.Controller
                     ref leftShoulder, ref rightShoulder,
                     ref leftTrigger, ref rightTrigger,
                     ref leftStickButton, ref rightStickButton,
-                    ref leftStick, ref rightStick, ref dpad,
                     ref startButton, ref selectButton,
+                    ref leftStick, ref rightStick, ref dpad,
                     map.gamepadInput, value);
             }
         }
@@ -339,11 +340,11 @@ namespace InputSystem.Controller
         /// <param name="rightTrigger">RightTrigger の状態参照</param>
         /// <param name="leftStickButton">左スティックボタンの状態参照</param>
         /// <param name="rightStickButton">右スティックボタンの状態参照</param>
+        /// <param name="startButton">Start ボタンの状態参照</param>
+        /// <param name="selectButton">Select ボタンの状態参照</param>
         /// <param name="leftStick">左スティック入力ベクトル参照</param>
         /// <param name="rightStick">右スティック入力ベクトル参照</param>
         /// <param name="dpad">D-Pad 入力ベクトル参照</param>
-        /// <param name="startButton">Start ボタンの状態参照</param>
-        /// <param name="selectButton">Select ボタンの状態参照</param>
         /// <param name="type">反映するゲームパッド入力種別</param>
         /// <param name="value">入力値（押下なら 1f、軸なら変位量）</param>
         private void ApplyGamepadMapping(
@@ -351,8 +352,8 @@ namespace InputSystem.Controller
             ref bool leftShoulder, ref bool rightShoulder,
             ref bool leftTrigger, ref bool rightTrigger,
             ref bool leftStickButton, ref bool rightStickButton,
-            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad,
             ref bool startButton, ref bool selectButton,
+            ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad,
             in GamepadInputType type, in float value)
         {
             // 値が 0 以下なら何も反映せずに終了
@@ -364,35 +365,59 @@ namespace InputSystem.Controller
             // ボタン系入力を反映
             switch (type)
             {
-                case GamepadInputType.ButtonA: buttonA = true; break;
-                case GamepadInputType.ButtonB: buttonB = true; break;
-                case GamepadInputType.ButtonX: buttonX = true; break;
-                case GamepadInputType.ButtonY: buttonY = true; break;
-                case GamepadInputType.LeftShoulder: leftShoulder = true; break;
-                case GamepadInputType.RightShoulder: rightShoulder = true; break;
-                case GamepadInputType.LeftTrigger: leftTrigger = true; break;
-                case GamepadInputType.RightTrigger: rightTrigger = true; break;
-                case GamepadInputType.LeftStickButton: leftStickButton = true; break;
-                case GamepadInputType.RightStickButton: rightStickButton = true; break;
-                case GamepadInputType.Start: startButton = true; break;
-                case GamepadInputType.Select: selectButton = true; break;
+                case GamepadInputType.ButtonA:
+                    buttonA = true; break;
+                case GamepadInputType.ButtonB:
+                    buttonB = true; break;
+                case GamepadInputType.ButtonX:
+                    buttonX = true; break;
+                case GamepadInputType.ButtonY:
+                    buttonY = true; break;
+                case GamepadInputType.LeftShoulder:
+                    leftShoulder = true; break;
+                case GamepadInputType.RightShoulder:
+                    rightShoulder = true; break;
+                case GamepadInputType.LeftTrigger:
+                    leftTrigger = true; break;
+                case GamepadInputType.RightTrigger:
+                    rightTrigger = true; break;
+                case GamepadInputType.LeftStickButton:
+                    leftStickButton = true; break;
+                case GamepadInputType.RightStickButton:
+                    rightStickButton = true; break;
+                case GamepadInputType.Start:
+                    startButton = true; break;
+                case GamepadInputType.Select:
+                    selectButton = true; break;
             }
 
             // スティック系入力を反映
             switch (type)
             {
-                case GamepadInputType.LeftStickUp: leftStick.y += value; break;
-                case GamepadInputType.LeftStickDown: leftStick.y -= value; break;
-                case GamepadInputType.LeftStickLeft: leftStick.x -= value; break;
-                case GamepadInputType.LeftStickRight: leftStick.x += value; break;
-                case GamepadInputType.RightStickUp: rightStick.y += value; break;
-                case GamepadInputType.RightStickDown: rightStick.y -= value; break;
-                case GamepadInputType.RightStickLeft: rightStick.x -= value; break;
-                case GamepadInputType.RightStickRight: rightStick.x += value; break;
-                case GamepadInputType.DPadUp: dpad.y += value; break;
-                case GamepadInputType.DPadDown: dpad.y -= value; break;
-                case GamepadInputType.DPadLeft: dpad.x -= value; break;
-                case GamepadInputType.DPadRight: dpad.x += value; break;
+                case GamepadInputType.LeftStickUp:
+                    leftStick.y += value; break;
+                case GamepadInputType.LeftStickDown:
+                    leftStick.y -= value; break;
+                case GamepadInputType.LeftStickLeft:
+                    leftStick.x -= value; break;
+                case GamepadInputType.LeftStickRight:
+                    leftStick.x += value; break;
+                case GamepadInputType.RightStickUp:
+                    rightStick.y += value; break;
+                case GamepadInputType.RightStickDown:
+                    rightStick.y -= value; break;
+                case GamepadInputType.RightStickLeft:
+                    rightStick.x -= value; break;
+                case GamepadInputType.RightStickRight:
+                    rightStick.x += value; break;
+                case GamepadInputType.DPadUp:
+                    dpad.y += value; break;
+                case GamepadInputType.DPadDown:
+                    dpad.y -= value; break;
+                case GamepadInputType.DPadLeft:
+                    dpad.x -= value; break;
+                case GamepadInputType.DPadRight:
+                    dpad.x += value; break;
             }
         }
     }

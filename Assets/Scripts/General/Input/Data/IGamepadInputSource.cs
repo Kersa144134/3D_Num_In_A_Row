@@ -57,6 +57,16 @@ namespace InputSystem.Data
         bool RightStickButton { get; }
 
         // ======================================================
+        // システムボタン
+        // ======================================================
+
+        /// <summary>Startボタンが押下されているかを返す</summary>
+        bool StartButton { get; }
+
+        /// <summary>Selectボタンが押下されているかを返す</summary>
+        bool SelectButton { get; }
+
+        // ======================================================
         // スティック／D-Pad入力
         // ======================================================
 
@@ -70,13 +80,10 @@ namespace InputSystem.Data
         Vector2 DPad { get; }
 
         // ======================================================
-        // システムボタン
+        // ポインター
         // ======================================================
 
-        /// <summary>Startボタンが押下されているかを返す</summary>
-        bool StartButton { get; }
-
-        /// <summary>Selectボタンが押下されているかを返す</summary>
-        bool SelectButton { get; }
+        /// <summary>ポインターの座標を返す</summary>
+        Vector2 Pointer { get; }
     }
 }

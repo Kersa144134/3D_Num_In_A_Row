@@ -108,6 +108,14 @@ namespace InputSystem.Controller
         // ポインタ / エイム系入力
         // --------------------------------------------------
         /// <summary>
+        /// マウスの現在座標を取得
+        /// </summary>
+        public Vector2 GetMousePosition()
+        {
+            return Input.mousePosition;
+        }
+
+        /// <summary>
         /// 前フレームからのマウス移動量とホイール回転量を方向別に取得し、次フレーム用に更新
         /// </summary>
         public MouseDelta GetMouseDelta()
@@ -131,14 +139,6 @@ namespace InputSystem.Controller
             else if (wheel < 0f) delta.WheelDown = -wheel;
 
             return delta;
-        }
-
-        /// <summary>
-        /// マウスの現在座標（スクリーン座標）を取得
-        /// </summary>
-        public Vector2 GetPointerPosition()
-        {
-            return Input.mousePosition;
         }
     }
 }

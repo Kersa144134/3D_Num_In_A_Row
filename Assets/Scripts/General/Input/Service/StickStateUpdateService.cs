@@ -3,19 +3,18 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-11-11
 // 更新日時 : 2025-11-11
-// 概要     : スティックおよびD-Pad入力状態を管理するクラス
+// 概要     : スティックおよびD-Pad入力状態を更新するサービス
 // ======================================================
 
 using UnityEngine;
 using InputSystem.Data;
 
-namespace InputSystem.Manager
+namespace InputSystem.Service
 {
     /// <summary>
-    /// スティック・D-Pad入力状態の管理クラス
-    /// 物理ゲームパッドまたは仮想ゲームパッドからの入力を統合管理
+    /// スティック・D-Pad入力状態を更新するサービス
     /// </summary>
-    public class StickStateManager
+    public class StickStateUpdateService
     {
         // ======================================================
         // プロパティ
@@ -37,8 +36,10 @@ namespace InputSystem.Manager
         /// <summary>
         /// 指定コントローラーのスティックおよび D-Pad 状態を更新
         /// </summary>
-        /// <param name="controller">物理または仮想ゲームパッド入力ソース</param>
-        public void UpdateStickStates(in IGamepadInputSource controller)
+        /// <param name="controller">入力取得元コントローラー</param>
+        /// <param name="type">対象ボタン種別</param>
+        public void UpdateStickState(
+            in IGamepadInputSource controller)
         {
             LeftStick = controller.LeftStick;
             RightStick = controller.RightStick;
