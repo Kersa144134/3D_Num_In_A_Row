@@ -21,21 +21,15 @@ namespace BoardSystem.Data
         /// <summary>
         /// 列情報
         /// </summary>
-        public struct Column
+        private struct Column
         {
-            /// <summary>
-            /// X座標
-            /// </summary>
+            /// <summary>X 座標</summary>
             public int X;
 
-            /// <summary>
-            /// Z座標
-            /// </summary>
+            /// <summary>Z 座標</summary>
             public int Z;
 
-            /// <summary>
-            /// コンストラクタ
-            /// </summary>
+            /// <summary>コンストラクタ</summary>
             public Column(int x, int z)
             {
                 X = x;

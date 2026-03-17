@@ -6,7 +6,6 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
-using System;
 using UnityEngine;
 using UniRx;
 using InputSystem.Controller;
@@ -59,7 +58,8 @@ namespace BoardSystem
         /// </summary>
         private int _currentPlayer;
 
-        private IDisposable _disposable;
+        /// <summary>購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
         // ======================================================
         // 定数
@@ -100,19 +100,38 @@ namespace BoardSystem
                 return;
             }
 
-            // ButtonA押下時に処理実行
-            _disposable = InputManager.Instance
-                .ButtonA
-                .OnDown
-                .Subscribe(_ =>
+            // --------------------------------------------------
+            // イベント購読
+            // --------------------------------------------------
+            // A ボタン押下時
+            InputManager.Instance.ButtonA.OnDown
+                .Subscribe(_ => HandleDropColumn())
+                .AddTo(_disposables);
+
+            // B ボタン押下時
+            InputManager.Instance.ButtonB.OnDown
+                .Subscribe(_ => HandleDropColumn())
+                .AddTo(_disposables);
+
+            // ライン成立時
+            _model.OnLineComplete
+                .Subscribe(e =>
                 {
-                    HandleDropColumn();
-                });
+                    // プレイヤー表示
+                    Debug.Log($"Player {e.Player} LineComplete");
+
+                    // 成立ラインをすべて出力
+                    for (int i = 0; i < e.LineCount; i++)
+                    {
+                        Debug.Log($"LineCount {i + 1} Length: {e.Lengths[i]}");
+                    }
+                })
+                .AddTo(_disposables);
         }
 
         public void OnExit()
         {
-            
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -207,19 +226,9 @@ namespace BoardSystem
                 _currentPlayer);
 
             // --------------------------------------------------
-            // 勝利判定
+            // ライン成立判定
             // --------------------------------------------------
-            bool isChain =
-                _model.CheckLine(
-                    _currentPlayer);
-
-            if (isChain)
-            {
-                Debug.Log(
-                    "Player " +
-                    _currentPlayer +
-                    " Win");
-            }
+            _model.CheckLine();
 
             // --------------------------------------------------
             // プレイヤー交代

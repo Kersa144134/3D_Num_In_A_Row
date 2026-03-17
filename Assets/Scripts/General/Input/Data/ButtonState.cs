@@ -24,18 +24,22 @@ namespace InputSystem.Data
         /// <summary>前フレームの押下状態</summary>
         private bool _wasPressed;
 
-        /// <summary>押下時イベント</summary>
-        private readonly Subject<Unit> _onDown = new Subject<Unit>();
-
-        /// <summary>離上時イベント</summary>
-        private readonly Subject<Unit> _onUp = new Subject<Unit>();
-
         // ======================================================
         // プロパティ
         // ======================================================
 
         /// <summary>現在押下中かどうか</summary>
         public bool IsPressed { get; private set; }
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>押下時イベント</summary>
+        private readonly Subject<Unit> _onDown = new Subject<Unit>();
+
+        /// <summary>離上時イベント</summary>
+        private readonly Subject<Unit> _onUp = new Subject<Unit>();
 
         /// <summary>押下時イベント購読用</summary>
         public IObservable<Unit> OnDown => _onDown;

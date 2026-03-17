@@ -13,7 +13,7 @@ namespace SceneSystem.Data
     /// <summary>
     /// シーン内のオブジェクトを一元管理するレジストリー
     /// </summary>
-    public class SceneObjectRegistry : MonoBehaviour, IUpdatable
+    public sealed class SceneObjectRegistry : MonoBehaviour, IUpdatable
     {
         // ======================================================
         // インスペクタ設定

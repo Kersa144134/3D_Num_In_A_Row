@@ -6,6 +6,8 @@
 // 概要     : 3D 目並べゲームロジックを統括するクラス
 // ======================================================
 
+using System;
+using UniRx;
 using BoardSystem.Data;
 using BoardSystem.Service;
 
@@ -36,9 +38,15 @@ namespace BoardSystem
         private readonly LineJudgeService _lineJudge;
 
         // ======================================================
-        // フィールド
+        // UniRx 変数
         // ======================================================
 
+        /// <summary>ライン成立イベント</summary>
+        public IObservable<LineCompleteEvent> OnLineComplete
+        {
+            get { return _lineJudge.OnLineComplete; }
+        }
+        
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -106,13 +114,9 @@ namespace BoardSystem
         /// <summary>
         /// 勝利判定
         /// </summary>
-        public bool CheckLine(
-            in int player)
+        public void CheckLine()
         {
-            return
-                _lineJudge.Check(
-                    _boardState,
-                    player);
+            _lineJudge.CheckAll(_boardState);
         }
     }
 }
