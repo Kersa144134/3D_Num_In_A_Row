@@ -14,7 +14,7 @@ namespace SceneSystem.Controller
     /// <summary>
     /// フェーズ切替と UpdateController の操作を担当するコントローラ
     /// </summary>
-    public class PhaseController
+    public sealed class PhaseController
     {
         // ======================================================
         // フィールド

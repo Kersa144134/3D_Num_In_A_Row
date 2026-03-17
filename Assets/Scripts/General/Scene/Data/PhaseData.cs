@@ -16,7 +16,7 @@ namespace SceneSystem.Data
     /// 型名を元に IUpdatable を解決する
     /// </summary>
     [CreateAssetMenu(fileName = "PhaseData", menuName = "SceneSystem/PhaseData")]
-    public class PhaseData : ScriptableObject
+    public sealed class PhaseData : ScriptableObject
     {
         // ======================================================
         // インスペクタ設定

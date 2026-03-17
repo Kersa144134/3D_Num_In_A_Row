@@ -15,7 +15,7 @@ namespace SceneSystem.Controller
     /// <summary>
     /// OnUpdate を実行する対象を保持し、毎フレーム処理を実行するコントローラ
     /// </summary>
-    public class UpdateController
+    public sealed class UpdateController
     {
         // ======================================================
         // フィールド
