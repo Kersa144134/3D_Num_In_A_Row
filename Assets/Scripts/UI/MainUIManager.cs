@@ -7,7 +7,9 @@
 // ======================================================
 
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
+using InputSystem.Manager;
 using SceneSystem.Data;
 using UISystem.Service;
 
@@ -31,6 +33,14 @@ namespace UISystem
         /// <summary>制限時間を表示するテキスト</summary>
         [SerializeField]
         private TextMeshProUGUI _limitTimeText;
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        [Header("ポインター")]
+        /// <summary>ポインターを表示する Image</summary>
+        [SerializeField]
+        private Image _pointerImage;
 
         // ======================================================
         // コンポーネント参照
@@ -80,7 +90,8 @@ namespace UISystem
             if (_limitTimeText != null)
             {
                 // 制限時間表示フォーマットクラスを生成する
-                _timeFormatService = new TextFormatService(_limitTimeText, LIMIT_TIME_FORMAT, LIMIT_TIME_DIGITS);
+                _timeFormatService = new TextFormatService(
+                    _limitTimeText, LIMIT_TIME_FORMAT, LIMIT_TIME_DIGITS);
             }
         }
 
@@ -91,6 +102,21 @@ namespace UISystem
             if (!_isInGame)
             {
                 return;
+            }
+
+            if (_pointerImage != null)
+            {
+                // RectTransform を取得
+                RectTransform rectTransform =
+                    _pointerImage.rectTransform;
+
+                // InputManager から現在のポインター座標を取得
+                Vector2 pointerPosition =
+                    InputManager.Instance.Pointer;
+
+                // UI座標としてそのまま適用（Screen Space Overlay 前提）
+                rectTransform.anchoredPosition =
+                    pointerPosition;
             }
         }
 

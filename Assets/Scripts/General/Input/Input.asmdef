@@ -1,5 +1,5 @@
 {
-    "name": "InputManager",
+    "name": "Input",
     "rootNamespace": "",
     "references": [
         "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
