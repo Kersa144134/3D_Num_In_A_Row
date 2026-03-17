@@ -9,9 +9,9 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UniRx;
 using BoardSystem.Data;
+using BoardSystem.Utility;
 
 namespace BoardSystem.Service
 {
@@ -20,6 +20,13 @@ namespace BoardSystem.Service
     /// </summary>
     public sealed class LineJudgeService
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>ライン生成ユーティリティ</summary>
+        private LineGenerator _lineGenerator;
+        
         // ======================================================
         // フィールド
         // ======================================================
@@ -57,8 +64,11 @@ namespace BoardSystem.Service
             _boardSize = boardSize;
             _connectCount = connectCount;
 
+            // ライン生成クラス初期化
+            _lineGenerator = new LineGenerator(_boardSize);
+
             // ライン生成
-            _lines = GenerateLines();
+            _lines = _lineGenerator.GenerateLines();
         }
 
         // ======================================================
@@ -93,144 +103,17 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// ライン生成
-        /// </summary>
-        /// <returns>生成したライン配列</returns>
-        private int[][][] GenerateLines()
-        {
-            // ライン配列構築用リスト
-            List<int[][]> lineList = new List<int[][]>();
-
-            // X 方向ライン生成
-            for (int y = 0; y < _boardSize; y++)
-            {
-                for (int z = 0; z < _boardSize; z++)
-                {
-                    AddLine(lineList, 0, y, z, _boardSize - 1, y, z);
-                }
-            }
-
-            // Y 方向ライン生成
-            for (int x = 0; x < _boardSize; x++)
-            {
-                for (int z = 0; z < _boardSize; z++)
-                {
-                    AddLine(lineList, x, 0, z, x, _boardSize - 1, z);
-                }
-            }
-
-            // Z 方向ライン生成
-            for (int x = 0; x < _boardSize; x++)
-            {
-                for (int y = 0; y < _boardSize; y++)
-                {
-                    AddLine(lineList, x, y, 0, x, y, _boardSize - 1);
-                }
-            }
-
-            // 対角線生成
-            AddDiagonalLines(lineList);
-
-            // 配列へ変換
-            return lineList.ToArray();
-        }
-
-        /// <summary>
-        /// 2 端点からラインを生成して追加
-        /// </summary>
-        /// <param name="lineList">生成したラインを格納するリスト</param>
-        /// <param name="startX">始点の X 座標</param>
-        /// <param name="startY">始点の Y 座標</param>
-        /// <param name="startZ">始点の Z 座標</param>
-        /// <param name="endX">終点の X 座標</param>
-        /// <param name="endY">終点の Y 座標</param>
-        /// <param name="endZ">終点の Z 座標</param>
-        private void AddLine(
-            in List<int[][]> lineList,
-            in int startX,
-            in int startY,
-            in int startZ,
-            in int endX,
-            in int endY,
-            in int endZ)
-        {
-            // 1 ライン分の配列を確保
-            int[][] line = new int[_boardSize][];
-
-            // 線形補間で座標を生成
-            for (int i = 0; i < _boardSize; i++)
-            {
-                // 補間係数（0 ～ 1）
-                float t = i / (float)(_boardSize - 1);
-
-                // 各座標を補間
-                int x = Mathf.RoundToInt(Mathf.Lerp(startX, endX, t));
-                int y = Mathf.RoundToInt(Mathf.Lerp(startY, endY, t));
-                int z = Mathf.RoundToInt(Mathf.Lerp(startZ, endZ, t));
-
-                // 内部ラインを除外
-                if ((_boardSize > 3) &&
-                    (x != 0 && x != _boardSize - 1) &&
-                    (z != 0 && z != _boardSize - 1))
-                {
-                    return;
-                }
-
-                // 座標を格納
-                line[i] = new int[] { x, y, z };
-            }
-
-            lineList.Add(line);
-        }
-
-        /// <summary>
-        /// 対角線ライン生成
-        /// </summary>
-        /// <param name="lineList">生成したラインを格納するリスト</param>
-        private void AddDiagonalLines(in List<int[][]> lineList)
-        {
-            int max = _boardSize;
-
-            // XY 平面
-            for (int z = 0; z < max; z++)
-            {
-                AddLine(lineList, 0, 0, z, max - 1, max - 1, z);
-                AddLine(lineList, max - 1, 0, z, 0, max - 1, z);
-            }
-
-            // XZ 平面
-            for (int y = 0; y < max; y++)
-            {
-                AddLine(lineList, 0, y, 0, max - 1, y, max - 1);
-                AddLine(lineList, max - 1, y, 0, 0, y, max - 1);
-            }
-
-            // YZ 平面
-            for (int x = 0; x < max; x++)
-            {
-                AddLine(lineList, x, 0, 0, x, max - 1, max - 1);
-                AddLine(lineList, x, max - 1, 0, x, 0, max - 1);
-            }
-
-            // 3D 対角線
-            AddLine(lineList, 0, 0, 0, max - 1, max - 1, max - 1);
-            AddLine(lineList, max - 1, 0, 0, 0, max - 1, max - 1);
-            AddLine(lineList, 0, max - 1, 0, max - 1, 0, max - 1);
-            AddLine(lineList, max - 1, max - 1, 0, 0, 0, max - 1);
-        }
-
-        /// <summary>
         /// ライン内のプレイヤーごとの最大連続数を算出
         /// </summary>
         private Dictionary<int, int> CalculateLineMaxConsecutive(
             in BoardState board,
             in int[][] line)
         {
+            // 直前の値
+            int lastValue = 0;
+
             // 現在の連続数
             int consecutive = 0;
-
-            // 現在のプレイヤー
-            int currentPlayer = 0;
 
             // プレイヤーごとの最大連続数
             Dictionary<int, int> maxMap = new Dictionary<int, int>();
@@ -250,32 +133,32 @@ namespace BoardSystem.Service
                 if (value == 0)
                 {
                     consecutive = 0;
-                    currentPlayer = 0;
+                    lastValue = 0;
                     continue;
                 }
 
-                // 同一プレイヤーなら加算
-                if (value == currentPlayer)
+                // 同一値なら加算
+                if (value == lastValue)
                 {
                     consecutive++;
                 }
                 else
                 {
-                    // プレイヤー切替時リセット
-                    currentPlayer = value;
+                    // 値切り替え
+                    lastValue = value;
                     consecutive = 1;
                 }
 
-                // 最大連続数初期化
-                if (!maxMap.ContainsKey(currentPlayer))
+                // プレイヤーごとの最大値初期化
+                if (!maxMap.ContainsKey(value))
                 {
-                    maxMap[currentPlayer] = 0;
+                    maxMap[value] = 0;
                 }
 
                 // 最大連続数更新
-                if (consecutive > maxMap[currentPlayer])
+                if (consecutive > maxMap[value])
                 {
-                    maxMap[currentPlayer] = consecutive;
+                    maxMap[value] = consecutive;
                 }
             }
 
@@ -312,7 +195,7 @@ namespace BoardSystem.Service
         private void NotifyLineComplete(
             in Dictionary<int, List<int>> result)
         {
-            foreach (var pair in result)
+            foreach (KeyValuePair<int, List<int>> pair in result)
             {
                 // プレイヤー単位でまとめて発火
                 _onLineComplete.OnNext(

@@ -117,13 +117,10 @@ namespace BoardSystem
             _model.OnLineComplete
                 .Subscribe(e =>
                 {
-                    // プレイヤー表示
-                    Debug.Log($"Player {e.Player} LineComplete");
-
                     // 成立ラインをすべて出力
                     for (int i = 0; i < e.LineCount; i++)
                     {
-                        Debug.Log($"LineCount {i + 1} Length: {e.Lengths[i]}");
+                        Debug.Log($"Player: {e.Player} Line[{i}] Length: {e.Lengths[i]}");
                     }
                 })
                 .AddTo(_disposables);

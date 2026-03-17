@@ -1,11 +1,7 @@
 {
-    "name": "BoardService",
+    "name": "BoardUtility",
     "rootNamespace": "",
-    "references": [
-        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
-        "GUID:51f55471d491ff0449cad5ef05817479",
-        "GUID:9b833fa9943e7c64ca36c463def26d7e"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

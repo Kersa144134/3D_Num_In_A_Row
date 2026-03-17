@@ -878,7 +878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Board::BoardSystem.BoardPresenter
   _boardSize: 5
-  _connectCount: 4
+  _connectCount: 3
   _playerOnePrefab: {fileID: 1356692423057582240, guid: 4031a7a223f17ca499cf4fc97f04a2ee, type: 3}
   _playerTwoPrefab: {fileID: 1645494674838047751, guid: fcdf60da9a82fb84486bc6b68d0fc006, type: 3}
 --- !u!1 &1594460766
