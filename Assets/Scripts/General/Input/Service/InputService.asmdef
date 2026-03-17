@@ -1,10 +1,8 @@
 {
-    "name": "InputManager",
+    "name": "InputService",
     "rootNamespace": "",
     "references": [
-        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
-        "GUID:a549de8da4de8df45b3c99bedc27a4f1",
-        "GUID:8b4b446506a854044ae99e784071613e"
+        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

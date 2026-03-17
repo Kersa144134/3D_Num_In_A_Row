@@ -7,7 +7,6 @@
 //            物理ゲームパッドと仮想ゲームパッドの切替を統一的に提供
 // ======================================================
 
-using UnityEngine.InputSystem;
 using InputSystem.Controller;
 using InputSystem.Data;
 
@@ -87,9 +86,6 @@ namespace InputSystem.Manager
         /// </summary>
         public void UpdateDevices()
         {
-            // 物理ゲームパッドが接続されているか判定
-            _useGamepad = Gamepad.current != null;
-
             if (_useGamepad)
             {
                 _gamepadController.UpdateInputs();

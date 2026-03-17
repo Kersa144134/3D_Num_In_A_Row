@@ -9,6 +9,7 @@
 
 using UnityEngine;
 using InputSystem.Data;
+using System;
 
 namespace InputSystem.Manager
 {
@@ -40,11 +41,21 @@ namespace InputSystem.Manager
         /// <summary>入力デバイス切替を管理するマネージャー</summary>
         private DeviceManager _deviceManager;
 
-        /// <summary>ボタン状態を管理するマネージャー</summary>
-        private ButtonStateManager _buttonStateManager = new ButtonStateManager();
+        /// <summary>ボタン状態を更新するサービス</summary>
+        private ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
 
         /// <summary>スティック/D-Pad状態を管理するマネージャー</summary>
         private StickStateManager _stickStateManager = new StickStateManager();
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>
+        /// ボタン状態配列
+        /// GamepadInputType の順序で固定
+        /// </summary>
+        private ButtonState[] _buttonStates;
 
         // ======================================================
         // プロパティ
@@ -52,36 +63,42 @@ namespace InputSystem.Manager
 
         /// <summary>入力デバイス切替を管理するマネージャー</summary>
         public DeviceManager DeviceManager => _deviceManager;
-        
+
         /// <summary>ボタンAの状態</summary>
-        public ButtonState ButtonA => _buttonStateManager.ButtonA;
+        public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
 
         /// <summary>ボタンBの状態</summary>
-        public ButtonState ButtonB => _buttonStateManager.ButtonB;
+        public ButtonState ButtonB => _buttonStates[(int)GamepadInputType.ButtonB];
 
         /// <summary>ボタンXの状態</summary>
-        public ButtonState ButtonX => _buttonStateManager.ButtonX;
+        public ButtonState ButtonX => _buttonStates[(int)GamepadInputType.ButtonX];
 
         /// <summary>ボタンYの状態</summary>
-        public ButtonState ButtonY => _buttonStateManager.ButtonY;
+        public ButtonState ButtonY => _buttonStates[(int)GamepadInputType.ButtonY];
 
         /// <summary>左ショルダーの状態</summary>
-        public ButtonState LeftShoulder => _buttonStateManager.LeftShoulder;
+        public ButtonState LeftShoulder => _buttonStates[(int)GamepadInputType.LeftShoulder];
 
         /// <summary>右ショルダーの状態</summary>
-        public ButtonState RightShoulder => _buttonStateManager.RightShoulder;
+        public ButtonState RightShoulder => _buttonStates[(int)GamepadInputType.RightShoulder];
 
         /// <summary>左トリガーの状態</summary>
-        public ButtonState LeftTrigger => _buttonStateManager.LeftTrigger;
+        public ButtonState LeftTrigger => _buttonStates[(int)GamepadInputType.LeftTrigger];
 
         /// <summary>右トリガーの状態</summary>
-        public ButtonState RightTrigger => _buttonStateManager.RightTrigger;
+        public ButtonState RightTrigger => _buttonStates[(int)GamepadInputType.RightTrigger];
 
         /// <summary>左スティックボタンの状態</summary>
-        public ButtonState LeftStickButton => _buttonStateManager.LeftStickButton;
+        public ButtonState LeftStickButton => _buttonStates[(int)GamepadInputType.LeftStickButton];
 
         /// <summary>右スティックボタンの状態</summary>
-        public ButtonState RightStickButton => _buttonStateManager.RightStickButton;
+        public ButtonState RightStickButton => _buttonStates[(int)GamepadInputType.RightStickButton];
+
+        /// <summary>Startボタンの状態</summary>
+        public ButtonState StartButton => _buttonStates[(int)GamepadInputType.Start];
+
+        /// <summary>Selectボタンの状態</summary>
+        public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
         /// <summary>左スティックの入力ベクトル</summary>
         public Vector2 LeftStick => _stickStateManager.LeftStick;
@@ -91,12 +108,6 @@ namespace InputSystem.Manager
 
         /// <summary>D-Pad の入力ベクトル</summary>
         public Vector2 DPad => _stickStateManager.DPad;
-
-        /// <summary>Startボタンの状態</summary>
-        public ButtonState StartButton => _buttonStateManager.StartButton;
-
-        /// <summary>Selectボタンの状態</summary>
-        public ButtonState SelectButton => _buttonStateManager.SelectButton;
 
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
         public int CurrentMappingIndex { get; private set; } = 0;
@@ -129,6 +140,17 @@ namespace InputSystem.Manager
             DontDestroyOnLoad(gameObject);
 
             _deviceManager = new DeviceManager(_inputMappingConfigs);
+
+            // enum の数だけ配列を確保
+            int enumLength = Enum.GetValues(typeof(GamepadInputType)).Length;
+
+            _buttonStates = new ButtonState[enumLength];
+
+            // 各ボタン状態を初期化
+            for (int i = 0; i < _buttonStates.Length; i++)
+            {
+                _buttonStates[i] = new ButtonState();
+            }
         }
 
         private void Update()
@@ -142,7 +164,16 @@ namespace InputSystem.Manager
             _deviceManager.UpdateDevices();
 
             // ボタン状態更新
-            _buttonStateManager.UpdateButtonStates(_deviceManager.ActiveController);
+            for (int i = 0; i < _buttonStates.Length; i++)
+            {
+                GamepadInputType type = (GamepadInputType)i;
+
+                _buttonStateUpdateService.UpdateButtonState(
+                    _deviceManager.ActiveController,
+                    type,
+                    _buttonStates[i]
+                );
+            }
 
             // スティック状態更新
             _stickStateManager.UpdateStickStates(_deviceManager.ActiveController);

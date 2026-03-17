@@ -40,13 +40,8 @@ namespace InputSystem.Manager
         /// <param name="controller">物理または仮想ゲームパッド入力ソース</param>
         public void UpdateStickStates(in IGamepadInputSource controller)
         {
-            // 左スティックの状態を更新
             LeftStick = controller.LeftStick;
-
-            // 右スティックの状態を更新
             RightStick = controller.RightStick;
-
-            // D-Padの状態を更新
             DPad = controller.DPad;
         }
     }

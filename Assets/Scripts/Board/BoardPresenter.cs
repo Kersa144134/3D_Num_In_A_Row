@@ -3,10 +3,12 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
 // 更新日時 : 2026-03-16
-// 概要     : 3D 目並べゲームの進行を制御するクラス
+// 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
+using System;
 using UnityEngine;
+using UniRx;
 using InputSystem.Controller;
 using InputSystem.Manager;
 using SceneSystem.Data;
@@ -57,6 +59,8 @@ namespace BoardSystem
         /// </summary>
         private int _currentPlayer;
 
+        private IDisposable _disposable;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -71,9 +75,6 @@ namespace BoardSystem
         // IUpdatable
         // ======================================================
 
-        /// <summary>
-        /// 初期化
-        /// </summary>
         public void OnEnter()
         {
             // モデル、ビューの生成
@@ -93,23 +94,36 @@ namespace BoardSystem
             // 初期プレイヤー設定
             // --------------------------------------------------
             _currentPlayer = PLAYER_ONE;
-        }
 
-        /// <summary>
-        /// 更新処理
-        /// </summary>
-        public void OnUpdate(
-            in float unscaledDeltaTime,
-            in float elapsedTime)
-        {
-            // --------------------------------------------------
-            // 入力検知
-            // --------------------------------------------------
-            if (!InputManager.Instance.ButtonA.Down)
+            if (InputManager.Instance == null)
             {
                 return;
             }
 
+            // ButtonA押下時に処理実行
+            _disposable = InputManager.Instance
+                .ButtonA
+                .OnDown
+                .Subscribe(_ =>
+                {
+                    HandleDropColumn();
+                });
+        }
+
+        public void OnExit()
+        {
+            
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 駒落下時に呼ばれるハンドラ
+        /// </summary>
+        private void HandleDropColumn()
+        {
             // --------------------------------------------------
             // 入力デバイス確認
             // --------------------------------------------------
@@ -153,10 +167,6 @@ namespace BoardSystem
             // --------------------------------------------------
             HandleDrop(x, z);
         }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
 
         /// <summary>
         /// 駒落下処理
@@ -216,12 +226,6 @@ namespace BoardSystem
             // --------------------------------------------------
             SwitchPlayer();
         }
-
-        public void OnExit()
-        {
-
-        }
-
 
         /// <summary>
         /// プレイヤー切替

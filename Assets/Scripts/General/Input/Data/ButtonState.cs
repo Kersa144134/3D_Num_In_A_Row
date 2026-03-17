@@ -6,38 +6,68 @@
 // 概要     : ボタンの押下状態を管理するクラス
 // ======================================================
 
+using System;
+using UniRx;
+
 namespace InputSystem.Data
 {
     /// <summary>
     /// ボタン状態管理用クラス
-    /// 押下中 / 押下開始 / 離上 の状態を管理
+    /// 押下中 / 押下開始 / 離上 の状態を管理し、イベント通知も行う
     /// </summary>
     public class ButtonState
     {
-        /// <summary>現在押下中かどうか</summary>
-        public bool IsPressed;
-
-        /// <summary>押下した瞬間かどうか</summary>
-        public bool Down;
-
-        /// <summary>離した瞬間かどうか</summary>
-        public bool Up;
+        // ======================================================
+        // フィールド
+        // ======================================================
 
         /// <summary>前フレームの押下状態</summary>
         private bool _wasPressed;
 
-        /// <summary>現在の押下状態から Down / Up を更新</summary>
-        /// <param name="current">最新の押下状態</param>
-        public void Update(bool current)
-        {
-            // 前フレームの状態と比較して押下開始/離上を判定
-            Down = current && !_wasPressed;
-            Up = !current && _wasPressed;
+        /// <summary>押下時イベント</summary>
+        private readonly Subject<Unit> _onDown = new Subject<Unit>();
 
-            // 現在押下状態を保存
+        /// <summary>離上時イベント</summary>
+        private readonly Subject<Unit> _onUp = new Subject<Unit>();
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>現在押下中かどうか</summary>
+        public bool IsPressed { get; private set; }
+
+        /// <summary>押下時イベント購読用</summary>
+        public IObservable<Unit> OnDown => _onDown;
+
+        /// <summary>離上時イベント購読用</summary>
+        public IObservable<Unit> OnUp => _onUp;
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 現在の押下状態から Down / Up を更新しイベント通知
+        /// </summary>
+        /// <param name="current">現在のの押下状態</param>
+        public void Update(in bool current)
+        {
             IsPressed = current;
 
-            // 次フレーム判定用に保持
+            // 押下時
+            if (current && !_wasPressed)
+            {
+                _onDown.OnNext(Unit.Default);
+            }
+
+            // 離上時
+            if (!current && _wasPressed)
+            {
+                _onUp.OnNext(Unit.Default);
+            }
+
+            // 前フレームの押下状態を更新
             _wasPressed = current;
         }
     }
