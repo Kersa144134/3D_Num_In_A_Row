@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using InputSystem.Manager;
+using InputSystem;
 using SceneSystem.Data;
 using UISystem.Service;
 
@@ -62,6 +62,12 @@ namespace UISystem
         /// <summary>直前に表示した残り秒数を保持する</summary>
         private int _previousDisplayTotalSeconds = -1;
 
+        /// <summary>親 Canvas の RectTransform をキャッシュ</summary>
+        private RectTransform _canvasRect;
+
+        /// <summary>ポインターの RectTransform をキャッシュ</summary>
+        private RectTransform _pointerRect;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -93,6 +99,17 @@ namespace UISystem
                 _timeFormatService = new TextFormatService(
                     _limitTimeText, LIMIT_TIME_FORMAT, LIMIT_TIME_DIGITS);
             }
+
+            if (_pointerImage != null)
+            {
+                _pointerRect = _pointerImage.rectTransform;
+
+                Canvas canvas = _pointerImage.GetComponentInParent<Canvas>();
+                if (canvas != null)
+                {
+                    _canvasRect = canvas.transform as RectTransform;
+                }
+            }
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -106,17 +123,21 @@ namespace UISystem
 
             if (_pointerImage != null)
             {
-                // RectTransform を取得
-                RectTransform rectTransform =
-                    _pointerImage.rectTransform;
+                if (_pointerRect == null || _canvasRect == null)
+                {
+                    return;
+                }
 
-                // InputManager から現在のポインター座標を取得
-                Vector2 pointerPosition =
-                    InputManager.Instance.Pointer;
+                // InputManager からスクリーン座標取得
+                Vector2 screenPos = InputManager.Instance != null
+                    ? InputManager.Instance.Pointer
+                    : Vector2.zero;
 
-                // UI座標としてそのまま適用（Screen Space Overlay 前提）
-                rectTransform.anchoredPosition =
-                    pointerPosition;
+                // Canvas の中心を原点とした座標に変換
+                Vector2 anchoredPos = screenPos - (_canvasRect.sizeDelta * 0.5f);
+
+                // ポインター UI へ反映
+                _pointerRect.anchoredPosition = anchoredPos;
             }
         }
 

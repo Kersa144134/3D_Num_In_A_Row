@@ -11,8 +11,9 @@ using System;
 using UnityEngine;
 using InputSystem.Data;
 using InputSystem.Service;
+using InputSystem.Controller;
 
-namespace InputSystem.Manager
+namespace InputSystem
 {
     /// <summary>
     /// 入力管理マスタークラス
@@ -32,7 +33,7 @@ namespace InputSystem.Manager
         // ======================================================
 
         [Header("入力マッピング設定")]
-        /// <summary>配列で取得</summary>
+        /// <summary>入力マッピング配列</summary>
         [SerializeField] private InputMappingConfig[] _inputMappingConfigs;
 
         // ======================================================
@@ -57,6 +58,15 @@ namespace InputSystem.Manager
         /// GamepadInputType の順序で固定
         /// </summary>
         private ButtonState[] _buttonStates;
+
+        /// <summary>左スティックの入力ベクトル</summary>
+        private Vector2 _leftStick = Vector2.zero;
+
+        /// <summary>右スティックの入力ベクトル</summary>
+        private Vector2 _rightStick = Vector2.zero;
+
+        /// <summary>D-Pad の入力ベクトル</summary>
+        private Vector2 _dPad = Vector2.zero;
 
         // ======================================================
         // プロパティ
@@ -102,19 +112,26 @@ namespace InputSystem.Manager
         public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
         /// <summary>左スティックの入力ベクトル</summary>
-        public Vector2 LeftStick => _stickStateUpdateService.LeftStick;
+        public Vector2 LeftStick => _leftStick;
 
         /// <summary>右スティックの入力ベクトル</summary>
-        public Vector2 RightStick => _stickStateUpdateService.RightStick;
+        public Vector2 RightStick => _rightStick;
 
         /// <summary>D-Pad の入力ベクトル</summary>
-        public Vector2 DPad => _stickStateUpdateService.DPad;
+        public Vector2 DPad => _dPad;
 
-        /// <summary>ポインター の座標</summary>
-        public Vector2 Pointer => _deviceSwitchService.ActiveController.Pointer;
+        /// <summary>ポインターの座標</summary>
+        public Vector2 Pointer { get; private set; } = Vector2.zero;
 
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
         public int CurrentMappingIndex { get; private set; } = 0;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>ポインター移動速度</summary>
+        private const float POINTER_SPEED = 1000f;
 
         // ======================================================
         // Unity イベント
@@ -155,6 +172,9 @@ namespace InputSystem.Manager
             {
                 _buttonStates[i] = new ButtonState();
             }
+
+            // ポインター初期位置を画面中心に設定
+            Pointer = new Vector2(Screen.width / 2f, Screen.height / 2f);
         }
 
         private void Update()
@@ -180,7 +200,15 @@ namespace InputSystem.Manager
             }
 
             // スティック状態更新
-            _stickStateUpdateService.UpdateStickState(_deviceSwitchService.ActiveController);
+            _stickStateUpdateService.UpdateStickStates(
+                _deviceSwitchService.ActiveController,
+                ref _leftStick,
+                ref _rightStick,
+                ref _dPad
+            );
+
+            // ポインター状態更新
+            UpdatePointer();
         }
 
         // ======================================================
@@ -211,6 +239,39 @@ namespace InputSystem.Manager
         public int GetCurrentMappingIndex()
         {
             return CurrentMappingIndex;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// デバイスに応じてポインター座標を更新
+        /// </summary>
+        private void UpdatePointer()
+        {
+            if (_deviceSwitchService.ActiveController == null)
+            {
+                return;
+            }
+
+            // 仮想ゲームパッドなら絶対座標をそのまま適用
+            if (_deviceSwitchService.ActiveController is VirtualGamepadInputController virtualController)
+            {
+                Pointer = virtualController.MousePosition;
+            }
+            // ゲームパッドなら右スティック入力を加算適用
+            else if (_deviceSwitchService.ActiveController is GamepadInputController gamepadController)
+            {
+                Vector2 delta = gamepadController.RightStick * POINTER_SPEED * Time.deltaTime;
+
+                Pointer += delta;
+            }
+
+            // 画面外制限
+            Pointer = new Vector2(
+                Mathf.Clamp(Pointer.x, 0f, Screen.width),
+                Mathf.Clamp(Pointer.y, 0f, Screen.height));
         }
     }
 }

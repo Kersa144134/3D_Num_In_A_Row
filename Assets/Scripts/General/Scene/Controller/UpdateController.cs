@@ -7,7 +7,7 @@
 // ======================================================
 
 using System.Collections.Generic;
-using InputSystem.Manager;
+using InputSystem;
 using SceneSystem.Data;
 
 namespace SceneSystem.Controller

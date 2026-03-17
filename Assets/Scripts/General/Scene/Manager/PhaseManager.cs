@@ -7,7 +7,6 @@
 // ======================================================
 
 using System;
-using InputSystem.Manager;
 using SceneSystem.Data;
 
 namespace SceneSystem.Manager
@@ -112,28 +111,9 @@ namespace SceneSystem.Manager
                             PhaseType.Finish
                         );
                     }
-
-                    if (InputManager.Instance.StartButton.IsPressed)
-                    {
-                        TogglePhaseChange(
-                            currentPhase,
-                            out targetPhase
-                        );
-
-                        OnOptionButtonPressed?.Invoke();
-                    }
                     break;
 
                 case PhaseType.Pause:
-                    if (InputManager.Instance.StartButton.IsPressed)
-                    {
-                        TogglePhaseChange(
-                            currentPhase,
-                            out targetPhase
-                        );
-
-                        OnOptionButtonPressed?.Invoke();
-                    }
                     break;
 
                 case PhaseType.Result:
@@ -183,39 +163,6 @@ namespace SceneSystem.Manager
 
             // 経過時間を初期化
             _phaseElapsedTime = 0.0f;
-        }
-
-        /// <summary>
-        /// オプションボタン押下時のフェーズ切り替え遷移を評価する
-        /// </summary>
-        /// <param name="currentPhase">現在のフェーズ</param>
-        /// <param name="targetPhase">遷移先フェーズ</param>
-        private void TogglePhaseChange(
-            in PhaseType currentPhase,
-            out PhaseType targetPhase
-        )
-        {
-            targetPhase = currentPhase;
-
-            switch (currentPhase)
-            {
-                case PhaseType.Play:
-                    targetPhase = PhaseType.Pause;
-                    break;
-
-                case PhaseType.Pause:
-                    targetPhase = PhaseType.Play;
-                    break;
-
-                default:
-                    break;
-            }
-
-            // 経過時間を初期化
-            if (targetPhase != currentPhase)
-            {
-                _phaseElapsedTime = 0.0f;
-            }
         }
     }
 }

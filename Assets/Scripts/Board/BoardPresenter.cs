@@ -8,8 +8,7 @@
 
 using UnityEngine;
 using UniRx;
-using InputSystem.Controller;
-using InputSystem.Manager;
+using InputSystem;
 using SceneSystem.Data;
 
 namespace BoardSystem

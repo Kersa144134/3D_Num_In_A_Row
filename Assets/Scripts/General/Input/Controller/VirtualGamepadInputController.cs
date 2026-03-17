@@ -70,16 +70,16 @@ namespace InputSystem.Controller
         public bool SelectButton { get; private set; }
 
         /// <summary>左スティックの仮想入力値</summary>
-        public Vector2 LeftStick { get; private set; }
+        public Vector2 LeftStick { get; private set; } = Vector2.zero;
 
         /// <summary>右スティックの仮想入力値</summary>
-        public Vector2 RightStick { get; private set; }
+        public Vector2 RightStick { get; private set; } = Vector2.zero;
 
         /// <summary>D-Pad の仮想入力値</summary>
-        public Vector2 DPad { get; private set; }
+        public Vector2 DPad { get; private set; } = Vector2.zero;
 
-        /// <summary>ポインター の仮想入力値</summary>
-        public Vector2 Pointer { get; private set; }
+        /// <summary>マウスの座標</summary>
+        public Vector2 MousePosition { get; private set; } = Vector2.zero;
 
         // ======================================================
         // コンストラクタ
@@ -175,9 +175,9 @@ namespace InputSystem.Controller
             DPad = dpad.magnitude > 1f ? dpad.normalized : dpad;
 
             // --------------------------------------------------
-            // ポインター更新
+            // マウス座標更新
             // --------------------------------------------------
-            Pointer = _mouse.GetMousePosition();
+            MousePosition = _mouse.GetMousePosition();
         }
 
         // ======================================================

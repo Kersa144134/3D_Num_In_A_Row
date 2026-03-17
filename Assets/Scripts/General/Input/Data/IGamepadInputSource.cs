@@ -78,12 +78,5 @@ namespace InputSystem.Data
 
         /// <summary>D-Padの入力ベクトルを返す</summary>
         Vector2 DPad { get; }
-
-        // ======================================================
-        // ポインター
-        // ======================================================
-
-        /// <summary>ポインターの座標を返す</summary>
-        Vector2 Pointer { get; }
     }
 }

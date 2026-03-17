@@ -84,9 +84,6 @@ namespace InputSystem.Controller
         /// <summary>十字キーの入力ベクトル</summary>
         public Vector2 DPad { get; private set; } = Vector2.zero;
 
-        /// <summary>ポインター の仮想入力値</summary>
-        public Vector2 Pointer { get; private set; }
-
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -105,17 +102,13 @@ namespace InputSystem.Controller
                 return;
             }
 
-            // --------------------------------------------------
-            // ABXYボタン入力取得
-            // --------------------------------------------------
+            // ABXY ボタン入力取得
             ButtonA = pad.buttonSouth.isPressed;
             ButtonB = pad.buttonEast.isPressed;
             ButtonX = pad.buttonWest.isPressed;
             ButtonY = pad.buttonNorth.isPressed;
 
-            // --------------------------------------------------
             // ショルダー / トリガー / スティックボタン入力取得
-            // --------------------------------------------------
             LeftShoulder = pad.leftShoulder.isPressed;
             RightShoulder = pad.rightShoulder.isPressed;
             LeftTrigger = pad.leftTrigger.ReadValue() >= LEFT_TRIGGER_DEAD_ZONE;
@@ -123,15 +116,11 @@ namespace InputSystem.Controller
             LeftStickButton = pad.leftStickButton.isPressed;
             RightStickButton = pad.rightStickButton.isPressed;
 
-            // --------------------------------------------------
             // スタート・セレクトボタン入力取得
-            // --------------------------------------------------
             StartButton = pad.startButton.isPressed;
             SelectButton = pad.selectButton.isPressed;
 
-            // --------------------------------------------------
-            // スティック入力取得＆デッドゾーン適用
-            // --------------------------------------------------
+            // スティック入力取得
             LeftStick = ApplyDeadZone(pad.leftStick.ReadValue(), LEFT_STICK_DEAD_ZONE);
             RightStick = ApplyDeadZone(pad.rightStick.ReadValue(), RIGHT_STICK_DEAD_ZONE);
             DPad = pad.dpad.ReadValue();

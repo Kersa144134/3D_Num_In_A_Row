@@ -7,7 +7,7 @@
 // ======================================================
 
 using System;
-using InputSystem.Manager;
+using InputSystem;
 using SceneSystem.Data;
 using UISystem;
 
