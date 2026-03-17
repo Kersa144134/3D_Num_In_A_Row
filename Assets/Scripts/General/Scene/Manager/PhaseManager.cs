@@ -113,7 +113,7 @@ namespace SceneSystem.Manager
                         );
                     }
 
-                    if (InputManager.Instance.StartButton.Down)
+                    if (InputManager.Instance.StartButton.IsPressed)
                     {
                         TogglePhaseChange(
                             currentPhase,
@@ -125,7 +125,7 @@ namespace SceneSystem.Manager
                     break;
 
                 case PhaseType.Pause:
-                    if (InputManager.Instance.StartButton.Down)
+                    if (InputManager.Instance.StartButton.IsPressed)
                     {
                         TogglePhaseChange(
                             currentPhase,

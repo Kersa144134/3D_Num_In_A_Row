@@ -33,11 +33,9 @@ namespace SceneSystem.Utility
         /// <summary>
         /// フェーズに紐づく Updatable を初期化・登録する
         /// </summary>
-        /// <param name="phaseController">対象の PhaseController</param>
         /// <param name="allUpdatables">シーン上の IUpdatable 配列</param>
         /// <param name="phaseDataList">全フェーズデータ</param>
-        public void Initialize(
-            in PhaseController phaseController,
+        public void InitializePhases(
             in IUpdatable[] allUpdatables,
             in PhaseData[] phaseDataList
         )

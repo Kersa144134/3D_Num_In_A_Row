@@ -18,42 +18,16 @@ namespace SceneSystem.Utility
     public sealed class UpdatableInitializer
     {
         // ======================================================
-        // コンポーネント参照
-        // ======================================================
-
-        /// <summary>
-        /// IUpdatable をシーンから収集するコレクター
-        /// </summary>
-        private readonly UpdatableCollector _collector;
-
-        // ======================================================
-        // コンストラクタ
-        // ======================================================
-
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        /// <param name="collector">IUpdatable を取得するコレクター</param>
-        public UpdatableInitializer(in UpdatableCollector collector)
-        {
-            // コレクター参照を保持
-            _collector = collector;
-        }
-
-        // ======================================================
         // パブリックメソッド
         // ======================================================
 
         /// <summary>
         /// シーン内の IUpdatable を収集し初期化する
         /// </summary>
-        /// <param name="roots">探索対象となるルート GameObject</param>
+        /// <param name="updatables">更新対象となる IUpdatable</param>
         /// <returns>初期化済みコンテキスト</returns>
-        public UpdatableContext Initialize(in GameObject[] roots)
+        public UpdatableContext InitializeUpdatables(in IUpdatable[] updatables)
         {
-            // シーンから IUpdatable を収集
-            IUpdatable[] updatables = _collector.Collect(roots);
-
             // コンテキスト生成
             UpdatableContext context = BuildContext(updatables);
 
@@ -61,9 +35,26 @@ namespace SceneSystem.Utility
             InjectContext(context);
 
             // 初期化処理実行
-            InitializeUpdatables(context);
+            Initialize(context);
 
             return context;
+        }
+
+        /// <summary>
+        /// 収集済み IUpdatable の OnExit 処理を実行する
+        /// </summary>
+        /// <param name="context">共有コンテキスト</param>
+        public void FinalizeUpdatables(in UpdatableContext context)
+        {
+            foreach (IUpdatable updatable in context.Updatables)
+            {
+                if (updatable == null)
+                {
+                    continue;
+                }
+
+                updatable.OnEnter();
+            }
         }
 
         // ======================================================
@@ -75,7 +66,7 @@ namespace SceneSystem.Utility
         /// </summary>
         /// <param name="updatables">収集済み IUpdatable 配列</param>
         /// <returns>生成された UpdatableContext</returns>
-        private UpdatableContext BuildContext(IUpdatable[] updatables)
+        private UpdatableContext BuildContext(in IUpdatable[] updatables)
         {
             // --------------------------------------------------
             // コンテキスト生成
@@ -112,7 +103,7 @@ namespace SceneSystem.Utility
         /// コンテキストを注入する
         /// </summary>
         /// <param name="context">共有コンテキスト</param>
-        private void InjectContext(UpdatableContext context)
+        private void InjectContext(in UpdatableContext context)
         {
             // すべての Updatable を走査
             foreach (IUpdatable updatable in context.Updatables)
@@ -134,9 +125,8 @@ namespace SceneSystem.Utility
         /// すべての IUpdatable の OnEnter を呼び出す
         /// </summary>
         /// <param name="context">共有コンテキスト</param>
-        private void InitializeUpdatables(UpdatableContext context)
+        private void Initialize(in UpdatableContext context)
         {
-            // すべての Updatable を初期化
             foreach (IUpdatable updatable in context.Updatables)
             {
                 if (updatable == null)

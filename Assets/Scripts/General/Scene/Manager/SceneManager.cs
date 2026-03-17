@@ -53,7 +53,7 @@ namespace SceneSystem.Manager
         private UpdatableCollector _updatableCollector = new UpdatableCollector();
 
         /// <summary>IUpdatable の初期化を行うクラス</summary>
-        private UpdatableInitializer _initializer;
+        private UpdatableInitializer _initializer = new UpdatableInitializer();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private SceneEventRouter _sceneEventRouter;
@@ -86,6 +86,13 @@ namespace SceneSystem.Manager
         /// <summary>ゲームの経過時間</summary>
         private float _elapsedTime = 0.0f;
 
+        // --------------------------------------------------
+        // Updatables
+        // --------------------------------------------------
+
+        /// <summary>Updatable を保持するコンテキスト</summary>
+        private UpdatableContext _updatableContexts;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -104,6 +111,12 @@ namespace SceneSystem.Manager
         {
             // フレームレート固定
             Application.targetFrameRate = TARGET_FRAME_RATE;
+        }
+
+        private void Start()
+        {
+            // フレームレート固定
+            Application.targetFrameRate = TARGET_FRAME_RATE;
 
             // 初期状態設定
             _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
@@ -115,25 +128,24 @@ namespace SceneSystem.Manager
             // フェーズデータ読み込み
             PhaseData[] phaseDataList = Resources.LoadAll<PhaseData>(PHASE_DATA_RESOURCES_PATH);
 
-            // IUpdatable 初期化
-            _updatableCollector = new UpdatableCollector();
-            _initializer = new UpdatableInitializer(_updatableCollector);
+            // インスペクタから IUpdatable を収集
+            IUpdatable[] updatables = _updatableCollector.Collect(_components);
 
-            // Context 作成
-            UpdatableContext context = _initializer.Initialize(_components);
+            // コンテキスト作成
+            _updatableContexts = _initializer.InitializeUpdatables(updatables);
 
-            // Context から取得
-            IUpdatable[] allUpdatables = context.Updatables;
+            // コンテキストから取得
+            IUpdatable[] allUpdatables = _updatableContexts.Updatables;
 
             // Update 制御初期化
             _phaseController = new PhaseController(_updateController);
             _updateManager = new UpdateManager(_updateController);
 
             // フェーズごと登録
-            _phaseInitializer.Initialize(_phaseController, allUpdatables, phaseDataList);
+            _phaseInitializer.InitializePhases(allUpdatables, phaseDataList);
 
             // シーンイベント初期化
-            _sceneEventRouter = new SceneEventRouter(context);
+            _sceneEventRouter = new SceneEventRouter(_updatableContexts);
             _sceneEventRouter.Subscribe();
             _phaseManager.OnOptionButtonPressed += HandleOptionButtonPressed;
             _sceneEventRouter.OnPhaseChanged += SetTargetPhase;
@@ -243,6 +255,9 @@ namespace SceneSystem.Manager
             {
                 return;
             }
+
+            // Updatable の終了処理を実行
+            _initializer.FinalizeUpdatables(_updatableContexts);
 
             // 現在シーンを更新
             _currentScene = sceneName;
