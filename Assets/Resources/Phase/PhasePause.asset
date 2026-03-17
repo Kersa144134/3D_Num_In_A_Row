@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: PhasePause
   m_EditorClassIdentifier: 
   _phaseType: 4
-  _updatableTypeNames: []
+  _updatableTypeNames:
+  - UISystem.MainUIManager

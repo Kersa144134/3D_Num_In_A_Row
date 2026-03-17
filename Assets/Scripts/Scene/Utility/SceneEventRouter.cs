@@ -9,7 +9,7 @@
 using System;
 using InputSystem.Manager;
 using SceneSystem.Data;
-using UISystem.Manager;
+using UISystem;
 
 namespace SceneSystem.Utility
 {

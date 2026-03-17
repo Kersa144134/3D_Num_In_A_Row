@@ -11,7 +11,7 @@ using UnityEngine.Rendering.Universal;
 using SceneSystem.Data;
 using ShaderSystem.Controller;
 
-namespace UISystem.Manager
+namespace UISystem
 {
     /// <summary>
     /// UI の視覚的演出のみを管理する基底クラス

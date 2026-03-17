@@ -9,8 +9,9 @@
 using UnityEngine;
 using TMPro;
 using SceneSystem.Data;
+using UISystem.Service;
 
-namespace UISystem.Manager
+namespace UISystem
 {
     /// <summary>
     /// メインシーンにおける UI 演出およびゲーム連動 UI を管理するクラス
@@ -32,6 +33,16 @@ namespace UISystem.Manager
         private TextMeshProUGUI _limitTimeText;
 
         // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        // --------------------------------------------------
+        // UI
+        // --------------------------------------------------
+        /// <summary>タイム表示フォーマットサービス</summary>
+        private TextFormatService _timeFormatService;
+        
+        // ======================================================
         // フィールド
         // ======================================================
 
@@ -51,7 +62,12 @@ namespace UISystem.Manager
         /// <summary>
         /// 制限時間表示フォーマット
         /// </summary>
-        private const string LIMIT_TIME_FORMAT = "{0:00}:{1:00}";
+        private const string LIMIT_TIME_FORMAT = "{0}:{1}";
+
+        /// <summary>
+        /// 制限時間表示桁数
+        /// </summary>
+        private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
         // IUpdatable 派生イベント
@@ -60,6 +76,12 @@ namespace UISystem.Manager
         protected override void OnEnterInternal()
         {
             base.OnEnterInternal();
+
+            if (_limitTimeText != null)
+            {
+                // 制限時間表示フォーマットクラスを生成する
+                _timeFormatService = new TextFormatService(_limitTimeText, LIMIT_TIME_FORMAT, LIMIT_TIME_DIGITS);
+            }
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -110,16 +132,16 @@ namespace UISystem.Manager
                 return;
             }
 
-            // 残り時間を算出する
+            // 残り時間を算出
             float remainingTime = limitTime - elapsedTime;
 
-            // 残り時間が負数にならないよう補正する
+            // 残り時間が負数にならないよう補正
             if (remainingTime < 0.0f)
             {
                 remainingTime = 0.0f;
             }
 
-            // 残り時間を整数秒へ変換する（小数切り捨て）
+            // 残り時間を整数へ変換（小数切り捨て）
             int totalSeconds = Mathf.FloorToInt(remainingTime);
 
             // 前回表示秒と同一の場合は処理なし
@@ -128,17 +150,17 @@ namespace UISystem.Manager
                 return;
             }
 
-            // 現在の表示秒をキャッシュへ保存する
+            // 現在の表示秒をキャッシュへ保存
             _previousDisplayTotalSeconds = totalSeconds;
 
-            // 分を算出する
+            // 分を算出
             int minutes = totalSeconds / 60;
 
-            // 秒を算出する
+            // 秒を算出
             int seconds = totalSeconds % 60;
 
             // フォーマットを使用して UI に反映
-            _limitTimeText.SetText(LIMIT_TIME_FORMAT, minutes, seconds);
+            _timeFormatService.SetNumberText(new int[] { minutes, seconds });
         }
     }
 }

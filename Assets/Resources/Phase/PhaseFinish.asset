@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: PhaseFinish
   m_EditorClassIdentifier: 
   _phaseType: 5
-  _updatableTypeNames: []
+  _updatableTypeNames:
+  - UISystem.MainUIManager

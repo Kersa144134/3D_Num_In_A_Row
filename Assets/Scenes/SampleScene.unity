@@ -638,8 +638,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfb06466a4406904889fbc846d19be73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIManager::UISystem.Manager.MainUIManager
-  _binarizationFullScreenPassFeature: {fileID: 0}
-  _binarizationEffectMaterial: {fileID: 0}
+  _binarizationFullScreenPassFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+  _binarizationEffectMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEffectEnabled: 0
   _binarizationDistortionCenter: {x: 0, y: 0}
   _binarizationDistortionStrength: 0
@@ -647,8 +647,8 @@ MonoBehaviour:
   _binarizationPosterizationThreshold: 0
   _binarizationPosterizationLightColor: {r: 0, g: 0, b: 0, a: 0}
   _binarizationPosterizationDarkColor: {r: 0, g: 0, b: 0, a: 0}
-  _greyScaleFullScreenPassFeature: {fileID: 0}
-  _greyScaleEffectMaterial: {fileID: 0}
+  _greyScaleFullScreenPassFeature: {fileID: 7296796606161525243, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+  _greyScaleEffectMaterial: {fileID: -876546973899608171, guid: 98266eff9d973b042b3806c4034ecd24, type: 3}
   _isGreyScaleEffectEnabled: 0
   _greyScaleStrength: {x: 0, y: 0, z: 0}
   _greyScaleDistortionCenter: {x: 0, y: 0}
@@ -972,7 +972,7 @@ GameObject:
   - component: {fileID: 1796908267}
   - component: {fileID: 1796908266}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Time
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1143,6 +1143,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
   _components:
   - {fileID: 1009972881}
+  - {fileID: 1337849776}
   - {fileID: 1437038923}
   _startPhase: 3
 --- !u!1660057539 &9223372036854775807

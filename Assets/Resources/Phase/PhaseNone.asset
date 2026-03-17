@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: PhaseNone
   m_EditorClassIdentifier: 
   _phaseType: 0
-  _updatableScripts: []
+  _updatableTypeNames:
+  - UISystem.MainUIManager

@@ -15,4 +15,5 @@ MonoBehaviour:
   _phaseType: 3
   _updatableTypeNames:
   - SceneSystem.Manager.SceneObjectRegistry
+  - UISystem.MainUIManager
   - BoardSystem.BoardPresenter
