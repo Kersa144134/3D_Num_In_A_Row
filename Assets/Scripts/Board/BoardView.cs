@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
 // 更新日時 : 2026-03-16
-// 概要     : 目並べゲームの表示を制御するクラス
+// 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
 using UnityEngine;
@@ -16,6 +16,15 @@ namespace BoardSystem
     /// </summary>
     public sealed class BoardView
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>
+        /// 座標変換サービス
+        /// </summary>
+        private readonly BoardPositionConvertService _convertService;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -34,11 +43,6 @@ namespace BoardSystem
         /// プレイヤー2Prefab
         /// </summary>
         private readonly GameObject _playerTwoPrefab;
-
-        /// <summary>
-        /// 座標変換サービス
-        /// </summary>
-        private readonly BoardPositionConvertService _convertService;
 
         /// <summary>
         /// セル間隔

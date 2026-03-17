@@ -19,14 +19,10 @@ namespace BoardSystem.Service
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 盤面サイズ
-        /// </summary>
+        /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>
-        /// 中心インデックス番号
-        /// </summary>
+        /// <summary>中心インデックス番号</summary>
         private readonly float _centerIndex;
 
         // ======================================================
@@ -43,7 +39,7 @@ namespace BoardSystem.Service
 
             // 偶数/奇数で中央補正を変更
             _centerIndex = (_boardSize % 2 == 0)
-                ? _boardSize / 2f - 0.5f
+                ? (_boardSize / 2f) - 0.5f
                 : (_boardSize - 1) / 2f;
         }
 
@@ -52,31 +48,36 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// ワールドX,Z座標から列インデックスに変換
+        /// ワールド座標から列インデックスに変換
         /// </summary>
+        /// <param name="worldX">ワールド X 座標</param>
+        /// <param name="worldZ">ワールド Z 座標<</param>
+        /// <param name="columnX">列 X インデックス</param>
+        /// <param name="columnZ">列 Z インデックス</param>
         public void WorldPositionToColumn(
             in float cellSpacing,
             in float worldX,
             in float worldZ,
-            out int x,
-            out int z)
+            out int columnX,
+            out int columnZ)
         {
-            // ワールド座標を列インデックスに変換
-            x = Mathf.RoundToInt(worldX / cellSpacing + _centerIndex);
-            x = Mathf.Clamp(x, 0, _boardSize - 1);
+            columnX = Mathf.RoundToInt(worldX / cellSpacing + _centerIndex);
+            columnX = Mathf.Clamp(columnX, 0, _boardSize - 1);
 
-            z = Mathf.RoundToInt(worldZ / cellSpacing + _centerIndex);
-            z = Mathf.Clamp(z, 0, _boardSize - 1);
+            columnZ = Mathf.RoundToInt(worldZ / cellSpacing + _centerIndex);
+            columnZ = Mathf.Clamp(columnZ, 0, _boardSize - 1);
         }
 
         /// <summary>
         /// 列インデックスからワールド座標に変換
         /// </summary>
-        /// <param name="columnX">列Xインデックス</param>
-        /// <param name="columnX">列Yインデックス</param>
-        /// <param name="columnX">列Zインデックス</param>
+        /// <param name="columnX">列 X インデックス</param>
+        /// <param name="columnY">列 Y インデックス</param>
+        /// <param name="columnZ">列 Z インデックス</param>
+        /// <param name="worldX">ワールド X 座標<</param>
+        /// <param name="worldY">ワールド Y 座標<</param>
+        /// <param name="worldZ">ワールド Z 座標<</param>
         /// <param name="cellSpacing">マス間隔</param>
-        /// <returns>ワールド座標</returns>
         public void ColumnToWorldPosition(
             in float cellSpacing,
             in int columnX,

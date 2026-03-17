@@ -2,7 +2,7 @@
 // LineJudgeService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 更新日時 : 2026-03-06
+// 更新日時 : 2026-03-17
 // 概要     : ライン判定処理
 //            任意サイズ盤面や連続マス指定に対応
 // ======================================================
@@ -22,20 +22,14 @@ namespace BoardSystem.Service
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 盤面サイズ
-        /// </summary>
+        /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>
-        /// ライン成立条件の連続マス数
-        /// </summary>
-        private readonly int _connectCount;
+        /// <summary>ライン配列</summary>
+        private readonly int[][][] _lines;
 
-        /// <summary>
-        /// ラインリスト
-        /// </summary>
-        private readonly List<int[][]> _lineList;
+        /// <summary>ライン成立条件の連続マス数</summary>
+        private readonly int _connectCount;
 
         // ======================================================
         // コンストラクタ
@@ -46,13 +40,13 @@ namespace BoardSystem.Service
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
         /// <param name="connectCount">ライン成立条件の連続マス数</param>
-        public LineJudgeService(int boardSize, int connectCount)
+        public LineJudgeService(in int boardSize, in int connectCount)
         {
             _boardSize = boardSize;
             _connectCount = connectCount;
-            _lineList = new List<int[][]>();
 
-            GenerateLines();
+            // ライン生成
+            _lines = GenerateLines();
         }
 
         // ======================================================
@@ -65,26 +59,37 @@ namespace BoardSystem.Service
         /// <param name="board">盤面データ</param>
         /// <param name="player">プレイヤー番号</param>
         /// <returns>ライン成立している場合はtrue</returns>
-        public bool Check(BoardState board, int player)
+        public bool Check(in BoardState board, in int player)
         {
-            foreach (int[][] line in _lineList)
+            // 全ラインを走査
+            foreach (int[][] line in _lines)
             {
+                // 現在の連続数を初期化
                 int consecutive = 0;
 
+                // ライン内の各セルを走査
                 foreach (int[] cell in line)
                 {
+                    // 座標を取得
                     int x = cell[0];
                     int y = cell[1];
                     int z = cell[2];
 
+                    // 指定プレイヤーの駒か判定
                     if (board.Get(x, y, z) == player)
                     {
+                        // 連続数を加算
                         consecutive++;
+
+                        // 勝利条件を満たしたら即終了
                         if (consecutive >= _connectCount)
+                        {
                             return true;
+                        }
                     }
                     else
                     {
+                        // 不一致なら連続数リセット
                         consecutive = 0;
                     }
                 }
@@ -99,104 +104,129 @@ namespace BoardSystem.Service
 
         /// <summary>
         /// ライン生成
-        /// 中央や内部列は除外
         /// </summary>
-        private void GenerateLines()
+        /// <returns>生成したライン配列</returns>
+        private int[][][] GenerateLines()
         {
-            // X方向
+            // ライン配列構築用リスト
+            List<int[][]> lineList = new List<int[][]>();
+
+            // X 方向ライン生成
             for (int y = 0; y < _boardSize; y++)
             {
                 for (int z = 0; z < _boardSize; z++)
                 {
-                    AddLine(0, y, z, _boardSize - 1, y, z);
+                    AddLine(lineList, 0, y, z, _boardSize - 1, y, z);
                 }
             }
 
-            // Y方向
+            // Y 方向ライン生成
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int z = 0; z < _boardSize; z++)
                 {
-                    AddLine(x, 0, z, x, _boardSize - 1, z);
+                    AddLine(lineList, x, 0, z, x, _boardSize - 1, z);
                 }
             }
 
-            // Z方向
+            // Z 方向ライン生成
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int y = 0; y < _boardSize; y++)
                 {
-                    AddLine(x, y, 0, x, y, _boardSize - 1);
+                    AddLine(lineList, x, y, 0, x, y, _boardSize - 1);
                 }
             }
 
-            // 対角線
-            AddDiagonalLines();
+            // 対角線生成
+            AddDiagonalLines(lineList);
+
+            // 配列へ変換
+            return lineList.ToArray();
         }
 
         /// <summary>
-        /// 2端点からライン作成
-        /// 中央や内部列は除外
+        /// 2 端点からラインを生成して追加
         /// </summary>
-        /// <param name="x1">端点1のX</param>
-        /// <param name="y1">端点1のY</param>
-        /// <param name="z1">端点1のZ</param>
-        /// <param name="x2">端点2のX</param>
-        /// <param name="y2">端点2のY</param>
-        /// <param name="z2">端点2のZ</param>
-        private void AddLine(int x1, int y1, int z1, int x2, int y2, int z2)
+        /// <param name="lineList">生成したラインを格納するリスト</param>
+        /// <param name="startX">始点の X 座標</param>
+        /// <param name="startY">始点の Y 座標</param>
+        /// <param name="startZ">始点の Z 座標</param>
+        /// <param name="endX">終点の X 座標</param>
+        /// <param name="endY">終点の Y 座標</param>
+        /// <param name="endZ">終点の Z 座標</param>
+        private void AddLine(
+            in List<int[][]> lineList,
+            in int startX,
+            in int startY,
+            in int startZ,
+            in int endX,
+            in int endY,
+            in int endZ)
         {
+            // 1 ライン分の配列を確保
             int[][] line = new int[_boardSize][];
 
+            // 線形補間で座標を生成
             for (int i = 0; i < _boardSize; i++)
             {
-                int x = Mathf.RoundToInt(Mathf.Lerp(x1, x2, i / (float)(_boardSize - 1)));
-                int y = Mathf.RoundToInt(Mathf.Lerp(y1, y2, i / (float)(_boardSize - 1)));
-                int z = Mathf.RoundToInt(Mathf.Lerp(z1, z2, i / (float)(_boardSize - 1)));
+                // 補間係数（0 ～ 1）
+                float t = i / (float)(_boardSize - 1);
 
-                // 中央や内部列は除外
-                if ((_boardSize > 3) && (x != 0 && x != _boardSize - 1) && (z != 0 && z != _boardSize - 1))
+                // 各座標を補間
+                int x = Mathf.RoundToInt(Mathf.Lerp(startX, endX, t));
+                int y = Mathf.RoundToInt(Mathf.Lerp(startY, endY, t));
+                int z = Mathf.RoundToInt(Mathf.Lerp(startZ, endZ, t));
+
+                // 内部ラインを除外
+                if ((_boardSize > 3) &&
+                    (x != 0 && x != _boardSize - 1) &&
+                    (z != 0 && z != _boardSize - 1))
+                {
                     return;
+                }
 
+                // 座標を格納
                 line[i] = new int[] { x, y, z };
             }
 
-            _lineList.Add(line);
+            lineList.Add(line);
         }
 
         /// <summary>
-        /// 対角線ライン追加
+        /// 対角線ライン生成
         /// </summary>
-        private void AddDiagonalLines()
+        /// <param name="lineList">生成したラインを格納するリスト</param>
+        private void AddDiagonalLines(in List<int[][]> lineList)
         {
             int max = _boardSize;
 
-            // XY平面対角線（Z固定）
+            // XY 平面
             for (int z = 0; z < max; z++)
             {
-                AddLine(0, 0, z, max - 1, max - 1, z);
-                AddLine(max - 1, 0, z, 0, max - 1, z);
+                AddLine(lineList, 0, 0, z, max - 1, max - 1, z);
+                AddLine(lineList, max - 1, 0, z, 0, max - 1, z);
             }
 
-            // XZ平面対角線（Y固定）
+            // XZ 平面
             for (int y = 0; y < max; y++)
             {
-                AddLine(0, y, 0, max - 1, y, max - 1);
-                AddLine(max - 1, y, 0, 0, y, max - 1);
+                AddLine(lineList, 0, y, 0, max - 1, y, max - 1);
+                AddLine(lineList, max - 1, y, 0, 0, y, max - 1);
             }
 
-            // YZ平面対角線（X固定）
+            // YZ 平面
             for (int x = 0; x < max; x++)
             {
-                AddLine(x, 0, 0, x, max - 1, max - 1);
-                AddLine(x, max - 1, 0, x, 0, max - 1);
+                AddLine(lineList, x, 0, 0, x, max - 1, max - 1);
+                AddLine(lineList, x, max - 1, 0, x, 0, max - 1);
             }
 
-            // 3D対角線
-            AddLine(0, 0, 0, max - 1, max - 1, max - 1);
-            AddLine(max - 1, 0, 0, 0, max - 1, max - 1);
-            AddLine(0, max - 1, 0, max - 1, 0, max - 1);
-            AddLine(max - 1, max - 1, 0, 0, 0, max - 1);
+            // 3D 対角線
+            AddLine(lineList, 0, 0, 0, max - 1, max - 1, max - 1);
+            AddLine(lineList, max - 1, 0, 0, 0, max - 1, max - 1);
+            AddLine(lineList, 0, max - 1, 0, max - 1, 0, max - 1);
+            AddLine(lineList, max - 1, max - 1, 0, 0, 0, max - 1);
         }
     }
 }

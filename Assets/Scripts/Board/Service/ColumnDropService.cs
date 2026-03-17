@@ -22,17 +22,22 @@ namespace BoardSystem.Service
         /// 指定列に駒を落下可能か判定
         /// </summary>
         /// <param name="board">盤面データ</param>
-        /// <param name="x">列X座標</param>
-        /// <param name="z">列Z座標</param>
-        /// <returns>落下可能ならtrue</returns>
-        public bool CanDrop(BoardState board, int x, int z)
+        /// <param name="columnX">列 X インデックス</param>
+        /// <param name="columnZ">列 Z インデックス</param>
+        /// <returns>落下可能なら true</returns>
+        public bool CanDrop(
+            in BoardState board,
+            in int columnX,
+            in int columnZ)
         {
             int boardSize = board.GetSize();
 
             for (int y = boardSize - 1; y >= 0; y--)
             {
-                if (board.Get(x, y, z) == 0)
+                if (board.Get(columnX, y, columnZ) == 0)
+                {
                     return true;
+                }
             }
 
             return false;
@@ -42,19 +47,23 @@ namespace BoardSystem.Service
         /// 駒を落下させる
         /// </summary>
         /// <param name="board">盤面データ</param>
-        /// <param name="x">列X座標</param>
-        /// <param name="z">列Z座標</param>
+        /// <param name="columnX">列 X インデックス</param>
+        /// <param name="columnZ">列 Z インデックス</param>
         /// <param name="player">プレイヤー番号</param>
-        /// <returns>落下したY座標（落下不可の場合は-1）</returns>
-        public int Drop(BoardState board, int x, int z, int player)
+        /// <returns>落下した Y 座標（落下不可の場合は -1）</returns>
+        public int Drop(
+            in BoardState board,
+            in int columnX,
+            in int columnZ,
+            in int player)
         {
             int boardSize = board.GetSize();
 
             for (int y = 0; y < boardSize; y++)
             {
-                if (board.Get(x, y, z) == 0)
+                if (board.Get(columnX, y, columnZ) == 0)
                 {
-                    board.Set(x, y, z, player);
+                    board.Set(columnX, y, columnZ, player);
                     return y;
                 }
             }

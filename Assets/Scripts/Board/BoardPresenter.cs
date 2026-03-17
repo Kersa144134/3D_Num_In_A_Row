@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
 // 更新日時 : 2026-03-16
-// 概要     : 目並べゲームの進行を制御するクラス
+// 概要     : 3D 目並べゲームの進行を制御するクラス
 // ======================================================
 
 using UnityEngine;
@@ -22,27 +22,19 @@ namespace BoardSystem
         // インスペクタ設定
         // ======================================================
 
-        /// <summary>
-        /// 盤面サイズ
-        /// </summary>
+        /// <summary>盤面サイズ</summary>
         [SerializeField, Min(3)]
         private int _boardSize;
 
-        /// <summary>
-        /// 勝利条件マス数
-        /// </summary>
+        /// <summary>勝利条件マス数</summary>
         [SerializeField, Min(3)]
         private int _connectCount;
 
-        /// <summary>
-        /// プレイヤー1駒Prefab
-        /// </summary>
+        /// <summary>1P 駒 Prefab</summary>
         [SerializeField]
         private GameObject _playerOnePrefab;
 
-        /// <summary>
-        /// プレイヤー2駒Prefab
-        /// </summary>
+        /// <summary>2P 駒 Prefab</summary>
         [SerializeField]
         private GameObject _playerTwoPrefab;
 
@@ -50,14 +42,10 @@ namespace BoardSystem
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>
-        /// Model
-        /// </summary>
+        /// <summary>モデル</summary>
         private BoardModel _model;
 
-        /// <summary>
-        /// View
-        /// </summary>
+        /// <summary>ビュー</summary>
         private BoardView _view;
 
         // ======================================================
@@ -73,14 +61,10 @@ namespace BoardSystem
         // 定数
         // ======================================================
 
-        /// <summary>
-        /// プレイヤー1
-        /// </summary>
+        /// <summary>1P</summary>
         private const int PLAYER_ONE = 1;
 
-        /// <summary>
-        /// プレイヤー2
-        /// </summary>
+        /// <summary>2P</summary>
         private const int PLAYER_TWO = 2;
 
         // ======================================================
@@ -92,17 +76,12 @@ namespace BoardSystem
         /// </summary>
         public void OnEnter()
         {
-            // --------------------------------------------------
-            // Model生成
-            // --------------------------------------------------
+            // モデル、ビューの生成
             _model =
                 new BoardModel(
                     _boardSize,
                     _connectCount);
 
-            // --------------------------------------------------
-            // View生成
-            // --------------------------------------------------
             _view =
                 new BoardView(
                     transform,
@@ -111,7 +90,7 @@ namespace BoardSystem
                     _playerTwoPrefab);
 
             // --------------------------------------------------
-            // 初期プレイヤー
+            // 初期プレイヤー設定
             // --------------------------------------------------
             _currentPlayer = PLAYER_ONE;
         }
@@ -237,6 +216,12 @@ namespace BoardSystem
             // --------------------------------------------------
             SwitchPlayer();
         }
+
+        public void OnExit()
+        {
+
+        }
+
 
         /// <summary>
         /// プレイヤー切替
