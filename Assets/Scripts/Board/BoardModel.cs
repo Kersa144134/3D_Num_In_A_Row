@@ -7,7 +7,6 @@
 // ======================================================
 
 using System;
-using UniRx;
 using BoardSystem.Data;
 using BoardSystem.Service;
 
@@ -65,16 +64,12 @@ namespace BoardSystem
                 safeConnect = boardSize;
             }
 
-            _boardState =
-                new BoardState(boardSize);
-
-            _columnDrop =
-                new ColumnDropService();
-
-            _lineJudge =
-                new LineJudgeService(
-                    boardSize,
-                    safeConnect);
+            _boardState = new BoardState(boardSize);
+            _columnDrop = new ColumnDropService();
+            _lineJudge = new LineJudgeService(
+                boardSize,
+                safeConnect
+            );
         }
 
         // ======================================================
@@ -88,11 +83,11 @@ namespace BoardSystem
             in int x,
             in int z)
         {
-            return
-                _columnDrop.CanDrop(
-                    _boardState,
-                    x,
-                    z);
+            return _columnDrop.CanDrop(
+                _boardState,
+                x,
+                z
+            );
         }
 
         /// <summary>
@@ -103,12 +98,12 @@ namespace BoardSystem
             in int z,
             in int player)
         {
-            return
-                _columnDrop.Drop(
-                    _boardState,
-                    x,
-                    z,
-                    player);
+            return _columnDrop.Drop(
+                _boardState,
+                x,
+                z,
+                player
+            );
         }
 
         /// <summary>
