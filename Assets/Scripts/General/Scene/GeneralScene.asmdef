@@ -1,17 +1,16 @@
 {
-    "name": "UI",
+    "name": "GeneralScene",
     "rootNamespace": "",
     "references": [
-        "GUID:2bafac87e7f4b9b418d9448d219b01ab",
-        "GUID:6055be8ebefd69e48b49212b09b47b2f",
-        "GUID:c579267770062bf448e75eb160330b7f",
-        "GUID:15fc0a57446b3144c949da3e2b9737a9",
         "GUID:ec6250c2a73cf504697941aef5cef7f1",
+        "GUID:229141138b6a05b4da6cd1dd70a5e8dd",
+        "GUID:763b5826cf241ff4492cd817a2a7a6b9",
+        "GUID:433dc8fa7bba50c48848eeb686617bd2",
+        "GUID:17a42a21b9c64fc4fb784e39e7890356",
         "GUID:d1bb8686503669547971dcf786e7b533",
-        "GUID:85b55030fd869204fba906bfd5a724ef",
-        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
-        "GUID:7f298fa99d37b494797bde85e70431f1",
-        "GUID:f4d59402e2c864140a3b5c3531224ce3"
+        "GUID:d5fbdf6a97d46b743b745796d7ea7f91",
+        "GUID:f9fa41c4e15615b4ebb03470d2d3c429",
+        "GUID:5d652e922018dc24c9edbd95d87bdb80"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,20 +1,22 @@
 // ======================================================
-// PhaseController.cs
+// PhaseUpdatablesSwitchService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-05
-// 更新日時 : 2026-02-02
-// 概要     : フェーズ遷移を制御し、UpdateController に更新対象を指示するコントローラ
+// 更新日時 : 2026-03-23
+// 概要     : UpdateController に更新対象を登録するサービス
 // ======================================================
 
 using System.Collections.Generic;
+using PhaseSystem.Data;
+using SceneSystem.Controller;
 using SceneSystem.Data;
 
-namespace SceneSystem.Controller
+namespace PhaseSystem.Service
 {
     /// <summary>
-    /// フェーズ切替と UpdateController の操作を担当するコントローラ
+    /// UpdateController に更新対象を登録するサービス
     /// </summary>
-    public sealed class PhaseController
+    public sealed class PhaseUpdatablesSwitchService
     {
         // ======================================================
         // フィールド
@@ -28,13 +30,13 @@ namespace SceneSystem.Controller
         // ======================================================
 
         /// <summary>フェーズごとの Updatable 配列を保持する辞書</summary>
-        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap = new Dictionary<PhaseType, IUpdatable[]>();
+        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap = new();
 
         // ======================================================
         // コンストラクタ
         // ======================================================
 
-        public PhaseController(in UpdateController updateController)
+        public PhaseUpdatablesSwitchService(in UpdateController updateController)
         {
             _updateController = updateController;
         }

@@ -6,8 +6,8 @@
 // 概要     : Update 処理を管理する
 // ======================================================
 
+using PhaseSystem.Data;
 using SceneSystem.Controller;
-using SceneSystem.Data;
 
 namespace SceneSystem.Manager
 {
@@ -41,7 +41,7 @@ namespace SceneSystem.Manager
         }
 
         // ======================================================
-        // パブリックメソッド
+        // IUpdatable イベント
         // ======================================================
 
         public void Update(in float unscaledDeltaTime, in float elapsedTime)
@@ -54,9 +54,10 @@ namespace SceneSystem.Manager
             _updateController.OnLateUpdate(unscaledDeltaTime);
         }
 
-        // --------------------------------------------------
-        // フェーズ 管理
-        // --------------------------------------------------
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
         /// <summary>
         /// フェーズ変更時に Exit / Enter を実行する
         /// </summary>

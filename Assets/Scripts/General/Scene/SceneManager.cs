@@ -7,6 +7,9 @@
 // ======================================================
 
 using UnityEngine;
+using PhaseSystem.Data;
+using PhaseSystem.Manager;
+using PhaseSystem.Service;
 using SceneSystem.Controller;
 using SceneSystem.Data;
 using SceneSystem.Utility;
@@ -35,25 +38,25 @@ namespace SceneSystem.Manager
         // ======================================================
 
         /// <summary>フェーズ遷移条件管理クラス</summary>
-        private PhaseManager _phaseManager = new PhaseManager();
+        private readonly PhaseManager _phaseManager = new();
 
         /// <summary>フェーズ切替制御クラス</summary>
-        private PhaseController _phaseController;
+        private PhaseUpdatablesSwitchService _phaseUpdatablesSwitchService;
 
         /// <summary>フェーズの初期化を行うクラス</summary>
-        private PhaseInitializer _phaseInitializer = new PhaseInitializer();
+        private readonly PhaseInitializer _phaseInitializer = new();
 
         /// <summary>Update を管理するクラス</summary>
         private UpdateManager _updateManager;
 
         /// <summary>Update を実行する対象を保持し、実行するクラス</summary>
-        private UpdateController _updateController = new UpdateController();
+        private readonly UpdateController _updateController = new();
 
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
-        private UpdatableCollector _updatableCollector = new UpdatableCollector();
+        private readonly UpdatableCollector _updatableCollector = new();
 
         /// <summary>IUpdatable の初期化を行うクラス</summary>
-        private UpdatableInitializer _initializer = new UpdatableInitializer();
+        private readonly UpdatableInitializer _initializer = new();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private SceneEventRouter _sceneEventRouter;
@@ -138,7 +141,7 @@ namespace SceneSystem.Manager
             IUpdatable[] allUpdatables = _updatableContexts.Updatables;
 
             // Update 制御初期化
-            _phaseController = new PhaseController(_updateController);
+            _phaseUpdatablesSwitchService = new PhaseUpdatablesSwitchService(_updateController);
             _updateManager = new UpdateManager(_updateController);
 
             // フェーズごと登録
@@ -147,7 +150,6 @@ namespace SceneSystem.Manager
             // シーンイベント初期化
             _sceneEventRouter = new SceneEventRouter(_updatableContexts);
             _sceneEventRouter.Subscribe();
-            _phaseManager.OnOptionButtonPressed += HandleOptionButtonPressed;
             _sceneEventRouter.OnPhaseChanged += SetTargetPhase;
         }
 
@@ -224,7 +226,6 @@ namespace SceneSystem.Manager
         {
             // イベント購読解除
             _sceneEventRouter.Dispose();
-            _phaseManager.OnOptionButtonPressed -= HandleOptionButtonPressed;
             _sceneEventRouter.OnPhaseChanged -= SetTargetPhase;
         }
 
@@ -285,21 +286,13 @@ namespace SceneSystem.Manager
             if (_phaseInitializer.TryGetUpdatablesForPhase(nextPhase, out IUpdatable[] updatables))
             {
                 // PhaseController に登録して UpdateController に追加
-                _phaseController.AssignPhaseUpdatables(nextPhase, updatables);
+                _phaseUpdatablesSwitchService.AssignPhaseUpdatables(nextPhase, updatables);
             }
 
             _updateManager.ChangePhase(nextPhase);
 
             // 現在フェーズ更新
             _currentPhase = nextPhase;
-        }
-
-        /// <summary>
-        /// オプションボタン押下時の処理を行うハンドラ
-        /// </summary>
-        private void HandleOptionButtonPressed()
-        {
-            _sceneEventRouter.HandleOptionButtonPressed();
         }
     }
 }

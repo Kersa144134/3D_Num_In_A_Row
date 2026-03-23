@@ -9,7 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SceneSystem.Controller;
+using PhaseSystem.Data;
 using SceneSystem.Data;
 
 namespace SceneSystem.Utility
@@ -24,7 +24,7 @@ namespace SceneSystem.Utility
         // ======================================================
 
         /// <summary>フェーズごとに紐づく IUpdatable 配列を保持する辞書</summary>
-        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap = new Dictionary<PhaseType, IUpdatable[]>();
+        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap = new();
 
         // ======================================================
         // パブリックメソッド

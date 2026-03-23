@@ -8,6 +8,7 @@
 
 using System.Collections.Generic;
 using InputSystem;
+using PhaseSystem.Data;
 using SceneSystem.Data;
 
 namespace SceneSystem.Controller
@@ -25,7 +26,7 @@ namespace SceneSystem.Controller
         /// 登録管理用のセット
         /// 重複登録を防ぐ目的で HashSet を使用する
         /// </summary>
-        private readonly HashSet<IUpdatable> _updateSet = new HashSet<IUpdatable>();
+        private readonly HashSet<IUpdatable> _updateSet = new();
 
         /// <summary>毎フレーム実行用の Updatable 配列キャッシュ</summary>
         private IUpdatable[] _updateArray = new IUpdatable[0];
@@ -98,17 +99,17 @@ namespace SceneSystem.Controller
             {
                 case PhaseType.Title:
                     // 入力マッピング設定
-                    if (InputManager.Instance?.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
+                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
                     {
-                        InputManager.Instance?.SetInputMapping(INPUT_MAPPING_OUTGAME);
+                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_OUTGAME);
                     }
                     break;
 
                 case PhaseType.Ready:
                     // 入力マッピング設定
-                    if (InputManager.Instance?.GetCurrentMappingIndex() == INPUT_MAPPING_OUTGAME)
+                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_OUTGAME)
                     {
-                        InputManager.Instance?.SetInputMapping(INPUT_MAPPING_INGAME);
+                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_INGAME);
                     }
                     break;
 
@@ -120,9 +121,9 @@ namespace SceneSystem.Controller
 
                 case PhaseType.Result:
                     // 入力マッピング設定
-                    if (InputManager.Instance?.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
+                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
                     {
-                        InputManager.Instance?.SetInputMapping(INPUT_MAPPING_OUTGAME);
+                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_OUTGAME);
                     }
                     break;
 

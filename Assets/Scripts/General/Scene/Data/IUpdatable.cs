@@ -6,6 +6,8 @@
 // 概要     : UpdateController から呼び出される更新処理用インターフェース
 // ======================================================
 
+using PhaseSystem.Data;
+
 namespace SceneSystem.Data
 {
     /// <summary>

@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using InputSystem;
+using PhaseSystem.Data;
 using SceneSystem.Data;
 using UISystem.Service;
 

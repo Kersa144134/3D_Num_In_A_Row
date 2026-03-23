@@ -1,7 +1,9 @@
 {
     "name": "GeneralSceneData",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:ec6250c2a73cf504697941aef5cef7f1"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

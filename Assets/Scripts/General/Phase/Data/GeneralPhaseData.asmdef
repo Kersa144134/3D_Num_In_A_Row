@@ -1,10 +1,7 @@
 {
-    "name": "GeneralSceneManager",
+    "name": "GeneralPhaseData",
     "rootNamespace": "",
-    "references": [
-        "GUID:ec6250c2a73cf504697941aef5cef7f1",
-        "GUID:17a42a21b9c64fc4fb784e39e7890356"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

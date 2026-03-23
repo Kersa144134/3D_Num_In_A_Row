@@ -8,6 +8,7 @@
 
 using System;
 using InputSystem;
+using PhaseSystem.Data;
 using SceneSystem.Data;
 using UISystem;
 
