@@ -9,6 +9,7 @@
 using System;
 using BoardSystem.Data;
 using BoardSystem.Service;
+using UniRx;
 
 namespace BoardSystem
 {
@@ -43,9 +44,15 @@ namespace BoardSystem
         /// <summary>ライン成立イベント</summary>
         public IObservable<LineCompleteEvent> OnLineComplete
         {
-            get { return _lineJudge.OnLineComplete; }
+            get
+            {
+                // モデル未生成時は空ストリームを返す
+                return _lineJudge != null
+                    ? _lineJudge.OnLineComplete
+                    : Observable.Empty<LineCompleteEvent>();
+            }
         }
-        
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -112,6 +119,14 @@ namespace BoardSystem
         public void CheckLine()
         {
             _lineJudge.CheckAll(_boardState);
+        }
+
+        /// <summary>
+        /// サブジェクト終了処理
+        /// </summary>
+        public void Dispose()
+        {
+            _lineJudge.Dispose();
         }
     }
 }

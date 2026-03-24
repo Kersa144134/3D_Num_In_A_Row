@@ -2,6 +2,7 @@
     "name": "GeneralScene",
     "rootNamespace": "",
     "references": [
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
         "GUID:ec6250c2a73cf504697941aef5cef7f1",
         "GUID:229141138b6a05b4da6cd1dd70a5e8dd",
         "GUID:763b5826cf241ff4492cd817a2a7a6b9",

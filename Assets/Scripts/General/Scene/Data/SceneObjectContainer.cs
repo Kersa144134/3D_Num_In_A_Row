@@ -1,9 +1,9 @@
 // ======================================================
-// SceneObjectRegistry.cs
+// SceneObjectContainer.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-12
 // 更新日時 : 2026-03-06
-// 概要     : シーン上のオブジェクト一元管理するレジストリークラス
+// 概要     : シーン内のオブジェクトを一元管理するコンテナ
 // ======================================================
 
 using UnityEngine;
@@ -11,9 +11,9 @@ using UnityEngine;
 namespace SceneSystem.Data
 {
     /// <summary>
-    /// シーン内のオブジェクトを一元管理するレジストリー
+    /// シーン内のオブジェクトを一元管理するコンテナ
     /// </summary>
-    public sealed class SceneObjectRegistry : MonoBehaviour, IUpdatable
+    public sealed class SceneObjectContainer : MonoBehaviour, IUpdatable
     {
         // ======================================================
         // インスペクタ設定

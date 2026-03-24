@@ -6,10 +6,12 @@
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
+using System.Collections.Generic;
 using UnityEngine;
+using UniRx;
 using PhaseSystem.Data;
 using PhaseSystem.Manager;
-using PhaseSystem.Service;
+using PhaseSystem.Utility;
 using SceneSystem.Controller;
 using SceneSystem.Data;
 using SceneSystem.Utility;
@@ -40,9 +42,6 @@ namespace SceneSystem.Manager
         /// <summary>フェーズ遷移条件管理クラス</summary>
         private readonly PhaseManager _phaseManager = new();
 
-        /// <summary>フェーズ切替制御クラス</summary>
-        private PhaseUpdatablesSwitchService _phaseUpdatablesSwitchService;
-
         /// <summary>フェーズの初期化を行うクラス</summary>
         private readonly PhaseInitializer _phaseInitializer = new();
 
@@ -56,7 +55,7 @@ namespace SceneSystem.Manager
         private readonly UpdatableCollector _updatableCollector = new();
 
         /// <summary>IUpdatable の初期化を行うクラス</summary>
-        private readonly UpdatableInitializer _initializer = new();
+        private readonly UpdatableInitializer _updatableInitializer = new();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private SceneEventRouter _sceneEventRouter;
@@ -66,7 +65,7 @@ namespace SceneSystem.Manager
         // ======================================================
 
         // --------------------------------------------------
-        // シーン管理
+        // シーン
         // --------------------------------------------------
         /// <summary>現在のシーン名</summary>
         private string _currentScene = string.Empty;
@@ -78,7 +77,7 @@ namespace SceneSystem.Manager
         private bool _isSceneChanged = true;
 
         // --------------------------------------------------
-        // フェーズ管理
+        // フェーズ
         // --------------------------------------------------
         /// <summary>現在のフェーズ</summary>
         private PhaseType _currentPhase = PhaseType.None;
@@ -86,15 +85,14 @@ namespace SceneSystem.Manager
         /// <summary>遷移先フェーズ/summary>
         private PhaseType _targetPhase = PhaseType.None;
 
-        /// <summary>ゲームの経過時間</summary>
-        private float _elapsedTime = 0.0f;
-
         // --------------------------------------------------
         // Updatables
         // --------------------------------------------------
-
         /// <summary>Updatable を保持するコンテキスト</summary>
         private UpdatableContext _updatableContexts;
+
+        /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
+        private Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
 
         // ======================================================
         // 定数
@@ -105,6 +103,14 @@ namespace SceneSystem.Manager
         
         /// <summary>PhaseData を配置している Resources フォルダパス</summary>
         private const string PHASE_DATA_RESOURCES_PATH = "Phase";
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>購読管理</summary>
+        private readonly CompositeDisposable _disposables =
+            new CompositeDisposable();
 
         // ======================================================
         // Unityイベント
@@ -126,7 +132,6 @@ namespace SceneSystem.Manager
             _targetScene = _currentScene;
             _targetPhase = _startPhase;
             _isSceneChanged = true;
-            _elapsedTime = 0.0f;
 
             // フェーズデータ読み込み
             PhaseData[] phaseDataList = Resources.LoadAll<PhaseData>(PHASE_DATA_RESOURCES_PATH);
@@ -135,40 +140,45 @@ namespace SceneSystem.Manager
             IUpdatable[] updatables = _updatableCollector.Collect(_components);
 
             // コンテキスト作成
-            _updatableContexts = _initializer.InitializeUpdatables(updatables);
+            _updatableContexts = _updatableInitializer.InitializeUpdatables(updatables);
 
             // コンテキストから取得
             IUpdatable[] allUpdatables = _updatableContexts.Updatables;
 
-            // Update 制御初期化
-            _phaseUpdatablesSwitchService = new PhaseUpdatablesSwitchService(_updateController);
-            _updateManager = new UpdateManager(_updateController);
-
             // フェーズごと登録
-            _phaseInitializer.InitializePhases(allUpdatables, phaseDataList);
+            _phaseUpdatablesMap = _phaseInitializer.CreatePhaseMap(allUpdatables, phaseDataList);
 
-            // シーンイベント初期化
+            // コンポーネント初期化
+            _updateManager = new UpdateManager(_updateController, _phaseUpdatablesMap);
             _sceneEventRouter = new SceneEventRouter(_updatableContexts);
+
+            // イベント購読
+            _sceneEventRouter.OnPhaseChanged
+                .Subscribe(phase =>
+                {
+                    SetTargetPhase(phase);
+                })
+                .AddTo(_disposables);
+
             _sceneEventRouter.Subscribe();
-            _sceneEventRouter.OnPhaseChanged += SetTargetPhase;
         }
 
         private void Update()
         {
-            // シーン遷移判定
+            // シーン遷移
             if (_currentScene != _targetScene)
             {
                 ChangeScene(_targetScene);
                 return;
             }
 
-            // フェーズ遷移判定
+            // フェーズ遷移
             if (_currentPhase != _targetPhase)
             {
                 ChangePhase(_targetPhase);
             }
 
-            // シーン切り替え直後のフレーム判定
+            // シーン切り替え直後のフレームスキップ判定
             if (_isSceneChanged)
             {
                 return;
@@ -176,15 +186,8 @@ namespace SceneSystem.Manager
 
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
-            // Play フェーズ中のみタイマーを進行
-            if (_currentPhase == PhaseType.Play)
-            {
-                // timeScaleに影響されない経過時間で加算
-                _elapsedTime += unscaledDeltaTime;
-            }
-
             // Update 実行
-            _updateManager.Update(unscaledDeltaTime, _elapsedTime);
+            _updateManager.Update(unscaledDeltaTime, _phaseManager.GamePlayElapsedTime);
         }
 
         private void LateUpdate()
@@ -196,27 +199,24 @@ namespace SceneSystem.Manager
                 return;
             }
 
-            float unscaledDeltaTime = Time.unscaledDeltaTime;
-
             // Play フェーズ中のみタイマー表示更新
             if (_currentPhase == PhaseType.Play)
             {
                 float limitTime = PhaseManager.PLAY_TO_FINISH_WAIT_TIME;
-                _sceneEventRouter.UpdateLimitTimeDisplay(_elapsedTime, limitTime);
+                _sceneEventRouter.HandleLimitTimeUpdated(_phaseManager.GamePlayElapsedTime, limitTime);
             }
-            
+
+            float unscaledDeltaTime = Time.unscaledDeltaTime;
+
             // LateUpdate 実行
             _updateManager.LateUpdate(unscaledDeltaTime);
 
-            // フェーズ遷移判定
+            // フェーズ遷移判定実行
             if (_currentPhase == _targetPhase)
             {
                 _phaseManager.Update(
                     unscaledDeltaTime,
-                    _elapsedTime,
-                    _currentScene,
                     _currentPhase,
-                    out _targetScene,
                     out _targetPhase
                 );
             }
@@ -225,8 +225,8 @@ namespace SceneSystem.Manager
         private void OnDestroy()
         {
             // イベント購読解除
+            _disposables.Dispose();
             _sceneEventRouter.Dispose();
-            _sceneEventRouter.OnPhaseChanged -= SetTargetPhase;
         }
 
         // ======================================================
@@ -257,13 +257,8 @@ namespace SceneSystem.Manager
                 return;
             }
 
-            // Updatable の終了処理を実行
-            _initializer.FinalizeUpdatables(_updatableContexts);
-
-            // 現在シーンを更新
-            _currentScene = sceneName;
-
-            _isSceneChanged = true;
+            // Updatable の終了時処理
+            _updatableInitializer.FinalizeUpdatables(_updatableContexts);
 
             // シーンロード
             UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
@@ -279,16 +274,7 @@ namespace SceneSystem.Manager
                 return;
             }
 
-            // UpdateController をリセット
-            _updateController.Clear();
-
-            // PhaseInitializer に登録された Updatable を PhaseController に通知
-            if (_phaseInitializer.TryGetUpdatablesForPhase(nextPhase, out IUpdatable[] updatables))
-            {
-                // PhaseController に登録して UpdateController に追加
-                _phaseUpdatablesSwitchService.AssignPhaseUpdatables(nextPhase, updatables);
-            }
-
+            // フェーズ変更時処理
             _updateManager.ChangePhase(nextPhase);
 
             // 現在フェーズ更新

@@ -1,9 +1,8 @@
 {
-    "name": "GeneralPhaseManager",
+    "name": "PhaseData",
     "rootNamespace": "",
     "references": [
-        "GUID:ec6250c2a73cf504697941aef5cef7f1",
-        "GUID:d1bb8686503669547971dcf786e7b533"
+        "GUID:ec6250c2a73cf504697941aef5cef7f1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

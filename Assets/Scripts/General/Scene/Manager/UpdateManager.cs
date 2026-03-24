@@ -6,7 +6,10 @@
 // 概要     : Update 処理を管理する
 // ======================================================
 
+using System.Collections.Generic;
 using PhaseSystem.Data;
+using PhaseSystem.Service;
+using SceneSystem.Data;
 using SceneSystem.Controller;
 
 namespace SceneSystem.Manager
@@ -17,14 +20,24 @@ namespace SceneSystem.Manager
     public sealed class UpdateManager
     {
         // ======================================================
-        // フィールド
+        // コンポーネント参照
         // ======================================================
+
+        /// <summary>フェーズ切替制御クラス</summary>
+        private AssignUpdatablesService _assignUpdatablesService;
 
         /// <summary>毎フレーム更新対象を管理するコントローラ</summary>
         private readonly UpdateController _updateController;
 
+        // ======================================================
+        // フィールド
+        // ======================================================
+
         /// <summary>現在適用中のフェーズ</summary>
         private PhaseType _currentPhase = PhaseType.None;
+
+        /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
+        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
 
         // ======================================================
         // コンストラクタ
@@ -34,10 +47,12 @@ namespace SceneSystem.Manager
         /// UpdateManager を生成する
         /// </summary>
         /// <param name="updateController">Update 実行用コントローラ</param>
-        public UpdateManager(UpdateController updateController)
+        public UpdateManager(UpdateController updateController, Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
         {
-            // UpdateController を保持
             _updateController = updateController;
+            _phaseUpdatablesMap = phaseUpdatablesMap;
+
+            _assignUpdatablesService = new AssignUpdatablesService(_updateController);
         }
 
         // ======================================================
@@ -70,11 +85,21 @@ namespace SceneSystem.Manager
                 _updateController.OnPhaseExit(_currentPhase);
             }
 
-            // フェーズを更新
-            _currentPhase = nextPhase;
+            // UpdateController をリセット
+            _updateController.Clear();
+
+            // フェーズに対応する Updatable を取得
+            if (_phaseUpdatablesMap.TryGetValue(nextPhase, out IUpdatable[] updatables))
+            {
+                // UpdateController に反映
+                _assignUpdatablesService.AssignUpdatables(updatables);
+            }
 
             // 遷移先フェーズの Enter を呼ぶ
-            _updateController.OnPhaseEnter(_currentPhase);
+            _updateController.OnPhaseEnter(nextPhase);
+
+            // フェーズを更新
+            _currentPhase = nextPhase;
         }
     }
 }

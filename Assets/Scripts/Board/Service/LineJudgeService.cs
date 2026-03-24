@@ -45,10 +45,12 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>ライン成立イベント</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
+        private readonly Subject<LineCompleteEvent> _onLineComplete =
+            new Subject<LineCompleteEvent>();
 
         /// <summary>ライン成立イベント購読用</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+        public IObservable<LineCompleteEvent> OnLineComplete =>
+            _onLineComplete;
 
         // ======================================================
         // コンストラクタ
@@ -96,6 +98,15 @@ namespace BoardSystem.Service
 
             // イベント通知
             NotifyLineComplete(result);
+        }
+
+        /// <summary>
+        /// サブジェクト終了処理
+        /// </summary>
+        public void Dispose()
+        {
+            _onLineComplete.OnCompleted();
+            _onLineComplete.Dispose();
         }
 
         // ======================================================

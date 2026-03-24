@@ -9,7 +9,10 @@
 using UnityEngine;
 using UniRx;
 using InputSystem;
+using PhaseSystem.Data;
 using SceneSystem.Data;
+using BoardSystem.Data;
+using System;
 
 namespace BoardSystem
 {
@@ -57,8 +60,24 @@ namespace BoardSystem
         /// </summary>
         private int _currentPlayer;
 
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
         /// <summary>購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
+
+        /// <summary>ライン成立イベント（外部公開用）</summary>
+        public IObservable<LineCompleteEvent> OnLineComplete
+        {
+            get
+            {
+                // モデル未生成時は空ストリームを返す
+                return _model != null
+                    ? _model.OnLineComplete
+                    : Observable.Empty<LineCompleteEvent>();
+            }
+        }
 
         // ======================================================
         // 定数
@@ -93,41 +112,48 @@ namespace BoardSystem
             // 初期プレイヤー設定
             // --------------------------------------------------
             _currentPlayer = PLAYER_ONE;
-
-            if (InputManager.Instance == null)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // イベント購読
-            // --------------------------------------------------
-            // A ボタン押下時
-            InputManager.Instance.ButtonA.OnDown
-                .Subscribe(_ => HandleDropColumn())
-                .AddTo(_disposables);
-
-            // B ボタン押下時
-            InputManager.Instance.ButtonB.OnDown
-                .Subscribe(_ => HandleDropColumn())
-                .AddTo(_disposables);
-
-            // ライン成立時
-            _model.OnLineComplete
-                .Subscribe(e =>
-                {
-                    // 成立ラインをすべて出力
-                    for (int i = 0; i < e.LineCount; i++)
-                    {
-                        Debug.Log($"Player: {e.Player} Line[{i}] Length: {e.Lengths[i]}");
-                    }
-                })
-                .AddTo(_disposables);
         }
 
         public void OnExit()
         {
-            _disposables?.Dispose();
+            // --------------------------------------------------
+            // イベント購読解除
+            // --------------------------------------------------
+            _disposables.Dispose();
+            _model.Dispose();
+        }
+
+        public void OnPhaseEnter(in PhaseType phase)
+        {
+            if (phase == PhaseType.Play)
+            {
+                // --------------------------------------------------
+                // イベント購読
+                // --------------------------------------------------
+                _disposables = new CompositeDisposable();
+
+                // A ボタン押下時
+                InputManager.Instance.ButtonA.OnDown
+                    .Subscribe(_ => HandleDropColumn())
+                    .AddTo(_disposables);
+
+                // B ボタン押下時
+                InputManager.Instance.ButtonB.OnDown
+                    .Subscribe(_ => HandleDropColumn())
+                    .AddTo(_disposables);
+            }
+        }
+
+        public void OnPhaseExit(in PhaseType phase)
+        {
+            if (phase == PhaseType.Play)
+            {
+                // --------------------------------------------------
+                // イベント購読解除
+                // --------------------------------------------------
+                _disposables.Dispose();
+                _disposables = null;
+            }
         }
 
         // ======================================================

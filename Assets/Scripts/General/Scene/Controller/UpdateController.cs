@@ -24,7 +24,7 @@ namespace SceneSystem.Controller
 
         /// <summary>
         /// 登録管理用のセット
-        /// 重複登録を防ぐ目的で HashSet を使用する
+        /// 重複登録を防ぐ目的で HashSet を使用
         /// </summary>
         private readonly HashSet<IUpdatable> _updateSet = new();
 

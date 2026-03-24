@@ -57,9 +57,6 @@ namespace UISystem
         // フィールド
         // ======================================================
 
-        /// <summary>現在インゲーム状態かどうか</summary>
-        private bool _isInGame;
-
         /// <summary>直前に表示した残り秒数を保持する</summary>
         private int _previousDisplayTotalSeconds = -1;
 
@@ -117,11 +114,6 @@ namespace UISystem
         {
             base.OnLateUpdateInternal(unscaledDeltaTime);
 
-            if (!_isInGame)
-            {
-                return;
-            }
-
             if (_pointerImage != null)
             {
                 if (_pointerRect == null || _canvasRect == null)
@@ -148,20 +140,10 @@ namespace UISystem
 
         protected override void OnPhaseEnterInternal(in PhaseType phase)
         {
-            // Play フェーズ開始時にインゲーム状態
-            if (phase == PhaseType.Play)
-            {
-                _isInGame = true;
-            }
         }
 
         protected override void OnPhaseExitInternal(in PhaseType phase)
         {
-            // Play フェーズ終了時にインゲーム状態解除
-            if (phase == PhaseType.Play)
-            {
-                _isInGame = false;
-            }
         }
 
         // ======================================================

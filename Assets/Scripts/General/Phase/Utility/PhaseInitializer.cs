@@ -2,8 +2,8 @@
 // PhaseInitializer.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-02
-// 更新日時 : 2026-02-02
-// 概要     : フェーズごとの IUpdatable を整理し、PhaseController への登録を補助する
+// 更新日時 : 2026-03-24
+// 概要     : フェーズごとの IUpdatable を生成するユーティリティ（型キャッシュ対応）
 // ======================================================
 
 using System;
@@ -12,10 +12,10 @@ using System.Linq;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 
-namespace SceneSystem.Utility
+namespace PhaseSystem.Utility
 {
     /// <summary>
-    /// フェーズごとの IUpdatable を保持し、PhaseController に登録する補助クラス
+    /// フェーズごとの IUpdatable を生成するクラス
     /// </summary>
     public sealed class PhaseInitializer
     {
@@ -23,61 +23,144 @@ namespace SceneSystem.Utility
         // フィールド
         // ======================================================
 
-        /// <summary>フェーズごとに紐づく IUpdatable 配列を保持する辞書</summary>
-        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap = new();
+        /// <summary>型名と Type のキャッシュ</summary>
+        private readonly Dictionary<string, Type> _typeCache =
+            new Dictionary<string, Type>();
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
         /// <summary>
-        /// フェーズに紐づく Updatable を初期化・登録する
+        /// フェーズごとの Updatable マップを生成する
         /// </summary>
         /// <param name="allUpdatables">シーン上の IUpdatable 配列</param>
         /// <param name="phaseDataList">全フェーズデータ</param>
-        public void InitializePhases(
+        /// <returns>フェーズと Updatable 配列の対応辞書</returns>
+        public Dictionary<PhaseType, IUpdatable[]> CreatePhaseMap(
             in IUpdatable[] allUpdatables,
             in PhaseData[] phaseDataList
         )
         {
+            // --------------------------------------------------
+            // 結果格納用辞書
+            // --------------------------------------------------
+
+            Dictionary<PhaseType, IUpdatable[]> phaseMap =
+                new Dictionary<PhaseType, IUpdatable[]>();
+
+            // --------------------------------------------------
+            // フェーズごとに処理
+            // --------------------------------------------------
+
             foreach (PhaseData phaseData in phaseDataList)
             {
-                string[] typeNames = phaseData.GetUpdatableTypeNames();
+                // --------------------------------------------------
+                // 型名取得
+                // --------------------------------------------------
 
-                // 型名から Type 配列に変換
-                Type[] targetTypes = typeNames
-                    .Select(t =>
-                    {
-                        Type type = Type.GetType(t);
-                        if (type != null) return type;
+                string[] typeNames =
+                    phaseData.GetUpdatableTypeNames();
 
-                        // 全アセンブリから検索
-                        return AppDomain.CurrentDomain.GetAssemblies()
-                            .Select(a => a.GetType(t))
-                            .FirstOrDefault(tt => tt != null);
-                    })
-                    .Where(tt => tt != null)
-                    .ToArray();
+                // --------------------------------------------------
+                // 型変換（キャッシュ利用）
+                // --------------------------------------------------
 
-                // フェーズに紐づくコンポーネントのみ抽出
-                IUpdatable[] phaseUpdatables = Array.FindAll(allUpdatables, u =>
-                    u != null && Array.Exists(targetTypes, tt => tt.IsAssignableFrom(u.GetType()))
-                );
+                Type[] targetTypes =
+                    typeNames
+                        .Select(typeName => ResolveType(typeName))
+                        .Where(type => type != null)
+                        .ToArray();
 
+                // --------------------------------------------------
+                // Updatable抽出
+                // --------------------------------------------------
+
+                IUpdatable[] phaseUpdatables =
+                    Array.FindAll(
+                        allUpdatables,
+                        updatable =>
+                            // nullチェックと型一致判定を同時に行う
+                            updatable != null &&
+                            Array.Exists(
+                                targetTypes,
+                                type =>
+                                    // 継承関係も含めて判定する
+                                    type.IsAssignableFrom(updatable.GetType())
+                            )
+                    );
+
+                // --------------------------------------------------
                 // 辞書に登録
-                _phaseUpdatablesMap[phaseData.Phase] = phaseUpdatables;
+                // --------------------------------------------------
+
+                phaseMap[phaseData.Phase] =
+                    phaseUpdatables;
             }
+
+            // --------------------------------------------------
+            // 結果返却
+            // --------------------------------------------------
+
+            return phaseMap;
         }
 
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
         /// <summary>
-        /// 指定フェーズに紐づく Updatable を取得する
+        /// 型名から Type を取得する（キャッシュ対応）
         /// </summary>
-        /// <param name="phase">取得対象のフェーズ</param>
-        /// <param name="updatables">取得結果の配列</param>
-        /// <returns>指定フェーズが存在すれば true、存在しなければ false</returns>
-        public bool TryGetUpdatablesForPhase(in PhaseType phase, out IUpdatable[] updatables)
+        /// <param name="typeName">取得対象の型名（フルネーム推奨）</param>
+        /// <returns>解決された Type、見つからなければ null</returns>
+        private Type ResolveType(string typeName)
         {
-            return _phaseUpdatablesMap.TryGetValue(phase, out updatables);
+            // --------------------------------------------------
+            // キャッシュ確認
+            // --------------------------------------------------
+
+            if (_typeCache.TryGetValue(typeName, out Type cachedType))
+            {
+                // 既に解決済みのためそのまま返す
+                return cachedType;
+            }
+
+            // --------------------------------------------------
+            // 直接取得（高速パス）
+            // --------------------------------------------------
+
+            Type resolvedType =
+                Type.GetType(typeName);
+
+            // --------------------------------------------------
+            // 見つからない場合は全アセンブリ検索
+            // --------------------------------------------------
+
+            if (resolvedType == null)
+            {
+                resolvedType =
+                    AppDomain.CurrentDomain
+                        .GetAssemblies()
+                        .Select(assembly => assembly.GetType(typeName))
+                        .FirstOrDefault(type => type != null);
+            }
+
+            // --------------------------------------------------
+            // キャッシュ登録
+            // --------------------------------------------------
+
+            if (resolvedType != null)
+            {
+                // 次回以降の探索コスト削減のため保存
+                _typeCache[typeName] = resolvedType;
+            }
+
+            // --------------------------------------------------
+            // 結果返却
+            // --------------------------------------------------
+
+            return resolvedType;
         }
     }
 }
