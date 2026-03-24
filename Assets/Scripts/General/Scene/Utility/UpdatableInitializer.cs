@@ -7,6 +7,8 @@
 //            初期化済みコンテキストを生成する
 // ======================================================
 
+using System;
+using System.Collections.Generic;
 using SceneSystem.Data;
 
 namespace SceneSystem.Utility
@@ -23,17 +25,23 @@ namespace SceneSystem.Utility
         /// <summary>
         /// シーン内の IUpdatable を収集し初期化する
         /// </summary>
-        /// <param name="updatables">更新対象となる IUpdatable</param>
+        /// <param name="updatables">更新対象となる IUpdatable 配列</param>
         /// <returns>初期化済みコンテキスト</returns>
         public UpdatableContext InitializeUpdatables(in IUpdatable[] updatables)
         {
-            // コンテキスト生成
+            // --------------------------------------------------
+            // コンテキスト生成: 型ごとに複数登録可能
+            // --------------------------------------------------
             UpdatableContext context = BuildContext(updatables);
 
-            // コンテキスト注入
+            // --------------------------------------------------
+            // コンテキスト注入: IContextInjectable を実装している場合のみ
+            // --------------------------------------------------
             InjectContext(context);
 
-            // 初期化処理実行
+            // --------------------------------------------------
+            // 初期化処理実行: OnEnter を呼ぶ
+            // --------------------------------------------------
             Initialize(context);
 
             return context;
@@ -52,7 +60,8 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
-                updatable.OnEnter();
+                // フェーズ終了処理
+                updatable.OnExit();
             }
         }
 
@@ -62,16 +71,20 @@ namespace SceneSystem.Utility
 
         /// <summary>
         /// IUpdatable 配列からコンテキストを構築する
+        /// 型ごとに複数オブジェクトを登録可能
         /// </summary>
         /// <param name="updatables">収集済み IUpdatable 配列</param>
         /// <returns>生成された UpdatableContext</returns>
         private UpdatableContext BuildContext(in IUpdatable[] updatables)
         {
-            UpdatableContext context = new UpdatableContext();
-            context.Updatables = updatables;
+            // コンテキスト生成
+            UpdatableContext context = new UpdatableContext
+            {
+                Updatables = updatables
+            };
 
             // --------------------------------------------------
-            // 型キャッシュ登録
+            // 型キャッシュ登録: 型ごとに複数のオブジェクトをリスト化
             // --------------------------------------------------
             foreach (IUpdatable updatable in updatables)
             {
@@ -80,7 +93,7 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
-                // 型をキーにインスタンス登録
+                // 型ごとのリストに登録
                 context.Register(updatable.GetType(), updatable);
             }
 
@@ -88,13 +101,11 @@ namespace SceneSystem.Utility
         }
 
         /// <summary>
-        /// IContextInjectable を実装しているコンポーネントへ
-        /// コンテキストを注入する
+        /// IContextInjectable を実装しているコンポーネントへコンテキストを注入する
         /// </summary>
         /// <param name="context">共有コンテキスト</param>
         private void InjectContext(in UpdatableContext context)
         {
-            // すべての Updatable を走査
             foreach (IUpdatable updatable in context.Updatables)
             {
                 if (updatable == null)
@@ -102,7 +113,9 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
-                // コンテキスト注入
+                // --------------------------------------------------
+                // IContextInjectable を実装しているならコンテキストを注入
+                // --------------------------------------------------
                 if (updatable is IContextInjectable injectable)
                 {
                     injectable.InjectContext(context);
@@ -123,6 +136,7 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
+                // フェーズ開始処理
                 updatable.OnEnter();
             }
         }

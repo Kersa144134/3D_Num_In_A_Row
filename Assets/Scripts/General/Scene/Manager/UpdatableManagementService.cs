@@ -23,8 +23,8 @@ namespace SceneSystem.Manager
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>毎フレーム更新対象を管理するコントローラ</summary>
-        private readonly UpdatableExecutor _updatableExecutor;
+        /// <summary>毎フレーム処理を実行するランナー</summary>
+        private readonly UpdatableExecutor _updatableExecutor = new();
 
         /// <summary>フェーズ切替制御クラス</summary>
         private AssignUpdatablesService _assignUpdatablesService;
@@ -46,13 +46,9 @@ namespace SceneSystem.Manager
         /// <summary>
         /// UpdateManagementService を生成する
         /// </summary>
-        /// <param name="updatableExecutor">Update 実行用コントローラ</param>
         /// <param name="phaseUpdatablesMap">フェーズごとの IUpdatable 配列を保持する辞書</param>
-        public UpdatableManagementService(
-            in UpdatableExecutor updatableExecutor,
-            in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
+        public UpdatableManagementService(in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
         {
-            _updatableExecutor = updatableExecutor;
             _phaseUpdatablesMap = phaseUpdatablesMap;
 
             _assignUpdatablesService = new AssignUpdatablesService(_updatableExecutor);

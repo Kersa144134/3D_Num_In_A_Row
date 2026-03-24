@@ -13,7 +13,6 @@ using PhaseSystem;
 using PhaseSystem.Data;
 using PhaseSystem.Utility;
 using SceneSystem.Data;
-using SceneSystem.Runner;
 using SceneSystem.Utility;
 
 namespace SceneSystem.Manager
@@ -52,9 +51,6 @@ namespace SceneSystem.Manager
 
         /// <summary>IUpdatable の初期化を行うクラス</summary>
         private readonly UpdatableInitializer _updatableInitializer = new();
-
-        /// <summary>毎フレーム処理を実行するランナー</summary>
-        private readonly UpdatableExecutor _updatableExecutor = new();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private SceneEventRouter _sceneEventRouter;
@@ -161,7 +157,7 @@ namespace SceneSystem.Manager
 
             // コンポーネント初期化
             _phasePresenter = new PhasePresenter(_phaseModel);
-            _updatableManagementService = new UpdatableManagementService(_updatableExecutor, _phaseUpdatablesMap);
+            _updatableManagementService = new UpdatableManagementService(_phaseUpdatablesMap);
             _sceneEventRouter = new SceneEventRouter(_updatableContexts);
 
             // イベント購読
