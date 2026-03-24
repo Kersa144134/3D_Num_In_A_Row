@@ -6,8 +6,8 @@
 // 概要     : UpdateController に更新対象を登録するサービス
 // ======================================================
 
-using SceneSystem.Controller;
 using SceneSystem.Data;
+using SceneSystem.Runner;
 
 namespace PhaseSystem.Service
 {
@@ -20,16 +20,16 @@ namespace PhaseSystem.Service
         // フィールド
         // ======================================================
 
-        /// <summary>UpdateController への参照</summary>
-        private readonly UpdateController _updateController;
+        /// <summary>Update 処理を実行するランナー</summary>
+        private readonly UpdatableExecutor _updatableExecutor;
 
         // ======================================================
         // コンストラクタ
         // ======================================================
 
-        public AssignUpdatablesService(in UpdateController updateController)
+        public AssignUpdatablesService(in UpdatableExecutor updatableExecutor)
         {
-            _updateController = updateController;
+            _updatableExecutor = updatableExecutor;
         }
 
         // ======================================================
@@ -45,7 +45,7 @@ namespace PhaseSystem.Service
             // UpdateController に登録
             foreach (IUpdatable updatable in updatables)
             {
-                _updateController.Add(updatable);
+                _updatableExecutor.Add(updatable);
             }
         }
     }

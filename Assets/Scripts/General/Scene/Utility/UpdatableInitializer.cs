@@ -2,12 +2,11 @@
 // UpdatableInitializer.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
-// 更新日時 : 2026-03-06
+// 更新日時 : 2026-03-24
 // 概要     : シーン上の IUpdatable を収集し、
 //            初期化済みコンテキストを生成する
 // ======================================================
 
-using UnityEngine;
 using SceneSystem.Data;
 
 namespace SceneSystem.Utility
@@ -68,14 +67,7 @@ namespace SceneSystem.Utility
         /// <returns>生成された UpdatableContext</returns>
         private UpdatableContext BuildContext(in IUpdatable[] updatables)
         {
-            // --------------------------------------------------
-            // コンテキスト生成
-            // --------------------------------------------------
             UpdatableContext context = new UpdatableContext();
-
-            // --------------------------------------------------
-            // 全 IUpdatable を保持
-            // --------------------------------------------------
             context.Updatables = updatables;
 
             // --------------------------------------------------
@@ -88,10 +80,7 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
-                // --------------------------------------------------
                 // 型をキーにインスタンス登録
-                // 同一型が複数ある場合は後登録が優先される
-                // --------------------------------------------------
                 context.Register(updatable.GetType(), updatable);
             }
 

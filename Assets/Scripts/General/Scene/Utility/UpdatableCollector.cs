@@ -32,7 +32,7 @@ namespace SceneSystem.Utility
         /// null または空の場合はすべての IUpdatable を取得
         /// </param>
         /// <returns>収集した IUpdatable 配列</returns>
-        public IUpdatable[] Collect(in GameObject[] roots, in string[] typeNames = null, string phaseName = "None")
+        public IUpdatable[] Collect(in GameObject[] roots, in string[] typeNames = null, in string phaseName = "None")
         {
             HashSet<IUpdatable> updatables = new HashSet<IUpdatable>();
 
@@ -57,9 +57,6 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
-                // ======================================================
-                // 型名が指定されている場合
-                // ======================================================
                 foreach (string typeName in typeNames)
                 {
                     if (string.IsNullOrEmpty(typeName))
@@ -68,7 +65,6 @@ namespace SceneSystem.Utility
                     }
 
                     // --------------------------------------------------
-                    // 型解決（アセンブリ探索込み）
                     // ScriptableObject に記載された型名から Type を取得
                     // --------------------------------------------------
                     Type targetType = Type.GetType(typeName)
@@ -84,7 +80,6 @@ namespace SceneSystem.Utility
 
                     // --------------------------------------------------
                     // 取得した IUpdatable 配列から指定型に合致するものを追加
-                    // targetType が抽象クラスやインターフェースの場合も対応
                     // --------------------------------------------------
                     foreach (IUpdatable u in allUpdatables)
                     {

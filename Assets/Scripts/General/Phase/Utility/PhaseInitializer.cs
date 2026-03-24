@@ -3,12 +3,13 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-02
 // 更新日時 : 2026-03-24
-// 概要     : フェーズごとの IUpdatable を生成するユーティリティ（型キャッシュ対応）
+// 概要     : フェーズごとの IUpdatable を生成するユーティリティ
 // ======================================================
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 
@@ -24,8 +25,7 @@ namespace PhaseSystem.Utility
         // ======================================================
 
         /// <summary>型名と Type のキャッシュ</summary>
-        private readonly Dictionary<string, Type> _typeCache =
-            new Dictionary<string, Type>();
+        private readonly Dictionary<string, Type> _typeCache = new Dictionary<string, Type>();
 
         // ======================================================
         // パブリックメソッド
@@ -42,65 +42,32 @@ namespace PhaseSystem.Utility
             in PhaseData[] phaseDataList
         )
         {
-            // --------------------------------------------------
-            // 結果格納用辞書
-            // --------------------------------------------------
+            // フェーズごとの Updatable 配列を保持する辞書を作成
+            Dictionary<PhaseType, IUpdatable[]> phaseMap = new Dictionary<PhaseType, IUpdatable[]>();
 
-            Dictionary<PhaseType, IUpdatable[]> phaseMap =
-                new Dictionary<PhaseType, IUpdatable[]>();
-
-            // --------------------------------------------------
             // フェーズごとに処理
-            // --------------------------------------------------
-
             foreach (PhaseData phaseData in phaseDataList)
             {
-                // --------------------------------------------------
-                // 型名取得
-                // --------------------------------------------------
-
-                string[] typeNames =
-                    phaseData.GetUpdatableTypeNames();
+                // フェーズに紐づく型名を取得
+                string[] typeNames = phaseData.GetUpdatableTypeNames();
 
                 // --------------------------------------------------
-                // 型変換（キャッシュ利用）
+                // 型変換
+                // string 配列を Type 配列に変換
                 // --------------------------------------------------
-
-                Type[] targetTypes =
-                    typeNames
-                        .Select(typeName => ResolveType(typeName))
-                        .Where(type => type != null)
-                        .ToArray();
+                Type[] targetTypes = ResolveTypes(typeNames);
 
                 // --------------------------------------------------
-                // Updatable抽出
+                // Updatable 抽出
+                // targetTypes に一致する IUpdatable を抽出
                 // --------------------------------------------------
-
-                IUpdatable[] phaseUpdatables =
-                    Array.FindAll(
-                        allUpdatables,
-                        updatable =>
-                            // nullチェックと型一致判定を同時に行う
-                            updatable != null &&
-                            Array.Exists(
-                                targetTypes,
-                                type =>
-                                    // 継承関係も含めて判定する
-                                    type.IsAssignableFrom(updatable.GetType())
-                            )
-                    );
+                IUpdatable[] phaseUpdatables = FilterUpdatables(allUpdatables, targetTypes);
 
                 // --------------------------------------------------
-                // 辞書に登録
+                // フェーズ辞書登録
                 // --------------------------------------------------
-
-                phaseMap[phaseData.Phase] =
-                    phaseUpdatables;
+                phaseMap.TryAdd(phaseData.Phase, phaseUpdatables);
             }
-
-            // --------------------------------------------------
-            // 結果返却
-            // --------------------------------------------------
 
             return phaseMap;
         }
@@ -110,55 +77,67 @@ namespace PhaseSystem.Utility
         // ======================================================
 
         /// <summary>
-        /// 型名から Type を取得する（キャッシュ対応）
+        /// 型名配列から解決可能な Type 配列に変換する
         /// </summary>
-        /// <param name="typeName">取得対象の型名（フルネーム推奨）</param>
+        /// <param name="typeNames">型名配列</param>
+        /// <returns>解決可能な Type 配列</returns>
+        private Type[] ResolveTypes(IEnumerable<string> typeNames)
+        {
+            // null を除外し、型名ごとに ResolveType を実行して配列化
+            return typeNames
+                .Select(ResolveType)
+                .Where(type => type != null)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// 指定された型に一致する IUpdatable 配列を抽出する
+        /// </summary>
+        /// <param name="allUpdatables">全 IUpdatable 配列</param>
+        /// <param name="targetTypes">抽出対象の型配列</param>
+        /// <returns>抽出された IUpdatable 配列</returns>
+        private IUpdatable[] FilterUpdatables(IUpdatable[] allUpdatables, Type[] targetTypes)
+        {
+            // null を除外し、targetTypes に対して IsAssignableFrom で型チェック
+            return allUpdatables
+                .Where(updatable => updatable != null)
+                .Where(updatable => targetTypes.Any(type => type.IsAssignableFrom(updatable.GetType())))
+                .ToArray();
+        }
+
+        /// <summary>
+        /// 型名から Type を取得する
+        /// </summary>
+        /// <param name="typeName">取得対象の型名</param>
         /// <returns>解決された Type、見つからなければ null</returns>
         private Type ResolveType(string typeName)
         {
-            // --------------------------------------------------
             // キャッシュ確認
-            // --------------------------------------------------
-
             if (_typeCache.TryGetValue(typeName, out Type cachedType))
             {
-                // 既に解決済みのためそのまま返す
                 return cachedType;
             }
 
-            // --------------------------------------------------
-            // 直接取得（高速パス）
-            // --------------------------------------------------
+            Type resolvedType = Type.GetType(typeName);
 
-            Type resolvedType =
-                Type.GetType(typeName);
-
-            // --------------------------------------------------
-            // 見つからない場合は全アセンブリ検索
-            // --------------------------------------------------
-
+            // 見つからなければ全アセンブリから検索
             if (resolvedType == null)
             {
-                resolvedType =
-                    AppDomain.CurrentDomain
-                        .GetAssemblies()
-                        .Select(assembly => assembly.GetType(typeName))
-                        .FirstOrDefault(type => type != null);
+                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    resolvedType = assembly.GetType(typeName);
+                    if (resolvedType != null)
+                    {
+                        break;
+                    }
+                }
             }
 
-            // --------------------------------------------------
             // キャッシュ登録
-            // --------------------------------------------------
-
             if (resolvedType != null)
             {
-                // 次回以降の探索コスト削減のため保存
                 _typeCache[typeName] = resolvedType;
             }
-
-            // --------------------------------------------------
-            // 結果返却
-            // --------------------------------------------------
 
             return resolvedType;
         }

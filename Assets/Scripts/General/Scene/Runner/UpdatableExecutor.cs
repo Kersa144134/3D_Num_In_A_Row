@@ -1,22 +1,21 @@
 // ======================================================
-// UpdateController.cs
+// UpdatableExecutor.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-05
 // 更新日時 : 2025-12-15
-// 概要     : 指定された IUpdatable オブジェクトを保持し OnUpdate を実行するコントローラ
+// 概要     : 指定された IUpdatable オブジェクトを保持し OnUpdate を実行するランナー
 // ======================================================
 
 using System.Collections.Generic;
-using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 
-namespace SceneSystem.Controller
+namespace SceneSystem.Runner
 {
     /// <summary>
-    /// OnUpdate を実行する対象を保持し、毎フレーム処理を実行するコントローラ
+    /// IUpdatable を保持し、毎フレーム処理を実行するランナー
     /// </summary>
-    public sealed class UpdateController
+    public sealed class UpdatableExecutor
     {
         // ======================================================
         // フィールド
@@ -45,8 +44,7 @@ namespace SceneSystem.Controller
         private const int INPUT_MAPPING_OUTGAME = 1;
 
         // ======================================================
-        // IUpdatable イベント
-        // OnEnter / OnExit はシーン上のすべての Updatable を対象にするため記載なし
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
@@ -93,43 +91,6 @@ namespace SceneSystem.Controller
             {
                 _updateArray[i].OnPhaseEnter(phase);
             }
-
-            // 入力マッピングの設定
-            switch (phase)
-            {
-                case PhaseType.Title:
-                    // 入力マッピング設定
-                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
-                    {
-                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_OUTGAME);
-                    }
-                    break;
-
-                case PhaseType.Ready:
-                    // 入力マッピング設定
-                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_OUTGAME)
-                    {
-                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_INGAME);
-                    }
-                    break;
-
-                case PhaseType.Play:
-                    break;
-
-                case PhaseType.Pause:
-                    break;
-
-                case PhaseType.Result:
-                    // 入力マッピング設定
-                    if (InputManager.Instance.GetCurrentMappingIndex() == INPUT_MAPPING_INGAME)
-                    {
-                        InputManager.Instance.SetInputMapping(INPUT_MAPPING_OUTGAME);
-                    }
-                    break;
-
-                default:
-                    break;
-            }
         }
 
         /// <summary>
@@ -146,10 +107,6 @@ namespace SceneSystem.Controller
                 _updateArray[i].OnPhaseExit(phase);
             }
         }
-
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
 
         /// <summary>
         /// 更新対象を追加する

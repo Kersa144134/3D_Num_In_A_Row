@@ -1,33 +1,33 @@
 // ======================================================
-// UpdateManager.cs
+// UpdateManagementService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
 // 更新日時 : 2026-01-23
-// 概要     : Update 処理を管理する
+// 概要     : Updatable を管理するサービス
 // ======================================================
 
 using System.Collections.Generic;
 using PhaseSystem.Data;
 using PhaseSystem.Service;
 using SceneSystem.Data;
-using SceneSystem.Controller;
+using SceneSystem.Runner;
 
 namespace SceneSystem.Manager
 {
     /// <summary>
-    /// Update 処理の実行を担当する管理クラス
+    /// Updatable を管理するサービス
     /// </summary>
-    public sealed class UpdateManager
+    public sealed class UpdatableManagementService
     {
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
+        /// <summary>毎フレーム更新対象を管理するコントローラ</summary>
+        private readonly UpdatableExecutor _updatableExecutor;
+
         /// <summary>フェーズ切替制御クラス</summary>
         private AssignUpdatablesService _assignUpdatablesService;
-
-        /// <summary>毎フレーム更新対象を管理するコントローラ</summary>
-        private readonly UpdateController _updateController;
 
         // ======================================================
         // フィールド
@@ -44,15 +44,18 @@ namespace SceneSystem.Manager
         // ======================================================
 
         /// <summary>
-        /// UpdateManager を生成する
+        /// UpdateManagementService を生成する
         /// </summary>
-        /// <param name="updateController">Update 実行用コントローラ</param>
-        public UpdateManager(UpdateController updateController, Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
+        /// <param name="updatableExecutor">Update 実行用コントローラ</param>
+        /// <param name="phaseUpdatablesMap">フェーズごとの IUpdatable 配列を保持する辞書</param>
+        public UpdatableManagementService(
+            in UpdatableExecutor updatableExecutor,
+            in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
         {
-            _updateController = updateController;
+            _updatableExecutor = updatableExecutor;
             _phaseUpdatablesMap = phaseUpdatablesMap;
 
-            _assignUpdatablesService = new AssignUpdatablesService(_updateController);
+            _assignUpdatablesService = new AssignUpdatablesService(_updatableExecutor);
         }
 
         // ======================================================
@@ -61,12 +64,12 @@ namespace SceneSystem.Manager
 
         public void Update(in float unscaledDeltaTime, in float elapsedTime)
         {
-            _updateController.OnUpdate(unscaledDeltaTime, elapsedTime);
+            _updatableExecutor.OnUpdate(unscaledDeltaTime, elapsedTime);
         }
 
         public void LateUpdate(in float unscaledDeltaTime)
         {
-            _updateController.OnLateUpdate(unscaledDeltaTime);
+            _updatableExecutor.OnLateUpdate(unscaledDeltaTime);
         }
 
         // ======================================================
@@ -82,11 +85,11 @@ namespace SceneSystem.Manager
             // 現在フェーズの Exit を呼ぶ
             if (_currentPhase != PhaseType.None)
             {
-                _updateController.OnPhaseExit(_currentPhase);
+                _updatableExecutor.OnPhaseExit(_currentPhase);
             }
 
             // UpdateController をリセット
-            _updateController.Clear();
+            _updatableExecutor.Clear();
 
             // フェーズに対応する Updatable を取得
             if (_phaseUpdatablesMap.TryGetValue(nextPhase, out IUpdatable[] updatables))
@@ -96,7 +99,7 @@ namespace SceneSystem.Manager
             }
 
             // 遷移先フェーズの Enter を呼ぶ
-            _updateController.OnPhaseEnter(nextPhase);
+            _updatableExecutor.OnPhaseEnter(nextPhase);
 
             // フェーズを更新
             _currentPhase = nextPhase;

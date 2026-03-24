@@ -22,23 +22,17 @@ namespace SceneSystem.Utility
     public sealed class SceneEventRouter : IDisposable
     {
         // ======================================================
-        // フィールド
+        // コンポーネント参照
         // ======================================================
 
         /// <summary>シーン内で共有されるコンテキスト</summary>
         private readonly UpdatableContext _context;
 
         /// <summary>SceneObjectContainer キャッシュ</summary>
-        private readonly SceneObjectContainer _sceneObjectContainer;
-
-        /// <summary>SceneObjectContainer キャッシュ</summary>
         private readonly BoardPresenter _boardPresenter;
 
         /// <summary>MainUIManager キャッシュ</summary>
         private readonly MainUIManager _mainUIManager;
-
-        /// <summary>イベント購読状態</summary>
-        private bool _isSubscribed;
 
         // ======================================================
         // UniRx 変数
@@ -68,9 +62,8 @@ namespace SceneSystem.Utility
             _context = context;
 
             // --------------------------------------------------
-            // Context から必要サービスを取得
+            // Context からコンポーネントを取得
             // --------------------------------------------------
-            _sceneObjectContainer = _context.Get<SceneObjectContainer>();
             _boardPresenter = _context.Get<BoardPresenter>();
             _mainUIManager = _context.Get<MainUIManager>();
         }
@@ -84,20 +77,9 @@ namespace SceneSystem.Utility
         /// </summary>
         public void Subscribe()
         {
-            // 既に購読済みなら終了
-            if (_isSubscribed)
-            {
-                return;
-            }
-
             // --------------------------------------------------
-            // オブジェクト群
+            // ボード
             // --------------------------------------------------
-            if (_sceneObjectContainer != null)
-            {
-                // 必要に応じてイベント購読を追加
-            }
-
             if (_boardPresenter != null)
             {
                 // ライン成立時
@@ -112,9 +94,6 @@ namespace SceneSystem.Utility
                     })
                     .AddTo(_disposables);
             }
-
-            // 購読状態更新
-            _isSubscribed = true;
         }
 
         /// <summary>
@@ -122,25 +101,12 @@ namespace SceneSystem.Utility
         /// </summary>
         public void Dispose()
         {
-            // 未購読なら終了
-            if (!_isSubscribed)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
             // 購読解除
-            // --------------------------------------------------
             _disposables.Dispose();
 
-            // --------------------------------------------------
             // サブジェクト終了
-            // --------------------------------------------------
             _onPhaseChanged.OnCompleted();
             _onPhaseChanged.Dispose();
-
-            // 購読状態更新
-            _isSubscribed = false;
         }
 
         // --------------------------------------------------
@@ -190,7 +156,6 @@ namespace SceneSystem.Utility
         /// </summary>
         private void PublishPhaseChanged(in PhaseType nextPhase)
         {
-            // Subjectに流すことで全購読者へ通知
             _onPhaseChanged.OnNext(nextPhase);
         }
     }

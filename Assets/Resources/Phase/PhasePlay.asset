@@ -14,6 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _phaseType: 3
   _updatableTypeNames:
-  - SceneSystem.Manager.SceneObjectContainer
   - BoardSystem.BoardPresenter
   - UISystem.MainUIManager
