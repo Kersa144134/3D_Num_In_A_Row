@@ -41,7 +41,7 @@ namespace PhaseSystem
         // ======================================================
 
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
-        public const float PLAY_TO_FINISH_WAIT_TIME = 5.0f;
+        public const float PLAY_TO_FINISH_WAIT_TIME = 120.0f;
 
         // ======================================================
         // コンストラクタ

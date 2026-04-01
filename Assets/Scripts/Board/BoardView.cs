@@ -30,17 +30,17 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// 親Transform
+        /// 親 Transform
         /// </summary>
         private readonly Transform _root;
 
         /// <summary>
-        /// プレイヤー1Prefab
+        /// プレイヤー 1 Prefab
         /// </summary>
         private readonly GameObject _playerOnePrefab;
 
         /// <summary>
-        /// プレイヤー2Prefab
+        /// プレイヤー 2 Prefab
         /// </summary>
         private readonly GameObject _playerTwoPrefab;
 
@@ -59,7 +59,7 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// View生成
+        /// ビュー生成
         /// </summary>
         public BoardView(
             Transform root,
@@ -81,7 +81,8 @@ namespace BoardSystem
 
             _convertService =
                 new BoardPositionConvertService(
-                    boardSize);
+                    boardSize,
+                    root.position);
         }
 
         // ======================================================

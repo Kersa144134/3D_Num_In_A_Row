@@ -25,6 +25,7 @@ namespace BoardSystem
         // インスペクタ設定
         // ======================================================
 
+        [Header("盤面")]
         /// <summary>盤面サイズ</summary>
         [SerializeField, Min(3)]
         private int _boardSize;
@@ -41,6 +42,11 @@ namespace BoardSystem
         [SerializeField]
         private GameObject _playerTwoPrefab;
 
+        [Header("レイヤー")]
+        /// <summary>Ray がヒットするレイヤー</summary>
+        [SerializeField]
+        private LayerMask _raycastLayerMask;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -55,10 +61,11 @@ namespace BoardSystem
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 現在プレイヤー
-        /// </summary>
+        /// <summary>現在のプレイヤー ID</summary>
         private int _currentPlayer;
+
+        /// <summary>クリック判定対象の Collider</summary>
+        private Collider _boardCollider;
 
         // ======================================================
         // UniRx 変数
@@ -108,9 +115,17 @@ namespace BoardSystem
                     _playerOnePrefab,
                     _playerTwoPrefab);
 
-            // --------------------------------------------------
+            // コライダー取得
+            _boardCollider =
+                GetComponentInChildren<Collider>(true);
+
+            if (_boardCollider == null)
+            {
+                throw new InvalidOperationException(
+                    "BoardCollider が見つかりません。子オブジェクトに Collider を配置してください。");
+            }
+
             // 初期プレイヤー設定
-            // --------------------------------------------------
             _currentPlayer = PLAYER_ONE;
         }
 
@@ -166,15 +181,28 @@ namespace BoardSystem
         private void HandleDropColumn()
         {
             // --------------------------------------------------
-            // Ray生成
+            // Ray 生成
             // --------------------------------------------------
-            Ray ray =
-                Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
+            Ray ray = Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
+
+            bool isHit =
+                Physics.Raycast(
+                    ray,
+                    out RaycastHit hit,
+                    Mathf.Infinity,
+                    _raycastLayerMask);
 
             // --------------------------------------------------
-            // Raycast
+            // ヒット判定
             // --------------------------------------------------
-            if (!Physics.Raycast(ray, out RaycastHit hit))
+            // ヒットしなかった場合は処理なし
+            if (!isHit)
+            {
+                return;
+            }
+
+            // コライダーが自身と一致しない場合は処理なし
+            if (hit.collider != _boardCollider)
             {
                 return;
             }
@@ -184,9 +212,7 @@ namespace BoardSystem
             // --------------------------------------------------
             Vector3 hitPos = hit.point;
 
-            // --------------------------------------------------
-            // Viewに列変換を依頼
-            // --------------------------------------------------
+            // ビューに列変換処理を委譲
             _view.WorldToColumn(
                 hitPos.x,
                 hitPos.z,

@@ -2,7 +2,7 @@
 // BoardPositionConvertService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 更新日時 : 2026-03-06
+// 更新日時 : 2026-04-01
 // 概要     : 盤面サイズに応じたワールド座標と列インデックス変換サービス
 // ======================================================
 
@@ -25,6 +25,9 @@ namespace BoardSystem.Service
         /// <summary>中心インデックス番号</summary>
         private readonly float _centerIndex;
 
+        /// <summary>盤面のワールド原点位置</summary>
+        private readonly Vector3 _originPosition;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -33,9 +36,16 @@ namespace BoardSystem.Service
         /// コンストラクタ
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
-        public BoardPositionConvertService(in int boardSize)
+        /// <param name="originPosition">盤面のワールド原点</param>
+        public BoardPositionConvertService(
+            in int boardSize,
+            in Vector3 originPosition)
         {
+            // 盤面サイズを保持
             _boardSize = boardSize;
+
+            // 原点位置を保持（盤面のTransform.positionを想定）
+            _originPosition = originPosition;
 
             // 偶数/奇数で中央補正を変更
             _centerIndex = (_boardSize % 2 == 0)
@@ -50,10 +60,6 @@ namespace BoardSystem.Service
         /// <summary>
         /// ワールド座標から列インデックスに変換
         /// </summary>
-        /// <param name="worldX">ワールド X 座標</param>
-        /// <param name="worldZ">ワールド Z 座標<</param>
-        /// <param name="columnX">列 X インデックス</param>
-        /// <param name="columnZ">列 Z インデックス</param>
         public void WorldPositionToColumn(
             in float cellSpacing,
             in float worldX,
@@ -61,23 +67,34 @@ namespace BoardSystem.Service
             out int columnX,
             out int columnZ)
         {
-            columnX = Mathf.RoundToInt(worldX / cellSpacing + _centerIndex);
-            columnX = Mathf.Clamp(columnX, 0, _boardSize - 1);
+            // --------------------------------------------------
+            // 原点基準に変換（ローカル空間化）
+            // --------------------------------------------------
+            float localX = worldX - _originPosition.x;
+            float localZ = worldZ - _originPosition.z;
 
-            columnZ = Mathf.RoundToInt(worldZ / cellSpacing + _centerIndex);
-            columnZ = Mathf.Clamp(columnZ, 0, _boardSize - 1);
+            // --------------------------------------------------
+            // インデックス変換
+            // --------------------------------------------------
+            columnX =
+                Mathf.RoundToInt(localX / cellSpacing + _centerIndex);
+
+            columnZ =
+                Mathf.RoundToInt(localZ / cellSpacing + _centerIndex);
+
+            // --------------------------------------------------
+            // 範囲制限
+            // --------------------------------------------------
+            columnX =
+                Mathf.Clamp(columnX, 0, _boardSize - 1);
+
+            columnZ =
+                Mathf.Clamp(columnZ, 0, _boardSize - 1);
         }
 
         /// <summary>
         /// 列インデックスからワールド座標に変換
         /// </summary>
-        /// <param name="columnX">列 X インデックス</param>
-        /// <param name="columnY">列 Y インデックス</param>
-        /// <param name="columnZ">列 Z インデックス</param>
-        /// <param name="worldX">ワールド X 座標<</param>
-        /// <param name="worldY">ワールド Y 座標<</param>
-        /// <param name="worldZ">ワールド Z 座標<</param>
-        /// <param name="cellSpacing">マス間隔</param>
         public void ColumnToWorldPosition(
             in float cellSpacing,
             in int columnX,
@@ -87,9 +104,24 @@ namespace BoardSystem.Service
             out float worldY,
             out float worldZ)
         {
-            worldX = (columnX - _centerIndex) * cellSpacing;
-            worldY = (columnY - _centerIndex) * cellSpacing;
-            worldZ = (columnZ - _centerIndex) * cellSpacing;
+            // --------------------------------------------------
+            // ローカル座標生成
+            // --------------------------------------------------
+            float localX =
+                (columnX - _centerIndex) * cellSpacing;
+
+            float localY =
+                (columnY - _centerIndex) * cellSpacing;
+
+            float localZ =
+                (columnZ - _centerIndex) * cellSpacing;
+
+            // --------------------------------------------------
+            // 原点を加算してワールド座標へ
+            // --------------------------------------------------
+            worldX = localX + _originPosition.x;
+            worldY = localY + _originPosition.y;
+            worldZ = localZ + _originPosition.z;
         }
     }
 }

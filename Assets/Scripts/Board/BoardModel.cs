@@ -46,7 +46,6 @@ namespace BoardSystem
         {
             get
             {
-                // モデル未生成時は空ストリームを返す
                 return _lineJudge != null
                     ? _lineJudge.OnLineComplete
                     : Observable.Empty<LineCompleteEvent>();
