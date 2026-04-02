@@ -16,11 +16,25 @@ namespace PhaseSystem
     public sealed class PhasePresenter
     {
         // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>フェーズ進行管理用 Model</summary>
+        private readonly PhaseModel _model = new();
+
+        // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>操作対象の Model</summary>
-        private readonly PhaseModel _model;
+        /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
+        private readonly float _playToFinishWaitTime;
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>ゲームプレイ経過時間の取得</summary>
+        public float GamePlayElapsedTime => _model.GamePlayElapsedTime;
 
         // ======================================================
         // コンストラクタ
@@ -29,10 +43,10 @@ namespace PhaseSystem
         /// <summary>
         /// PhasePresenter の生成
         /// </summary>
-        /// <param name="model">管理対象の PhaseModel</param>
-        public PhasePresenter(in PhaseModel model)
+        /// <param name="model">Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</param>
+        public PhasePresenter(in float playToFinishWaitTime)
         {
-            _model = model;
+            _playToFinishWaitTime = playToFinishWaitTime;
         }
 
         // ======================================================
@@ -44,13 +58,12 @@ namespace PhaseSystem
         /// </summary>
         /// <param name="unscaledDeltaTime">timeScale 影響なしの経過時間</param>
         /// <param name="currentPhase">現在フェーズ</param>
-        /// <param name="targetPhase">遷移先フェーズ（判定結果）</param>
+        /// <param name="targetPhase">遷移先フェーズ</param>
         public void Update(
             in float unscaledDeltaTime,
             in PhaseType currentPhase,
             out PhaseType targetPhase)
         {
-            // 初期値として現フェーズを設定
             targetPhase = currentPhase;
 
             // 現フェーズのステート取得
@@ -80,7 +93,7 @@ namespace PhaseSystem
             }
 
             // --------------------------------------------------
-            // 現フェーズ更新処理
+            // フェーズ更新処理
             // --------------------------------------------------
             currentState.OnUpdate(unscaledDeltaTime);
 
@@ -94,7 +107,7 @@ namespace PhaseSystem
             // フェーズ遷移判定
             // --------------------------------------------------
             if (currentPhase == PhaseType.Play &&
-                _model.GamePlayElapsedTime > PhaseModel.PLAY_TO_FINISH_WAIT_TIME)
+                _model.GamePlayElapsedTime > _playToFinishWaitTime)
             {
                 targetPhase = PhaseType.Finish;
             }

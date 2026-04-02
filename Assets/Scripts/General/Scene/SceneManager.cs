@@ -30,12 +30,13 @@ namespace SceneSystem.Manager
         /// <summary>シーン読み込み時の初期フェーズ</summary>
         [SerializeField] private PhaseType _startPhase;
 
+        [Header("フェーズ遷移設定")]
+        /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
+        [SerializeField, Min(0f)] private float _playToFinishWaitTime = 120.0f;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
-
-        /// <summary>フェーズ進行管理用 Model</summary>
-        private readonly PhaseModel _phaseModel = new();
 
         /// <summary>フェーズ進行管理用 Presenter</summary>
         private PhasePresenter _phasePresenter;
@@ -156,7 +157,7 @@ namespace SceneSystem.Manager
             _phaseUpdatablesMap = _phaseInitializer.CreatePhaseMap(updatables, phaseDataList);
 
             // コンポーネント初期化
-            _phasePresenter = new PhasePresenter(_phaseModel);
+            _phasePresenter = new PhasePresenter(_playToFinishWaitTime);
             _updatableManagementService = new UpdatableManagementService(_phaseUpdatablesMap);
             _sceneEventRouter = new SceneEventRouter(_updatableContexts);
 
@@ -195,7 +196,7 @@ namespace SceneSystem.Manager
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             // Update 実行
-            _updatableManagementService.Update(unscaledDeltaTime, _phaseModel.GamePlayElapsedTime);
+            _updatableManagementService.Update(unscaledDeltaTime, _phasePresenter.GamePlayElapsedTime);
         }
 
         private void LateUpdate()
@@ -210,8 +211,8 @@ namespace SceneSystem.Manager
             // Play フェーズ中のみタイマー表示更新
             if (_currentPhase == PhaseType.Play)
             {
-                float limitTime = PhaseModel.PLAY_TO_FINISH_WAIT_TIME;
-                _sceneEventRouter.HandleLimitTimeUpdated(_phaseModel.GamePlayElapsedTime, limitTime);
+                float limitTime = _playToFinishWaitTime;
+                _sceneEventRouter.HandleLimitTimeUpdated(_phasePresenter.GamePlayElapsedTime, limitTime);
             }
 
             float unscaledDeltaTime = Time.unscaledDeltaTime;

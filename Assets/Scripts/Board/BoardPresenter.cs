@@ -74,12 +74,11 @@ namespace BoardSystem
         /// <summary>購読管理</summary>
         private CompositeDisposable _disposables;
 
-        /// <summary>ライン成立イベント（外部公開用）</summary>
+        /// <summary>ライン成立イベント</summary>
         public IObservable<LineCompleteEvent> OnLineComplete
         {
             get
             {
-                // モデル未生成時は空ストリームを返す
                 return _model != null
                     ? _model.OnLineComplete
                     : Observable.Empty<LineCompleteEvent>();
