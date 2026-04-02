@@ -78,7 +78,7 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// 盤面全体のライン判定を行い、成立時イベント通知
+        /// 盤面全体のライン判定を行い、成立時にイベントを発火する
         /// </summary>
         public void CheckAll(in BoardState board)
         {
@@ -96,8 +96,8 @@ namespace BoardSystem.Service
                 AccumulateResult(maxMap, ref result);
             }
 
-            // イベント通知
-            NotifyLineComplete(result);
+            // イベント発火
+            PublishLineComplete(result);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// ライン内のプレイヤーごとの最大連続数を算出
+        /// ライン内のプレイヤーごとの最大連続数を算出する
         /// </summary>
         private Dictionary<int, int> CalculateLineMaxConsecutive(
             in BoardState board,
@@ -177,7 +177,7 @@ namespace BoardSystem.Service
         }
 
         /// <summary>
-        /// ライン成立結果をプレイヤー単位で集約
+        /// ライン成立結果をプレイヤー単位で集約する
         /// </summary>
         private void AccumulateResult(
             in Dictionary<int, int> maxMap,
@@ -201,14 +201,14 @@ namespace BoardSystem.Service
         }
 
         /// <summary>
-        /// ライン成立イベントを発火
+        /// ライン成立イベントを発火する
         /// </summary>
-        private void NotifyLineComplete(
+        private void PublishLineComplete(
             in Dictionary<int, List<int>> result)
         {
             foreach (KeyValuePair<int, List<int>> pair in result)
             {
-                // プレイヤー単位でまとめて発火
+                // プレイヤー単位
                 _onLineComplete.OnNext(
                     new LineCompleteEvent(
                         pair.Key,

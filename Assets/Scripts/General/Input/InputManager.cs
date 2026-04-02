@@ -36,6 +36,10 @@ namespace InputSystem
         /// <summary>入力マッピング配列</summary>
         [SerializeField] private InputMappingConfig[] _inputMappingConfigs;
 
+        [Header("入力マッピング設定")]
+        /// <summary>ポインター移動速度</summary>
+        [SerializeField, Range(100f, 5000f)] private float _pointerSpeed = 1000f;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -127,13 +131,6 @@ namespace InputSystem
         public int CurrentMappingIndex { get; private set; } = 0;
 
         // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>ポインター移動速度</summary>
-        private const float POINTER_SPEED = 1000f;
-
-        // ======================================================
         // Unity イベント
         // ======================================================
 
@@ -216,10 +213,9 @@ namespace InputSystem
         // ======================================================
 
         /// <summary>
-        /// 外部から入力マッピングを設定する
+        /// 入力マッピングを適用する
         /// </summary>
-        /// <param name="index">マッピング配列のインデックス</param>
-        public void SetInputMapping(in int index)
+        public void ApplyInputMapping(in int index)
         {
             if (_inputMappingConfigs == null || index < 0 || index >= _inputMappingConfigs.Length)
             {
@@ -230,15 +226,6 @@ namespace InputSystem
 
             // 適用中のインデックスを更新
             CurrentMappingIndex = index;
-        }
-
-        /// <summary>
-        /// 現在適用中の入力マッピングインデックスを取得する
-        /// </summary>
-        /// <returns>入力マッピング配列のインデックス</returns>
-        public int GetCurrentMappingIndex()
-        {
-            return CurrentMappingIndex;
         }
 
         // ======================================================
@@ -263,7 +250,7 @@ namespace InputSystem
             // ゲームパッドなら右スティック入力を加算適用
             else if (_deviceSwitchService.ActiveController is GamepadInputController gamepadController)
             {
-                Vector2 delta = gamepadController.RightStick * POINTER_SPEED * Time.deltaTime;
+                Vector2 delta = gamepadController.RightStick * _pointerSpeed * Time.deltaTime;
 
                 Pointer += delta;
             }

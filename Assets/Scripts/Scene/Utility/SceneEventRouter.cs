@@ -28,8 +28,8 @@ namespace SceneSystem.Utility
         /// <summary>シーン内で共有されるコンテキスト</summary>
         private readonly UpdatableContext _context;
 
-        /// <summary>SceneObjectContainer キャッシュ</summary>
-        private readonly BoardPresenter _boardPresenter;
+        /// <summary>SceneObjectContainer キャッシュ配列</summary>
+        private readonly BoardPresenter[] _boardPresenters;
 
         /// <summary>MainUIManager キャッシュ</summary>
         private readonly MainUIManager _mainUIManager;
@@ -39,16 +39,16 @@ namespace SceneSystem.Utility
         // ======================================================
 
         /// <summary>購読管理</summary>
-        private readonly CompositeDisposable _disposables =
-            new CompositeDisposable();
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
         
         /// <summary>フェーズ変更通知用 Subject</summary>
-        private readonly Subject<PhaseType> _onPhaseChanged =
-            new Subject<PhaseType>();
+        private readonly Subject<PhaseType> _onPhaseChanged = new Subject<PhaseType>();
 
         /// <summary>フェーズ変更ストリーム</summary>
-        public IObservable<PhaseType> OnPhaseChanged =>
-            _onPhaseChanged;
+        public IObservable<PhaseType> OnPhaseChanged => _onPhaseChanged;
+
+        /// <summary>入力マッピング変更通知用 Subject</summary>
+        private readonly Subject<int> _onMappingChangeRequest = new Subject<int>();
 
         // ======================================================
         // コンストラクタ
@@ -61,10 +61,8 @@ namespace SceneSystem.Utility
         {
             _context = context;
 
-            // --------------------------------------------------
             // Context からコンポーネントを取得
-            // --------------------------------------------------
-            _boardPresenter = _context.Get<BoardPresenter>();
+            _boardPresenters = _context.GetAll<BoardPresenter>();
             _mainUIManager = _context.Get<MainUIManager>();
         }
 
@@ -78,18 +76,35 @@ namespace SceneSystem.Utility
         public void Subscribe()
         {
             // --------------------------------------------------
+            // 入力
+            // --------------------------------------------------
+            _onMappingChangeRequest
+                .Subscribe(index =>
+                {
+                    // マッピング変更を適用
+                    InputManager.Instance.ApplyInputMapping(index);
+                })
+                .AddTo(_disposables);
+            
+            // --------------------------------------------------
             // ボード
             // --------------------------------------------------
-            if (_boardPresenter != null)
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
             {
-                // ライン成立時
-                _boardPresenter.OnLineComplete
+                if (boardPresenter == null)
+                {
+                    continue;
+                }
+
+                boardPresenter.OnLineComplete
                     .Subscribe(e =>
                     {
                         // 成立ラインをすべて出力
                         for (int i = 0; i < e.LineCount; i++)
                         {
-                            UnityEngine.Debug.Log($"Player: {e.Player} Line[{i}] Length: {e.Lengths[i]}");
+                            UnityEngine.Debug.Log(
+                                $"Player: {e.Player} Line[{i}] Length: {e.Lengths[i]}"
+                            );
                         }
                     })
                     .AddTo(_disposables);
@@ -113,21 +128,21 @@ namespace SceneSystem.Utility
         // 入力
         // --------------------------------------------------
         /// <summary>
-        /// オプションボタン押下時の処理を行うハンドラ
-        /// SceneManager へフェーズ切り替え通知を行う
+        /// オプションボタン押下時の処理を行う
         /// </summary>
-        public void HandleOptionButtonPressed()
+        public void OnOptionButtonPressed()
         {
             // 現在適用中の入力マッピングインデックスを取得
-            int current = InputManager.Instance.GetCurrentMappingIndex();
+            int current = InputManager.Instance.CurrentMappingIndex;
 
             // 次のインデックスを算出
             int next = (current == 0) ? 1 : 0;
 
             // 入力マッピングを切り替え
-            InputManager.Instance.SetInputMapping(next);
+            _onMappingChangeRequest.OnNext(next);
 
-            PublishPhaseChanged(PhaseType.Pause);
+            // フェーズ変更通知
+            _onPhaseChanged.OnNext(PhaseType.Pause);
         }
 
         // --------------------------------------------------
@@ -147,16 +162,5 @@ namespace SceneSystem.Utility
         // ======================================================
         // プライベートメソッド
         // ======================================================
-
-        // --------------------------------------------------
-        // フェーズ
-        // --------------------------------------------------
-        /// <summary>
-        /// フェーズ変更通知
-        /// </summary>
-        private void PublishPhaseChanged(in PhaseType nextPhase)
-        {
-            _onPhaseChanged.OnNext(nextPhase);
-        }
     }
 }
