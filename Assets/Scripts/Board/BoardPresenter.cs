@@ -6,13 +6,13 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
+using System;
 using UnityEngine;
 using UniRx;
 using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using BoardSystem.Data;
-using System;
 
 namespace BoardSystem
 {
@@ -74,16 +74,13 @@ namespace BoardSystem
         /// <summary>購読管理</summary>
         private CompositeDisposable _disposables;
 
-        /// <summary>ライン成立イベント</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete
-        {
-            get
-            {
-                return _model != null
-                    ? _model.OnLineComplete
-                    : Observable.Empty<LineCompleteEvent>();
-            }
-        }
+        /// <summary>ライン成立用 Subject</summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete =
+            new Subject<LineCompleteEvent>();
+
+        /// <summary>ライン成立ストリーム</summary>
+        public IObservable<LineCompleteEvent> OnLineComplete =>
+            _onLineComplete;
 
         // ======================================================
         // 定数
@@ -115,13 +112,11 @@ namespace BoardSystem
                     _playerTwoPrefab);
 
             // コライダー取得
-            _boardCollider =
-                GetComponentInChildren<Collider>(true);
+            _boardCollider = GetComponentInChildren<Collider>(true);
 
             if (_boardCollider == null)
             {
-                throw new InvalidOperationException(
-                    "BoardCollider が見つかりません。子オブジェクトに Collider を配置してください。");
+                throw new InvalidOperationException("BoardCollider が見つかりません。");
             }
 
             // 初期プレイヤー設定
@@ -130,9 +125,7 @@ namespace BoardSystem
 
         public void OnExit()
         {
-            // --------------------------------------------------
             // イベント購読解除
-            // --------------------------------------------------
             _disposables.Dispose();
             _model.Dispose();
         }
@@ -155,6 +148,11 @@ namespace BoardSystem
                 InputManager.Instance.ButtonB.OnDown
                     .Subscribe(_ => HandleDropColumn())
                     .AddTo(_disposables);
+
+                // ライン成立時
+                _model.OnLineComplete
+                    .Subscribe(e => _onLineComplete.OnNext(e))
+                    .AddTo(_disposables);
             }
         }
 
@@ -162,9 +160,7 @@ namespace BoardSystem
         {
             if (phase == PhaseType.Play)
             {
-                // --------------------------------------------------
                 // イベント購読解除
-                // --------------------------------------------------
                 _disposables.Dispose();
                 _disposables = null;
             }

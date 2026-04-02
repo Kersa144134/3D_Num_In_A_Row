@@ -9,6 +9,7 @@
 
 using System;
 using UnityEngine;
+using UniRx;
 using InputSystem.Data;
 using InputSystem.Service;
 using InputSystem.Controller;
@@ -131,6 +132,13 @@ namespace InputSystem
         public int CurrentMappingIndex { get; private set; } = 0;
 
         // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>マッピング変更購読</summary>
+        private IDisposable _mappingSubscription;
+        
+        // ======================================================
         // Unity イベント
         // ======================================================
 
@@ -208,24 +216,37 @@ namespace InputSystem
             UpdatePointer();
         }
 
+        private void OnDestroy()
+        {
+            UnbindMappingStream();
+        }
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
         /// <summary>
-        /// 入力マッピングを適用する
+        /// 入力マッピング変更イベントを購読する
         /// </summary>
-        public void ApplyInputMapping(in int index)
+        public void BindMappingStream(IObservable<int> stream)
         {
-            if (_inputMappingConfigs == null || index < 0 || index >= _inputMappingConfigs.Length)
-            {
-                return;
-            }
+            // 多重購読防止
+            _mappingSubscription?.Dispose();
 
-            _deviceSwitchService.SetMapping(_inputMappingConfigs[index]);
+            _mappingSubscription = stream
+                .Subscribe(index =>
+                {
+                    ApplyInputMapping(index);
+                });
+        }
 
-            // 適用中のインデックスを更新
-            CurrentMappingIndex = index;
+        /// <summary>
+        /// 入力マッピング変更イベントの購読を解除する
+        /// </summary>
+        public void UnbindMappingStream()
+        {
+            _mappingSubscription?.Dispose();
+            _mappingSubscription = null;
         }
 
         // ======================================================
@@ -260,5 +281,23 @@ namespace InputSystem
                 Mathf.Clamp(Pointer.x, 0f, Screen.width),
                 Mathf.Clamp(Pointer.y, 0f, Screen.height));
         }
+
+        /// <summary>
+        /// 入力マッピングを適用する
+        /// </summary>
+        private void ApplyInputMapping(in int index)
+        {
+            if (_inputMappingConfigs == null || index < 0 || index >= _inputMappingConfigs.Length)
+            {
+                return;
+            }
+
+            _deviceSwitchService.SetMapping(_inputMappingConfigs[index]);
+
+            // 適用中のインデックスを更新
+            CurrentMappingIndex = index;
+        }
+
+
     }
 }

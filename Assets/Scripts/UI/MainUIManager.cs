@@ -153,22 +153,12 @@ namespace UISystem
         /// <summary>
         /// 経過時間と制限時間から残り時間を計算し、UI に表示する
         /// </summary>
-        /// <param name="elapsedTime">現在までの経過時間（秒）</param>
-        /// <param name="limitTime">制限時間（秒）</param>
-        public void UpdateLimitTimeDisplay(in float elapsedTime, in float limitTime)
+        /// <param name="remainingTime">残り時間（秒）</param>
+        public void UpdateLimitTimeDisplay(in float remainingTime)
         {
             if (_limitTimeText == null)
             {
                 return;
-            }
-
-            // 残り時間を算出
-            float remainingTime = limitTime - elapsedTime;
-
-            // 残り時間が負数にならないよう補正
-            if (remainingTime < 0.0f)
-            {
-                remainingTime = 0.0f;
             }
 
             // 残り時間を整数へ変換（小数切り捨て）

@@ -6,6 +6,8 @@
 // 概要     : PhaseModel を操作してフェーズ遷移・更新を管理する Presenter
 // ======================================================
 
+using System;
+using UniRx;
 using PhaseSystem.Data;
 
 namespace PhaseSystem
@@ -37,6 +39,25 @@ namespace PhaseSystem
         public float GamePlayElapsedTime => _model.GamePlayElapsedTime;
 
         // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>購読管理</summary>
+        private CompositeDisposable _disposables;
+
+        /// <summary>スタートボタン押下用 Subject</summary>
+        private readonly Subject<StartButtonEvent> _onStartButtonPressed = new Subject<StartButtonEvent>();
+
+        /// <summary>スタートボタン押下ストリーム</summary>
+        public IObservable<StartButtonEvent> OnStartButtonPressed => _onStartButtonPressed;
+
+        /// <summary>残り時間更新用 Subject<</summary>
+        private readonly Subject<LimitTimeEvent> _onLimitTimeUpdated = new Subject<LimitTimeEvent>();
+
+        /// <summary>残り時間更新ストリーム</summary>
+        public IObservable<LimitTimeEvent> OnLimitTimeUpdated => _onLimitTimeUpdated;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -52,6 +73,62 @@ namespace PhaseSystem
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        /// <summary>
+        /// フェーズイベントを購読する
+        /// </summary>
+        public void BindPhaseEvents()
+        {
+            // --------------------------------------------------
+            // 多重購読防止
+            // --------------------------------------------------
+            _disposables?.Dispose();
+
+            _disposables = new CompositeDisposable();
+
+            // --------------------------------------------------
+            // Play フェーズ
+            // --------------------------------------------------
+            PlayPhaseState play = _model.GetState(PhaseType.Play) as PlayPhaseState;
+
+            if (play != null)
+            {
+                play.OnStartButtonPressed
+                    .Subscribe(_ =>
+                    {
+                        // Play フェーズのスタート押下として通知
+                        _onStartButtonPressed.OnNext(
+                            new StartButtonEvent(PhaseType.Play));
+                    })
+                    .AddTo(_disposables);
+            }
+
+            // --------------------------------------------------
+            // Pause フェーズ
+            // --------------------------------------------------
+            PausePhaseState pause = _model.GetState(PhaseType.Pause) as PausePhaseState;
+
+            if (pause != null)
+            {
+                pause.OnStartButtonPressed
+                    .Subscribe(_ =>
+                    {
+                        // Pause フェーズのスタート押下として通知
+                        _onStartButtonPressed.OnNext(
+                            new StartButtonEvent(PhaseType.Pause));
+                    })
+                    .AddTo(_disposables);
+            }
+        }
+
+        /// <summary>
+        /// フェーズイベントの購読を解除する
+        /// </summary>
+        public void UnbindPhaseEvents()
+        {
+            _disposables?.Dispose();
+            _disposables = null;
+        }
 
         /// <summary>
         /// フェーズ進行の更新処理
@@ -97,16 +174,20 @@ namespace PhaseSystem
             // --------------------------------------------------
             currentState.OnUpdate(unscaledDeltaTime);
 
-            // Play フェーズなら経過時間加算
             if (currentPhase == PhaseType.Play)
             {
                 _model.AddElapsedTime(unscaledDeltaTime);
+
+                _onLimitTimeUpdated.OnNext(
+                    new LimitTimeEvent(
+                        _model.GamePlayElapsedTime,
+                        _playToFinishWaitTime));
             }
 
             // --------------------------------------------------
             // フェーズ遷移判定
             // --------------------------------------------------
-            if (currentPhase == PhaseType.Play &&
+            if (currentPhase != PhaseType.Finish &&
                 _model.GamePlayElapsedTime > _playToFinishWaitTime)
             {
                 targetPhase = PhaseType.Finish;

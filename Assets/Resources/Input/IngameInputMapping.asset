@@ -44,7 +44,7 @@ MonoBehaviour:
     keyCode: 0
     mouseInput: 0
   - gamepadInput: 10
-    keyCode: 0
+    keyCode: 27
     mouseInput: 0
   - gamepadInput: 11
     keyCode: 0

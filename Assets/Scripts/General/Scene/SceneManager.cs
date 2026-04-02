@@ -169,7 +169,8 @@ namespace SceneSystem.Manager
                 })
                 .AddTo(_disposables);
 
-            _sceneEventRouter.Subscribe();
+            _sceneEventRouter.Subscribe(_phasePresenter);
+            _phasePresenter.BindPhaseEvents();
         }
 
         private void Update()
@@ -208,13 +209,6 @@ namespace SceneSystem.Manager
                 return;
             }
 
-            // Play フェーズ中のみタイマー表示更新
-            if (_currentPhase == PhaseType.Play)
-            {
-                float limitTime = _playToFinishWaitTime;
-                _sceneEventRouter.HandleLimitTimeUpdated(_phasePresenter.GamePlayElapsedTime, limitTime);
-            }
-
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             // LateUpdate 実行
@@ -236,6 +230,7 @@ namespace SceneSystem.Manager
             // イベント購読解除
             _disposables.Dispose();
             _sceneEventRouter.Dispose();
+            _phasePresenter.UnbindPhaseEvents();
         }
 
         // ======================================================

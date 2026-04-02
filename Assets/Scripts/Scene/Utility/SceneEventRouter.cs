@@ -10,16 +10,18 @@ using System;
 using UniRx;
 using BoardSystem;
 using InputSystem;
+using PhaseSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using UISystem;
+using BoardSystem.Data;
 
 namespace SceneSystem.Utility
 {
     /// <summary>
     /// シーン内イベントを仲介するクラス
     /// </summary>
-    public sealed class SceneEventRouter : IDisposable
+    public sealed class SceneEventRouter
     {
         // ======================================================
         // コンポーネント参照
@@ -27,6 +29,9 @@ namespace SceneSystem.Utility
 
         /// <summary>シーン内で共有されるコンテキスト</summary>
         private readonly UpdatableContext _context;
+
+        /// <summary>InputManager キャッシュ</summary>
+        private readonly InputManager _inputManager;
 
         /// <summary>SceneObjectContainer キャッシュ配列</summary>
         private readonly BoardPresenter[] _boardPresenters;
@@ -44,11 +49,20 @@ namespace SceneSystem.Utility
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseType> _onPhaseChanged = new Subject<PhaseType>();
 
+        /// <summary>入力マッピング変更用 Subject</summary>
+        private readonly Subject<int> _onMappingChanged = new Subject<int>();
+
+        /// <summary>ライン成立通知用 Subject</summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
+
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseType> OnPhaseChanged => _onPhaseChanged;
 
-        /// <summary>入力マッピング変更通知用 Subject</summary>
-        private readonly Subject<int> _onMappingChangeRequest = new Subject<int>();
+        /// <summary>入力マッピング変更ストリーム</summary>
+        public IObservable<int> OnMappingChanged => _onMappingChanged;
+
+        /// <summary>ライン成立ストリーム</summary>
+        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
         // ======================================================
         // コンストラクタ
@@ -60,6 +74,9 @@ namespace SceneSystem.Utility
         public SceneEventRouter(UpdatableContext context)
         {
             _context = context;
+
+            // インスタンスからコンポーネントを取得
+            _inputManager = InputManager.Instance;
 
             // Context からコンポーネントを取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
@@ -73,18 +90,19 @@ namespace SceneSystem.Utility
         /// <summary>
         /// イベント購読
         /// </summary>
-        public void Subscribe()
+        public void Subscribe(in PhasePresenter phasePresenter)
         {
+            // --------------------------------------------------
+            // フェーズ
+            // --------------------------------------------------
+            phasePresenter.OnStartButtonPressed
+                .Subscribe(e => OnStartButtonPressed(e))
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
-            _onMappingChangeRequest
-                .Subscribe(index =>
-                {
-                    // マッピング変更を適用
-                    InputManager.Instance.ApplyInputMapping(index);
-                })
-                .AddTo(_disposables);
+            _inputManager.BindMappingStream(OnMappingChanged);
             
             // --------------------------------------------------
             // ボード
@@ -99,16 +117,17 @@ namespace SceneSystem.Utility
                 boardPresenter.OnLineComplete
                     .Subscribe(e =>
                     {
-                        // 成立ラインをすべて出力
-                        for (int i = 0; i < e.LineCount; i++)
-                        {
-                            UnityEngine.Debug.Log(
-                                $"Player: {e.Player} Line[{i}] Length: {e.Lengths[i]}"
-                            );
-                        }
+                        _onLineComplete.OnNext(e);
                     })
                     .AddTo(_disposables);
             }
+
+            // --------------------------------------------------
+            // UI
+            // --------------------------------------------------
+            phasePresenter.OnLimitTimeUpdated
+                .Subscribe(e => _mainUIManager?.UpdateLimitTimeDisplay(e.RemainingTime))
+                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -122,45 +141,49 @@ namespace SceneSystem.Utility
             // サブジェクト終了
             _onPhaseChanged.OnCompleted();
             _onPhaseChanged.Dispose();
-        }
 
-        // --------------------------------------------------
-        // 入力
-        // --------------------------------------------------
-        /// <summary>
-        /// オプションボタン押下時の処理を行う
-        /// </summary>
-        public void OnOptionButtonPressed()
-        {
-            // 現在適用中の入力マッピングインデックスを取得
-            int current = InputManager.Instance.CurrentMappingIndex;
+            _onLineComplete.OnCompleted();
+            _onLineComplete.Dispose();
 
-            // 次のインデックスを算出
-            int next = (current == 0) ? 1 : 0;
-
-            // 入力マッピングを切り替え
-            _onMappingChangeRequest.OnNext(next);
-
-            // フェーズ変更通知
-            _onPhaseChanged.OnNext(PhaseType.Pause);
-        }
-
-        // --------------------------------------------------
-        // UI
-        // --------------------------------------------------
-        /// <summary>
-        /// 経過時間更新時の処理を行うハンドラ
-        /// 経過時間と制限時間から残り時間を計算し、UI に表示する
-        /// </summary>
-        /// <param name="elapsedTime">現在までの経過時間（秒）</param>
-        /// <param name="limitTime">制限時間（秒）</param>
-        public void HandleLimitTimeUpdated(in float elapsedTime, in float limitTime)
-        {
-            _mainUIManager?.UpdateLimitTimeDisplay(elapsedTime, limitTime);
+            _inputManager.UnbindMappingStream();
         }
 
         // ======================================================
         // プライベートメソッド
         // ======================================================
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
+        /// <summary>
+        /// スタートボタン押下時の処理を行う
+        /// </summary>
+        /// <param name="e">スタートボタンイベント</param>
+        private void OnStartButtonPressed(in StartButtonEvent e)
+        {
+            // フェーズに応じてマッピングと遷移先を決定
+            int mappingIndex;
+            PhaseType nextPhase;
+
+            if (e.Phase == PhaseType.Play)
+            {
+                mappingIndex = 1;
+                nextPhase = PhaseType.Pause;
+            }
+            else if (e.Phase == PhaseType.Pause)
+            {
+                mappingIndex = 0;
+                nextPhase = PhaseType.Play;
+            }
+            else
+            {
+                return;
+            }
+
+            // 入力マッピング変更通知
+            _onMappingChanged.OnNext(mappingIndex);
+
+            // フェーズ変更通知
+            _onPhaseChanged.OnNext(nextPhase);
+        }
     }
 }

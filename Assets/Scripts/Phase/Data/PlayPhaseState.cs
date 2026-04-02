@@ -42,7 +42,7 @@ namespace PhaseSystem.Data
         private CompositeDisposable _disposables;
 
         /// <summary>スタートボタン押下通知用 Subject</summary>
-        private Subject<Unit> _onStartButtonPressed;
+        private readonly Subject<Unit> _onStartButtonPressed = new Subject<Unit>();
 
         // ======================================================
         // パブリックメソッド
@@ -54,7 +54,6 @@ namespace PhaseSystem.Data
         public void OnEnter()
         {
             _disposables = new CompositeDisposable();
-            _onStartButtonPressed = new Subject<Unit>();
 
             // --------------------------------------------------
             // イベント購読
@@ -72,10 +71,6 @@ namespace PhaseSystem.Data
         {
             // イベント購読解除
             _disposables?.Dispose();
-
-            // Subject 終了
-            _onStartButtonPressed?.OnCompleted();
-            _onStartButtonPressed?.Dispose();
         }
 
         /// <summary>
