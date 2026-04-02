@@ -8,6 +8,7 @@
 
 using System;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 using UniRx;
 using InputSystem;
 using PhaseSystem.Data;
@@ -66,6 +67,9 @@ namespace BoardSystem
 
         /// <summary>クリック判定対象の Collider</summary>
         private Collider _boardCollider;
+
+        /// <summary>落下処理中フラグ</summary>
+        private bool _isProcessing;
 
         // ======================================================
         // UniRx 変数
@@ -217,46 +221,59 @@ namespace BoardSystem
             // --------------------------------------------------
             // 駒落下処理
             // --------------------------------------------------
-            HandleDrop(x, z);
+            HandleDropAsync(x, z).Forget();
         }
 
         /// <summary>
         /// 駒落下処理
         /// </summary>
-        private void HandleDrop(
-            in int x,
-            in int z)
+        private async UniTask HandleDropAsync(
+            int x,
+            int z)
         {
-            // --------------------------------------------------
-            // 落下可能判定
-            // --------------------------------------------------
-            bool canDrop =
-                _model.CanDrop(
-                    x,
-                    z);
-
-            if (!canDrop)
+            // 多重実行防止
+            if (_isProcessing)
             {
                 return;
             }
 
+            // 処理開始
+            _isProcessing = true;
+
             // --------------------------------------------------
-            // 落下処理
+            // 配置可能判定
             // --------------------------------------------------
-            int y =
-                _model.Drop(
-                    x,
-                    z,
-                    _currentPlayer);
+            bool canDrop = _model.CanPlace(
+                x,
+                z
+            );
+
+            if (!canDrop)
+            {
+                // 処理終了
+                _isProcessing = false;
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // 配置処理
+            // --------------------------------------------------
+            int y = _model.Place(
+                x,
+                z,
+                _currentPlayer
+            );
 
             // --------------------------------------------------
             // ビュー更新
             // --------------------------------------------------
-            _view.SpawnPiece(
+            await _view.SpawnPieceAsync(
                 x,
                 y,
                 z,
-                _currentPlayer);
+                _currentPlayer
+            );
 
             // --------------------------------------------------
             // ライン成立判定
@@ -267,6 +284,9 @@ namespace BoardSystem
             // プレイヤー交代
             // --------------------------------------------------
             SwitchPlayer();
+
+            // 処理終了
+            _isProcessing = false;
         }
 
         /// <summary>

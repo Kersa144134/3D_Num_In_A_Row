@@ -15,6 +15,7 @@ using PhaseSystem.Data;
 using SceneSystem.Data;
 using UISystem;
 using BoardSystem.Data;
+using System.Diagnostics;
 
 namespace SceneSystem.Utility
 {
@@ -118,6 +119,10 @@ namespace SceneSystem.Utility
                     .Subscribe(e =>
                     {
                         _onLineComplete.OnNext(e);
+
+                        // 成立ライン情報をログ出力
+                        string lengthsText = string.Join(", ", e.Lengths);
+                        UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {e.LineCount} 本: 長さ [{lengthsText}]");
                     })
                     .AddTo(_disposables);
             }

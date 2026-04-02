@@ -22,19 +22,13 @@ namespace BoardSystem
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>
-        /// 盤面状態
-        /// </summary>
+        /// <summary>盤面状態</summary>
         private readonly BoardState _boardState;
 
-        /// <summary>
-        /// 落下処理
-        /// </summary>
-        private readonly ColumnDropService _columnDrop;
+        /// <summary>落下処理</summary>
+        private readonly ColumnPlacementService _columnPlacement;
 
-        /// <summary>
-        /// ライン判定
-        /// </summary>
+        /// <summary>ライン判定</summary>
         private readonly LineJudgeService _lineJudge;
 
         // ======================================================
@@ -71,7 +65,7 @@ namespace BoardSystem
             }
 
             _boardState = new BoardState(boardSize);
-            _columnDrop = new ColumnDropService();
+            _columnPlacement = new ColumnPlacementService();
             _lineJudge = new LineJudgeService(
                 boardSize,
                 safeConnect
@@ -85,11 +79,11 @@ namespace BoardSystem
         /// <summary>
         /// 落下可能判定
         /// </summary>
-        public bool CanDrop(
+        public bool CanPlace(
             in int x,
             in int z)
         {
-            return _columnDrop.CanDrop(
+            return _columnPlacement.CanPlace(
                 _boardState,
                 x,
                 z
@@ -99,12 +93,12 @@ namespace BoardSystem
         /// <summary>
         /// 落下処理
         /// </summary>
-        public int Drop(
+        public int Place(
             in int x,
             in int z,
             in int player)
         {
-            return _columnDrop.Drop(
+            return _columnPlacement.Place(
                 _boardState,
                 x,
                 z,

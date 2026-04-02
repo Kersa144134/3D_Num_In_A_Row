@@ -27,7 +27,7 @@ namespace BoardSystem.Service
 
         /// <summary>盤面のワールド原点位置</summary>
         private readonly Vector3 _originPosition;
-
+        
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -41,10 +41,7 @@ namespace BoardSystem.Service
             in int boardSize,
             in Vector3 originPosition)
         {
-            // 盤面サイズを保持
             _boardSize = boardSize;
-
-            // 原点位置を保持（盤面のTransform.positionを想定）
             _originPosition = originPosition;
 
             // 偶数/奇数で中央補正を変更
@@ -67,29 +64,17 @@ namespace BoardSystem.Service
             out int columnX,
             out int columnZ)
         {
-            // --------------------------------------------------
-            // 原点基準に変換（ローカル空間化）
-            // --------------------------------------------------
+            // ローカル座標に変換
             float localX = worldX - _originPosition.x;
             float localZ = worldZ - _originPosition.z;
 
-            // --------------------------------------------------
             // インデックス変換
-            // --------------------------------------------------
-            columnX =
-                Mathf.RoundToInt(localX / cellSpacing + _centerIndex);
+            columnX = Mathf.RoundToInt(localX / cellSpacing + _centerIndex);
+            columnZ = Mathf.RoundToInt(localZ / cellSpacing + _centerIndex);
 
-            columnZ =
-                Mathf.RoundToInt(localZ / cellSpacing + _centerIndex);
-
-            // --------------------------------------------------
             // 範囲制限
-            // --------------------------------------------------
-            columnX =
-                Mathf.Clamp(columnX, 0, _boardSize - 1);
-
-            columnZ =
-                Mathf.Clamp(columnZ, 0, _boardSize - 1);
+            columnX = Mathf.Clamp(columnX, 0, _boardSize - 1);
+            columnZ = Mathf.Clamp(columnZ, 0, _boardSize - 1);
         }
 
         /// <summary>
@@ -104,24 +89,39 @@ namespace BoardSystem.Service
             out float worldY,
             out float worldZ)
         {
-            // --------------------------------------------------
             // ローカル座標生成
-            // --------------------------------------------------
-            float localX =
-                (columnX - _centerIndex) * cellSpacing;
+            float localX = (columnX - _centerIndex) * cellSpacing;
+            float localY = (columnY - _centerIndex) * cellSpacing;
+            float localZ = (columnZ - _centerIndex) * cellSpacing;
 
-            float localY =
-                (columnY - _centerIndex) * cellSpacing;
-
-            float localZ =
-                (columnZ - _centerIndex) * cellSpacing;
-
-            // --------------------------------------------------
             // 原点を加算してワールド座標へ
-            // --------------------------------------------------
             worldX = localX + _originPosition.x;
             worldY = localY + _originPosition.y;
             worldZ = localZ + _originPosition.z;
+        }
+
+        /// <summary>
+        /// 駒生成時の上空ワールドY座標を取得
+        /// </summary>
+        /// <param name="cellSpacing">セル間隔</param>
+        /// <returns>ワールドY座標</returns>
+        public float GetSpawnWorldY(
+            in float cellSpacing)
+        {
+            // 生成用Yインデックス算出
+            int spawnIndexY = _boardSize;
+
+            // ローカルY座標算出
+            float localY =
+                (spawnIndexY - _centerIndex) *
+                cellSpacing;
+
+            // ワールドY座標へ変換
+            float worldY =
+                localY +
+                _originPosition.y;
+
+            return worldY;
         }
     }
 }
