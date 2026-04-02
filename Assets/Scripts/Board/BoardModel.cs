@@ -107,11 +107,19 @@ namespace BoardSystem
         }
 
         /// <summary>
-        /// Ÿ—˜”»’è
+        /// ƒ‰ƒCƒ“¬—§”»’è
         /// </summary>
         public void CheckLine()
         {
             _lineJudge.CheckAll(_boardState);
+        }
+
+        /// <summary>
+        /// w’èÀ•W‚Ì‹î‚ğíœ
+        /// </summary>
+        public void ClearCell(int x, int y, int z)
+        {
+            _boardState.ClearCell(x, y, z);
         }
 
         /// <summary>

@@ -2,7 +2,7 @@
 // LineJudgeService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 更新日時 : 2026-03-17
+// 更新日時 : 2026-04-02
 // 概要     : ライン判定サービス
 //            任意サイズ盤面や連続マス指定に対応
 // ======================================================
@@ -18,15 +18,15 @@ namespace BoardSystem.Service
     /// <summary>
     /// ライン判定サービス
     /// </summary>
-    public sealed class LineJudgeService
+    public sealed class LineJudgeService : IDisposable
     {
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>ライン生成ユーティリティ</summary>
-        private LineGenerator _lineGenerator;
-        
+        private readonly LineGenerator _lineGenerator;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -34,7 +34,7 @@ namespace BoardSystem.Service
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>ライン配列</summary>
+        /// <summary>ライン配列（各ラインは座標配列）</summary>
         private readonly int[][][] _lines;
 
         /// <summary>ライン成立条件の連続マス数</summary>
@@ -44,13 +44,11 @@ namespace BoardSystem.Service
         // UniRx 変数
         // ======================================================
 
-        /// <summary>ライン成立イベント</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete =
-            new Subject<LineCompleteEvent>();
+        /// <summary>ライン成立イベント Subject</summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
 
         /// <summary>ライン成立イベント購読用</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete =>
-            _onLineComplete;
+        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
         // ======================================================
         // コンストラクタ
@@ -66,10 +64,14 @@ namespace BoardSystem.Service
             _boardSize = boardSize;
             _connectCount = connectCount;
 
-            // ライン生成クラス初期化
+            // --------------------------------------------------
+            // ライン生成ユーティリティ初期化
+            // --------------------------------------------------
             _lineGenerator = new LineGenerator(_boardSize);
 
-            // ライン生成
+            // --------------------------------------------------
+            // 全ライン生成
+            // --------------------------------------------------
             _lines = _lineGenerator.GenerateLines();
         }
 
@@ -82,22 +84,28 @@ namespace BoardSystem.Service
         /// </summary>
         public void CheckAll(in BoardState board)
         {
-            // プレイヤーごとのライン情報を一時保持
-            Dictionary<int, List<int>> result = new Dictionary<int, List<int>>();
-
-            // 全ライン走査
+            // --------------------------------------------------
+            // 全ラインを走査
+            // --------------------------------------------------
             foreach (int[][] line in _lines)
             {
-                // ラインごとの最大連続数を取得
-                Dictionary<int, int> maxMap =
-                    CalculateLineMaxConsecutive(board, line);
+                // ライン内の連続成立セル座標を取得
+                List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> consecutiveLines =
+                    CalculateLinePositions(board, line);
 
-                // ライン結果を集約
-                AccumulateResult(maxMap, ref result);
+                // --------------------------------------------------
+                // 取得した連続ラインごとにイベント発火
+                // --------------------------------------------------
+                foreach (var lineInfo in consecutiveLines)
+                {
+                    _onLineComplete.OnNext(
+                        new LineCompleteEvent(
+                            lineInfo.Player,
+                            new IReadOnlyList<(int x, int y, int z)>[] { lineInfo.Cells }
+                        )
+                    );
+                }
             }
-
-            // イベント発火
-            PublishLineComplete(result);
         }
 
         /// <summary>
@@ -114,106 +122,83 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>
-        /// ライン内のプレイヤーごとの最大連続数を算出する
+        /// 指定ライン内の連続セル座標を取得
         /// </summary>
-        private Dictionary<int, int> CalculateLineMaxConsecutive(
+        /// <param name="board">盤面状態</param>
+        /// <param name="line">判定対象ライン座標配列</param>
+        /// <returns>成立した連続ラインのプレイヤー番号と座標リスト</returns>
+        private List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> CalculateLinePositions(
             in BoardState board,
             in int[][] line)
         {
-            // 直前の値
+            // --------------------------------------------------
+            // 結果格納用リスト
+            // --------------------------------------------------
+            List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> result =
+                new List<(int, IReadOnlyList<(int x, int y, int z)>)>();
+
+            // --------------------------------------------------
+            // 判定用変数
+            // lastValue : 直前セルのプレイヤー番号
+            // consecutiveCells : 連続しているセルの座標リスト
+            // --------------------------------------------------
             int lastValue = 0;
+            List<(int x, int y, int z)> consecutiveCells = new List<(int x, int y, int z)>();
 
-            // 現在の連続数
-            int consecutive = 0;
-
-            // プレイヤーごとの最大連続数
-            Dictionary<int, int> maxMap = new Dictionary<int, int>();
-
-            // ライン内走査
+            // --------------------------------------------------
+            // ライン内セル走査
+            // --------------------------------------------------
             foreach (int[] cell in line)
             {
-                // 座標取得
                 int x = cell[0];
                 int y = cell[1];
                 int z = cell[2];
 
+                // --------------------------------------------------
                 // 盤面値取得
+                // --------------------------------------------------
                 int value = board.Get(x, y, z);
 
-                // 空マスならリセット
+                // --------------------------------------------------
+                // 空マスなら連続リセット
+                // --------------------------------------------------
                 if (value == 0)
                 {
-                    consecutive = 0;
+                    consecutiveCells.Clear();
                     lastValue = 0;
                     continue;
                 }
 
-                // 同一値なら加算
-                if (value == lastValue)
+                // --------------------------------------------------
+                // 前セルと同じプレイヤーか判定
+                // --------------------------------------------------
+                if (value == lastValue || lastValue == 0)
                 {
-                    consecutive++;
+                    consecutiveCells.Add((x, y, z));
+                    lastValue = value;
                 }
                 else
                 {
-                    // 値切り替え
+                    // プレイヤー切替時は連続リセット
+                    consecutiveCells.Clear();
+                    consecutiveCells.Add((x, y, z));
                     lastValue = value;
-                    consecutive = 1;
                 }
 
-                // プレイヤーごとの最大値初期化
-                if (!maxMap.ContainsKey(value))
+                // --------------------------------------------------
+                // 連続マスが成立条件に達したら結果に追加
+                // --------------------------------------------------
+                if (consecutiveCells.Count == _connectCount)
                 {
-                    maxMap[value] = 0;
-                }
+                    // 結果にコピーして追加
+                    result.Add((value, new List<(int x, int y, int z)>(consecutiveCells)));
 
-                // 最大連続数更新
-                if (consecutive > maxMap[value])
-                {
-                    maxMap[value] = consecutive;
+                    // スライドさせて次の判定に備える
+                    consecutiveCells.RemoveAt(0);
                 }
             }
 
-            return maxMap;
-        }
-
-        /// <summary>
-        /// ライン成立結果をプレイヤー単位で集約する
-        /// </summary>
-        private void AccumulateResult(
-            in Dictionary<int, int> maxMap,
-            ref Dictionary<int, List<int>> result)
-        {
-            foreach (KeyValuePair<int, int> pair in maxMap)
-            {
-                if (pair.Value < _connectCount)
-                {
-                    continue;
-                }
-
-                // プレイヤーごとのリスト確保
-                if (!result.ContainsKey(pair.Key))
-                {
-                    result[pair.Key] = new List<int>();
-                }
-
-                result[pair.Key].Add(pair.Value);
-            }
-        }
-
-        /// <summary>
-        /// ライン成立イベントを発火する
-        /// </summary>
-        private void PublishLineComplete(
-            in Dictionary<int, List<int>> result)
-        {
-            foreach (KeyValuePair<int, List<int>> pair in result)
-            {
-                // プレイヤー単位
-                _onLineComplete.OnNext(
-                    new LineCompleteEvent(
-                        pair.Key,
-                        pair.Value.ToArray()));
-            }
+            return result;
         }
     }
 }

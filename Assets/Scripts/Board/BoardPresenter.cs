@@ -14,6 +14,7 @@ using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using BoardSystem.Data;
+using System.Linq;
 
 namespace BoardSystem
 {
@@ -155,7 +156,14 @@ namespace BoardSystem
 
                 // ライン成立時
                 _model.OnLineComplete
-                    .Subscribe(e => _onLineComplete.OnNext(e))
+                    .Subscribe(lineEvent =>
+                    {
+                        // イベント客家
+                        _onLineComplete.OnNext(lineEvent);
+
+                        // 成立ラインの駒を削除
+                        HandleLineDelete(lineEvent);
+                    })
                     .AddTo(_disposables);
             }
         }
@@ -298,6 +306,32 @@ namespace BoardSystem
                 _currentPlayer == PLAYER_ONE
                 ? PLAYER_TWO
                 : PLAYER_ONE;
+        }
+
+        /// <summary>
+        /// ライン成立時の削除処理
+        /// </summary>
+        /// <param name="lineEvent">ライン情報</param>
+        private void HandleLineDelete(LineCompleteEvent lineEvent)
+        {
+            // --------------------------------------------------
+            // 成立ラインの駒を削除
+            // --------------------------------------------------
+            foreach (var line in lineEvent.LinePositions)
+            {
+                foreach ((int x, int y, int z) in line)
+                {
+                    // --------------------------------------------------
+                    // ビューに削除委譲
+                    // --------------------------------------------------
+                    _view.DeletePiece(x, y, z);
+
+                    // --------------------------------------------------
+                    // モデルも盤面クリア
+                    // --------------------------------------------------
+                    _model.ClearCell(x, y, z);
+                }
+            }
         }
     }
 }

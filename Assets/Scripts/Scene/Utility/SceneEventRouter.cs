@@ -16,6 +16,7 @@ using SceneSystem.Data;
 using UISystem;
 using BoardSystem.Data;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace SceneSystem.Utility
 {
@@ -120,9 +121,21 @@ namespace SceneSystem.Utility
                     {
                         _onLineComplete.OnNext(e);
 
+                        // 成立ライン数
+                        int lineCount = e.LinePositions.Length;
+
+                        // 各ラインの長さを取得
+                        List<int> lengths = new List<int>();
+                        foreach (var line in e.LinePositions)
+                        {
+                            lengths.Add(line.Count);
+                        }
+
+                        // ログ用文字列作成
+                        string lengthsText = string.Join(", ", lengths);
+
                         // 成立ライン情報をログ出力
-                        string lengthsText = string.Join(", ", e.Lengths);
-                        UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {e.LineCount} 本: 長さ [{lengthsText}]");
+                        UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {lineCount} 本: 長さ [{lengthsText}]");
                     })
                     .AddTo(_disposables);
             }
