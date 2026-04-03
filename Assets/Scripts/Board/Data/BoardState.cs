@@ -93,9 +93,9 @@ namespace BoardSystem.Data
         /// <summary>
         /// 指定座標の値設定
         /// </summary>
-        public void Set(in int x, in int y, in int z, in int value)
+        public void Set(in BoardIndex index, in int value)
         {
-            _board[x, y, z] = value;
+            _board[index.X, index.Y, index.Z] = value;
         }
 
         // ======================================================
@@ -113,9 +113,9 @@ namespace BoardSystem.Data
         /// <summary>
         /// 指定座標の値取得
         /// </summary>
-        public int Get(in int x, in int y, in int z)
+        public int Get(in BoardIndex index)
         {
-            return _board[x, y, z];
+            return _board[index.X, index.Y, index.Z];
         }
 
         // ======================================================
@@ -142,9 +142,9 @@ namespace BoardSystem.Data
         /// <summary>
         /// 指定座標のマスをクリア
         /// </summary>
-        public void ClearCell(int x, int y, int z)
+        public void ClearCell(in BoardIndex index)
         {
-            _board[x, y, z] = 0;
+            _board[index.X, index.Y, index.Z] = EMPTY;
         }
 
         // ======================================================

@@ -26,7 +26,7 @@ namespace BoardSystem
         private readonly BoardState _boardState;
 
         /// <summary>落下処理</summary>
-        private readonly ColumnPlacementService _columnPlacement;
+        private readonly PiecePlacementService _piecePlacement;
 
         /// <summary>ライン判定</summary>
         private readonly LineJudgeService _lineJudge;
@@ -65,7 +65,7 @@ namespace BoardSystem
             }
 
             _boardState = new BoardState(boardSize);
-            _columnPlacement = new ColumnPlacementService();
+            _piecePlacement = new PiecePlacementService();
             _lineJudge = new LineJudgeService(
                 boardSize,
                 safeConnect
@@ -83,7 +83,7 @@ namespace BoardSystem
             in int x,
             in int z)
         {
-            return _columnPlacement.CanPlace(
+            return _piecePlacement.CanPlace(
                 _boardState,
                 x,
                 z
@@ -98,11 +98,25 @@ namespace BoardSystem
             in int z,
             in int player)
         {
-            return _columnPlacement.Place(
+            return _piecePlacement.Place(
                 _boardState,
                 x,
                 z,
                 player
+            );
+        }
+
+        /// <summary>
+        /// 指定列の再配置処理
+        /// </summary>
+        public void Reposition(
+            in int x,
+            in int z)
+        {
+            _piecePlacement.Reposition(
+                _boardState,
+                x,
+                z
             );
         }
 
@@ -117,9 +131,9 @@ namespace BoardSystem
         /// <summary>
         /// 指定座標の駒を削除
         /// </summary>
-        public void ClearCell(int x, int y, int z)
+        public void ClearCell(in BoardIndex index)
         {
-            _boardState.ClearCell(x, y, z);
+            _boardState.ClearCell(index);
         }
 
         /// <summary>

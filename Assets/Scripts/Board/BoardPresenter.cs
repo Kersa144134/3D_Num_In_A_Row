@@ -15,6 +15,7 @@ using PhaseSystem.Data;
 using SceneSystem.Data;
 using BoardSystem.Data;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace BoardSystem
 {
@@ -273,6 +274,14 @@ namespace BoardSystem
                 _currentPlayer
             );
 
+            if (y < 0)
+            {
+                // 処理終了
+                _isProcessing = false;
+
+                return;
+            }
+
             // --------------------------------------------------
             // ビュー更新
             // --------------------------------------------------
@@ -317,19 +326,19 @@ namespace BoardSystem
             // --------------------------------------------------
             // 成立ラインの駒を削除
             // --------------------------------------------------
-            foreach (var line in lineEvent.LinePositions)
+            foreach (IReadOnlyList<BoardIndex> line in lineEvent.LinePositions)
             {
-                foreach ((int x, int y, int z) in line)
+                foreach (BoardIndex index in line)
                 {
                     // --------------------------------------------------
                     // ビューに削除委譲
                     // --------------------------------------------------
-                    _view.DeletePiece(x, y, z);
+                    _view.DeletePiece(index);
 
                     // --------------------------------------------------
                     // モデルも盤面クリア
                     // --------------------------------------------------
-                    _model.ClearCell(x, y, z);
+                    _model.ClearCell(index);
                 }
             }
         }

@@ -2,7 +2,7 @@
 // LineJudgeService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 更新日時 : 2026-04-02
+// 更新日時 : 2026-04-03
 // 概要     : ライン判定サービス
 //            任意サイズ盤面や連続マス指定に対応
 // ======================================================
@@ -45,10 +45,12 @@ namespace BoardSystem.Service
         // ======================================================
 
         /// <summary>ライン成立イベント Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
+        private readonly Subject<LineCompleteEvent> _onLineComplete =
+            new Subject<LineCompleteEvent>();
 
         /// <summary>ライン成立イベント購読用</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+        public IObservable<LineCompleteEvent> OnLineComplete =>
+            _onLineComplete;
 
         // ======================================================
         // コンストラクタ
@@ -57,21 +59,15 @@ namespace BoardSystem.Service
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="boardSize">盤面サイズ</param>
-        /// <param name="connectCount">ライン成立条件の連続マス数</param>
         public LineJudgeService(in int boardSize, in int connectCount)
         {
             _boardSize = boardSize;
             _connectCount = connectCount;
 
-            // --------------------------------------------------
             // ライン生成ユーティリティ初期化
-            // --------------------------------------------------
             _lineGenerator = new LineGenerator(_boardSize);
 
-            // --------------------------------------------------
             // 全ライン生成
-            // --------------------------------------------------
             _lines = _lineGenerator.GenerateLines();
         }
 
@@ -84,24 +80,20 @@ namespace BoardSystem.Service
         /// </summary>
         public void CheckAll(in BoardState board)
         {
-            // --------------------------------------------------
             // 全ラインを走査
-            // --------------------------------------------------
             foreach (int[][] line in _lines)
             {
                 // ライン内の連続成立セル座標を取得
-                List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> consecutiveLines =
+                List<(int Player, IReadOnlyList<BoardIndex> Cells)> consecutiveLines =
                     CalculateLinePositions(board, line);
 
-                // --------------------------------------------------
                 // 取得した連続ラインごとにイベント発火
-                // --------------------------------------------------
-                foreach (var lineInfo in consecutiveLines)
+                foreach ((int Player, IReadOnlyList<BoardIndex> Cells) lineInfo in consecutiveLines)
                 {
                     _onLineComplete.OnNext(
                         new LineCompleteEvent(
                             lineInfo.Player,
-                            new IReadOnlyList<(int x, int y, int z)>[] { lineInfo.Cells }
+                            new IReadOnlyList<BoardIndex>[] { lineInfo.Cells }
                         )
                     );
                 }
@@ -124,44 +116,32 @@ namespace BoardSystem.Service
         /// <summary>
         /// 指定ライン内の連続セル座標を取得
         /// </summary>
-        /// <param name="board">盤面状態</param>
-        /// <param name="line">判定対象ライン座標配列</param>
-        /// <returns>成立した連続ラインのプレイヤー番号と座標リスト</returns>
-        private List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> CalculateLinePositions(
+        private List<(int Player, IReadOnlyList<BoardIndex> Cells)> CalculateLinePositions(
             in BoardState board,
             in int[][] line)
         {
-            // --------------------------------------------------
             // 結果格納用リスト
-            // --------------------------------------------------
-            List<(int Player, IReadOnlyList<(int x, int y, int z)> Cells)> result =
-                new List<(int, IReadOnlyList<(int x, int y, int z)>)>();
+            List<(int Player, IReadOnlyList<BoardIndex> Cells)> result =
+                new List<(int, IReadOnlyList<BoardIndex>)>();
 
-            // --------------------------------------------------
-            // 判定用変数
-            // lastValue : 直前セルのプレイヤー番号
-            // consecutiveCells : 連続しているセルの座標リスト
-            // --------------------------------------------------
+            // 直前セルのプレイヤー番号
             int lastValue = 0;
-            List<(int x, int y, int z)> consecutiveCells = new List<(int x, int y, int z)>();
 
-            // --------------------------------------------------
+            // 連続セルリスト
+            List<BoardIndex> consecutiveCells =
+                new List<BoardIndex>();
+
             // ライン内セル走査
-            // --------------------------------------------------
             foreach (int[] cell in line)
             {
-                int x = cell[0];
-                int y = cell[1];
-                int z = cell[2];
+                // BoardIndex に変換
+                BoardIndex index = new BoardIndex(cell[0], cell[1], cell[2]);
 
-                // --------------------------------------------------
                 // 盤面値取得
-                // --------------------------------------------------
-                int value = board.Get(x, y, z);
+                int value =
+                    board.Get(index);
 
-                // --------------------------------------------------
-                // 空マスなら連続リセット
-                // --------------------------------------------------
+                // 空マスならリセット
                 if (value == 0)
                 {
                     consecutiveCells.Clear();
@@ -169,31 +149,29 @@ namespace BoardSystem.Service
                     continue;
                 }
 
-                // --------------------------------------------------
-                // 前セルと同じプレイヤーか判定
-                // --------------------------------------------------
+                // 同一プレイヤーまたは開始状態
                 if (value == lastValue || lastValue == 0)
                 {
-                    consecutiveCells.Add((x, y, z));
+                    consecutiveCells.Add(index);
                     lastValue = value;
                 }
                 else
                 {
-                    // プレイヤー切替時は連続リセット
+                    // プレイヤー切替時リセット
                     consecutiveCells.Clear();
-                    consecutiveCells.Add((x, y, z));
+                    consecutiveCells.Add(index);
                     lastValue = value;
                 }
 
-                // --------------------------------------------------
-                // 連続マスが成立条件に達したら結果に追加
-                // --------------------------------------------------
+                // 成立判定
                 if (consecutiveCells.Count == _connectCount)
                 {
-                    // 結果にコピーして追加
-                    result.Add((value, new List<(int x, int y, int z)>(consecutiveCells)));
+                    // コピーして結果追加
+                    result.Add(
+                        (value, new List<BoardIndex>(consecutiveCells))
+                    );
 
-                    // スライドさせて次の判定に備える
+                    // スライド
                     consecutiveCells.RemoveAt(0);
                 }
             }

@@ -292,12 +292,10 @@ namespace InputSystem
                 return;
             }
 
-            _deviceSwitchService.SetMapping(_inputMappingConfigs[index]);
+            _deviceSwitchService.SetMapping(index);
 
             // 適用中のインデックスを更新
             CurrentMappingIndex = index;
         }
-
-
     }
 }

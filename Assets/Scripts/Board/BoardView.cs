@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using BoardSystem.Service;
+using BoardSystem.Data;
 
 namespace BoardSystem
 {
@@ -41,15 +42,17 @@ namespace BoardSystem
         /// <summary>プレイヤー 2 Prefab</summary>
         private readonly GameObject _playerTwoPrefab;
 
-        /// <summary>セル間隔</summary>
-        private readonly float _cellSpacing;
-
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>生成駒リスト（座標とプレイヤー番号を管理）</summary>
-        private readonly List<(Transform transform, int player, int x, int y, int z)> _pieces =
-            new List<(Transform, int, int, int, int)>();
+        /// <summary>セル間隔</summary>
+        private readonly float _cellSpacing;
+
+        /// <summary>
+        /// 生成駒辞書
+        /// BoardIndex をキーとして駒データを管理
+        /// </summary>
+        private readonly Dictionary<BoardIndex, PieceData> _pieces;
 
         // ======================================================
         // コンストラクタ
@@ -65,16 +68,24 @@ namespace BoardSystem
             in GameObject p2)
         {
             _root = root;
-            _boardSize = boardSize;
             _playerOnePrefab = p1;
             _playerTwoPrefab = p2;
-
+            _boardSize = boardSize;
             _cellSpacing = root.localScale.x / boardSize;
 
             _boardPositionConvert = new BoardPositionConvertService(
                 boardSize,
                 root.position
             );
+
+            // 最大配置数を算出
+            int capacity =
+                _boardSize *
+                _boardSize *
+                _boardSize;
+
+            // Dictionary 初期化
+            _pieces = new Dictionary<BoardIndex, PieceData>(capacity);
         }
 
         // ======================================================
@@ -82,7 +93,7 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// ワールド→列変換
+        /// ワールド座標から列インデックスに変換
         /// </summary>
         public void WorldToColumn(
             in float worldX,
@@ -126,17 +137,16 @@ namespace BoardSystem
             // Y のみ上空からスタート
             // --------------------------------------------------
             float spawnY = _boardPositionConvert.GetSpawnWorldY(_cellSpacing);
+
             Vector3 start = new Vector3(targetX, spawnY, targetZ);
             Vector3 end = new Vector3(targetX, targetY, targetZ);
 
             // --------------------------------------------------
-            // プレハブ選択
+            // 駒生成
             // --------------------------------------------------
             GameObject prefab = player == 1 ? _playerOnePrefab : _playerTwoPrefab;
 
-            // --------------------------------------------------
             // インスタンス生成
-            // --------------------------------------------------
             GameObject piece = Object.Instantiate(
                 prefab,
                 start,
@@ -144,9 +154,7 @@ namespace BoardSystem
                 _root
             );
 
-            // --------------------------------------------------
             // スケール調整
-            // --------------------------------------------------
             float scaleFactor = 1f / (_boardSize + 0.5f);
             piece.transform.localScale = Vector3.one * scaleFactor;
 
@@ -156,32 +164,27 @@ namespace BoardSystem
             await _dropAnimation.AnimateDropAsync(piece.transform, start, end);
 
             // --------------------------------------------------
-            // 駒リストに追加
-            // 座標とプレイヤー情報を保持
+            // 駒辞書に追加
             // --------------------------------------------------
-            _pieces.Add((piece.transform, player, x, y, z));
+            // 座標を BoardIndex に変換
+            BoardIndex index = new BoardIndex(x, y, z);
+
+            // 駒データ生成
+            PieceData pieceData = new PieceData(piece.transform, player);
+
+            // 辞書に登録
+            _pieces[index] = pieceData;
         }
 
         /// <summary>
         /// 指定座標の駒を削除
         /// </summary>
-        public void DeletePiece(in int x, in int y, in int z)
+        public void DeletePiece(in BoardIndex index)
         {
-            // --------------------------------------------------
-            // リストから検索
-            // --------------------------------------------------
-            for (int i = _pieces.Count - 1; i >= 0; i--)
+            if (_pieces.TryGetValue(index, out PieceData piece))
             {
-                var p = _pieces[i];
-                if (p.x == x && p.y == y && p.z == z)
-                {
-                    // オブジェクト削除
-                    Object.Destroy(p.transform.gameObject);
-
-                    // リストからも削除
-                    _pieces.RemoveAt(i);
-                    break;
-                }
+                Object.Destroy(piece.Transform.gameObject);
+                _pieces.Remove(index);
             }
         }
     }

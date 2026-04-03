@@ -50,16 +50,16 @@ MonoBehaviour:
     keyCode: 0
     mouseInput: 0
   - gamepadInput: 12
-    keyCode: 0
+    keyCode: 97
     mouseInput: 0
   - gamepadInput: 13
-    keyCode: 0
+    keyCode: 100
     mouseInput: 0
   - gamepadInput: 14
-    keyCode: 0
+    keyCode: 119
     mouseInput: 0
   - gamepadInput: 15
-    keyCode: 0
+    keyCode: 115
     mouseInput: 0
   - gamepadInput: 16
     keyCode: 0

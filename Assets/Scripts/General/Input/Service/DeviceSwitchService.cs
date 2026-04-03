@@ -1,10 +1,9 @@
 // ======================================================
-// DeviceManager.cs
+// DeviceSwitchService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-11-11
-// 更新日時 : 2025-12-08
+// 更新日時 : 2026-04-03
 // 概要     : 入力デバイスの更新・切替を管理するサービス
-//            物理ゲームパッドと仮想ゲームパッドの切替を統一的に提供
 // ======================================================
 
 using UnityEngine.InputSystem;
@@ -15,22 +14,34 @@ namespace InputSystem.Service
 {
     /// <summary>
     /// 入力デバイスの更新・切替を管理するサービス
-    /// 物理ゲームパッドが接続されていれば優先使用、未接続時は仮想ゲームパッドを使用
     /// </summary>
     public class DeviceSwitchService
     {
         // ======================================================
+        // プライベートクラス
+        // ======================================================
+
+        /// <summary>
+        /// マッピング単位のコントローラセット
+        /// </summary>
+        private class ControllerSet
+        {
+            /// <summary>物理ゲームパッドコントローラー</summary>
+            public GamepadInputController Gamepad;
+
+            /// <summary>仮想ゲームパッドコントローラー</summary>
+            public VirtualGamepadInputController Virtual;
+        }
+
+        // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>物理ゲームパッド用コントローラー</summary>
-        private GamepadInputController _gamepadController;
+        /// <summary>マッピングごとのコントローラキャッシュ配列</summary>
+        private ControllerSet[] _controllerSets;
 
-        /// <summary>仮想ゲームパッド用コントローラー（キーボード＋マウス）</summary>
-        private VirtualGamepadInputController _virtualController;
-
-        /// <summary>入力マッピング設定配列</summary>
-        private InputMappingConfig[] _mappingConfigs;
+        /// <summary>現在使用中のコントローラセット</summary>
+        private ControllerSet _currentSet;
 
         // ======================================================
         // プロパティ
@@ -44,21 +55,40 @@ namespace InputSystem.Service
         // ======================================================
 
         /// <summary>
-        /// DeviceManager コンストラクタ
-        /// 入力マッピング設定をもとに仮想コントローラーを初期化
+        /// コンストラクタ
+        /// 全マッピング分のコントローラを初期化してキャッシュする
         /// </summary>
         /// <param name="mappingConfigs">入力マッピング設定配列</param>
         public DeviceSwitchService(in InputMappingConfig[] mappingConfigs)
         {
+            // マッピングが無効な場合は何もしない
             if (mappingConfigs == null || mappingConfigs.Length == 0)
             {
                 return;
             }
 
-            _mappingConfigs = mappingConfigs;
+            // 配列サイズをマッピング数で確保
+            _controllerSets = new ControllerSet[mappingConfigs.Length];
 
-            // デフォルトは要素0のマッピング
-            InitializeControllers(_mappingConfigs[0]);
+            for (int i = 0; i < mappingConfigs.Length; i++)
+            {
+                InputMappingConfig mapping = mappingConfigs[i];
+                ControllerSet set = new ControllerSet();
+
+                // 物理ゲームパッド生成
+                set.Gamepad = new GamepadInputController();
+
+                // 仮想ゲームパッド生成
+                KeyboardInputController keyboard = new KeyboardInputController(mapping.Mappings);
+                MouseInputController mouse = new MouseInputController(mapping.Mappings);
+
+                set.Virtual = new VirtualGamepadInputController(keyboard, mouse, mapping.Mappings);
+
+                _controllerSets[i] = set;
+            }
+
+            // デフォルトは 0 番に設定
+            _currentSet = _controllerSets[0];
         }
 
         // ======================================================
@@ -66,56 +96,37 @@ namespace InputSystem.Service
         // ======================================================
 
         /// <summary>
-        /// 配列の指定インデックスのマッピング設定でコントローラーを再初期化
+        /// マッピングインデックスを指定して切替
         /// </summary>
-        /// <param name="index">マッピング配列のインデックス</param>
-        public void SetMapping(in InputMappingConfig mappingConfig)
+        /// <param name="index">マッピングインデックス</param>
+        public void SetMapping(int index)
         {
-            if (mappingConfig == null)
+            if (_controllerSets == null || index < 0 || index >= _controllerSets.Length)
             {
                 return;
             }
 
-            InitializeControllers(mappingConfig);
+            _currentSet = _controllerSets[index];
         }
 
         /// <summary>
-        /// 接続状況に応じて入力デバイスを更新し、ActiveController を切替
+        /// デバイス状態に応じてアクティブコントローラを更新
         /// </summary>
         public void UpdateDevices()
         {
-            // 物理ゲームパッドが接続されているか判定
+            // 物理ゲームパッド接続確認
             if (Gamepad.current != null)
             {
-                ActiveController = _gamepadController;
-                _gamepadController.UpdateInputs();
+                // 物理コントローラを使用
+                ActiveController = _currentSet.Gamepad;
+                _currentSet.Gamepad.UpdateInputs();
             }
             else
             {
-                ActiveController = _virtualController;
-                _virtualController.UpdateInputs();
+                // 仮想コントローラを使用
+                ActiveController = _currentSet.Virtual;
+                _currentSet.Virtual.UpdateInputs();
             }
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 指定マッピングでコントローラーを初期化
-        /// </summary>
-        /// <param name="mappingConfig">入力マッピング設定</param>
-        private void InitializeControllers(in InputMappingConfig mappingConfig)
-        {
-            // 物理ゲームパッドコントローラー初期化
-            _gamepadController = new GamepadInputController();
-
-            // キーボード・マウスコントローラー初期化
-            KeyboardInputController keyboard = new KeyboardInputController(mappingConfig.Mappings);
-            MouseInputController mouse = new MouseInputController(mappingConfig.Mappings);
-
-            // 仮想ゲームパッドコントローラー初期化
-            _virtualController = new VirtualGamepadInputController(keyboard, mouse, mappingConfig.Mappings);
         }
     }
 }
