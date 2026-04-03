@@ -15,6 +15,7 @@ using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using BoardSystem.Data;
+using UnityEngine.UIElements;
 
 namespace BoardSystem
 {
@@ -251,7 +252,7 @@ namespace BoardSystem
                 return;
             }
 
-            // 駒生成依頼
+            // 駒生成
             await _view.SpawnPieceAsync(x, y, z, _currentPlayer);
 
             // ライン成立チェック
@@ -299,6 +300,7 @@ namespace BoardSystem
 
             // 再配置対象列をリスト化
             List<(int x, int z)> repositionColumns = new List<(int, int)>(columnSet);
+            Debug.Log($"columnSet {columnSet.Count}");
 
             // 駒再配置処理
             await HandleRepositionAsync(repositionColumns);
@@ -312,13 +314,12 @@ namespace BoardSystem
             // 全移動情報リスト
             List<(BoardIndex from, BoardIndex to)> allMoves = new List<(BoardIndex, BoardIndex)>();
 
-            // 各列ごとにモデルから移動情報取得-
+            // 各列ごとにモデルから移動情報取得
             for (int i = 0; i < repositionColumns.Count; i++)
             {
                 (int x, int z) column = repositionColumns[i];
 
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                    _model.Reposition(column.x, column.z);
+                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves = _model.Reposition(column.x, column.z);
 
                 for (int j = 0; j < moves.Count; j++)
                 {
@@ -330,6 +331,8 @@ namespace BoardSystem
             {
                 return;
             }
+            Debug.Log($"allMoves {allMoves.Count}");
+
 
             // 落下処理
             await _view.MovePiecesAsync(allMoves);

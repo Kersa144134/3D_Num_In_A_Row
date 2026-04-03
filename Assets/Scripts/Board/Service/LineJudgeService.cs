@@ -37,7 +37,7 @@ namespace BoardSystem.Service
         /// <summary>ライン配列（各ラインは座標配列）</summary>
         private readonly int[][][] _lines;
 
-        /// <summary>ライン成立条件の連続マス数</summary>
+        /// <summary>ライン成立条件の最低連続マス数</summary>
         private readonly int _connectCount;
 
         // ======================================================
@@ -65,7 +65,7 @@ namespace BoardSystem.Service
             _connectCount = connectCount;
 
             // ライン生成ユーティリティ初期化
-            _lineGenerator = new LineGenerator(_boardSize);
+            _lineGenerator = new LineGenerator(_boardSize, _connectCount);
 
             // 全ライン生成
             _lines = _lineGenerator.GenerateLines();
