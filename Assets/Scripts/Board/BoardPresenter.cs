@@ -298,9 +298,8 @@ namespace BoardSystem
                 }
             }
 
-            // 再配置対象列をリスト化
+            // 再配置対象駒をリスト化
             List<(int x, int z)> repositionColumns = new List<(int, int)>(columnSet);
-            Debug.Log($"columnSet {columnSet.Count}");
 
             // 駒再配置処理
             await HandleRepositionAsync(repositionColumns);
@@ -311,30 +310,30 @@ namespace BoardSystem
         /// </summary>
         private async UniTask HandleRepositionAsync(IReadOnlyList<(int x, int z)> repositionColumns)
         {
-            // 全移動情報リスト
+            // 全駒移動情報リスト
             List<(BoardIndex from, BoardIndex to)> allMoves = new List<(BoardIndex, BoardIndex)>();
 
+            // --------------------------------------------------
             // 各列ごとにモデルから移動情報取得
+            // --------------------------------------------------
             for (int i = 0; i < repositionColumns.Count; i++)
             {
                 (int x, int z) column = repositionColumns[i];
 
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves = _model.Reposition(column.x, column.z);
+                // 移動情報を取得
+                IReadOnlyList<(BoardIndex from, BoardIndex to)> columnMoves = _model.Reposition(column.x, column.z);
 
-                for (int j = 0; j < moves.Count; j++)
-                {
-                    allMoves.Add(moves[j]);
-                }
+                // 駒単位でリストに追加
+                allMoves.AddRange(columnMoves);
             }
+
 
             if (allMoves.Count == 0)
             {
                 return;
             }
-            Debug.Log($"allMoves {allMoves.Count}");
 
-
-            // 落下処理
+            // 駒落下アニメーション実行
             await _view.MovePiecesAsync(allMoves);
         }
     }

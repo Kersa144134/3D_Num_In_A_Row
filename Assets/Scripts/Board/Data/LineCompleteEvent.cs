@@ -16,27 +16,14 @@ namespace BoardSystem.Data
     public readonly struct LineCompleteEvent
     {
         // ======================================================
-        // フィールド
+        // プロパティ
         // ======================================================
 
         /// <summary>プレイヤー番号</summary>
         public readonly int Player;
 
-        /// <summary>成立ラインごとのセル座標リスト（BoardIndex）</summary>
+        /// <summary>成立ラインごとの座標リスト</summary>
         public readonly IReadOnlyList<BoardIndex>[] LinePositions;
-
-        // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>成立ライン数</summary>
-        public int LineCount
-        {
-            get
-            {
-                return LinePositions.Length;
-            }
-        }
 
         // ======================================================
         // コンストラクタ

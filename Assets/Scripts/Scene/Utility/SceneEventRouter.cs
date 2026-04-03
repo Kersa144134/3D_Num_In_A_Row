@@ -121,21 +121,29 @@ namespace SceneSystem.Utility
                     {
                         _onLineComplete.OnNext(e);
 
-                        // 成立ライン数
+                        // 成立ライン数を取得
                         int lineCount = e.LinePositions.Length;
 
-                        // 各ラインの長さを取得
-                        List<int> lengths = new List<int>();
-                        foreach (var line in e.LinePositions)
+                        // 各ラインごとに処理
+                        for (int i = 0; i < lineCount; i++)
                         {
-                            lengths.Add(line.Count);
+                            // 現在のライン
+                            IReadOnlyList<BoardIndex> line = e.LinePositions[i];
+
+                            // 各駒の座標を文字列化
+                            List<string> positions = new List<string>();
+                            foreach (BoardIndex index in line)
+                            {
+                                // BoardIndex の座標を "(x,y,z)" 形式で追加
+                                positions.Add($"({index.X}, {index.Y}, {index.Z})");
+                            }
+
+                            // 現在ラインの座標文字列
+                            string lineText = string.Join(", ", positions);
+
+                            // ライン番号と座標をログ出力
+                            UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {i + 1}/{lineCount}: 駒座標 [{lineText}]");
                         }
-
-                        // ログ用文字列作成
-                        string lengthsText = string.Join(", ", lengths);
-
-                        // 成立ライン情報をログ出力
-                        UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {lineCount} 本: 長さ [{lengthsText}]");
                     })
                     .AddTo(_disposables);
             }

@@ -80,7 +80,6 @@ namespace BoardSystem.Service
         /// </summary>
         public void CheckAll(in BoardState board)
         {
-            // 全ラインを走査
             foreach (int[][] line in _lines)
             {
                 // ライン内の連続成立セル座標を取得

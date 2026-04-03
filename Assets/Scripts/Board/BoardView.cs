@@ -184,13 +184,24 @@ namespace BoardSystem
         /// </summary>
         public void DeletePiece(in BoardIndex index)
         {
+            // 指定座標に駒が存在するか
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
-                // オブジェクト破棄
+                // オブジェクト削除
                 Object.Destroy(piece.Transform.gameObject);
 
                 // 辞書から削除
                 _pieces.Remove(index);
+
+                // --------------------------------------------------
+                // 削除ログ出力
+                // --------------------------------------------------
+                Debug.Log($"駒削除: 座標 ({index.X}, {index.Y}, {index.Z})");
+            }
+            else
+            {
+                // 指定座標に駒が存在しない場合のログ
+                Debug.LogWarning($"DeletePiece 呼び出し時に駒が存在しません: 座標 ({index.X}, {index.Y}, {index.Z})");
             }
         }
 

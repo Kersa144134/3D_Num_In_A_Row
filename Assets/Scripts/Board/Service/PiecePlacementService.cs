@@ -93,27 +93,26 @@ namespace BoardSystem.Service
         /// <param name="board">盤面データ</param>
         /// <param name="columnX">列 X インデックス</param>
         /// <param name="columnZ">列 Z インデックス</param>
-        /// <returns>移動情報リスト（読み取り専用）</returns>
+        /// <returns>駒単位の移動情報リスト（読み取り専用）</returns>
         public IReadOnlyList<(BoardIndex from, BoardIndex to)> Reposition(
             in BoardState board,
             in int columnX,
             in int columnZ)
         {
-            // バッファ初期化
-            _repositionBuffer.Clear();
+            // 列専用の移動リスト
+            List<(BoardIndex from, BoardIndex to)> moves = new List<(BoardIndex, BoardIndex)>();
 
             // 盤面サイズ取得
             int boardSize = board.GetSize();
 
-            // 書き込み先ポインタ
+            // 書き込みポインタ
             int writeY = 0;
 
             // 下から探索
             for (int readY = 0; readY < boardSize; readY++)
             {
-                // 移動元インデックス生成
+                // 移動元インデックス
                 BoardIndex fromIndex = new BoardIndex(columnX, readY, columnZ);
-
                 int value = board.Get(fromIndex);
 
                 if (value == EMPTY)
@@ -121,32 +120,28 @@ namespace BoardSystem.Service
                     continue;
                 }
 
-                // 既に正しい位置にある場合は次の書き込み位置へ
+                // 正しい位置にある場合は書き込みポインタを進める
                 if (readY == writeY)
                 {
                     writeY++;
                     continue;
                 }
 
-                // --------------------------------------------------
-                // 移動処理
-                // --------------------------------------------------
                 // 移動先インデックス生成
                 BoardIndex toIndex = new BoardIndex(columnX, writeY, columnZ);
 
+                // モデル上で値を移動
                 board.Set(toIndex, value);
                 board.Set(fromIndex, EMPTY);
 
-                // --------------------------------------------------
-                // 移動情報記録
-                // --------------------------------------------------
-                _repositionBuffer.Add((fromIndex, toIndex));
+                // 移動情報を記録
+                moves.Add((fromIndex, toIndex));
 
-                // 次の書き込み位置へ
+                // 書き込みポインタを進める
                 writeY++;
             }
 
-            return _repositionBuffer;
+            return moves;
         }
 
         // ======================================================
