@@ -2,11 +2,12 @@
 // BoardPresenter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-03-16
-// 概要     : 3D 目並べゲームの盤面を制御するクラス
+// 更新日時 : 2026-04-03
+// 概要     : 3D 目並べゲームの盤面を制御するクラス（コメント粒度強化版）
 // ======================================================
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using UniRx;
@@ -14,13 +15,11 @@ using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using BoardSystem.Data;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace BoardSystem
 {
     /// <summary>
-    /// 目並べプレゼンター
+    /// 盤面操作用プレゼンター
     /// </summary>
     public sealed class BoardPresenter : MonoBehaviour, IUpdatable
     {
@@ -29,24 +28,34 @@ namespace BoardSystem
         // ======================================================
 
         [Header("盤面")]
-        /// <summary>盤面サイズ</summary>
+        /// <summary>
+        /// 盤面サイズ（X,Z方向）
+        /// </summary>
         [SerializeField, Min(3)]
         private int _boardSize;
 
-        /// <summary>勝利条件マス数</summary>
+        /// <summary>
+        /// 勝利条件の連続駒数
+        /// </summary>
         [SerializeField, Min(3)]
         private int _connectCount;
 
-        /// <summary>1P 駒 Prefab</summary>
+        /// <summary>
+        /// 1P駒Prefab
+        /// </summary>
         [SerializeField]
         private GameObject _playerOnePrefab;
 
-        /// <summary>2P 駒 Prefab</summary>
+        /// <summary>
+        /// 2P駒Prefab
+        /// </summary>
         [SerializeField]
         private GameObject _playerTwoPrefab;
 
         [Header("レイヤー")]
-        /// <summary>Ray がヒットするレイヤー</summary>
+        /// <summary>
+        /// Ray判定用レイヤー
+        /// </summary>
         [SerializeField]
         private LayerMask _raycastLayerMask;
 
@@ -60,172 +69,148 @@ namespace BoardSystem
         /// <summary>ビュー</summary>
         private BoardView _view;
 
-        // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>現在のプレイヤー ID</summary>
+        /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
-        /// <summary>クリック判定対象の Collider</summary>
+        /// <summary>盤面のクリック判定用 Collider</summary>
         private Collider _boardCollider;
 
-        /// <summary>落下処理中フラグ</summary>
+        /// <summary>駒落下・ライン削除中フラグ</summary>
         private bool _isProcessing;
 
         // ======================================================
         // UniRx 変数
         // ======================================================
 
-        /// <summary>購読管理</summary>
+        /// <summary>イベント購読管理</summary>
         private CompositeDisposable _disposables;
 
-        /// <summary>ライン成立用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete =
-            new Subject<LineCompleteEvent>();
+        /// <summary>
+        /// ライン成立通知用 Subject
+        /// </summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
 
         /// <summary>ライン成立ストリーム</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete =>
-            _onLineComplete;
+        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
         // ======================================================
         // 定数
         // ======================================================
 
-        /// <summary>1P</summary>
+        /// <summary>1P ID</summary>
         private const int PLAYER_ONE = 1;
 
-        /// <summary>2P</summary>
+        /// <summary>2P ID</summary>
         private const int PLAYER_TWO = 2;
 
         // ======================================================
-        // IUpdatable
+        // ライフサイクル
         // ======================================================
 
+        /// <summary>
+        /// 初期化処理
+        /// </summary>
         public void OnEnter()
         {
-            // モデル、ビューの生成
-            _model =
-                new BoardModel(
-                    _boardSize,
-                    _connectCount);
+            _model = new BoardModel(_boardSize, _connectCount);
+            _view = new BoardView(
+                transform,
+                _boardSize,
+                _playerOnePrefab,
+                _playerTwoPrefab
+            );
 
-            _view =
-                new BoardView(
-                    transform,
-                    _boardSize,
-                    _playerOnePrefab,
-                    _playerTwoPrefab);
-
-            // コライダー取得
             _boardCollider = GetComponentInChildren<Collider>(true);
-
             if (_boardCollider == null)
             {
                 throw new InvalidOperationException("BoardCollider が見つかりません。");
             }
 
             // 初期プレイヤー設定
+            // 1Pから開始
             _currentPlayer = PLAYER_ONE;
         }
 
+        /// <summary>
+        /// 終了処理
+        /// </summary>
         public void OnExit()
         {
-            // イベント購読解除
             _disposables.Dispose();
             _model.Dispose();
         }
 
+        /// <summary>
+        /// フェーズ開始時処理
+        /// </summary>
         public void OnPhaseEnter(in PhaseType phase)
         {
-            if (phase == PhaseType.Play)
-            {
-                // --------------------------------------------------
-                // イベント購読
-                // --------------------------------------------------
-                _disposables = new CompositeDisposable();
+            if (phase != PhaseType.Play) return;
 
-                // A ボタン押下時
-                InputManager.Instance.ButtonA.OnDown
-                    .Subscribe(_ => HandleDropColumn())
-                    .AddTo(_disposables);
+            // --------------------------------------------------
+            // イベント購読
+            // --------------------------------------------------
+            _disposables = new CompositeDisposable();
 
-                // B ボタン押下時
-                InputManager.Instance.ButtonB.OnDown
-                    .Subscribe(_ => HandleDropColumn())
-                    .AddTo(_disposables);
+            // ボタンA 押下
+            InputManager.Instance.ButtonA.OnDown
+                .Subscribe(_ => HandleDropColumn())
+                .AddTo(_disposables);
 
-                // ライン成立時
-                _model.OnLineComplete
-                    .Subscribe(lineEvent =>
-                    {
-                        // イベント客家
-                        _onLineComplete.OnNext(lineEvent);
+            // ボタンB 押下
+            InputManager.Instance.ButtonB.OnDown
+                .Subscribe(_ => HandleDropColumn())
+                .AddTo(_disposables);
 
-                        // 成立ラインの駒を削除
-                        HandleLineDelete(lineEvent);
-                    })
-                    .AddTo(_disposables);
-            }
+            // モデルからのライン成立通知購読
+            _model.OnLineComplete
+                .Subscribe(async lineEvent =>
+                {
+                    // ラインイベントを外部に通知
+                    _onLineComplete.OnNext(lineEvent);
+
+                    // ライン削除処理
+                    await HandleLineDeleteAsync(lineEvent);
+                })
+                .AddTo(_disposables);
         }
 
+        /// <summary>
+        /// フェーズ終了時処理
+        /// </summary>
         public void OnPhaseExit(in PhaseType phase)
         {
-            if (phase == PhaseType.Play)
-            {
-                // イベント購読解除
-                _disposables.Dispose();
-                _disposables = null;
-            }
+            if (phase != PhaseType.Play) return;
+
+            _disposables.Dispose();
+            _disposables = null;
         }
 
         // ======================================================
-        // プライベートメソッド
+        // 駒落下関連
         // ======================================================
 
         /// <summary>
-        /// 駒落下時に呼ばれるハンドラ
+        /// クリック座標から駒落下処理を開始
         /// </summary>
         private void HandleDropColumn()
         {
             // --------------------------------------------------
-            // Ray 生成
+            // カメラから Ray生成
             // --------------------------------------------------
             Ray ray = Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
 
-            bool isHit =
-                Physics.Raycast(
-                    ray,
-                    out RaycastHit hit,
-                    Mathf.Infinity,
-                    _raycastLayerMask);
+            // --------------------------------------------------
+            // Ray 判定
+            // --------------------------------------------------
+            bool isHit = Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _raycastLayerMask);
+            if (!isHit || hit.collider != _boardCollider) return;
 
             // --------------------------------------------------
-            // ヒット判定
-            // --------------------------------------------------
-            // ヒットしなかった場合は処理なし
-            if (!isHit)
-            {
-                return;
-            }
-
-            // コライダーが自身と一致しない場合は処理なし
-            if (hit.collider != _boardCollider)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // ワールド座標取得
+            // ヒット座標を列インデックスに変換
             // --------------------------------------------------
             Vector3 hitPos = hit.point;
-
-            // ビューに列変換処理を委譲
-            _view.WorldToColumn(
-                hitPos.x,
-                hitPos.z,
-                out int x,
-                out int z);
+            _view.WorldToColumn(hitPos.x, hitPos.z, out int x, out int z);
 
             // --------------------------------------------------
             // 駒落下処理
@@ -236,9 +221,7 @@ namespace BoardSystem
         /// <summary>
         /// 駒落下処理
         /// </summary>
-        private async UniTask HandleDropAsync(
-            int x,
-            int z)
+        private async UniTask HandleDropAsync(int x, int z)
         {
             // 多重実行防止
             if (_isProcessing)
@@ -246,63 +229,37 @@ namespace BoardSystem
                 return;
             }
 
-            // 処理開始
             _isProcessing = true;
 
             // --------------------------------------------------
             // 配置可能判定
             // --------------------------------------------------
-            bool canDrop = _model.CanPlace(
-                x,
-                z
-            );
+            bool canDrop = _model.CanPlace(x, z);
 
             if (!canDrop)
             {
-                // 処理終了
                 _isProcessing = false;
-
                 return;
             }
 
-            // --------------------------------------------------
-            // 配置処理
-            // --------------------------------------------------
-            int y = _model.Place(
-                x,
-                z,
-                _currentPlayer
-            );
+            // 駒配置
+            int y = _model.Place(x, z, _currentPlayer);
 
             if (y < 0)
             {
-                // 処理終了
                 _isProcessing = false;
-
                 return;
             }
 
-            // --------------------------------------------------
-            // ビュー更新
-            // --------------------------------------------------
-            await _view.SpawnPieceAsync(
-                x,
-                y,
-                z,
-                _currentPlayer
-            );
+            // 駒生成依頼
+            await _view.SpawnPieceAsync(x, y, z, _currentPlayer);
 
-            // --------------------------------------------------
-            // ライン成立判定
-            // --------------------------------------------------
+            // ライン成立チェック
             _model.CheckLine();
 
-            // --------------------------------------------------
-            // プレイヤー交代
-            // --------------------------------------------------
+            // プレイヤー切替
             SwitchPlayer();
 
-            // 処理終了
             _isProcessing = false;
         }
 
@@ -311,36 +268,71 @@ namespace BoardSystem
         /// </summary>
         private void SwitchPlayer()
         {
-            _currentPlayer =
-                _currentPlayer == PLAYER_ONE
-                ? PLAYER_TWO
-                : PLAYER_ONE;
+            _currentPlayer = _currentPlayer == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
         }
 
         /// <summary>
-        /// ライン成立時の削除処理
+        /// ライン成立時に駒を削除して再配置
         /// </summary>
-        /// <param name="lineEvent">ライン情報</param>
-        private void HandleLineDelete(LineCompleteEvent lineEvent)
+        private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
-            // --------------------------------------------------
-            // 成立ラインの駒を削除
-            // --------------------------------------------------
-            foreach (IReadOnlyList<BoardIndex> line in lineEvent.LinePositions)
-            {
-                foreach (BoardIndex index in line)
-                {
-                    // --------------------------------------------------
-                    // ビューに削除委譲
-                    // --------------------------------------------------
-                    _view.DeletePiece(index);
+            // 再配置対象列の HashSet
+            HashSet<(int x, int z)> columnSet = new HashSet<(int, int)>();
 
-                    // --------------------------------------------------
-                    // モデルも盤面クリア
-                    // --------------------------------------------------
-                    _model.ClearCell(index);
+            for (int i = 0; i < lineEvent.LinePositions.Length; i++)
+            {
+                IReadOnlyList<BoardIndex> line = lineEvent.LinePositions[i];
+
+                for (int j = 0; j < line.Count; j++)
+                {
+                    BoardIndex index = line[j];
+
+                    // 駒が存在する場合のみ削除
+                    if (_view.HasPiece(index))
+                    {
+                        _view.DeletePiece(index);
+                        _model.ClearCell(index);
+                        columnSet.Add((index.X, index.Z));
+                    }
                 }
             }
+
+            // 再配置対象列をリスト化
+            List<(int x, int z)> repositionColumns = new List<(int, int)>(columnSet);
+
+            // 駒再配置処理
+            await HandleRepositionAsync(repositionColumns);
+        }
+
+        /// <summary>
+        /// 駒再配置処理
+        /// </summary>
+        private async UniTask HandleRepositionAsync(IReadOnlyList<(int x, int z)> repositionColumns)
+        {
+            // 全移動情報リスト
+            List<(BoardIndex from, BoardIndex to)> allMoves = new List<(BoardIndex, BoardIndex)>();
+
+            // 各列ごとにモデルから移動情報取得-
+            for (int i = 0; i < repositionColumns.Count; i++)
+            {
+                (int x, int z) column = repositionColumns[i];
+
+                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                    _model.Reposition(column.x, column.z);
+
+                for (int j = 0; j < moves.Count; j++)
+                {
+                    allMoves.Add(moves[j]);
+                }
+            }
+
+            if (allMoves.Count == 0)
+            {
+                return;
+            }
+
+            // 落下処理
+            await _view.MovePiecesAsync(allMoves);
         }
     }
 }

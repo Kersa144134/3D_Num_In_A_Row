@@ -2,7 +2,7 @@
 // BoardView.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-04-02
+// 更新日時 : 2026-04-03
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
@@ -27,7 +27,8 @@ namespace BoardSystem
         private readonly BoardPositionConvertService _boardPositionConvert;
 
         /// <summary>落下アニメーションサービス</summary>
-        private readonly DropAnimationService _dropAnimation = new DropAnimationService();
+        private readonly DropAnimationService _dropAnimation =
+            new DropAnimationService();
 
         // ======================================================
         // フィールド
@@ -59,7 +60,7 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// コンストラクタ
+        /// ビュー生成
         /// </summary>
         public BoardView(
             in Transform root,
@@ -68,23 +69,21 @@ namespace BoardSystem
             in GameObject p2)
         {
             _root = root;
+            _boardSize = boardSize;
             _playerOnePrefab = p1;
             _playerTwoPrefab = p2;
-            _boardSize = boardSize;
+
+            // セル間隔算出
             _cellSpacing = root.localScale.x / boardSize;
 
+            // 座標変換サービス初期化
             _boardPositionConvert = new BoardPositionConvertService(
                 boardSize,
                 root.position
             );
 
-            // 最大配置数を算出
-            int capacity =
-                _boardSize *
-                _boardSize *
-                _boardSize;
-
-            // Dictionary 初期化
+            // 最大駒数を元に容量確保
+            int capacity = _boardSize * _boardSize * _boardSize;
             _pieces = new Dictionary<BoardIndex, PieceData>(capacity);
         }
 
@@ -120,7 +119,7 @@ namespace BoardSystem
             int player)
         {
             // --------------------------------------------------
-            // 目標ワールド座標の算出
+            // 目標ワールド座標算出
             // --------------------------------------------------
             _boardPositionConvert.ColumnToWorldPosition(
                 _cellSpacing,
@@ -133,23 +132,24 @@ namespace BoardSystem
             );
 
             // --------------------------------------------------
-            // 生成位置
-            // Y のみ上空からスタート
+            // 生成位置取得
             // --------------------------------------------------
             float spawnY = _boardPositionConvert.GetSpawnWorldY(_cellSpacing);
-
-            Vector3 start = new Vector3(targetX, spawnY, targetZ);
-            Vector3 end = new Vector3(targetX, targetY, targetZ);
+            Vector3 startPosition = new Vector3(targetX, spawnY, targetZ);
+            Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
 
             // --------------------------------------------------
             // 駒生成
             // --------------------------------------------------
-            GameObject prefab = player == 1 ? _playerOnePrefab : _playerTwoPrefab;
+            // プレハブ選択
+            GameObject prefab = player == 1
+                ? _playerOnePrefab
+                : _playerTwoPrefab;
 
             // インスタンス生成
             GameObject piece = Object.Instantiate(
                 prefab,
-                start,
+                startPosition,
                 Quaternion.identity,
                 _root
             );
@@ -161,19 +161,22 @@ namespace BoardSystem
             // --------------------------------------------------
             // 落下アニメーション
             // --------------------------------------------------
-            await _dropAnimation.AnimateDropAsync(piece.transform, start, end);
+            await _dropAnimation.AnimateDropAsync(piece.transform, startPosition, endPosition);
 
             // --------------------------------------------------
-            // 駒辞書に追加
+            // 辞書登録
             // --------------------------------------------------
-            // 座標を BoardIndex に変換
             BoardIndex index = new BoardIndex(x, y, z);
-
-            // 駒データ生成
             PieceData pieceData = new PieceData(piece.transform, player);
-
-            // 辞書に登録
             _pieces[index] = pieceData;
+        }
+
+        /// <summary>
+        /// 駒存在判定
+        /// </summary>
+        public bool HasPiece(BoardIndex index)
+        {
+            return _pieces.ContainsKey(index);
         }
 
         /// <summary>
@@ -183,9 +186,56 @@ namespace BoardSystem
         {
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
+                // オブジェクト破棄
                 Object.Destroy(piece.Transform.gameObject);
+
+                // 辞書から削除
                 _pieces.Remove(index);
             }
+        }
+
+        /// <summary>
+        /// 複数駒を同時に落下させる
+        /// </summary>
+        public async UniTask MovePiecesAsync(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        {
+            List<UniTask> tasks = new List<UniTask>(moves.Count);
+
+            for (int i = 0; i < moves.Count; i++)
+            {
+                (BoardIndex from, BoardIndex to) move = moves[i];
+
+                if (_pieces.TryGetValue(move.from, out PieceData piece) == false)
+                {
+                    continue;
+                }
+
+                // 開始位置取得
+                Vector3 startPosition = piece.Transform.position;
+
+                // 終了位置算出
+                _boardPositionConvert.ColumnToWorldPosition(
+                    _cellSpacing,
+                    move.to.X,
+                    move.to.Y,
+                    move.to.Z,
+                    out float targetX,
+                    out float targetY,
+                    out float targetZ
+                );
+
+                Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
+
+                // アニメーション登録
+                tasks.Add(_dropAnimation.AnimateDropAsync(piece.Transform, startPosition, endPosition));
+
+                // 辞書更新
+                _pieces.Remove(move.from);
+                _pieces[move.to] = piece;
+            }
+
+            // 全駒の落下完了を待機
+            await UniTask.WhenAll(tasks);
         }
     }
 }

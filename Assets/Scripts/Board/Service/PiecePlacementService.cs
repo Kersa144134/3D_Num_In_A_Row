@@ -2,7 +2,7 @@
 // PiecePlacementService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
-// 更新日時 : 2026-04-02
+// 更新日時 : 2026-04-03
 // 概要     : 列への駒配置ロジックサービス
 // ======================================================
 
@@ -16,6 +16,23 @@ namespace BoardSystem.Service
     /// </summary>
     public sealed class PiecePlacementService
     {
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>空マスを示す値</summary>
+        private const int EMPTY = 0;
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>
+        /// 再配置時の移動情報バッファ
+        /// </summary>
+        private readonly List<(BoardIndex from, BoardIndex to)> _repositionBuffer =
+            new List<(BoardIndex, BoardIndex)>(32);
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -32,24 +49,7 @@ namespace BoardSystem.Service
             in int columnX,
             in int columnZ)
         {
-            // 盤面サイズ取得
-            int boardSize = board.GetSize();
-
-            // 上から順に空マスをチェック
-            for (int y = boardSize - 1; y >= 0; y--)
-            {
-                // インデックス生成
-                BoardIndex index = new BoardIndex(columnX, y, columnZ);
-
-                // 空マスがあれば配置可能
-                if (board.Get(index) == 0)
-                {
-                    return true;
-                }
-            }
-
-            // 空きが無い場合は配置不可
-            return false;
+            return FindEmptyY(board, columnX, columnZ) != -1;
         }
 
         /// <summary>
@@ -66,28 +66,25 @@ namespace BoardSystem.Service
             in int columnZ,
             in int player)
         {
-            // 盤面サイズ取得
-            int boardSize = board.GetSize();
-
-            // 下から空マスを探索して配置
-            for (int y = 0; y < boardSize; y++)
-            {
-                // 指定座標のインデックス生成
-                BoardIndex index = new BoardIndex(columnX, y, columnZ);
-
-                // 空マスなら配置
-                if (board.Get(index) == 0)
-                {
-                    // プレイヤー番号を書き込む
-                    board.Set(index, player);
-
-                    // 配置したインデックスを返す
-                    return index.Y;
-                }
-            }
+            int y = FindEmptyY(
+                board,
+                columnX,
+                columnZ
+            );
 
             // 配置不可
-            return -1;
+            if (y == -1)
+            {
+                return -1;
+            }
+
+            // インデックス生成
+            BoardIndex index = new BoardIndex(columnX, y, columnZ);
+
+            // プレイヤー番号を書き込み
+            board.Set(index, player);
+
+            return y;
         }
 
         /// <summary>
@@ -96,55 +93,35 @@ namespace BoardSystem.Service
         /// <param name="board">盤面データ</param>
         /// <param name="columnX">列 X インデックス</param>
         /// <param name="columnZ">列 Z インデックス</param>
-        /// <returns>移動情報リスト（移動が無い場合は空）</returns>
-        public List<(BoardIndex from, BoardIndex to)> Reposition(
+        /// <returns>移動情報リスト（読み取り専用）</returns>
+        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Reposition(
             in BoardState board,
             in int columnX,
             in int columnZ)
         {
-            // --------------------------------------------------
+            // バッファ初期化
+            _repositionBuffer.Clear();
+
             // 盤面サイズ取得
-            // --------------------------------------------------
             int boardSize = board.GetSize();
 
-            // --------------------------------------------------
-            // 移動情報を保持するリスト
-            // --------------------------------------------------
-            List<(BoardIndex from, BoardIndex to)> moves =
-                new List<(BoardIndex, BoardIndex)>();
-
-            // --------------------------------------------------
             // 書き込み先ポインタ
-            // --------------------------------------------------
             int writeY = 0;
 
-            // --------------------------------------------------
-            // 下から順に走査
-            // --------------------------------------------------
+            // 下から探索
             for (int readY = 0; readY < boardSize; readY++)
             {
-                // --------------------------------------------------
-                // 読み取りインデックス生成
-                // --------------------------------------------------
-                BoardIndex fromIndex =
-                    new BoardIndex(columnX, readY, columnZ);
+                // 移動元インデックス生成
+                BoardIndex fromIndex = new BoardIndex(columnX, readY, columnZ);
 
-                // --------------------------------------------------
-                // 値取得
-                // --------------------------------------------------
                 int value = board.Get(fromIndex);
 
-                // --------------------------------------------------
-                // 空マスはスキップ
-                // --------------------------------------------------
-                if (value == 0)
+                if (value == EMPTY)
                 {
                     continue;
                 }
 
-                // --------------------------------------------------
-                // 正しい位置ならスキップ
-                // --------------------------------------------------
+                // 既に正しい位置にある場合は次の書き込み位置へ
                 if (readY == writeY)
                 {
                     writeY++;
@@ -152,36 +129,60 @@ namespace BoardSystem.Service
                 }
 
                 // --------------------------------------------------
-                // 書き込み先インデックス生成
+                // 移動処理
                 // --------------------------------------------------
-                BoardIndex toIndex =
-                    new BoardIndex(columnX, writeY, columnZ);
+                // 移動先インデックス生成
+                BoardIndex toIndex = new BoardIndex(columnX, writeY, columnZ);
 
-                // --------------------------------------------------
-                // 下に詰める
-                // --------------------------------------------------
                 board.Set(toIndex, value);
+                board.Set(fromIndex, EMPTY);
 
                 // --------------------------------------------------
-                // 元の位置をクリア
+                // 移動情報記録
                 // --------------------------------------------------
-                board.Set(fromIndex, 0);
+                _repositionBuffer.Add((fromIndex, toIndex));
 
-                // --------------------------------------------------
-                // 移動情報を記録
-                // --------------------------------------------------
-                moves.Add((fromIndex, toIndex));
-
-                // --------------------------------------------------
                 // 次の書き込み位置へ
-                // --------------------------------------------------
                 writeY++;
             }
 
-            // --------------------------------------------------
-            // 移動情報を返却
-            // --------------------------------------------------
-            return moves;
+            return _repositionBuffer;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 指定列の空マス Y を取得
+        /// </summary>
+        /// <param name="board">盤面データ</param>
+        /// <param name="columnX">列X</param>
+        /// <param name="columnZ">列Z</param>
+        /// <returns>空マス Y　無ければ -1</returns>
+        private int FindEmptyY(
+            in BoardState board,
+            in int columnX,
+            in int columnZ)
+        {
+            // 盤面サイズ取得
+            int boardSize = board.GetSize();
+
+            // 下から探索
+            for (int y = 0; y < boardSize; y++)
+            {
+                // インデックス生成
+                BoardIndex index = new BoardIndex(columnX, y, columnZ);
+
+                // 空マスなら返却
+                if (board.Get(index) == EMPTY)
+                {
+                    return y;
+                }
+            }
+
+            // 空きなし
+            return -1;
         }
     }
 }

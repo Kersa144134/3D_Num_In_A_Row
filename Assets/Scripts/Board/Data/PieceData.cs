@@ -16,7 +16,7 @@ namespace BoardSystem.Data
     public readonly struct PieceData
     {
         // ======================================================
-        // フィールド
+        // プロパティ
         // ======================================================
 
         /// <summary>Transform参照</summary>
@@ -34,7 +34,7 @@ namespace BoardSystem.Data
         /// </summary>
         /// <param name="transform">対象Transform</param>
         /// <param name="player">プレイヤー番号</param>
-        public PieceData(Transform transform, int player)
+        public PieceData(in Transform transform, in int player)
         {
             // Transformを設定
             Transform = transform;

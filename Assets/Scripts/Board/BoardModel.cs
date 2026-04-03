@@ -7,6 +7,7 @@
 // ======================================================
 
 using System;
+using System.Collections.Generic;
 using BoardSystem.Data;
 using BoardSystem.Service;
 using UniRx;
@@ -77,7 +78,7 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// 落下可能判定
+        /// 配置可能判定
         /// </summary>
         public bool CanPlace(
             in int x,
@@ -91,7 +92,7 @@ namespace BoardSystem
         }
 
         /// <summary>
-        /// 落下処理
+        /// 配置処理
         /// </summary>
         public int Place(
             in int x,
@@ -109,11 +110,11 @@ namespace BoardSystem
         /// <summary>
         /// 指定列の再配置処理
         /// </summary>
-        public void Reposition(
+        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Reposition(
             in int x,
             in int z)
         {
-            _piecePlacement.Reposition(
+            return _piecePlacement.Reposition(
                 _boardState,
                 x,
                 z

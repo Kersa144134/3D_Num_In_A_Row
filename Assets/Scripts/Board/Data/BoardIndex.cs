@@ -16,7 +16,7 @@ namespace BoardSystem.Data
     public readonly struct BoardIndex
     {
         // ======================================================
-        // フィールド
+        // プロパティ
         // ======================================================
 
         /// <summary>X座標</summary>
@@ -48,7 +48,7 @@ namespace BoardSystem.Data
         /// <param name="x">X座標</param>
         /// <param name="y">Y座標</param>
         /// <param name="z">Z座標</param>
-        public BoardIndex(int x, int y, int z)
+        public BoardIndex(in int x, in int y, in int z)
         {
             // X座標を設定
             X = x;
