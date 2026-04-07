@@ -31,6 +31,9 @@ namespace BoardSystem.Domain
         /// <summary>生成ラインの一時プール</summary>
         private readonly List<int[][]> _linePool;
 
+        /// <summary>再利用可能なラインバッファプール</summary>
+        private readonly Dictionary<int, Stack<int[][]>> _lineBufferPool = new Dictionary<int, Stack<int[][]>>();
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -46,7 +49,6 @@ namespace BoardSystem.Domain
             _connectCount = connectCount;
 
             // ラインプールを初期化
-            // 軸方向 + 斜め方向の最大数を目安に容量確保
             _linePool = new List<int[][]>(_boardSize * _boardSize * 6);
         }
 
@@ -82,7 +84,9 @@ namespace BoardSystem.Domain
         /// </summary>
         private void GenerateAxisLines()
         {
-            // X 軸方向ライン
+            // --------------------------------------------------
+            // X
+            // --------------------------------------------------
             for (int y = 0; y < _boardSize; y++)
             {
                 for (int z = 0; z < _boardSize; z++)
@@ -91,7 +95,9 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // Y 軸方向ライン
+            // --------------------------------------------------
+            // Y
+            // --------------------------------------------------
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int z = 0; z < _boardSize; z++)
@@ -100,7 +106,9 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // Z 軸方向ライン
+            // --------------------------------------------------
+            // Z
+            // --------------------------------------------------
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int y = 0; y < _boardSize; y++)
@@ -111,85 +119,91 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XY,XZ,YZ 各面の斜めラインを生成する
+        /// XY, XZ, YZ 各面の斜めラインを生成する
         /// </summary>
         private void GenerateDiagonalLines()
         {
-            // XY 面
+            // --------------------------------------------------
+            // XY
+            // --------------------------------------------------
             for (int z = 0; z < _boardSize; z++)
             {
                 for (int startY = 0; startY < _boardSize; startY++)
                 {
-                    AddLineDiagonalXY(0, startY, z, 1, 1);
+                    AddLineDiagonal(z, 0, startY, 1, 1, 0);
                 }
 
                 for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddLineDiagonalXY(startX, 0, z, 1, 1);
+                    AddLineDiagonal(z, startX, 0, 1, 1, 0);
                 }
 
                 for (int startY = 0; startY < _boardSize; startY++)
                 {
-                    AddLineDiagonalXY(0, startY, z, 1, -1);
+                    AddLineDiagonal(z, 0, startY, 1, -1, 0);
                 }
 
                 for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddLineDiagonalXY(startX, _boardSize - 1, z, 1, -1);
+                    AddLineDiagonal(z, startX, _boardSize - 1, 1, -1, 0);
                 }
             }
 
-            // XZ 面
+            // --------------------------------------------------
+            // XZ
+            // --------------------------------------------------
             for (int y = 0; y < _boardSize; y++)
             {
                 for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddLineDiagonalXZ(0, y, startZ, 1, 1);
+                    AddLineDiagonal(y, 0, startZ, 1, 1, 1);
                 }
 
                 for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddLineDiagonalXZ(startX, y, 0, 1, 1);
+                    AddLineDiagonal(y, startX, 0, 1, 1, 1);
                 }
 
                 for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddLineDiagonalXZ(0, y, startZ, 1, -1);
+                    AddLineDiagonal(y, 0, startZ, 1, -1, 1);
                 }
 
                 for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddLineDiagonalXZ(startX, y, _boardSize - 1, 1, -1);
+                    AddLineDiagonal(y, startX, _boardSize - 1, 1, -1, 1);
                 }
             }
 
-            // YZ 面
+            // --------------------------------------------------
+            // YZ
+            // --------------------------------------------------
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddLineDiagonalYZ(x, 0, startZ, 1, 1);
+                    AddLineDiagonal(x, 0, startZ, 1, 1, 2);
                 }
 
                 for (int startY = 1; startY < _boardSize; startY++)
                 {
-                    AddLineDiagonalYZ(x, startY, 0, 1, 1);
+                    AddLineDiagonal(x, startY, 0, 1, 1, 2);
                 }
 
                 for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddLineDiagonalYZ(x, _boardSize - 1, startZ, -1, 1);
+                    AddLineDiagonal(x, _boardSize - 1, startZ, -1, 1, 2);
                 }
 
                 for (int startY = 1; startY < _boardSize; startY++)
                 {
-                    AddLineDiagonalYZ(x, startY, 0, -1, 1);
+                    AddLineDiagonal(x, startY, 0, -1, 1, 2);
                 }
             }
         }
 
         /// <summary>
-        /// 軸方向ラインを生成してプールに追加する
+        /// X, Y, Z 軸方向のラインを生成してラインプールに追加する
         /// </summary>
         /// <param name="startX">開始 X 座標</param>
         /// <param name="startY">開始 Y 座標</param>
@@ -209,10 +223,12 @@ namespace BoardSystem.Domain
             int deltaY = (endY - startY) / (_boardSize - 1);
             int deltaZ = (endZ - startZ) / (_boardSize - 1);
 
-            int[][] line = new int[_boardSize][];
+            // プールからバッファ取得
+            int[][] line = GetLineBuffer(_boardSize);
+
+            // 各マスの座標を生成
             for (int i = 0; i < _boardSize; i++)
             {
-                line[i] = new int[3];
                 line[i][0] = startX + i * deltaX;
                 line[i][1] = startY + i * deltaY;
                 line[i][2] = startZ + i * deltaZ;
@@ -222,150 +238,119 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XY 面の斜め方向ラインを生成してプールに追加する
+        /// XY, XZ, YZ 面の斜めラインを共通生成
         /// </summary>
-        /// <param name="startX">開始 X 座標</param>
-        /// <param name="startY">開始 Y 座標</param>
-        /// <param name="z">固定 Z 座標</param>
-        /// <param name="dx">X 方向の増分（±1）</param>
-        /// <param name="dy">Y 方向の増分（±1）</param>
-        private void AddLineDiagonalXY(
-            in int startX,
-            in int startY,
-            in int z,
-            in int dx,
-            in int dy)
+        /// <param name="fixedCoord">固定軸の座標値</param>
+        /// <param name="startA">可変軸Aの開始座標</param>
+        /// <param name="startB">可変軸Bの開始座標</param>
+        /// <param name="deltaA">可変軸A方向の増分</param>
+        /// <param name="deltaB">可変軸B方向の増分</param>
+        /// <param name="plane">面指定（0=XY,1=XZ,2=YZ）</param>
+        private void AddLineDiagonal(
+            in int fixedCoord,
+            in int startA,
+            in int startB,
+            in int deltaA,
+            in int deltaB,
+            in int plane)
         {
-            int n = _boardSize;
-
             int length = 0;
 
-            if (dx > 0 && dy > 0)
+            // 増分方向に応じたライン長計算
+            if (deltaA > 0 && deltaB > 0)
             {
-                length = Mathf.Min(n - startX, n - startY);
+                length = Mathf.Min(_boardSize - startA, _boardSize - startB);
             }
-            else if (dx > 0 && dy < 0)
+            else if (deltaA > 0 && deltaB < 0)
             {
-                length = Mathf.Min(n - startX, startY + 1);
+                length = Mathf.Min(_boardSize - startA, startB + 1);
             }
-            else if (dx < 0 && dy > 0)
+            else if (deltaA < 0 && deltaB > 0)
             {
-                length = Mathf.Min(startX + 1, n - startY);
+                length = Mathf.Min(startA + 1, _boardSize - startB);
             }
             else
             {
-                length = Mathf.Min(startX + 1, startY + 1);
+                length = Mathf.Min(startA + 1, startB + 1);
             }
 
-            int[][] line = new int[length][];
+            // プールからバッファ取得
+            int[][] line = GetLineBuffer(length);
 
+            // 座標生成
             for (int i = 0; i < length; i++)
             {
-                line[i] = new int[3];
-                line[i][0] = startX + i * dx;
-                line[i][1] = startY + i * dy;
-                line[i][2] = z;
+                switch (plane)
+                {
+                    // XY
+                    case 0:
+                        line[i][0] = startA + i * deltaA;
+                        line[i][1] = startB + i * deltaB;
+                        line[i][2] = fixedCoord;
+                        break;
+
+                    // XZ
+                    case 1:
+                        line[i][0] = startA + i * deltaA;
+                        line[i][1] = fixedCoord;
+                        line[i][2] = startB + i * deltaB;
+                        break;
+
+                    // YZ
+                    case 2:
+                        line[i][0] = fixedCoord;
+                        line[i][1] = startA + i * deltaA;
+                        line[i][2] = startB + i * deltaB;
+                        break;
+                }
             }
 
+            // プールに追加
             _linePool.Add(line);
         }
 
         /// <summary>
-        /// XZ 面の斜め方向ラインを生成してプールに追加する
+        /// ラインバッファをプールから取得
         /// </summary>
-        /// <param name="startX">開始 X 座標</param>
-        /// <param name="y">固定 Y 座標</param>
-        /// <param name="startZ">開始 Z 座標</param>
-        /// <param name="dx">X 方向の増分（±1）</param>
-        /// <param name="dz">Z 方向の増分（±1）</param>
-        private void AddLineDiagonalXZ(
-            in int startX,
-            in int y,
-            in int startZ,
-            in int dx,
-            in int dz)
+        /// <param name="length">取得するラインの長さ</param>
+        private int[][] GetLineBuffer(in int length)
         {
-            int n = _boardSize;
-
-            int length = 0;
-
-            if (dx > 0 && dz > 0)
+            if (!_lineBufferPool.TryGetValue(length, out Stack<int[][]> stack))
             {
-                length = Mathf.Min(n - startX, n - startZ);
-            }
-            else if (dx > 0 && dz < 0)
-            {
-                length = Mathf.Min(n - startX, startZ + 1);
-            }
-            else if (dx < 0 && dz > 0)
-            {
-                length = Mathf.Min(startX + 1, n - startZ);
-            }
-            else
-            {
-                length = Mathf.Min(startX + 1, startZ + 1);
+                stack = new Stack<int[][]>();
+                _lineBufferPool[length] = stack;
             }
 
+            if (stack.Count > 0)
+            {
+                // 既存バッファを再利用
+                return stack.Pop();
+            }
+
+            // 新規生成
             int[][] line = new int[length][];
-
             for (int i = 0; i < length; i++)
             {
                 line[i] = new int[3];
-                line[i][0] = startX + i * dx;
-                line[i][1] = y;
-                line[i][2] = startZ + i * dz;
             }
 
-            _linePool.Add(line);
+            return line;
         }
 
         /// <summary>
-        /// YZ 面の斜め方向ラインを生成してプールに追加する
+        /// ラインバッファをプールに返却
         /// </summary>
-        /// <param name="x">固定 X 座標</param>
-        /// <param name="startY">開始 Y 座標</param>
-        /// <param name="startZ">開始 Z 座標</param>
-        /// <param name="dy">Y 方向の増分（±1）</param>
-        /// <param name="dz">Z 方向の増分（±1）</param>
-        private void AddLineDiagonalYZ(
-            in int x,
-            in int startY,
-            in int startZ,
-            in int dy,
-            in int dz)
+        private void ReleaseLineBuffer(int[][] line)
         {
-            int n = _boardSize;
+            int length = line.Length;
 
-            int length = 0;
-
-            if (dy > 0 && dz > 0)
+            if (!_lineBufferPool.TryGetValue(length, out Stack<int[][]> stack))
             {
-                length = Mathf.Min(n - startY, n - startZ);
-            }
-            else if (dy > 0 && dz < 0)
-            {
-                length = Mathf.Min(n - startY, startZ + 1);
-            }
-            else if (dy < 0 && dz > 0)
-            {
-                length = Mathf.Min(startY + 1, n - startZ);
-            }
-            else
-            {
-                length = Mathf.Min(startY + 1, startZ + 1);
+                stack = new Stack<int[][]>();
+                _lineBufferPool[length] = stack;
             }
 
-            int[][] line = new int[length][];
-
-            for (int i = 0; i < length; i++)
-            {
-                line[i] = new int[3];
-                line[i][0] = x;
-                line[i][1] = startY + i * dy;
-                line[i][2] = startZ + i * dz;
-            }
-
-            _linePool.Add(line);
+            stack.Push(line);
         }
     }
 }
