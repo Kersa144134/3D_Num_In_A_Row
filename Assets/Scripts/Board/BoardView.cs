@@ -20,6 +20,43 @@ namespace BoardSystem
     public sealed class BoardView
     {
         // ======================================================
+        // 構造体
+        // ======================================================
+
+        /// <summary>
+        /// 駒移動計画データ
+        /// </summary>
+        private struct MovePlanData
+        {
+            /// <summary>対象駒データ</summary>
+            public PieceData Piece;
+
+            /// <summary>開始位置</summary>
+            public Vector3 Start;
+
+            /// <summary>終了位置</summary>
+            public Vector3 End;
+
+            /// <summary>移動先インデックス</summary>
+            public BoardIndex To;
+
+            /// <summary>
+            /// コンストラクタ
+            /// </summary>
+            public MovePlanData(
+                PieceData piece,
+                Vector3 start,
+                Vector3 end,
+                BoardIndex to)
+            {
+                Piece = piece;
+                Start = start;
+                End = end;
+                To = to;
+            }
+        }
+        
+        // ======================================================
         // コンポーネント参照
         // ======================================================
 
@@ -192,11 +229,6 @@ namespace BoardSystem
 
                 // 辞書から削除
                 _pieces.Remove(index);
-
-                // --------------------------------------------------
-                // 削除ログ出力
-                // --------------------------------------------------
-                Debug.Log($"駒削除: 座標 ({index.X}, {index.Y}, {index.Z})");
             }
             else
             {
@@ -210,13 +242,38 @@ namespace BoardSystem
         /// </summary>
         public async UniTask MovePiecesAsync(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            List<UniTask> tasks = new List<UniTask>(moves.Count);
+            // 移動計画作成
+            List<MovePlanData> plans = CreateMovePlans(moves);
+
+            if (plans.Count == 0)
+            {
+                return;
+            }
+
+            // アニメーション実行
+            await ExecuteMoveAnimations(plans);
+        }
+
+        /// <summary>
+        /// 移動計画を生成
+        /// </summary>
+        private List<MovePlanData> CreateMovePlans(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        {
+            // スナップショット作成
+            Dictionary<BoardIndex, PieceData> snapshot =
+                new Dictionary<BoardIndex, PieceData>(_pieces);
+
+            // 計画リスト生成
+            List<MovePlanData> plans =
+                new List<MovePlanData>(moves.Count);
 
             for (int i = 0; i < moves.Count; i++)
             {
+                // 移動情報取得
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
-                if (_pieces.TryGetValue(move.from, out PieceData piece) == false)
+                // スナップショットから駒を取得
+                if (snapshot.TryGetValue(move.from, out PieceData piece) == false)
                 {
                     continue;
                 }
@@ -235,17 +292,47 @@ namespace BoardSystem
                     out float targetZ
                 );
 
-                Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
+                Vector3 endPosition =
+                    new Vector3(targetX, targetY, targetZ);
 
-                // アニメーション登録
-                tasks.Add(_dropAnimation.AnimateDropAsync(piece.Transform, startPosition, endPosition));
-
-                // 辞書更新
-                _pieces.Remove(move.from);
-                _pieces[move.to] = piece;
+                // 計画追加
+                plans.Add(
+                    new MovePlanData(
+                        piece,
+                        startPosition,
+                        endPosition,
+                        move.to
+                    )
+                );
             }
 
-            // 全駒の落下完了を待機
+            return plans;
+        }
+
+        /// <summary>
+        /// 駒落下アニメーション実行
+        /// </summary>
+        private async UniTask ExecuteMoveAnimations(List<MovePlanData> plans)
+        {
+            // タスクリスト生成
+            List<UniTask> tasks =
+                new List<UniTask>(plans.Count);
+
+            for (int i = 0; i < plans.Count; i++)
+            {
+                MovePlanData plan = plans[i];
+
+                // アニメーション登録
+                tasks.Add(
+                    _dropAnimation.AnimateDropAsync(
+                        plan.Piece.Transform,
+                        plan.Start,
+                        plan.End
+                    )
+                );
+            }
+
+            // 全アニメーションの完了を待機
             await UniTask.WhenAll(tasks);
         }
     }

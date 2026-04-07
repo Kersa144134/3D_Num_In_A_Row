@@ -78,46 +78,58 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// 配置可能判定
+        /// 指定列の配置計算処理
         /// </summary>
-        public bool CanPlace(
-            in int x,
-            in int z)
+        public int CalculatePlace(
+            in int columnX,
+            in int columnZ)
         {
-            return _piecePlacement.CanPlace(
+            return _piecePlacement.CalculatePlace(
                 _boardState,
-                x,
-                z
+                columnX,
+                columnZ
             );
         }
 
         /// <summary>
-        /// 配置処理
+        /// 配置適用処理
         /// </summary>
-        public int Place(
-            in int x,
-            in int z,
+        public void ApplyPlace(
+            in BoardIndex index,
             in int player)
         {
-            return _piecePlacement.Place(
+            _piecePlacement.ApplyPlace(
                 _boardState,
-                x,
-                z,
+                index,
                 player
             );
         }
 
         /// <summary>
-        /// 指定列の再配置処理
+        /// 指定列の再配置計算処理
         /// </summary>
-        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Reposition(
-            in int x,
-            in int z)
+        public IReadOnlyList<(BoardIndex from, BoardIndex to)> CalculateReposition(
+            in int columnX,
+            in int columnZ)
         {
-            return _piecePlacement.Reposition(
+            return _piecePlacement.CalculateReposition(
                 _boardState,
-                x,
-                z
+                columnX,
+                columnZ
+            );
+        }
+
+        /// <summary>
+        /// 再配置適用処理
+        /// </summary>
+        public void ApplyReposition(
+            in int columnX,
+            in int columnZ)
+        {
+            _piecePlacement.ApplyReposition(
+                _boardState,
+                columnX,
+                columnZ
             );
         }
 
@@ -143,6 +155,18 @@ namespace BoardSystem
         public void Dispose()
         {
             _lineJudge.Dispose();
+        }
+
+        /// <summary>
+        /// 指定列（X,Z）の全Y値を取得
+        /// </summary>
+        /// <param name="columnX">列X</param>
+        /// <param name="columnZ">列Z</param>
+        public void GetColumnValues(
+            in int columnX,
+            in int columnZ)
+        {
+            _boardState.GetColumnValues(columnX, columnZ);
         }
     }
 }

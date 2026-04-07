@@ -119,36 +119,46 @@ namespace BoardSystem.Service
             in BoardState board,
             in int[][] line)
         {
-            // 結果格納用リスト
+            // --------------------------------------------------
+            // 結果格納用
+            // --------------------------------------------------
             List<(int Player, IReadOnlyList<BoardIndex> Cells)> result =
                 new List<(int, IReadOnlyList<BoardIndex>)>();
 
-            // 直前セルのプレイヤー番号
+            // --------------------------------------------------
+            // 連続管理用
+            // --------------------------------------------------
             int lastValue = 0;
+            List<BoardIndex> consecutiveCells = new List<BoardIndex>();
 
-            // 連続セルリスト
-            List<BoardIndex> consecutiveCells =
-                new List<BoardIndex>();
-
-            // ライン内セル走査
+            // --------------------------------------------------
+            // ライン走査
+            // --------------------------------------------------
             foreach (int[] cell in line)
             {
-                // BoardIndex に変換
                 BoardIndex index = new BoardIndex(cell[0], cell[1], cell[2]);
+                int value = board.Get(index);
 
-                // 盤面値取得
-                int value =
-                    board.Get(index);
-
-                // 空マスならリセット
+                // --------------------------------------------------
+                // 空マスで区切り
+                // --------------------------------------------------
                 if (value == 0)
                 {
+                    // 成立判定
+                    if (consecutiveCells.Count >= _connectCount)
+                    {
+                        result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
+                    }
+
+                    // リセット
                     consecutiveCells.Clear();
                     lastValue = 0;
                     continue;
                 }
 
-                // 同一プレイヤーまたは開始状態
+                // --------------------------------------------------
+                // 同一プレイヤー継続
+                // --------------------------------------------------
                 if (value == lastValue || lastValue == 0)
                 {
                     consecutiveCells.Add(index);
@@ -156,23 +166,27 @@ namespace BoardSystem.Service
                 }
                 else
                 {
-                    // プレイヤー切替時リセット
+                    // --------------------------------------------------
+                    // プレイヤー切替時に確定チェック
+                    // --------------------------------------------------
+                    if (consecutiveCells.Count >= _connectCount)
+                    {
+                        result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
+                    }
+
+                    // 新しい連続開始
                     consecutiveCells.Clear();
                     consecutiveCells.Add(index);
                     lastValue = value;
                 }
+            }
 
-                // 成立判定
-                if (consecutiveCells.Count == _connectCount)
-                {
-                    // コピーして結果追加
-                    result.Add(
-                        (value, new List<BoardIndex>(consecutiveCells))
-                    );
-
-                    // スライド
-                    consecutiveCells.RemoveAt(0);
-                }
+            // --------------------------------------------------
+            // ループ終了後の取りこぼしチェック
+            // --------------------------------------------------
+            if (consecutiveCells.Count >= _connectCount)
+            {
+                result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
             }
 
             return result;

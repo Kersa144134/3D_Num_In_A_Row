@@ -44,9 +44,6 @@ namespace BoardSystem.Service
             Vector3 start,
             Vector3 end)
         {
-            // --------------------------------------------------
-            // ‰Šú‰»ˆ—
-            // --------------------------------------------------
             float velocity = 0f;
             Vector3 position = start;
 
