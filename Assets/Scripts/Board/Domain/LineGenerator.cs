@@ -31,9 +31,6 @@ namespace BoardSystem.Domain
         /// <summary>生成ラインの一時プール</summary>
         private readonly List<int[][]> _linePool;
 
-        /// <summary>再利用可能なラインバッファプール</summary>
-        private readonly Dictionary<int, Stack<int[][]>> _lineBufferPool = new Dictionary<int, Stack<int[][]>>();
-
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -223,12 +220,12 @@ namespace BoardSystem.Domain
             int deltaY = (endY - startY) / (_boardSize - 1);
             int deltaZ = (endZ - startZ) / (_boardSize - 1);
 
-            // プールからバッファ取得
-            int[][] line = GetLineBuffer(_boardSize);
+            // ライン配列を生成
+            int[][] line = new int[_boardSize][];
 
-            // 各マスの座標を生成
             for (int i = 0; i < _boardSize; i++)
             {
+                line[i] = new int[3];
                 line[i][0] = startX + i * deltaX;
                 line[i][1] = startY + i * deltaY;
                 line[i][2] = startZ + i * deltaZ;
@@ -238,14 +235,14 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XY, XZ, YZ 面の斜めラインを共通生成
+        /// XY, XZ, YZ 面の斜めラインを生成
         /// </summary>
         /// <param name="fixedCoord">固定軸の座標値</param>
-        /// <param name="startA">可変軸Aの開始座標</param>
-        /// <param name="startB">可変軸Bの開始座標</param>
-        /// <param name="deltaA">可変軸A方向の増分</param>
-        /// <param name="deltaB">可変軸B方向の増分</param>
-        /// <param name="plane">面指定（0=XY,1=XZ,2=YZ）</param>
+        /// <param name="startA">可変軸 A の開始座標</param>
+        /// <param name="startB">可変軸 B の開始座標</param>
+        /// <param name="deltaA">可変軸 A 方向の増分</param>
+        /// <param name="deltaB">可変軸 B 方向の増分</param>
+        /// <param name="plane">面指定　0 = XY, 1 = XZ, 2 = YZ</param>
         private void AddLineDiagonal(
             in int fixedCoord,
             in int startA,
@@ -274,12 +271,13 @@ namespace BoardSystem.Domain
                 length = Mathf.Min(startA + 1, startB + 1);
             }
 
-            // プールからバッファ取得
-            int[][] line = GetLineBuffer(length);
+            // ライン配列を生成
+            int[][] line = new int[length][];
 
-            // 座標生成
             for (int i = 0; i < length; i++)
             {
+                line[i] = new int[3];
+
                 switch (plane)
                 {
                     // XY
@@ -305,52 +303,7 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // プールに追加
             _linePool.Add(line);
-        }
-
-        /// <summary>
-        /// ラインバッファをプールから取得
-        /// </summary>
-        /// <param name="length">取得するラインの長さ</param>
-        private int[][] GetLineBuffer(in int length)
-        {
-            if (!_lineBufferPool.TryGetValue(length, out Stack<int[][]> stack))
-            {
-                stack = new Stack<int[][]>();
-                _lineBufferPool[length] = stack;
-            }
-
-            if (stack.Count > 0)
-            {
-                // 既存バッファを再利用
-                return stack.Pop();
-            }
-
-            // 新規生成
-            int[][] line = new int[length][];
-            for (int i = 0; i < length; i++)
-            {
-                line[i] = new int[3];
-            }
-
-            return line;
-        }
-
-        /// <summary>
-        /// ラインバッファをプールに返却
-        /// </summary>
-        private void ReleaseLineBuffer(int[][] line)
-        {
-            int length = line.Length;
-
-            if (!_lineBufferPool.TryGetValue(length, out Stack<int[][]> stack))
-            {
-                stack = new Stack<int[][]>();
-                _lineBufferPool[length] = stack;
-            }
-
-            stack.Push(line);
         }
     }
 }
