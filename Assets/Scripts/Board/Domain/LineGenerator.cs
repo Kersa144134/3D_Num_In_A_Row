@@ -4,9 +4,7 @@
 // 作成日時 : 2026-03-17
 // 更新日時 : 2026-04-07
 // 概要     : ライン配列生成クラス
-//            - 立方体対角は除外
-//            - 面内斜めは45度のみ
-//            - 6面すべてに対応
+//            立方体対角は除外
 // ======================================================
 
 using System.Collections.Generic;
@@ -16,7 +14,7 @@ namespace BoardSystem.Domain
 {
     /// <summary>
     /// 盤面ライン生成クラス
-    /// 3次元盤面上での軸方向および面内45度斜めラインを生成する
+    /// 3 次元盤面上での軸方向および斜め方向ラインを生成する
     /// </summary>
     public sealed class LineGenerator
     {
@@ -24,7 +22,7 @@ namespace BoardSystem.Domain
         // フィールド
         // ======================================================
 
-        /// <summary>盤面サイズ（X,Y,Z 共通）</summary>
+        /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
         /// <summary>ライン成立条件の最低連続マス数</summary>
@@ -47,7 +45,8 @@ namespace BoardSystem.Domain
             _boardSize = boardSize;
             _connectCount = connectCount;
 
-            // ラインプールを初期化、軸方向 + 面内斜めの最大数を目安に容量確保
+            // ラインプールを初期化
+            // 軸方向 + 斜め方向の最大数を目安に容量確保
             _linePool = new List<int[][]>(_boardSize * _boardSize * 6);
         }
 
@@ -58,7 +57,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 盤面内の全ライン配列を生成する
         /// </summary>
-        /// <returns>生成されたラインの3次元配列</returns>
+        /// <returns>生成されたラインの 3 次元配列</returns>
         public int[][][] GenerateLines()
         {
             // 前回生成ラインをクリア
@@ -67,8 +66,8 @@ namespace BoardSystem.Domain
             // 軸方向ライン生成
             GenerateAxisLines();
 
-            // 面内45°斜めライン生成
-            GenerateDiagonal45Lines();
+            // 斜め方向ライン生成
+            GenerateDiagonalLines();
 
             // 生成したライン配列を返却
             return _linePool.ToArray();
@@ -79,11 +78,11 @@ namespace BoardSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// X,Y,Z 軸方向のラインを生成する
+        /// X, Y, Z 軸方向のラインを生成する
         /// </summary>
         private void GenerateAxisLines()
         {
-            // X軸方向ライン
+            // X 軸方向ライン
             for (int y = 0; y < _boardSize; y++)
             {
                 for (int z = 0; z < _boardSize; z++)
@@ -92,7 +91,7 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // Y軸方向ライン
+            // Y 軸方向ライン
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int z = 0; z < _boardSize; z++)
@@ -101,7 +100,7 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // Z軸方向ライン
+            // Z 軸方向ライン
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int y = 0; y < _boardSize; y++)
@@ -112,81 +111,79 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XY,XZ,YZ 各面の45°斜めラインを生成する
+        /// XY,XZ,YZ 各面の斜めラインを生成する
         /// </summary>
-        private void GenerateDiagonal45Lines()
+        private void GenerateDiagonalLines()
         {
-            int n = _boardSize;
-
-            // XY面
-            for (int z = 0; z < n; z++)
+            // XY 面
+            for (int z = 0; z < _boardSize; z++)
             {
-                for (int startY = 0; startY < n; startY++)
+                for (int startY = 0; startY < _boardSize; startY++)
                 {
-                    AddDiagonalXYFixed(0, startY, z, 1, 1);
+                    AddLineDiagonalXY(0, startY, z, 1, 1);
                 }
 
-                for (int startX = 1; startX < n; startX++)
+                for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddDiagonalXYFixed(startX, 0, z, 1, 1);
+                    AddLineDiagonalXY(startX, 0, z, 1, 1);
                 }
 
-                for (int startY = 0; startY < n; startY++)
+                for (int startY = 0; startY < _boardSize; startY++)
                 {
-                    AddDiagonalXYFixed(0, startY, z, 1, -1);
+                    AddLineDiagonalXY(0, startY, z, 1, -1);
                 }
 
-                for (int startX = 1; startX < n; startX++)
+                for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddDiagonalXYFixed(startX, n - 1, z, 1, -1);
+                    AddLineDiagonalXY(startX, _boardSize - 1, z, 1, -1);
                 }
             }
 
-            // XZ面
-            for (int y = 0; y < n; y++)
+            // XZ 面
+            for (int y = 0; y < _boardSize; y++)
             {
-                for (int startZ = 0; startZ < n; startZ++)
+                for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddDiagonalXZFixed(0, y, startZ, 1, 1);
+                    AddLineDiagonalXZ(0, y, startZ, 1, 1);
                 }
 
-                for (int startX = 1; startX < n; startX++)
+                for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddDiagonalXZFixed(startX, y, 0, 1, 1);
+                    AddLineDiagonalXZ(startX, y, 0, 1, 1);
                 }
 
-                for (int startZ = 0; startZ < n; startZ++)
+                for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddDiagonalXZFixed(0, y, startZ, 1, -1);
+                    AddLineDiagonalXZ(0, y, startZ, 1, -1);
                 }
 
-                for (int startX = 1; startX < n; startX++)
+                for (int startX = 1; startX < _boardSize; startX++)
                 {
-                    AddDiagonalXZFixed(startX, y, n - 1, 1, -1);
+                    AddLineDiagonalXZ(startX, y, _boardSize - 1, 1, -1);
                 }
             }
 
-            // YZ面
-            for (int x = 0; x < n; x++)
+            // YZ 面
+            for (int x = 0; x < _boardSize; x++)
             {
-                for (int startZ = 0; startZ < n; startZ++)
+                for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddDiagonalYZFixed(x, 0, startZ, 1, 1);
+                    AddLineDiagonalYZ(x, 0, startZ, 1, 1);
                 }
 
-                for (int startY = 1; startY < n; startY++)
+                for (int startY = 1; startY < _boardSize; startY++)
                 {
-                    AddDiagonalYZFixed(x, startY, 0, 1, 1);
+                    AddLineDiagonalYZ(x, startY, 0, 1, 1);
                 }
 
-                for (int startZ = 0; startZ < n; startZ++)
+                for (int startZ = 0; startZ < _boardSize; startZ++)
                 {
-                    AddDiagonalYZFixed(x, n - 1, startZ, -1, 1);
+                    AddLineDiagonalYZ(x, _boardSize - 1, startZ, -1, 1);
                 }
 
-                for (int startY = 1; startY < n; startY++)
+                for (int startY = 1; startY < _boardSize; startY++)
                 {
-                    AddDiagonalYZFixed(x, startY, 0, -1, 1);
+                    AddLineDiagonalYZ(x, startY, 0, -1, 1);
                 }
             }
         }
@@ -194,13 +191,19 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 軸方向ラインを生成してプールに追加する
         /// </summary>
-        /// <param name="startX">開始X座標</param>
-        /// <param name="startY">開始Y座標</param>
-        /// <param name="startZ">開始Z座標</param>
-        /// <param name="endX">終了X座標</param>
-        /// <param name="endY">終了Y座標</param>
-        /// <param name="endZ">終了Z座標</param>
-        private void AddLineAxis(int startX, int startY, int startZ, int endX, int endY, int endZ)
+        /// <param name="startX">開始 X 座標</param>
+        /// <param name="startY">開始 Y 座標</param>
+        /// <param name="startZ">開始 Z 座標</param>
+        /// <param name="endX">終了 X 座標</param>
+        /// <param name="endY">終了 Y 座標</param>
+        /// <param name="endZ">終了 Z 座標</param>
+        private void AddLineAxis(
+            in int startX,
+            in int startY,
+            in int startZ,
+            in int endX,
+            in int endY,
+            in int endZ)
         {
             int deltaX = (endX - startX) / (_boardSize - 1);
             int deltaY = (endY - startY) / (_boardSize - 1);
@@ -219,14 +222,19 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XY面の45°斜めラインを生成してプールに追加する
+        /// XY 面の斜め方向ラインを生成してプールに追加する
         /// </summary>
-        /// <param name="startX">開始X座標</param>
-        /// <param name="startY">開始Y座標</param>
-        /// <param name="z">固定Z座標</param>
-        /// <param name="dx">X方向の増分（±1）</param>
-        /// <param name="dy">Y方向の増分（±1）</param>
-        private void AddDiagonalXYFixed(int startX, int startY, int z, int dx, int dy)
+        /// <param name="startX">開始 X 座標</param>
+        /// <param name="startY">開始 Y 座標</param>
+        /// <param name="z">固定 Z 座標</param>
+        /// <param name="dx">X 方向の増分（±1）</param>
+        /// <param name="dy">Y 方向の増分（±1）</param>
+        private void AddLineDiagonalXY(
+            in int startX,
+            in int startY,
+            in int z,
+            in int dx,
+            in int dy)
         {
             int n = _boardSize;
 
@@ -250,6 +258,7 @@ namespace BoardSystem.Domain
             }
 
             int[][] line = new int[length][];
+
             for (int i = 0; i < length; i++)
             {
                 line[i] = new int[3];
@@ -262,14 +271,19 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// XZ面の45°斜めラインを生成してプールに追加する
+        /// XZ 面の斜め方向ラインを生成してプールに追加する
         /// </summary>
-        /// <param name="startX">開始X座標</param>
-        /// <param name="y">固定Y座標</param>
-        /// <param name="startZ">開始Z座標</param>
-        /// <param name="dx">X方向の増分（±1）</param>
-        /// <param name="dz">Z方向の増分（±1）</param>
-        private void AddDiagonalXZFixed(int startX, int y, int startZ, int dx, int dz)
+        /// <param name="startX">開始 X 座標</param>
+        /// <param name="y">固定 Y 座標</param>
+        /// <param name="startZ">開始 Z 座標</param>
+        /// <param name="dx">X 方向の増分（±1）</param>
+        /// <param name="dz">Z 方向の増分（±1）</param>
+        private void AddLineDiagonalXZ(
+            in int startX,
+            in int y,
+            in int startZ,
+            in int dx,
+            in int dz)
         {
             int n = _boardSize;
 
@@ -293,6 +307,7 @@ namespace BoardSystem.Domain
             }
 
             int[][] line = new int[length][];
+
             for (int i = 0; i < length; i++)
             {
                 line[i] = new int[3];
@@ -305,14 +320,19 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// YZ面の45°斜めラインを生成してプールに追加する
+        /// YZ 面の斜め方向ラインを生成してプールに追加する
         /// </summary>
-        /// <param name="x">固定X座標</param>
-        /// <param name="startY">開始Y座標</param>
-        /// <param name="startZ">開始Z座標</param>
-        /// <param name="dy">Y方向の増分（±1）</param>
-        /// <param name="dz">Z方向の増分（±1）</param>
-        private void AddDiagonalYZFixed(int x, int startY, int startZ, int dy, int dz)
+        /// <param name="x">固定 X 座標</param>
+        /// <param name="startY">開始 Y 座標</param>
+        /// <param name="startZ">開始 Z 座標</param>
+        /// <param name="dy">Y 方向の増分（±1）</param>
+        /// <param name="dz">Z 方向の増分（±1）</param>
+        private void AddLineDiagonalYZ(
+            in int x,
+            in int startY,
+            in int startZ,
+            in int dy,
+            in int dz)
         {
             int n = _boardSize;
 
@@ -336,6 +356,7 @@ namespace BoardSystem.Domain
             }
 
             int[][] line = new int[length][];
+
             for (int i = 0; i < length; i++)
             {
                 line[i] = new int[3];
