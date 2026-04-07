@@ -2,8 +2,10 @@
 // LineGenerator.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-17
-// 更新日時 : 2026-04-03
+// 更新日時 : 2026-04-07
 // 概要     : ライン配列生成クラス
+//            立方体対角は除外
+//            面内斜めは45度のみ
 // ======================================================
 
 using System.Collections.Generic;
@@ -11,113 +13,129 @@ using UnityEngine;
 
 namespace BoardSystem.Domain
 {
-    /// <summary>
-    /// ライン生成クラス
-    /// </summary>
     public sealed class LineGenerator
     {
-        // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
-
-        /// <summary>ライン成立条件の最低連続マス数</summary>
         private readonly int _connectCount;
+        private readonly List<int[][]> _linePool;
 
-        // ======================================================
-        // コンストラクタ
-        // ======================================================
-
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        /// <param name="boardSize">盤面サイズ</param>
         public LineGenerator(in int boardSize, in int connectCount)
         {
             _boardSize = boardSize;
             _connectCount = connectCount;
+            _linePool = new List<int[][]>(_boardSize * _boardSize * 6);
         }
-
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
 
         /// <summary>
         /// 盤面内のライン配列を生成
         /// </summary>
-        /// <returns>生成されたライン配列 (int[][][])</returns>
         public int[][][] GenerateLines()
         {
-            List<int[][]> lineList = new List<int[][]>();
-
-            // X方向ライン生成
-            for (int y = 0; y < _boardSize; y++)
-            {
-                for (int z = 0; z < _boardSize; z++)
-                {
-                    AddLine(lineList, 0, y, z, _boardSize - 1, y, z);
-                }
-            }
-
-            // Y方向ライン生成
-            for (int x = 0; x < _boardSize; x++)
-            {
-                for (int z = 0; z < _boardSize; z++)
-                {
-                    AddLine(lineList, x, 0, z, x, _boardSize - 1, z);
-                }
-            }
-
-            // Z方向ライン生成
-            for (int x = 0; x < _boardSize; x++)
-            {
-                for (int y = 0; y < _boardSize; y++)
-                {
-                    AddLine(lineList, x, y, 0, x, y, _boardSize - 1);
-                }
-            }
-
-            return lineList.ToArray();
+            _linePool.Clear();
+            GenerateAxisLines();      // 縦横軸ライン
+            GenerateDiagonal45Lines(); // 面内45度斜めライン
+            return _linePool.ToArray();
         }
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
+        /// <summary>
+        /// X,Y,Z 軸方向ライン生成（既存処理）
+        /// </summary>
+        private void GenerateAxisLines()
+        {
+            for (int y = 0; y < _boardSize; y++)
+                for (int z = 0; z < _boardSize; z++)
+                    AddLineAxis(0, y, z, _boardSize - 1, y, z);
+
+            for (int x = 0; x < _boardSize; x++)
+                for (int z = 0; z < _boardSize; z++)
+                    AddLineAxis(x, 0, z, x, _boardSize - 1, z);
+
+            for (int x = 0; x < _boardSize; x++)
+                for (int y = 0; y < _boardSize; y++)
+                    AddLineAxis(x, y, 0, x, y, _boardSize - 1);
+        }
 
         /// <summary>
-        /// 2 端点からラインを生成してリストに追加
+        /// XY, XZ, YZ 面内 45° 斜めライン生成
         /// </summary>
-        /// <param name="lineList">生成したラインを格納するリスト</param>
-        /// <param name="startX">始点の X 座標</param>
-        /// <param name="startY">始点の Y 座標</param>
-        /// <param name="startZ">始点の Z 座標</param>
-        /// <param name="endX">終点の X 座標</param>
-        /// <param name="endY">終点の Y 座標</param>
-        /// <param name="endZ">終点の Z 座標</param>
-        private void AddLine(
-            in List<int[][]> lineList,
-            in int startX,
-            in int startY,
-            in int startZ,
-            in int endX,
-            in int endY,
-            in int endZ)
+        private void GenerateDiagonal45Lines()
         {
-            int[][] line = new int[_boardSize][];
-
-            for (int i = 0; i < _boardSize; i++)
+            // XY 面
+            for (int z = 0; z < _boardSize; z++)
             {
-                float t = i / (float)(_boardSize - 1);
-                int x = Mathf.RoundToInt(Mathf.Lerp(startX, endX, t));
-                int y = Mathf.RoundToInt(Mathf.Lerp(startY, endY, t));
-                int z = Mathf.RoundToInt(Mathf.Lerp(startZ, endZ, t));
-
-                line[i] = new int[] { x, y, z };
+                // 左下→右上、左上→右下
+                AddDiagonalXY(0, 0, z, 1, 1);                     // 左下→右上
+                AddDiagonalXY(0, _boardSize - 1, z, 1, -1);      // 左上→右下
+                AddDiagonalXY(_boardSize - 1, 0, z, -1, 1);      // 右下→左上
+                AddDiagonalXY(_boardSize - 1, _boardSize - 1, z, -1, -1); // 右上→左下
             }
 
-            lineList.Add(line);
+            // XZ 面
+            for (int y = 0; y < _boardSize; y++)
+            {
+                AddDiagonalXZ(0, y, 0, 1, 1);
+                AddDiagonalXZ(0, y, _boardSize - 1, 1, -1);
+                AddDiagonalXZ(_boardSize - 1, y, 0, -1, 1);
+                AddDiagonalXZ(_boardSize - 1, y, _boardSize - 1, -1, -1);
+            }
+
+            // YZ 面
+            for (int x = 0; x < _boardSize; x++)
+            {
+                AddDiagonalYZ(x, 0, 0, 1, 1);
+                AddDiagonalYZ(x, 0, _boardSize - 1, 1, -1);
+                AddDiagonalYZ(x, _boardSize - 1, 0, -1, 1);
+                AddDiagonalYZ(x, _boardSize - 1, _boardSize - 1, -1, -1);
+            }
+        }
+
+        private void AddLineAxis(int startX, int startY, int startZ, int endX, int endY, int endZ)
+        {
+            int[][] line = new int[_boardSize][];
+            for (int i = 0; i < _boardSize; i++)
+                line[i] = new int[] { startX + i * (endX - startX) / (_boardSize - 1),
+                                       startY + i * (endY - startY) / (_boardSize - 1),
+                                       startZ + i * (endZ - startZ) / (_boardSize - 1) };
+            _linePool.Add(line);
+        }
+
+        private void AddDiagonalXY(int startX, int startY, int z, int dx, int dy)
+        {
+            int length = _boardSize;
+            int[][] line = new int[length][];
+            for (int i = 0; i < length; i++)
+                line[i] = new int[] {
+                    Mathf.Clamp(startX + i * dx, 0, _boardSize - 1),
+                    Mathf.Clamp(startY + i * dy, 0, _boardSize - 1),
+                    z
+                };
+            _linePool.Add(line);
+        }
+
+        private void AddDiagonalXZ(int startX, int y, int startZ, int dx, int dz)
+        {
+            int length = _boardSize;
+            int[][] line = new int[length][];
+            for (int i = 0; i < length; i++)
+                line[i] = new int[] {
+                    Mathf.Clamp(startX + i * dx, 0, _boardSize - 1),
+                    y,
+                    Mathf.Clamp(startZ + i * dz, 0, _boardSize - 1)
+                };
+            _linePool.Add(line);
+        }
+
+        private void AddDiagonalYZ(int x, int startY, int startZ, int dy, int dz)
+        {
+            int length = _boardSize;
+            int[][] line = new int[length][];
+            for (int i = 0; i < length; i++)
+                line[i] = new int[] {
+                    x,
+                    Mathf.Clamp(startY + i * dy, 0, _boardSize - 1),
+                    Mathf.Clamp(startZ + i * dz, 0, _boardSize - 1)
+                };
+            _linePool.Add(line);
         }
     }
 }
