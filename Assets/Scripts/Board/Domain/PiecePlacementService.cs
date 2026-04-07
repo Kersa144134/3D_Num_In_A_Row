@@ -1,20 +1,19 @@
 // ======================================================
-// PiecePlacementService.cs
+// PiecePlacement.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
 // 更新日時 : 2026-04-07
-// 概要     : 列への駒配置ロジックサービス
+// 概要     : 列への駒配置クラス
 // ======================================================
 
 using System.Collections.Generic;
-using BoardSystem.Data;
 
-namespace BoardSystem.Service
+namespace BoardSystem.Domain
 {
     /// <summary>
     /// 列への駒配置処理サービス
     /// </summary>
-    public sealed class PiecePlacementService
+    public sealed class PiecePlacement
     {
         // ======================================================
         // 定数
@@ -40,7 +39,7 @@ namespace BoardSystem.Service
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public PiecePlacementService()
+        public PiecePlacement()
         {
             // キャッシュ初期化
             _repositionCache.Clear();
@@ -178,8 +177,6 @@ namespace BoardSystem.Service
 
                 // 移動元をクリア
                 board.Set(move.from, EMPTY);
-
-                board.GetColumnValues(columnX, columnZ);
             }
 
             // キャッシュクリア

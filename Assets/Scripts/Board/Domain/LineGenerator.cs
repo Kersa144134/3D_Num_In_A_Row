@@ -3,16 +3,16 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-17
 // 更新日時 : 2026-04-03
-// 概要     : ライン配列生成ユーティリティ
+// 概要     : ライン配列生成クラス
 // ======================================================
 
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace BoardSystem.Utility
+namespace BoardSystem.Domain
 {
     /// <summary>
-    /// ライン生成ユーティリティ
+    /// ライン生成クラス
     /// </summary>
     public sealed class LineGenerator
     {

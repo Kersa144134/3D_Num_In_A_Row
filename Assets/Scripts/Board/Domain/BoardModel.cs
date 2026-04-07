@@ -2,17 +2,15 @@
 // BoardModel.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-03-16
+// 更新日時 : 2026-04-07
 // 概要     : 3D 目並べゲームロジックを統括するクラス
 // ======================================================
 
 using System;
 using System.Collections.Generic;
-using BoardSystem.Data;
-using BoardSystem.Service;
 using UniRx;
 
-namespace BoardSystem
+namespace BoardSystem.Domain
 {
     /// <summary>
     /// 目並べモデル
@@ -26,11 +24,11 @@ namespace BoardSystem
         /// <summary>盤面状態</summary>
         private readonly BoardState _boardState;
 
-        /// <summary>落下処理</summary>
-        private readonly PiecePlacementService _piecePlacement;
-
         /// <summary>ライン判定</summary>
-        private readonly LineJudgeService _lineJudge;
+        private readonly LineJudge _lineJudge;
+
+        /// <summary>落下処理</summary>
+        private readonly PiecePlacement _piecePlacement = new PiecePlacement();
 
         // ======================================================
         // UniRx 変数
@@ -66,8 +64,7 @@ namespace BoardSystem
             }
 
             _boardState = new BoardState(boardSize);
-            _piecePlacement = new PiecePlacementService();
-            _lineJudge = new LineJudgeService(
+            _lineJudge = new LineJudge(
                 boardSize,
                 safeConnect
             );
@@ -136,9 +133,9 @@ namespace BoardSystem
         /// <summary>
         /// ライン成立判定
         /// </summary>
-        public void CheckLine()
+        public bool CheckLine()
         {
-            _lineJudge.CheckAll(_boardState);
+            return _lineJudge.CheckAll(_boardState);
         }
 
         /// <summary>
@@ -155,18 +152,6 @@ namespace BoardSystem
         public void Dispose()
         {
             _lineJudge.Dispose();
-        }
-
-        /// <summary>
-        /// 指定列（X,Z）の全Y値を取得
-        /// </summary>
-        /// <param name="columnX">列X</param>
-        /// <param name="columnZ">列Z</param>
-        public void GetColumnValues(
-            in int columnX,
-            in int columnZ)
-        {
-            _boardState.GetColumnValues(columnX, columnZ);
         }
     }
 }

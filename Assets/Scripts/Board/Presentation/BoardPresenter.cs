@@ -2,24 +2,24 @@
 // BoardPresenter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-04-03
-// 概要     : 3D 目並べゲームの盤面を制御するクラス（コメント粒度強化版）
+// 更新日時 : 2026-04-07
+// 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UniRx;
+using BoardSystem.Domain;
 using InputSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
-using BoardSystem.Data;
 
-namespace BoardSystem
+namespace BoardSystem.Presentation
 {
     /// <summary>
-    /// 盤面操作用プレゼンター
+    /// 目並べプレゼンター
     /// </summary>
     public sealed class BoardPresenter : MonoBehaviour, IUpdatable
     {
@@ -79,11 +79,8 @@ namespace BoardSystem
         /// <summary>盤面のクリック判定用 Collider</summary>
         private Collider _boardCollider;
 
-        /// <summary>駒落下中フラグ</summary>
-        private bool _isProcessing;
-
-        /// <summary>駒削除中フラグ</summary>
-        private bool _isPieceDeleted;
+        /// <summary>入力ロックフラグ</summary>
+        private bool _isInputLocked;
 
         // ======================================================
         // UniRx 変数
@@ -145,12 +142,19 @@ namespace BoardSystem
             _boardCollider = GetComponentInChildren<Collider>(true);
             if (_boardCollider == null)
             {
-                throw new InvalidOperationException("BoardCollider が見つかりません。");
+                throw new InvalidOperationException("BoardCollider が見つかりません");
             }
 
             // 初期プレイヤー設定
-            // 1Pから開始
             _currentPlayer = PLAYER_ONE;
+        }
+
+        /// <summary>
+        /// 更新処理
+        /// </summary>
+        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
+        {
+            
         }
 
         /// <summary>
@@ -191,17 +195,10 @@ namespace BoardSystem
             _model.OnLineComplete
                 .Subscribe(async lineEvent =>
                 {
-                    // 駒削除開始
-                    _isPieceDeleted = true;
-
-                    // 外部通知
                     _onLineComplete.OnNext(lineEvent);
 
                     // ライン削除
                     await HandleLineDeleteAsync(lineEvent);
-
-                    // 駒削除終了
-                    _isPieceDeleted = false;
                 })
                 .AddTo(_disposables);
         }
@@ -229,12 +226,22 @@ namespace BoardSystem
         /// </summary>
         private void HandleDropColumn()
         {
+            // 入力ロック
+            if (_isInputLocked)
+            {
+                return;
+            }
+            
             // カメラから Ray生成
             Ray ray = Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
 
             // Ray 判定
             bool isHit = Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _raycastLayerMask);
-            if (!isHit || hit.collider != _boardCollider) return;
+
+            if (!isHit || hit.collider != _boardCollider)
+            {
+                return;
+            }
 
             // ヒット座標を列インデックスに変換
             Vector3 hitPos = hit.point;
@@ -250,12 +257,13 @@ namespace BoardSystem
         private async UniTask HandleDropAsync(int x, int z)
         {
             // 多重実行防止
-            if (_isProcessing || _isPieceDeleted)
+            if (_isInputLocked)
             {
                 return;
             }
 
-            _isProcessing = true;
+            // 入力ロック
+            _isInputLocked = true;
 
             // --------------------------------------------------
             // 配置可能判定
@@ -264,31 +272,30 @@ namespace BoardSystem
 
             if (y < 0)
             {
-                _isProcessing = false;
+                _isInputLocked = false;
                 return;
             }
 
             // 駒生成
-            await _view.SpawnPieceAsync(x, y, z, _currentPlayer);
+            PieceData piece =
+                await _view.SpawnPieceAsync(
+                    x,
+                    y,
+                    z,
+                    _currentPlayer
+                );
 
-            // 駒配置
-            _model.ApplyPlace(new BoardIndex(x, y, z), _currentPlayer);
+            // インデックス生成
+            BoardIndex index = new BoardIndex(x, y, z);
+
+            // ビューに駒情報登録
+            _view.SetPiece(index, piece);
+
+            // モデルの盤面更新
+            _model.ApplyPlace(index, _currentPlayer);
 
             // ライン成立チェック
-            _model.CheckLine();
-
-            // プレイヤー切替
-            SwitchPlayer();
-
-            _isProcessing = false;
-        }
-
-        /// <summary>
-        /// プレイヤー切替
-        /// </summary>
-        private void SwitchPlayer()
-        {
-            _currentPlayer = _currentPlayer == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
+            CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -296,6 +303,9 @@ namespace BoardSystem
         /// </summary>
         private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
+            // 入力ロック
+            _isInputLocked = true;
+            
             // 演出待機
             await UniTask.Delay(LINE_DELETE_DELAY_MS);
 
@@ -315,14 +325,17 @@ namespace BoardSystem
                     {
                         // 演出待機
                         await UniTask.Delay(PIECE_DELETE_DELAY_MS);
-                        
-                        _view.DeletePiece(index);
+
+                        _view.DestroyPiece(index);
+                        _view.RemovePiece(index);
+
                         _model.ClearCell(index);
+
                         columnSet.Add((index.X, index.Z));
                     }
                     else
                     {
-                        Debug.Log($"Hasn't Piece({index.X}, {index.Y}, {index.Z})");
+                        Debug.LogWarning($"BoardPresenter: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
                     }
                 }
             }
@@ -335,6 +348,9 @@ namespace BoardSystem
 
             // 駒再配置処理
             await HandleRepositionAsync(repositionColumns);
+
+            // ライン成立チェック
+            CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -345,43 +361,103 @@ namespace BoardSystem
             List<(BoardIndex from, BoardIndex to)> allMoves =
                 new List<(BoardIndex, BoardIndex)>();
 
-            // -------------------------------
-            // ① 計画（Model）
-            // -------------------------------
+            // 再配置対象作成
             for (int i = 0; i < columns.Count; i++)
             {
-                (int x, int z) col = columns[i];
+                (int x, int z) column = columns[i];
 
                 IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                    _model.CalculateReposition(col.x, col.z);
+                    _model.CalculateReposition(column.x, column.z);
 
                 allMoves.AddRange(moves);
             }
 
-            if (allMoves.Count == 0)
+            if (allMoves.Count > 0)
+            {
+                // ビューアニメーション実行
+                await _view.MovePiecesAsync(allMoves);
+
+                // ビュー辞書更新
+                ApplyViewMoves(allMoves);
+
+                // モデル盤面更新
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    (int x, int z) column = columns[i];
+
+                    _model.ApplyReposition(column.x, column.z);
+                }
+            }
+        }
+
+        /// <summary>
+        /// ビューの駒辞書を移動情報に基づいて更新
+        /// </summary>
+        private void ApplyViewMoves(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        {
+            // スナップショット作成
+            Dictionary<BoardIndex, PieceData> snapshot =
+                new Dictionary<BoardIndex, PieceData>();
+
+            for (int i = 0; i < moves.Count; i++)
+            {
+                (BoardIndex from, BoardIndex to) move = moves[i];
+
+                if (_view.TryGetPiece(move.from, out PieceData piece))
+                {
+                    snapshot[move.from] = piece;
+                }
+            }
+
+            // 重複排除用ハッシュセット
+            HashSet<BoardIndex> processedFrom =
+                new HashSet<BoardIndex>();
+
+            // 辞書更新
+            for (int i = 0; i < moves.Count; i++)
+            {
+                (BoardIndex from, BoardIndex to) move = moves[i];
+
+                // 多重実行防止
+                if (!processedFrom.Add(move.from))
+                {
+                    continue;
+                }
+
+                if (!snapshot.TryGetValue(move.from, out PieceData piece))
+                {
+                    continue;
+                }
+
+                _view.RemovePiece(move.from);
+                _view.SetPiece(move.to, piece);
+            }
+        }
+
+        /// <summary>
+        /// ライン成立判定時の共通処理
+        /// </summary>
+        private void CheckLine(bool isLine)
+        {
+            // ラインが成立している場合は処理なし
+            if (isLine)
             {
                 return;
             }
 
-            // -------------------------------
-            // ② 実行（View）
-            // -------------------------------
-            await _view.MovePiecesAsync(allMoves);
+            // プレイヤー切替
+            SwitchPlayer();
 
-            // -------------------------------
-            // ③ 状態確定（Model）
-            // -------------------------------
-            for (int i = 0; i < columns.Count; i++)
-            {
-                (int x, int z) col = columns[i];
+            // 入力ロック解除
+            _isInputLocked = false;
+        }
 
-                _model.ApplyReposition(col.x, col.z);
-            }
-
-            // -------------------------------
-            // ④ 再判定
-            // -------------------------------
-            _model.CheckLine();
+        /// <summary>
+        /// プレイヤー切替処理
+        /// </summary>
+        private void SwitchPlayer()
+        {
+            _currentPlayer = _currentPlayer == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
         }
     }
 }

@@ -1,24 +1,22 @@
 // ======================================================
-// LineJudgeService.cs
+// LineJudge.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-20
 // 更新日時 : 2026-04-03
-// 概要     : ライン判定サービス
+// 概要     : ライン判定クラス
 //            任意サイズ盤面や連続マス指定に対応
 // ======================================================
 
 using System;
 using System.Collections.Generic;
 using UniRx;
-using BoardSystem.Data;
-using BoardSystem.Utility;
 
-namespace BoardSystem.Service
+namespace BoardSystem.Domain
 {
     /// <summary>
-    /// ライン判定サービス
+    /// ライン判定
     /// </summary>
-    public sealed class LineJudgeService : IDisposable
+    public sealed class LineJudge : IDisposable
     {
         // ======================================================
         // コンポーネント参照
@@ -34,7 +32,7 @@ namespace BoardSystem.Service
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>ライン配列（各ラインは座標配列）</summary>
+        /// <summary>ライン配列</summary>
         private readonly int[][][] _lines;
 
         /// <summary>ライン成立条件の最低連続マス数</summary>
@@ -59,7 +57,7 @@ namespace BoardSystem.Service
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public LineJudgeService(in int boardSize, in int connectCount)
+        public LineJudge(in int boardSize, in int connectCount)
         {
             _boardSize = boardSize;
             _connectCount = connectCount;
@@ -77,17 +75,27 @@ namespace BoardSystem.Service
 
         /// <summary>
         /// 盤面全体のライン判定を行い、成立時にイベントを発火する
+        /// 1つでもラインが成立していれば true を返す
         /// </summary>
-        public void CheckAll(in BoardState board)
+        public bool CheckAll(in BoardState board)
         {
+            // ライン成立フラグ
+            bool isAnyLineComplete = false;
+
             foreach (int[][] line in _lines)
             {
                 // ライン内の連続成立セル座標を取得
-                List<(int Player, IReadOnlyList<BoardIndex> Cells)> consecutiveLines =
+                List<(IReadOnlyList<BoardIndex> Cells, int Player)> consecutiveLines =
                     CalculateLinePositions(board, line);
 
+                // 成立ラインが存在する場合
+                if (consecutiveLines.Count > 0)
+                {
+                    isAnyLineComplete = true;
+                }
+
                 // 取得した連続ラインごとにイベント発火
-                foreach ((int Player, IReadOnlyList<BoardIndex> Cells) lineInfo in consecutiveLines)
+                foreach ((IReadOnlyList<BoardIndex> Cells, int Player) lineInfo in consecutiveLines)
                 {
                     _onLineComplete.OnNext(
                         new LineCompleteEvent(
@@ -97,6 +105,8 @@ namespace BoardSystem.Service
                     );
                 }
             }
+
+            return isAnyLineComplete;
         }
 
         /// <summary>
@@ -115,15 +125,15 @@ namespace BoardSystem.Service
         /// <summary>
         /// 指定ライン内の連続セル座標を取得
         /// </summary>
-        private List<(int Player, IReadOnlyList<BoardIndex> Cells)> CalculateLinePositions(
+        private List<(IReadOnlyList<BoardIndex> Cells, int Player)> CalculateLinePositions(
             in BoardState board,
             in int[][] line)
         {
             // --------------------------------------------------
             // 結果格納用
             // --------------------------------------------------
-            List<(int Player, IReadOnlyList<BoardIndex> Cells)> result =
-                new List<(int, IReadOnlyList<BoardIndex>)>();
+            List<(IReadOnlyList<BoardIndex> Cells, int Player)> result =
+                new List<(IReadOnlyList<BoardIndex>, int)>();
 
             // --------------------------------------------------
             // 連続管理用
@@ -147,7 +157,7 @@ namespace BoardSystem.Service
                     // 成立判定
                     if (consecutiveCells.Count >= _connectCount)
                     {
-                        result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
+                        result.Add((new List<BoardIndex>(consecutiveCells), lastValue));
                     }
 
                     // リセット
@@ -171,7 +181,7 @@ namespace BoardSystem.Service
                     // --------------------------------------------------
                     if (consecutiveCells.Count >= _connectCount)
                     {
-                        result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
+                        result.Add((new List<BoardIndex>(consecutiveCells), lastValue));
                     }
 
                     // 新しい連続開始
@@ -186,7 +196,7 @@ namespace BoardSystem.Service
             // --------------------------------------------------
             if (consecutiveCells.Count >= _connectCount)
             {
-                result.Add((lastValue, new List<BoardIndex>(consecutiveCells)));
+                result.Add((new List<BoardIndex>(consecutiveCells), lastValue));
             }
 
             return result;

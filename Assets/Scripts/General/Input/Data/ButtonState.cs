@@ -22,14 +22,7 @@ namespace InputSystem.Data
         // ======================================================
 
         /// <summary>前フレームの押下状態</summary>
-        private bool _wasPressed;
-
-        // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>現在押下中かどうか</summary>
-        public bool IsPressed { get; private set; }
+        private bool _wasPressed = false;
 
         // ======================================================
         // UniRx 変数
@@ -57,8 +50,6 @@ namespace InputSystem.Data
         /// <param name="current">現在のの押下状態</param>
         public void Update(in bool current)
         {
-            IsPressed = current;
-
             // 押下時
             if (current && !_wasPressed)
             {

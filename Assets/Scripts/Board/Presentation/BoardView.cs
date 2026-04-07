@@ -2,17 +2,17 @@
 // BoardView.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-04-03
+// 更新日時 : 2026-04-07
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
 using System.Collections.Generic;
-using UnityEngine;
 using Cysharp.Threading.Tasks;
-using BoardSystem.Service;
-using BoardSystem.Data;
+using UnityEngine;
+using BoardSystem.Application;
+using BoardSystem.Domain;
 
-namespace BoardSystem
+namespace BoardSystem.Presentation
 {
     /// <summary>
     /// 目並べビュー
@@ -61,7 +61,7 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>座標変換サービス</summary>
-        private readonly BoardPositionConvertService _boardPositionConvert;
+        private readonly BoardPositionConverter _boardPositionConverter;
 
         /// <summary>落下アニメーションサービス</summary>
         private readonly DropAnimationService _dropAnimation =
@@ -114,7 +114,7 @@ namespace BoardSystem
             _cellSpacing = root.localScale.x / boardSize;
 
             // 座標変換サービス初期化
-            _boardPositionConvert = new BoardPositionConvertService(
+            _boardPositionConverter = new BoardPositionConverter(
                 boardSize,
                 root.position
             );
@@ -129,83 +129,43 @@ namespace BoardSystem
         // ======================================================
 
         /// <summary>
-        /// ワールド座標から列インデックスに変換
+        /// 駒登録
         /// </summary>
-        public void WorldToColumn(
-            in float worldX,
-            in float worldZ,
-            out int x,
-            out int z)
+        public void SetPiece(
+            in BoardIndex index,
+            in PieceData piece)
         {
-            _boardPositionConvert.WorldPositionToColumn(
-                _cellSpacing,
-                worldX,
-                worldZ,
-                out x,
-                out z
-            );
+            _pieces[index] = piece;
         }
 
         /// <summary>
-        /// 駒生成
+        /// 駒削除
         /// </summary>
-        public async UniTask SpawnPieceAsync(
-            int x,
-            int y,
-            int z,
-            int player)
+        public void RemovePiece(in BoardIndex index)
         {
-            // --------------------------------------------------
-            // 目標ワールド座標算出
-            // --------------------------------------------------
-            _boardPositionConvert.ColumnToWorldPosition(
-                _cellSpacing,
-                x,
-                y,
-                z,
-                out float targetX,
-                out float targetY,
-                out float targetZ
-            );
+            if (_pieces.ContainsKey(index))
+            {
+                _pieces.Remove(index);
+            }
+            else
+            {
+                Debug.LogWarning($"RemovePiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+            }
+        }
 
-            // --------------------------------------------------
-            // 生成位置取得
-            // --------------------------------------------------
-            float spawnY = _boardPositionConvert.GetSpawnWorldY(_cellSpacing);
-            Vector3 startPosition = new Vector3(targetX, spawnY, targetZ);
-            Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
-
-            // --------------------------------------------------
-            // 駒生成
-            // --------------------------------------------------
-            // プレハブ選択
-            GameObject prefab = player == 1
-                ? _playerOnePrefab
-                : _playerTwoPrefab;
-
-            // インスタンス生成
-            GameObject piece = Object.Instantiate(
-                prefab,
-                startPosition,
-                Quaternion.identity,
-                _root
-            );
-
-            // スケール調整
-            float scaleFactor = 1f / (_boardSize + 0.5f);
-            piece.transform.localScale = Vector3.one * scaleFactor;
-
-            // --------------------------------------------------
-            // 落下アニメーション
-            // --------------------------------------------------
-            await _dropAnimation.AnimateDropAsync(piece.transform, startPosition, endPosition);
-
-            // --------------------------------------------------
-            // 辞書登録
-            // --------------------------------------------------
-            BoardIndex index = new BoardIndex(x, y, z);
-            PieceData pieceData = new PieceData(piece.transform, player);
-            _pieces[index] = pieceData;
+        /// <summary>
+        /// 駒オブジェクト破棄
+        /// </summary>
+        public void DestroyPiece(in BoardIndex index)
+        {
+            if (_pieces.TryGetValue(index, out PieceData piece))
+            {
+                Object.Destroy(piece.Transform.gameObject);
+            }
+            else
+            {
+                Debug.LogWarning($"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+            }
         }
 
         /// <summary>
@@ -217,24 +177,93 @@ namespace BoardSystem
         }
 
         /// <summary>
-        /// 指定座標の駒を削除
+        /// 駒取得
         /// </summary>
-        public void DeletePiece(in BoardIndex index)
+        public bool TryGetPiece(in BoardIndex index, out PieceData piece)
         {
-            // 指定座標に駒が存在するか
-            if (_pieces.TryGetValue(index, out PieceData piece))
-            {
-                // オブジェクト削除
-                Object.Destroy(piece.Transform.gameObject);
+            return _pieces.TryGetValue(index, out piece);
+        }
 
-                // 辞書から削除
-                _pieces.Remove(index);
-            }
-            else
-            {
-                // 指定座標に駒が存在しない場合のログ
-                Debug.LogWarning($"DeletePiece 呼び出し時に駒が存在しません: 座標 ({index.X}, {index.Y}, {index.Z})");
-            }
+        /// <summary>
+        /// ワールド座標から列インデックスに変換
+        /// </summary>
+        public void WorldToColumn(
+            in float worldX,
+            in float worldZ,
+            out int x,
+            out int z)
+        {
+            _boardPositionConverter.WorldPositionToColumn(
+                _cellSpacing,
+                worldX,
+                worldZ,
+                out x,
+                out z
+            );
+        }
+
+        /// <summary>
+        /// 駒生成
+        /// </summary>
+        public async UniTask<PieceData> SpawnPieceAsync(
+            int x,
+            int y,
+            int z,
+            int player)
+        {
+            // 目標座標算出
+            _boardPositionConverter.ColumnToWorldPosition(
+                _cellSpacing,
+                x,
+                y,
+                z,
+                out float targetX,
+                out float targetY,
+                out float targetZ
+            );
+
+            // 初期位置生成
+            float spawnY = _boardPositionConverter.GetSpawnWorldY(_cellSpacing);
+
+            Vector3 startPosition =
+                new Vector3(targetX, spawnY, targetZ);
+
+            Vector3 endPosition =
+                new Vector3(targetX, targetY, targetZ);
+
+            // プレハブ選択
+            GameObject prefab =
+                player == 1
+                ? _playerOnePrefab
+                : _playerTwoPrefab;
+
+            // インスタンス生成
+            GameObject piece =
+                Object.Instantiate(
+                    prefab,
+                    startPosition,
+                    Quaternion.identity,
+                    _root
+                );
+
+            // スケール調整
+            float scaleFactor = 1f / (_boardSize + 0.5f);
+
+            piece.transform.localScale =
+                Vector3.one * scaleFactor;
+
+            // 落下アニメーション
+            await _dropAnimation.AnimateDropAsync(
+                piece.transform,
+                startPosition,
+                endPosition
+            );
+
+            // PieceData を生成して返却
+            return new PieceData(
+                piece.transform,
+                player
+            );
         }
 
         /// <summary>
@@ -254,6 +283,10 @@ namespace BoardSystem
             await ExecuteMoveAnimations(plans);
         }
 
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
         /// <summary>
         /// 移動計画を生成
         /// </summary>
@@ -264,8 +297,7 @@ namespace BoardSystem
                 new Dictionary<BoardIndex, PieceData>(_pieces);
 
             // 計画リスト生成
-            List<MovePlanData> plans =
-                new List<MovePlanData>(moves.Count);
+            List<MovePlanData> plans = new List<MovePlanData>(moves.Count);
 
             for (int i = 0; i < moves.Count; i++)
             {
@@ -273,7 +305,7 @@ namespace BoardSystem
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
                 // スナップショットから駒を取得
-                if (snapshot.TryGetValue(move.from, out PieceData piece) == false)
+                if (!snapshot.TryGetValue(move.from, out PieceData piece))
                 {
                     continue;
                 }
@@ -282,7 +314,7 @@ namespace BoardSystem
                 Vector3 startPosition = piece.Transform.position;
 
                 // 終了位置算出
-                _boardPositionConvert.ColumnToWorldPosition(
+                _boardPositionConverter.ColumnToWorldPosition(
                     _cellSpacing,
                     move.to.X,
                     move.to.Y,

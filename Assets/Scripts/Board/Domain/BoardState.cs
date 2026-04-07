@@ -6,7 +6,7 @@
 // 概要     : 盤面データ管理クラス
 // ======================================================
 
-namespace BoardSystem.Data
+namespace BoardSystem.Domain
 {
     /// <summary>
     /// 任意サイズ3D盤面状態保持クラス
@@ -114,44 +114,6 @@ namespace BoardSystem.Data
         public int Get(in BoardIndex index)
         {
             return _board[index.X, index.Y, index.Z];
-        }
-
-        /// <param name="columnX">列X</param>
-        /// <param name="columnZ">列Z</param>
-        public void GetColumnValues(
-            in int columnX,
-            in int columnZ)
-        {
-            // --------------------------------------------------
-            // ログ文字列生成
-            // --------------------------------------------------
-            System.Text.StringBuilder sb = new System.Text.StringBuilder(64);
-
-            // ヘッダ
-            sb.Append($"Column ({columnX}, {columnZ}) : ");
-
-            // --------------------------------------------------
-            // 上から順に出力（高いY → 低いY）
-            // --------------------------------------------------
-            for (int y = _boardSize - 1; y >= 0; y--)
-            {
-                // 値取得
-                int value = _board[columnX, y, columnZ];
-
-                // 値追加
-                sb.Append(value);
-
-                // 区切り
-                if (y > 0)
-                {
-                    sb.Append(", ");
-                }
-            }
-
-            // --------------------------------------------------
-            // ログ出力
-            // --------------------------------------------------
-            UnityEngine.Debug.Log(sb.ToString());
         }
 
         // ======================================================

@@ -8,15 +8,13 @@
 
 using System;
 using UniRx;
-using BoardSystem;
+using BoardSystem.Domain;
+using BoardSystem.Presentation;
 using InputSystem;
 using PhaseSystem;
 using PhaseSystem.Data;
 using SceneSystem.Data;
 using UISystem;
-using BoardSystem.Data;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 namespace SceneSystem.Utility
 {
@@ -117,34 +115,7 @@ namespace SceneSystem.Utility
                 }
 
                 boardPresenter.OnLineComplete
-                    .Subscribe(e =>
-                    {
-                        _onLineComplete.OnNext(e);
-
-                        // 成立ライン数を取得
-                        int lineCount = e.LinePositions.Length;
-
-                        // 各ラインごとに処理
-                        for (int i = 0; i < lineCount; i++)
-                        {
-                            // 現在のライン
-                            IReadOnlyList<BoardIndex> line = e.LinePositions[i];
-
-                            // 各駒の座標を文字列化
-                            List<string> positions = new List<string>();
-                            foreach (BoardIndex index in line)
-                            {
-                                // BoardIndex の座標を "(x,y,z)" 形式で追加
-                                positions.Add($"({index.X}, {index.Y}, {index.Z})");
-                            }
-
-                            // 現在ラインの座標文字列
-                            string lineText = string.Join(", ", positions);
-
-                            // ライン番号と座標をログ出力
-                            UnityEngine.Debug.Log($"Player {e.Player} 完成ライン {i + 1}/{lineCount}: 駒座標 [{lineText}]");
-                        }
-                    })
+                    .Subscribe(e => _onLineComplete.OnNext(e))
                     .AddTo(_disposables);
             }
 

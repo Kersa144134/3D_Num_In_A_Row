@@ -1,29 +1,29 @@
 // ======================================================
-// PieceData.cs
+// LineCompleteEvent.cs
 // 作成者   : 高橋一翔
-// 作成日時 : 2026-04-03
+// 作成日時 : 2026-03-17
 // 更新日時 : 2026-04-03
-// 概要     : 駒の表示情報を保持する構造体
+// 概要     : ライン成立イベントデータ
 // ======================================================
 
-using UnityEngine;
+using System.Collections.Generic;
 
-namespace BoardSystem.Data
+namespace BoardSystem.Domain
 {
     /// <summary>
-    /// 駒データ
+    /// ライン成立イベントデータ
     /// </summary>
-    public readonly struct PieceData
+    public readonly struct LineCompleteEvent
     {
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>Transform参照</summary>
-        public readonly Transform Transform;
-
         /// <summary>プレイヤー番号</summary>
         public readonly int Player;
+
+        /// <summary>成立ラインごとの座標リスト</summary>
+        public readonly IReadOnlyList<BoardIndex>[] LinePositions;
 
         // ======================================================
         // コンストラクタ
@@ -32,15 +32,14 @@ namespace BoardSystem.Data
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="transform">対象Transform</param>
         /// <param name="player">プレイヤー番号</param>
-        public PieceData(in Transform transform, in int player)
+        /// <param name="linePositions">成立ラインの座標配列</param>
+        public LineCompleteEvent(
+            in int player,
+            in IReadOnlyList<BoardIndex>[] linePositions)
         {
-            // Transformを設定
-            Transform = transform;
-
-            // プレイヤー番号を設定
             Player = player;
+            LinePositions = linePositions;
         }
     }
 }

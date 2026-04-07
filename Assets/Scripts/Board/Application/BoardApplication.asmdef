@@ -1,7 +1,11 @@
 {
-    "name": "BoardUtility",
+    "name": "BoardApplication",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:51f55471d491ff0449cad5ef05817479"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

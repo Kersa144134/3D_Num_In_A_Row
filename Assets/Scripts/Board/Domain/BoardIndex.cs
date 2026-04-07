@@ -6,9 +6,7 @@
 // 概要     : 盤面上の3次元インデックスを表す構造体
 // ======================================================
 
-using System;
-
-namespace BoardSystem.Data
+namespace BoardSystem.Domain
 {
     /// <summary>
     /// 盤面座標インデックス

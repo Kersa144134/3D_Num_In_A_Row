@@ -6,10 +6,10 @@
 // 概要     : 駒の落下アニメーションサービス
 // ======================================================
 
-using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 
-namespace BoardSystem.Service
+namespace BoardSystem.Application
 {
     /// <summary>
     /// 駒落下アニメーションサービス
