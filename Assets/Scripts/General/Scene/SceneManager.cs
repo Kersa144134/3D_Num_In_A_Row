@@ -31,6 +31,9 @@ namespace SceneSystem.Manager
         [SerializeField] private PhaseType _startPhase;
 
         [Header("フェーズ遷移設定")]
+        /// <summary>Ready フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
+        [SerializeField, Min(0f)] private float _readyToPlayWaitTime = 3.0f;
+
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _playToFinishWaitTime = 120.0f;
 
@@ -161,7 +164,7 @@ namespace SceneSystem.Manager
             _phaseUpdatablesMap = _phaseInitializer.CreatePhaseMap(updatables, phaseDataList);
 
             // コンポーネント初期化
-            _phasePresenter = new PhasePresenter(_playToFinishWaitTime);
+            _phasePresenter = new PhasePresenter(_readyToPlayWaitTime, _playToFinishWaitTime);
             _updatableManagementService = new UpdatableManagementService(_phaseUpdatablesMap);
             _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhaseReactive);
 

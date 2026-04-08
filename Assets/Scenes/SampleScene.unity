@@ -1735,7 +1735,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 513ace15bda16cc4385abf12d0d05e2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
-  _startPhase: 3
+  _startPhase: 2
   _playToFinishWaitTime: 120
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

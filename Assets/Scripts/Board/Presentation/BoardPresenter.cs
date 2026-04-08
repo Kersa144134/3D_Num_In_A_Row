@@ -161,14 +161,6 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 更新処理
-        /// </summary>
-        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
-        {
-            
-        }
-
-        /// <summary>
         /// 終了処理
         /// </summary>
         public void OnExit()
@@ -324,9 +316,7 @@ namespace BoardSystem.Presentation
             // 入力ロック
             _isInputLocked = true;
 
-            // --------------------------------------------------
             // 配置可能判定
-            // --------------------------------------------------
             int y = _model.CalculatePlace(x, z);
 
             if (y < 0)
@@ -369,7 +359,7 @@ namespace BoardSystem.Presentation
             await UniTask.Delay(LINE_DELETE_DELAY_MS);
 
             // 再配置対象列の HashSet
-            HashSet<(int x, int z)> columnSet = new HashSet<(int, int)>();
+            HashSet<(int x, int z)> pieceSet = new HashSet<(int, int)>();
 
             for (int i = 0; i < lineEvent.LinePositions.Length; i++)
             {
@@ -390,7 +380,7 @@ namespace BoardSystem.Presentation
 
                         _model.ClearCell(index);
 
-                        columnSet.Add((index.X, index.Z));
+                        pieceSet.Add((index.X, index.Z));
                     }
                     else
                     {
@@ -400,13 +390,13 @@ namespace BoardSystem.Presentation
             }
 
             // 再配置対象駒をリスト化
-            List<(int x, int z)> repositionColumns = new List<(int, int)>(columnSet);
+            List<(int x, int z)> repositionPieces = new List<(int, int)>(pieceSet);
 
             // 演出待機
             await UniTask.Delay(PIECE_DROP_DELAY_MS);
 
             // 駒再配置処理
-            await HandleRepositionAsync(repositionColumns);
+            await PiecesRepositionAsync(repositionPieces);
 
             // ライン成立チェック
             CheckLine(_model.CheckLine());
@@ -415,15 +405,15 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒再配置処理
         /// </summary>
-        private async UniTask HandleRepositionAsync(IReadOnlyList<(int x, int z)> columns)
+        private async UniTask PiecesRepositionAsync(IReadOnlyList<(int x, int z)> pieces)
         {
             List<(BoardIndex from, BoardIndex to)> allMoves =
                 new List<(BoardIndex, BoardIndex)>();
 
             // 再配置対象作成
-            for (int i = 0; i < columns.Count; i++)
+            for (int i = 0; i < pieces.Count; i++)
             {
-                (int x, int z) column = columns[i];
+                (int x, int z) column = pieces[i];
 
                 IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
                     _model.CalculateReposition(column.x, column.z);
@@ -440,13 +430,31 @@ namespace BoardSystem.Presentation
                 ApplyViewMoves(allMoves);
 
                 // モデル盤面更新
-                for (int i = 0; i < columns.Count; i++)
+                for (int i = 0; i < pieces.Count; i++)
                 {
-                    (int x, int z) column = columns[i];
+                    (int x, int z) piece = pieces[i];
 
-                    _model.ApplyReposition(column.x, column.z);
+                    _model.ApplyReposition(piece.x, piece.z);
                 }
             }
+        }
+
+        /// <summary>
+        /// ライン成立判定時の共通処理
+        /// </summary>
+        private void CheckLine(bool isLine)
+        {
+            // ラインが成立している場合は処理なし
+            if (isLine)
+            {
+                return;
+            }
+
+            // 入力ロック解除
+            _isInputLocked = false;
+
+            // フェーズ終了通知
+            _onPhaseEnd.OnNext(Unit.Default);
         }
 
         /// <summary>
@@ -491,24 +499,6 @@ namespace BoardSystem.Presentation
                 _view.RemovePiece(move.from);
                 _view.SetPiece(move.to, piece);
             }
-        }
-
-        /// <summary>
-        /// ライン成立判定時の共通処理
-        /// </summary>
-        private void CheckLine(bool isLine)
-        {
-            // ラインが成立している場合は処理なし
-            if (isLine)
-            {
-                return;
-            }
-
-            // 入力ロック解除
-            _isInputLocked = false;
-
-            // フェーズ終了通知
-            _onPhaseEnd.OnNext(Unit.Default);
         }
     }
 }

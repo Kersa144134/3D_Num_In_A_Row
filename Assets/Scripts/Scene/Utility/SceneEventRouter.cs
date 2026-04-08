@@ -43,8 +43,8 @@ namespace SceneSystem.Utility
         // フィールド
         // ======================================================
 
-        /// <summary>アクティブ状態フェーズ配列</summary>
-        private readonly PhaseType[] _activePhases;
+        /// <summary>Play フェーズ配列</summary>
+        private readonly PhaseType[] _playPhases;
 
         /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
         private PhaseType _cachedActivePhase;
@@ -98,12 +98,11 @@ namespace SceneSystem.Utility
             _boardPresenters = _context.GetAll<BoardPresenter>();
             _mainUIManager = _context.Get<MainUIManager>();
 
-            // アクティブ状態フェーズを定義
-            _activePhases = new[]
+            // Play フェーズを定義
+            _playPhases = new[]
             {
                 PhaseType.Play_1,
-                PhaseType.Play_2,
-                PhaseType.Event
+                PhaseType.Play_2
             };
         }
 
@@ -235,14 +234,14 @@ namespace SceneSystem.Utility
             int mappingIndex;
             PhaseType nextPhase;
 
-            // アクティブ状態フェーズ判定
-            bool isActivePhases = false;
+            // Play フェーズ判定
+            bool isPlayPhases = false;
 
-            for (int i = 0; i < _activePhases.Length; i++)
+            for (int i = 0; i < _playPhases.Length; i++)
             {
-                if (e.Phase == _activePhases[i])
+                if (e.Phase == _playPhases[i])
                 {
-                    isActivePhases = true;
+                    isPlayPhases = true;
 
                     // 現在のアクティブ状態フェーズをキャッシュ
                     _cachedActivePhase = e.Phase;
@@ -250,7 +249,7 @@ namespace SceneSystem.Utility
                 }
             }
 
-            if (isActivePhases)
+            if (isPlayPhases)
             {
                 mappingIndex = 1;
                 nextPhase = PhaseType.Pause;

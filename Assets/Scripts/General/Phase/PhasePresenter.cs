@@ -6,9 +6,10 @@
 // 概要     : PhaseModel を操作してフェーズ遷移・更新を管理する Presenter
 // ======================================================
 
+using PhaseSystem.Data;
 using System;
 using UniRx;
-using PhaseSystem.Data;
+using UnityEngine;
 
 namespace PhaseSystem
 {
@@ -31,6 +32,9 @@ namespace PhaseSystem
         /// <summary>Play フェーズ配列</summary>
         private readonly PhaseType[] _playPhases;
 
+        /// <summary>Ready フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
+        private readonly float _readyToPlayWaitTime;
+        
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
         private readonly float _playToFinishWaitTime;
 
@@ -68,8 +72,11 @@ namespace PhaseSystem
         /// PhasePresenter の生成
         /// </summary>
         /// <param name="model">Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</param>
-        public PhasePresenter(in float playToFinishWaitTime)
+        public PhasePresenter(
+            in float readyToPlayWaitTime,
+            in float playToFinishWaitTime)
         {
+            _readyToPlayWaitTime = readyToPlayWaitTime;
             _playToFinishWaitTime = playToFinishWaitTime;
 
             // Play フェーズをキャッシュ
@@ -214,6 +221,14 @@ namespace PhaseSystem
             // --------------------------------------------------
             // フェーズ遷移判定
             // --------------------------------------------------
+            // Ready → Play
+            if (currentPhase == PhaseType.Ready &&
+                currentState.ElapsedTime > _readyToPlayWaitTime)
+            {
+                targetPhase = PhaseType.Play_1;
+            }
+
+            // Play → Finish
             if (currentPhase != PhaseType.Finish &&
                 _model.GamePlayElapsedTime > _playToFinishWaitTime)
             {
