@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-24
 // 更新日時 : 2026-03-24
-// 概要     : フェーズ情報およびゲームプレイ経過時間を管理する Model
+// 概要     : フェーズ情報およびゲームプレイ経過時間を管理するモデル
 // ======================================================
 
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using PhaseSystem.Data;
 namespace PhaseSystem
 {
     /// <summary>
-    /// フェーズ進行管理用 Model
+    /// フェーズ進行管理用モデル
     /// </summary>
     public sealed class PhaseModel
     {
@@ -37,6 +37,16 @@ namespace PhaseSystem
         public float GamePlayElapsedTime => _gamePlayElapsedTime;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>1P ID</summary>
+        private const int PLAYER_ONE = 1;
+
+        /// <summary>2P ID</summary>
+        private const int PLAYER_TWO = 2;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -49,8 +59,8 @@ namespace PhaseSystem
             {
                 { PhaseType.Title,  new TitlePhaseState() },
                 { PhaseType.Ready,  new ReadyPhaseState() },
-                { PhaseType.Play_1, new PlayPhaseState(1) },
-                { PhaseType.Play_2, new PlayPhaseState(2) },
+                { PhaseType.Play_1, new PlayPhaseState(PLAYER_ONE) },
+                { PhaseType.Play_2, new PlayPhaseState(PLAYER_TWO) },
                 { PhaseType.Event,  new EventPhaseState() },
                 { PhaseType.Pause,  new PausePhaseState() },
                 { PhaseType.Finish, new FinishPhaseState() },

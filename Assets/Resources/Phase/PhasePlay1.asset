@@ -15,4 +15,5 @@ MonoBehaviour:
   _phaseType: 3
   _updatableTypeNames:
   - BoardSystem.Presentation.BoardPresenter
+  - CameraSystem.Presentation.CameraPresenter
   - UISystem.MainUIManager

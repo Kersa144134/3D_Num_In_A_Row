@@ -144,7 +144,9 @@ namespace InputSystem
 
         private void Awake()
         {
+            // --------------------------------------------------
             // 入力マッピングが登録されていない場合の強制終了処理
+            // --------------------------------------------------
             if (_inputMappingConfigs == null || _inputMappingConfigs.Length == 0)
             {
                 Debug.LogError("[InputManager] InputMappingConfigs が設定されていません。");
@@ -156,6 +158,9 @@ namespace InputSystem
                 return;
             }
 
+            // --------------------------------------------------
+            // インスタンス生成
+            // --------------------------------------------------
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -165,20 +170,31 @@ namespace InputSystem
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            // --------------------------------------------------
+            // カーソル非表示
+            // --------------------------------------------------
+            Cursor.visible = false;
+
+            // --------------------------------------------------
+            // クラス初期化
+            // --------------------------------------------------
             _deviceSwitchService = new DeviceSwitchService(_inputMappingConfigs);
 
-            // enum の数だけ配列を確保
+            // --------------------------------------------------
+            // 入力状態初期化
+            // --------------------------------------------------
+            // ゲームパッド入力の種類だけ配列を確保
             int enumLength = Enum.GetValues(typeof(GamepadInputType)).Length;
 
             _buttonStates = new ButtonState[enumLength];
 
-            // 各ボタン状態を初期化
+            // ボタン状態初期化
             for (int i = 0; i < _buttonStates.Length; i++)
             {
                 _buttonStates[i] = new ButtonState();
             }
 
-            // ポインター初期位置を画面中心に設定
+            // ポインター初期位置設定
             Pointer = new Vector2(Screen.width / 2f, Screen.height / 2f);
         }
 

@@ -3,18 +3,17 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-24
 // 更新日時 : 2026-03-24
-// 概要     : PhaseModel を操作してフェーズ遷移・更新を管理する Presenter
+// 概要     : フェーズ進行管理用モデルを操作してフェーズ遷移・更新を管理するプレゼンター
 // ======================================================
 
-using PhaseSystem.Data;
 using System;
 using UniRx;
-using UnityEngine;
+using PhaseSystem.Data;
 
 namespace PhaseSystem
 {
     /// <summary>
-    /// フェーズ進行管理用 Presenter
+    /// フェーズ進行管理用プレゼンター
     /// </summary>
     public sealed class PhasePresenter
     {
@@ -22,7 +21,7 @@ namespace PhaseSystem
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>フェーズ進行管理用 Model</summary>
+        /// <summary>モデル</summary>
         private readonly PhaseModel _model = new();
 
         // ======================================================

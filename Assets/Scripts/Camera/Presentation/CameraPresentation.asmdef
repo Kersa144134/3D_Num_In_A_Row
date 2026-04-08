@@ -1,0 +1,22 @@
+{
+    "name": "CameraPresentation",
+    "rootNamespace": "",
+    "references": [
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c",
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
+        "GUID:d5654202b45dfa7478446f9d2d115e5e",
+        "GUID:6997ef1b42c40634eb175555bf85ca8d",
+        "GUID:d1bb8686503669547971dcf786e7b533"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
