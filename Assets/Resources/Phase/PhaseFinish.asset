@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0259421bd058724aa55f7c84f329ec5, type: 3}
   m_Name: PhaseFinish
   m_EditorClassIdentifier: 
-  _phaseType: 5
+  _phaseType: 7
   _updatableTypeNames:
   - UISystem.MainUIManager

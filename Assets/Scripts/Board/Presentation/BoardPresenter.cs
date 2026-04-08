@@ -29,7 +29,7 @@ namespace BoardSystem.Presentation
 
         [Header("盤面")]
         /// <summary>
-        /// 盤面サイズ（X,Z方向）
+        /// 盤面サイズ
         /// </summary>
         [SerializeField, Min(3)]
         private int _boardSize;
@@ -86,16 +86,27 @@ namespace BoardSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>イベント購読管理</summary>
-        private CompositeDisposable _disposables;
+        /// <summary>入力購読管理</summary>
+        private CompositeDisposable _inputDisposables;
 
-        /// <summary>
-        /// ライン成立通知用 Subject
-        /// </summary>
+        /// <summary>常駐購読管理</summary>
+        private readonly CompositeDisposable _otherDisposables =
+            new CompositeDisposable();
+
+        /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
 
         /// <summary>ライン成立ストリーム</summary>
         public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+
+        /// <summary>フェーズ終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onPhaseEnd = new Subject<Unit>();
+
+        /// <summary>フェーズ終了ストリーム</summary>
+        public IObservable<Unit> OnPhaseEnd => _onPhaseEnd;
+
+        /// <summary>フェーズ購読</summary>
+        private IDisposable _phaseSubscription;
 
         // ======================================================
         // 定数
@@ -162,7 +173,12 @@ namespace BoardSystem.Presentation
         /// </summary>
         public void OnExit()
         {
-            _disposables.Dispose();
+            // 入力購読解除
+            _inputDisposables?.Dispose();
+
+            // 常駐購読解除
+            _otherDisposables.Dispose();
+
             _model.Dispose();
         }
 
@@ -171,36 +187,42 @@ namespace BoardSystem.Presentation
         /// </summary>
         public void OnPhaseEnter(in PhaseType phase)
         {
-            if (phase != PhaseType.Play)
+            if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2) ||
+                _inputDisposables != null)
             {
                 return;
             }
 
             // --------------------------------------------------
-            // イベント購読
+            // 入力購読
             // --------------------------------------------------
-            _disposables = new CompositeDisposable();
+            _inputDisposables = new CompositeDisposable();
 
             // ボタンA 押下
             InputManager.Instance.ButtonA.OnDown
                 .Subscribe(_ => HandleDropColumn())
-                .AddTo(_disposables);
+                .AddTo(_inputDisposables);
 
             // ボタンB 押下
             InputManager.Instance.ButtonB.OnDown
                 .Subscribe(_ => HandleDropColumn())
-                .AddTo(_disposables);
+                .AddTo(_inputDisposables);
 
-            // モデルからのライン成立通知購読
-            _model.OnLineComplete
-                .Subscribe(async lineEvent =>
-                {
-                    _onLineComplete.OnNext(lineEvent);
+            // --------------------------------------------------
+            // 常駐購読
+            // --------------------------------------------------
+            if (_otherDisposables.Count == 0)
+            {
+                _model.OnLineComplete
+                    .Subscribe(async lineEvent =>
+                    {
+                        _onLineComplete.OnNext(lineEvent);
 
-                    // ライン削除
-                    await HandleLineDeleteAsync(lineEvent);
-                })
-                .AddTo(_disposables);
+                        // ライン削除
+                        await HandleLineDeleteAsync(lineEvent);
+                    })
+                    .AddTo(_otherDisposables);
+            }
         }
 
         /// <summary>
@@ -208,17 +230,54 @@ namespace BoardSystem.Presentation
         /// </summary>
         public void OnPhaseExit(in PhaseType phase)
         {
-            if (phase != PhaseType.Play)
+            if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2))
             {
                 return;
             }
 
-            _disposables.Dispose();
-            _disposables = null;
+            // 入力のみ解除
+            _inputDisposables?.Dispose();
+            _inputDisposables = null;
         }
 
         // ======================================================
         // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// フェーズ変更ストリームを購読する
+        /// </summary>
+        /// <param name="stream">フェーズストリーム</param>
+        public void BindPhaseStream(IObservable<PhaseType> stream)
+        {
+            // 多重購読防止
+            _phaseSubscription?.Dispose();
+
+            _phaseSubscription = stream
+                .Subscribe(phase =>
+                {
+                    if (phase == PhaseType.Play_1)
+                    {
+                        _currentPlayer = PLAYER_ONE;
+                    }
+                    else if (phase == PhaseType.Play_2)
+                    {
+                        _currentPlayer = PLAYER_TWO;
+                    }
+                });
+        }
+
+        /// <summary>
+        /// フェーズ変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPhaseStream()
+        {
+            _phaseSubscription?.Dispose();
+            _phaseSubscription = null;
+        }
+
+        // ======================================================
+        // プライベートメソッド
         // ======================================================
 
         /// <summary>
@@ -445,19 +504,11 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // プレイヤー切替
-            SwitchPlayer();
-
             // 入力ロック解除
             _isInputLocked = false;
-        }
 
-        /// <summary>
-        /// プレイヤー切替処理
-        /// </summary>
-        private void SwitchPlayer()
-        {
-            _currentPlayer = _currentPlayer == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
+            // フェーズ終了通知
+            _onPhaseEnd.OnNext(Unit.Default);
         }
     }
 }

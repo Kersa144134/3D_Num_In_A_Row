@@ -49,7 +49,9 @@ namespace PhaseSystem
             {
                 { PhaseType.Title,  new TitlePhaseState() },
                 { PhaseType.Ready,  new ReadyPhaseState() },
-                { PhaseType.Play,   new PlayPhaseState() },
+                { PhaseType.Play_1, new PlayPhaseState(1) },
+                { PhaseType.Play_2, new PlayPhaseState(2) },
+                { PhaseType.Event,  new EventPhaseState() },
                 { PhaseType.Pause,  new PausePhaseState() },
                 { PhaseType.Finish, new FinishPhaseState() },
                 { PhaseType.Result, new ResultPhaseState() }

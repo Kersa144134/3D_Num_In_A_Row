@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0259421bd058724aa55f7c84f329ec5, type: 3}
   m_Name: PhaseResult
   m_EditorClassIdentifier: 
-  _phaseType: 6
+  _phaseType: 8
   _updatableTypeNames: []

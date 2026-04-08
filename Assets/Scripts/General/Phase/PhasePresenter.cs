@@ -28,6 +28,9 @@ namespace PhaseSystem
         // フィールド
         // ======================================================
 
+        /// <summary>Play フェーズ配列</summary>
+        private readonly PhaseType[] _playPhases;
+
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
         private readonly float _playToFinishWaitTime;
 
@@ -68,6 +71,13 @@ namespace PhaseSystem
         public PhasePresenter(in float playToFinishWaitTime)
         {
             _playToFinishWaitTime = playToFinishWaitTime;
+
+            // Play フェーズをキャッシュ
+            _playPhases = new[]
+            {
+                PhaseType.Play_1,
+                PhaseType.Play_2
+            };
         }
 
         // ======================================================
@@ -89,18 +99,23 @@ namespace PhaseSystem
             // --------------------------------------------------
             // Play フェーズ
             // --------------------------------------------------
-            PlayPhaseState play = _model.GetState(PhaseType.Play) as PlayPhaseState;
-
-            if (play != null)
+            for (int i = 0; i < _playPhases.Length; i++)
             {
-                play.OnStartButtonPressed
-                    .Subscribe(_ =>
-                    {
-                        // Play フェーズのスタート押下として通知
-                        _onStartButtonPressed.OnNext(
-                            new StartButtonEvent(PhaseType.Play));
-                    })
-                    .AddTo(_disposables);
+                PhaseType phase = _playPhases[i];
+
+                PlayPhaseState play = _model.GetState(phase) as PlayPhaseState;
+
+                if (play != null)
+                {
+                    play.OnStartButtonPressed
+                        .Subscribe(_ =>
+                        {
+                            // Play フェーズのスタート押下として通知
+                            _onStartButtonPressed.OnNext(
+                                new StartButtonEvent(phase));
+                        })
+                        .AddTo(_disposables);
+                }
             }
 
             // --------------------------------------------------
@@ -174,7 +189,19 @@ namespace PhaseSystem
             // --------------------------------------------------
             currentState.OnUpdate(unscaledDeltaTime);
 
-            if (currentPhase == PhaseType.Play)
+            // Play フェーズか判定
+            bool isPlayPhase = false;
+
+            for (int i = 0; i < _playPhases.Length; i++)
+            {
+                if (currentPhase == _playPhases[i])
+                {
+                    isPlayPhase = true;
+                    break;
+                }
+            }
+
+            if (isPlayPhase)
             {
                 _model.AddElapsedTime(unscaledDeltaTime);
 

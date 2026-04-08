@@ -21,6 +21,9 @@ namespace PhaseSystem.Data
         // フィールド
         // ======================================================
 
+        /// <summary>現在のプレイヤーID</summary>
+        private readonly int _playerId;
+
         /// <summary>フェーズ経過時間</summary>
         private float _elapsedTime = 0.0f;
 
@@ -28,6 +31,9 @@ namespace PhaseSystem.Data
         // プロパティ
         // ======================================================
 
+        /// <summary>現在のプレイヤーID</summary>
+        public int PlayerId => _playerId;
+        
         /// <summary>フェーズ経過時間</summary>
         public float ElapsedTime => _elapsedTime;
 
@@ -44,6 +50,19 @@ namespace PhaseSystem.Data
         /// <summary>スタートボタン押下通知用 Subject</summary>
         private readonly Subject<Unit> _onStartButtonPressed = new Subject<Unit>();
 
+        // ======================================================
+        // コンストラクタ
+        // ======================================================
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="playerId">プレイヤーID</param>
+        public PlayPhaseState(in int playerId)
+        {
+            _playerId = playerId;
+        }
+        
         // ======================================================
         // パブリックメソッド
         // ======================================================

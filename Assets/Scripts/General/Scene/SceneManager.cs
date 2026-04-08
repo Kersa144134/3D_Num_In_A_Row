@@ -2,7 +2,7 @@
 // SceneManager.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-08
-// 更新日時 : 2026-01-23
+// 更新日時 : 2026-04-08
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
@@ -111,8 +111,12 @@ namespace SceneSystem.Manager
         private readonly CompositeDisposable _disposables =
             new CompositeDisposable();
 
+        /// <summary>現在フェーズストリーム</summary>
+        private readonly ReactiveProperty<PhaseType> _currentPhaseReactive =
+            new ReactiveProperty<PhaseType>(PhaseType.None);
+
         // ======================================================
-        // Unityイベント
+        // Unity イベント
         // ======================================================
 
         private void Awake()
@@ -159,7 +163,7 @@ namespace SceneSystem.Manager
             // コンポーネント初期化
             _phasePresenter = new PhasePresenter(_playToFinishWaitTime);
             _updatableManagementService = new UpdatableManagementService(_phaseUpdatablesMap);
-            _sceneEventRouter = new SceneEventRouter(_updatableContexts);
+            _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhaseReactive);
 
             // イベント購読
             _sceneEventRouter.OnPhaseChanged
@@ -271,7 +275,7 @@ namespace SceneSystem.Manager
         /// <summary>
         /// フェーズ切替を行う
         /// </summary>
-        public void ChangePhase(in PhaseType nextPhase)
+        private void ChangePhase(in PhaseType nextPhase)
         {
             if (_currentPhase == nextPhase)
             {
@@ -283,6 +287,9 @@ namespace SceneSystem.Manager
 
             // 現在フェーズ更新
             _currentPhase = nextPhase;
+
+            // フェーズストリーム更新
+            _currentPhaseReactive.Value = nextPhase;
         }
     }
 }

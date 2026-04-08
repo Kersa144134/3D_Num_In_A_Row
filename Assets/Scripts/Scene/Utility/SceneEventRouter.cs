@@ -40,6 +40,16 @@ namespace SceneSystem.Utility
         private readonly MainUIManager _mainUIManager;
 
         // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>アクティブ状態フェーズ配列</summary>
+        private readonly PhaseType[] _activePhases;
+
+        /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
+        private PhaseType _cachedActivePhase;
+
+        // ======================================================
         // UniRx 変数
         // ======================================================
 
@@ -49,20 +59,23 @@ namespace SceneSystem.Utility
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseType> _onPhaseChanged = new Subject<PhaseType>();
 
-        /// <summary>入力マッピング変更用 Subject</summary>
-        private readonly Subject<int> _onMappingChanged = new Subject<int>();
-
-        /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
-
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseType> OnPhaseChanged => _onPhaseChanged;
+
+        /// <summary>入力マッピング変更用 Subject</summary>
+        private readonly Subject<int> _onMappingChanged = new Subject<int>();
 
         /// <summary>入力マッピング変更ストリーム</summary>
         public IObservable<int> OnMappingChanged => _onMappingChanged;
 
+        /// <summary>ライン成立通知用 Subject</summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
+
         /// <summary>ライン成立ストリーム</summary>
         public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+
+        /// <summary>現在フェーズストリーム参照</summary>
+        private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
         // ======================================================
         // コンストラクタ
@@ -71,9 +84,12 @@ namespace SceneSystem.Utility
         /// <summary>
         /// SceneEventRouter を生成
         /// </summary>
-        public SceneEventRouter(UpdatableContext context)
+        public SceneEventRouter(
+            in UpdatableContext context,
+            in IReadOnlyReactiveProperty<PhaseType> currentPhase)
         {
             _context = context;
+            _currentPhase = currentPhase;
 
             // インスタンスからコンポーネントを取得
             _inputManager = InputManager.Instance;
@@ -81,6 +97,14 @@ namespace SceneSystem.Utility
             // Context からコンポーネントを取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
             _mainUIManager = _context.Get<MainUIManager>();
+
+            // アクティブ状態フェーズを定義
+            _activePhases = new[]
+            {
+                PhaseType.Play_1,
+                PhaseType.Play_2,
+                PhaseType.Event
+            };
         }
 
         // ======================================================
@@ -102,7 +126,7 @@ namespace SceneSystem.Utility
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
-            _inputManager.BindMappingStream(OnMappingChanged);
+            _inputManager.BindMappingStream(_onMappingChanged);
             
             // --------------------------------------------------
             // ボード
@@ -114,8 +138,14 @@ namespace SceneSystem.Utility
                     continue;
                 }
 
+                boardPresenter.BindPhaseStream(_currentPhase);
+
                 boardPresenter.OnLineComplete
                     .Subscribe(e => _onLineComplete.OnNext(e))
+                    .AddTo(_disposables);
+
+                boardPresenter.OnPhaseEnd
+                    .Subscribe(_ => TogglePlayPhase())
                     .AddTo(_disposables);
             }
 
@@ -143,11 +173,55 @@ namespace SceneSystem.Utility
             _onLineComplete.Dispose();
 
             _inputManager.UnbindMappingStream();
+
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            {
+                if (boardPresenter == null)
+                {
+                    continue;
+                }
+
+                boardPresenter.UnbindPhaseStream();
+            }
         }
 
         // ======================================================
         // プライベートメソッド
         // ======================================================
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
+        /// <summary>
+        /// Playフェーズをトグルする
+        /// </summary>
+        private void TogglePlayPhase()
+        {
+            // 現在フェーズ取得
+            PhaseType current = _currentPhase.Value;
+
+            // トグル後のフェーズ
+            PhaseType nextPhase;
+
+            // Play_1 → Play_2
+            if (current == PhaseType.Play_1)
+            {
+                nextPhase = PhaseType.Play_2;
+            }
+            // Play_2 → Play_1
+            else if (current == PhaseType.Play_2)
+            {
+                nextPhase = PhaseType.Play_1;
+            }
+            // Play 以外は無視
+            else
+            {
+                return;
+            }
+
+            // フェーズ変更通知
+            _onPhaseChanged.OnNext(nextPhase);
+        }
+
         // --------------------------------------------------
         // 入力
         // --------------------------------------------------
@@ -161,7 +235,22 @@ namespace SceneSystem.Utility
             int mappingIndex;
             PhaseType nextPhase;
 
-            if (e.Phase == PhaseType.Play)
+            // アクティブ状態フェーズ判定
+            bool isActivePhases = false;
+
+            for (int i = 0; i < _activePhases.Length; i++)
+            {
+                if (e.Phase == _activePhases[i])
+                {
+                    isActivePhases = true;
+
+                    // 現在のアクティブ状態フェーズをキャッシュ
+                    _cachedActivePhase = e.Phase;
+                    break;
+                }
+            }
+
+            if (isActivePhases)
             {
                 mappingIndex = 1;
                 nextPhase = PhaseType.Pause;
@@ -169,7 +258,9 @@ namespace SceneSystem.Utility
             else if (e.Phase == PhaseType.Pause)
             {
                 mappingIndex = 0;
-                nextPhase = PhaseType.Play;
+
+                // キャッシュしていたアクティブ状態フェーズへ復帰
+                nextPhase = _cachedActivePhase;
             }
             else
             {
