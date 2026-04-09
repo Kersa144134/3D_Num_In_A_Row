@@ -12,12 +12,12 @@ using PhaseSystem.Service;
 using SceneSystem.Data;
 using SceneSystem.Runner;
 
-namespace SceneSystem.Manager
+namespace SceneSystem.Service
 {
     /// <summary>
     /// Updatable を管理するサービス
     /// </summary>
-    public sealed class UpdatableManagementService
+    public sealed class UpdatableManagement
     {
         // ======================================================
         // コンポーネント参照
@@ -44,10 +44,10 @@ namespace SceneSystem.Manager
         // ======================================================
 
         /// <summary>
-        /// UpdateManagementService を生成する
+        /// UpdateManagement を生成する
         /// </summary>
         /// <param name="phaseUpdatablesMap">フェーズごとの IUpdatable 配列を保持する辞書</param>
-        public UpdatableManagementService(in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
+        public UpdatableManagement(in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
         {
             _phaseUpdatablesMap = phaseUpdatablesMap;
 

@@ -7,8 +7,6 @@
 //            初期化済みコンテキストを生成する
 // ======================================================
 
-using System;
-using System.Collections.Generic;
 using SceneSystem.Data;
 
 namespace SceneSystem.Utility

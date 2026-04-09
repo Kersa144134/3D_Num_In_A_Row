@@ -13,6 +13,7 @@ using PhaseSystem;
 using PhaseSystem.Data;
 using PhaseSystem.Utility;
 using SceneSystem.Data;
+using SceneSystem.Service;
 using SceneSystem.Utility;
 
 namespace SceneSystem.Manager
@@ -48,7 +49,7 @@ namespace SceneSystem.Manager
         private readonly PhaseInitializer _phaseInitializer = new();
 
         /// <summary>Update を管理するサービス</summary>
-        private UpdatableManagementService _updatableManagementService;
+        private UpdatableManagement _updatableManagement;
 
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
         private readonly UpdatableCollector _updatableCollector = new();
@@ -124,7 +125,7 @@ namespace SceneSystem.Manager
 
         private void Awake()
         {
-            // フレームレート固定
+            // フレームレート設定
             Application.targetFrameRate = TARGET_FRAME_RATE;
 
             // コンポーネント配列初期化
@@ -138,19 +139,19 @@ namespace SceneSystem.Manager
                 // GameObject として配列に格納
                 _components[i] = child.gameObject;
             }
-        }
 
-        private void Start()
-        {
-            // フレームレート固定
-            Application.targetFrameRate = TARGET_FRAME_RATE;
-
-            // 初期状態設定
+            // シーン、フェーズ初期設定
             _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
             _targetPhase = _startPhase;
             _isSceneChanged = true;
+        }
 
+        private void Start()
+        {
+            // --------------------------------------------------
+            // Updatable 読み込み
+            // --------------------------------------------------
             // フェーズデータ読み込み
             PhaseData[] phaseDataList = Resources.LoadAll<PhaseData>(PHASE_DATA_RESOURCES_PATH);
 
@@ -165,10 +166,12 @@ namespace SceneSystem.Manager
 
             // コンポーネント初期化
             _phasePresenter = new PhasePresenter(_readyToPlayWaitTime, _playToFinishWaitTime);
-            _updatableManagementService = new UpdatableManagementService(_phaseUpdatablesMap);
+            _updatableManagement = new UpdatableManagement(_phaseUpdatablesMap);
             _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhaseReactive);
 
+            // --------------------------------------------------
             // イベント購読
+            // --------------------------------------------------
             _sceneEventRouter.OnPhaseChanged
                 .Subscribe(phase =>
                 {
@@ -204,7 +207,7 @@ namespace SceneSystem.Manager
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             // Update 実行
-            _updatableManagementService.Update(unscaledDeltaTime, _phasePresenter.GamePlayElapsedTime);
+            _updatableManagement.Update(unscaledDeltaTime, _phasePresenter.GamePlayElapsedTime);
         }
 
         private void LateUpdate()
@@ -219,7 +222,7 @@ namespace SceneSystem.Manager
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             // LateUpdate 実行
-            _updatableManagementService.LateUpdate(unscaledDeltaTime);
+            _updatableManagement.LateUpdate(unscaledDeltaTime);
 
             // フェーズ遷移判定実行
             if (_currentPhase == _targetPhase)
@@ -286,7 +289,7 @@ namespace SceneSystem.Manager
             }
 
             // フェーズ変更時処理
-            _updatableManagementService.ChangePhase(nextPhase);
+            _updatableManagement.ChangePhase(nextPhase);
 
             // 現在フェーズ更新
             _currentPhase = nextPhase;
