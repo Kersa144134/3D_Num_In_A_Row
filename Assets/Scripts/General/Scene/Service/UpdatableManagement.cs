@@ -1,5 +1,5 @@
 // ======================================================
-// UpdateManagementService.cs
+// UpdatableManagement.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
 // 更新日時 : 2026-01-23
@@ -7,8 +7,7 @@
 // ======================================================
 
 using System.Collections.Generic;
-using PhaseSystem.Data;
-using PhaseSystem.Service;
+using PhaseSystem.Domain;
 using SceneSystem.Data;
 using SceneSystem.Runner;
 
@@ -24,7 +23,7 @@ namespace SceneSystem.Service
         // ======================================================
 
         /// <summary>毎フレーム処理を実行するランナー</summary>
-        private readonly UpdatableExecutor _updatableExecutor = new();
+        private readonly UpdatableExecutor _updatableExecutor = new UpdatableExecutor();
 
         /// <summary>フェーズ切替制御クラス</summary>
         private AssignUpdatablesService _assignUpdatablesService;

@@ -9,9 +9,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UniRx;
-using PhaseSystem;
-using PhaseSystem.Data;
-using PhaseSystem.Utility;
+using PhaseSystem.Application;
+using PhaseSystem.Presentation;
+using PhaseSystem.Domain;
 using SceneSystem.Data;
 using SceneSystem.Service;
 using SceneSystem.Utility;
@@ -244,21 +244,17 @@ namespace SceneSystem.Manager
         }
 
         // ======================================================
-        // パブリックメソッド
+        // プライベートメソッド
         // ======================================================
 
         /// <summary>
         /// 外部から遷移先フェーズを設定する
         /// </summary>
-        public void SetTargetPhase(PhaseType nextPhase)
+        private void SetTargetPhase(PhaseType nextPhase)
         {
             // 遷移先フェーズを更新
             _targetPhase = nextPhase;
         }
-        
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
 
         /// <summary>
         /// シーン遷移を行う

@@ -3,13 +3,13 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-05
 // 更新日時 : 2026-03-23
-// 概要     : UpdateController に更新対象を登録するサービス
+// 概要     : UpdatableExecutor に更新対象を登録するサービス
 // ======================================================
 
 using SceneSystem.Data;
 using SceneSystem.Runner;
 
-namespace PhaseSystem.Service
+namespace SceneSystem.Service
 {
     /// <summary>
     /// UpdateController に更新対象を登録するサービス
@@ -27,6 +27,9 @@ namespace PhaseSystem.Service
         // コンストラクタ
         // ======================================================
 
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public AssignUpdatablesService(in UpdatableExecutor updatableExecutor)
         {
             _updatableExecutor = updatableExecutor;

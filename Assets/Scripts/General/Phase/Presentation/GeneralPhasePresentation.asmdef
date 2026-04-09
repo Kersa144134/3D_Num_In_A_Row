@@ -1,11 +1,11 @@
 {
-    "name": "PhaseData",
+    "name": "GeneralPhasePresentation",
     "rootNamespace": "",
     "references": [
         "GUID:560b04d1a97f54a4e82edc0cbbb69285",
         "GUID:ec6250c2a73cf504697941aef5cef7f1",
-        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
-        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c"
+        "GUID:d1bb8686503669547971dcf786e7b533",
+        "GUID:6040c79d4d91d454c97b789d223a0bb7"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

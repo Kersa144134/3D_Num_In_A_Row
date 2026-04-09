@@ -6,11 +6,11 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
+using System;
 using UniRx;
 using InputSystem;
-using System;
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// プレイフェーズの処理

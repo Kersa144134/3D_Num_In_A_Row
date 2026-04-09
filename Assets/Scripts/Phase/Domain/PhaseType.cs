@@ -6,7 +6,7 @@
 // 概要     : ゲーム内フェーズを識別する列挙体
 // ======================================================
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// ゲーム全体の進行状態を示すフェーズ列挙

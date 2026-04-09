@@ -1,17 +1,17 @@
 // ======================================================
-// NonePhaseState.cs
+// ResultPhaseState.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-23
 // 更新日時 : 2026-03-23
-// 概要     : 未初期化フェーズの振る舞い
+// 概要     : リザルトフェーズの振る舞い
 // ======================================================
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
-    /// Noneフェーズの処理
+    /// Resultフェーズの処理
     /// </summary>
-    public sealed class NonePhaseState : IPhaseState
+    public sealed class ResultPhaseState : IPhaseState
     {
         // ======================================================
         // フィールド
@@ -34,16 +34,25 @@ namespace PhaseSystem.Data
         /// <summary>
         /// フェーズ開始時処理
         /// </summary>
-        public void OnEnter() { }
+        public void OnEnter()
+        {
+
+        }
 
         /// <summary>
         /// フェーズ終了時処理
         /// </summary>
-        public void OnExit() { }
+        public void OnExit()
+        {
+
+        }
 
         /// <summary>
         /// フェーズ更新処理
         /// </summary>
-        public void OnUpdate(in float unscaledDeltaTime) { }
+        public void OnUpdate(in float unscaledDeltaTime)
+        {
+            _elapsedTime += unscaledDeltaTime;
+        }
     }
 }

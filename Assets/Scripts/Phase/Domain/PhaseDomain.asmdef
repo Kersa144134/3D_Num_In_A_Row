@@ -1,7 +1,11 @@
 {
-    "name": "GeneralPhaseData",
+    "name": "PhaseDomain",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
+        "GUID:1b21fa1834d6f9a4f8feee0a9d3a127c"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -6,7 +6,7 @@
 // 概要     : スタートボタン押下イベントデータ
 // ======================================================
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// スタートボタン押下イベントデータ

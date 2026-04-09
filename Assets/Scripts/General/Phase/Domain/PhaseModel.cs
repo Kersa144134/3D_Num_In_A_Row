@@ -7,9 +7,8 @@
 // ======================================================
 
 using System.Collections.Generic;
-using PhaseSystem.Data;
 
-namespace PhaseSystem
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// フェーズ進行管理用モデル
@@ -33,8 +32,11 @@ namespace PhaseSystem
         // プロパティ
         // ======================================================
 
-        /// <summary>ゲームプレイ経過時間の取得</summary>
+        /// <summary>ゲームプレイ経過時間</summary>
         public float GamePlayElapsedTime => _gamePlayElapsedTime;
+
+        /// <summary>前フレームのフェーズ</summary>
+        public PhaseType PreviousPhase => _previousPhase;
 
         // ======================================================
         // 定数
@@ -69,7 +71,7 @@ namespace PhaseSystem
         }
 
         // ======================================================
-        // パブリックメソッド
+        // ゲッター
         // ======================================================
 
         /// <summary>
@@ -80,6 +82,22 @@ namespace PhaseSystem
             _stateMap.TryGetValue(phase, out IPhaseState state);
             return state;
         }
+
+        // ======================================================
+        // セッター
+        // ======================================================
+
+        /// <summary>
+        /// 前フレームのフェーズを設定
+        /// </summary>
+        public void SetPreviousPhase(in PhaseType phase)
+        {
+            _previousPhase = phase;
+        }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
 
         /// <summary>
         /// ゲームプレイ時間をリセット
@@ -95,15 +113,6 @@ namespace PhaseSystem
         public void AddElapsedTime(in float delta)
         {
             _gamePlayElapsedTime += delta;
-        }
-
-        /// <summary>
-        /// 前フレームフェーズの取得／設定
-        /// </summary>
-        public PhaseType PreviousPhase
-        {
-            get => _previousPhase;
-            set => _previousPhase = value;
         }
     }
 }

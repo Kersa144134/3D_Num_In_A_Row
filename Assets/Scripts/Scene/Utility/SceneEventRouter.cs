@@ -11,8 +11,8 @@ using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using InputSystem;
-using PhaseSystem;
-using PhaseSystem.Data;
+using PhaseSystem.Domain;
+using PhaseSystem.Presentation;
 using SceneSystem.Data;
 using UISystem;
 

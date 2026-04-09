@@ -13,7 +13,7 @@ using UnityEngine;
 using UniRx;
 using BoardSystem.Domain;
 using InputSystem;
-using PhaseSystem.Data;
+using PhaseSystem.Domain;
 using SceneSystem.Data;
 
 namespace BoardSystem.Presentation

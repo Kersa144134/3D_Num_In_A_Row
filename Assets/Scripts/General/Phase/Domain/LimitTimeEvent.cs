@@ -6,7 +6,7 @@
 // 概要     : 制限時間関連イベントデータ
 // ======================================================
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// 制限時間イベントデータ

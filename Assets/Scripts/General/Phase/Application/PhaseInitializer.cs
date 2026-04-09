@@ -10,10 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using PhaseSystem.Data;
+using PhaseSystem.Domain;
 using SceneSystem.Data;
 
-namespace PhaseSystem.Utility
+namespace PhaseSystem.Application
 {
     /// <summary>
     /// フェーズごとの IUpdatable を生成するクラス

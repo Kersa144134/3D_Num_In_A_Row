@@ -8,7 +8,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using PhaseSystem.Data;
+using PhaseSystem.Domain;
 using SceneSystem.Data;
 using ShaderSystem.Controller;
 

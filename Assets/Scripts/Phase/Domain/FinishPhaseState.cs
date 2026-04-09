@@ -1,17 +1,17 @@
 // ======================================================
-// TitlePhaseState.cs
+// FinishPhaseState.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-23
 // 更新日時 : 2026-03-23
-// 概要     : タイトルフェーズの振る舞い
+// 概要     : ゲーム終了フェーズの振る舞い
 // ======================================================
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
-    /// タイトルフェーズの処理
+    /// Finishフェーズの処理
     /// </summary>
-    public sealed class TitlePhaseState : IPhaseState
+    public sealed class FinishPhaseState : IPhaseState
     {
         // ======================================================
         // フィールド

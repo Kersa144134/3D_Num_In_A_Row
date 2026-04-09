@@ -6,11 +6,11 @@
 // 概要     : 一時停止フェーズの振る舞い
 // ======================================================
 
-using InputSystem;
 using System;
 using UniRx;
+using InputSystem;
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// Pauseフェーズの処理

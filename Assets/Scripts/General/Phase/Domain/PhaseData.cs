@@ -9,7 +9,7 @@
 using System;
 using UnityEngine;
 
-namespace PhaseSystem.Data
+namespace PhaseSystem.Domain
 {
     /// <summary>
     /// フェーズごとの設定内容を保持する ScriptableObject

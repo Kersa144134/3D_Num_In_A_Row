@@ -8,9 +8,9 @@
 
 using System;
 using UniRx;
-using PhaseSystem.Data;
+using PhaseSystem.Domain;
 
-namespace PhaseSystem
+namespace PhaseSystem.Presentation
 {
     /// <summary>
     /// フェーズ進行管理用プレゼンター
@@ -234,10 +234,8 @@ namespace PhaseSystem
                 targetPhase = PhaseType.Finish;
             }
 
-            // --------------------------------------------------
-            // 前フレームフェーズ更新
-            // --------------------------------------------------
-            _model.PreviousPhase = currentPhase;
+            // 前フレームフェーズを更新
+            _model.SetPreviousPhase(currentPhase);
         }
     }
 }
