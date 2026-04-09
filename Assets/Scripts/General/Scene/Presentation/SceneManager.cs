@@ -78,9 +78,6 @@ namespace SceneSystem.Presentation
         // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
-        /// <summary>現在のフェーズ</summary>
-        private PhaseType _currentPhase = PhaseType.None;
-
         /// <summary>遷移先フェーズ/summary>
         private PhaseType _targetPhase = PhaseType.None;
 
@@ -95,6 +92,10 @@ namespace SceneSystem.Presentation
 
         /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
         private Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
+
+        /// <summary>現在のフェーズ</summary>
+        private readonly ReactiveProperty<PhaseType> _currentPhase =
+            new ReactiveProperty<PhaseType>(PhaseType.None);
 
         // ======================================================
         // 定数
@@ -113,10 +114,6 @@ namespace SceneSystem.Presentation
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables =
             new CompositeDisposable();
-
-        /// <summary>現在フェーズストリーム</summary>
-        private readonly ReactiveProperty<PhaseType> _currentPhaseReactive =
-            new ReactiveProperty<PhaseType>(PhaseType.None);
 
         // ======================================================
         // Unity イベント
@@ -166,7 +163,7 @@ namespace SceneSystem.Presentation
             // コンポーネント初期化
             _phasePresenter = new PhasePresenter(_readyToPlayWaitTime, _playToFinishWaitTime);
             _updatableManagement = new UpdatableManagement(_phaseUpdatablesMap);
-            _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhaseReactive);
+            _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhase);
 
             // --------------------------------------------------
             // イベント購読
@@ -192,7 +189,7 @@ namespace SceneSystem.Presentation
             }
 
             // フェーズ遷移
-            if (_currentPhase != _targetPhase)
+            if (_currentPhase.Value != _targetPhase)
             {
                 ChangePhase(_targetPhase);
             }
@@ -224,11 +221,11 @@ namespace SceneSystem.Presentation
             _updatableManagement.LateUpdate(unscaledDeltaTime);
 
             // フェーズ遷移判定実行
-            if (_currentPhase == _targetPhase)
+            if (_currentPhase.Value == _targetPhase)
             {
                 _phasePresenter.Update(
                     unscaledDeltaTime,
-                    _currentPhase,
+                    _currentPhase.Value,
                     out _targetPhase
                 );
             }
@@ -278,7 +275,7 @@ namespace SceneSystem.Presentation
         /// </summary>
         private void ChangePhase(in PhaseType nextPhase)
         {
-            if (_currentPhase == nextPhase)
+            if (_currentPhase.Value == nextPhase)
             {
                 return;
             }
@@ -287,10 +284,7 @@ namespace SceneSystem.Presentation
             _updatableManagement.ChangePhase(nextPhase);
 
             // 現在フェーズ更新
-            _currentPhase = nextPhase;
-
-            // フェーズストリーム更新
-            _currentPhaseReactive.Value = nextPhase;
+            _currentPhase.Value = nextPhase;
         }
     }
 }

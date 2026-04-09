@@ -24,6 +24,9 @@ namespace BoardSystem.Domain
         /// <summary>”Õ–Êó‘Ô</summary>
         private readonly BoardState _boardState;
 
+        /// <summary>”Õ–Ê‰ñ“]ˆ—</summary>
+        private readonly BoardRotate _boardRotate = new BoardRotate();
+
         /// <summary>ƒ‰ƒCƒ“”»’è</summary>
         private readonly LineJudge _lineJudge;
 
@@ -144,6 +147,27 @@ namespace BoardSystem.Domain
         public void ClearCell(in BoardIndex index)
         {
             _boardState.ClearCell(index);
+        }
+
+        /// <summary>
+        /// ”Õ–Ê‚ğ‰ñ“]‚³‚¹AˆÚ“®î•ñ‚ğæ“¾‚·‚é
+        /// </summary>
+        /// <param name="axis">‰ñ“]²</param>
+        /// <param name="direction">‰ñ“]•ûŒü</param>
+        /// <returns>ˆÚ“®î•ñifrom ¨ toj</returns>
+        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Rotate90(
+            in RotationAxis axis,
+            in RotationDirection direction)
+        {
+            // ”Õ–Ê‰ñ“]ˆ—‚ğÀs‚µAˆÚ“®î•ñ‚ğæ“¾
+            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                _boardRotate.Rotate90(
+                    _boardState,
+                    axis,
+                    direction
+                );
+
+            return moves;
         }
 
         /// <summary>

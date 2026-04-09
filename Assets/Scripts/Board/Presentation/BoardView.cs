@@ -67,6 +67,9 @@ namespace BoardSystem.Presentation
         private readonly DropAnimationService _dropAnimation =
             new DropAnimationService();
 
+        /// <summary>マテリアル適用サービス</summary>
+        private readonly PieceMaterialService _materialService;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -74,11 +77,11 @@ namespace BoardSystem.Presentation
         /// <summary>親 Transform</summary>
         private readonly Transform _root;
 
-        /// <summary>プレイヤー 1 Prefab</summary>
-        private readonly GameObject _playerOnePrefab;
+        /// <summary>駒 Prefab</summary>
+        private readonly GameObject _piecePrefab;
 
-        /// <summary>プレイヤー 2 Prefab</summary>
-        private readonly GameObject _playerTwoPrefab;
+        /// <summary>駒スケール倍率</summary>
+        private readonly float _pieceScaleFactor;
 
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
@@ -102,26 +105,28 @@ namespace BoardSystem.Presentation
         public BoardView(
             in Transform root,
             in int boardSize,
-            in GameObject p1,
-            in GameObject p2)
+            in GameObject piecePrefab,
+            in Material[] pieceMaterials,
+            in float pieceScaleFactor)
         {
             _root = root;
             _boardSize = boardSize;
-            _playerOnePrefab = p1;
-            _playerTwoPrefab = p2;
+            _piecePrefab = piecePrefab;
+            _pieceScaleFactor = pieceScaleFactor;
 
             // セル間隔算出
-            _cellSpacing = root.localScale.x / boardSize;
-
-            // 座標変換サービス初期化
-            _boardPositionConverter = new BoardPositionConverter(
-                boardSize,
-                root.position
-            );
+            _cellSpacing = root.localScale.x / _boardSize;
 
             // 最大駒数を元に容量確保
             int capacity = _boardSize * _boardSize * _boardSize;
             _pieces = new Dictionary<BoardIndex, PieceData>(capacity);
+
+            // クラス初期化
+            _boardPositionConverter = new BoardPositionConverter(
+                boardSize,
+                root.position
+            );
+            _materialService = new PieceMaterialService(pieceMaterials);
         }
 
         // ======================================================
@@ -232,22 +237,25 @@ namespace BoardSystem.Presentation
                 new Vector3(targetX, targetY, targetZ);
 
             // プレハブ選択
-            GameObject prefab =
-                player == 1
-                ? _playerOnePrefab
-                : _playerTwoPrefab;
+            GameObject prefab = _piecePrefab;
 
             // インスタンス生成
             GameObject piece =
                 Object.Instantiate(
-                    prefab,
+                    _piecePrefab,
                     startPosition,
                     Quaternion.identity,
                     _root
                 );
 
+            // Renderer 取得
+            Renderer renderer = piece.GetComponent<Renderer>();
+
+            // マテリアル適用
+            _materialService.Apply(renderer, player);
+
             // スケール調整
-            float scaleFactor = 1f / (_boardSize + 0.5f);
+            float scaleFactor = (1f / _boardSize) * _pieceScaleFactor;
 
             piece.transform.localScale =
                 Vector3.one * scaleFactor;
@@ -283,12 +291,95 @@ namespace BoardSystem.Presentation
             await ExecuteMoveAnimations(plans);
         }
 
+        /// <summary>
+        /// 指定オブジェクトを軸と方向に応じて回転させる
+        /// </summary>
+        /// <param name="target">回転対象 Transform</param>
+        /// <param name="axis">回転軸</param>
+        /// <param name="direction">回転方向</param>
+        public async UniTask RotateAsync(
+            Transform target,
+            RotationAxis axis,
+            RotationDirection direction)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 回転時間（秒）
+            // --------------------------------------------------
+            const float DURATION = 1.0f;
+
+            // --------------------------------------------------
+            // 回転角度（±90）
+            // --------------------------------------------------
+            float angle = direction == RotationDirection.Positive
+                ? -90f
+                : 90f;
+
+            // --------------------------------------------------
+            // 経過時間
+            // --------------------------------------------------
+            float elapsed = 0f;
+
+            // --------------------------------------------------
+            // 開始回転
+            // --------------------------------------------------
+            Quaternion startRotation = target.rotation;
+
+            // --------------------------------------------------
+            // 終了回転
+            // --------------------------------------------------
+            Quaternion endRotation = startRotation;
+
+            // --------------------------------------------------
+            // X軸回転
+            // --------------------------------------------------
+            if (axis == RotationAxis.X)
+            {
+                endRotation = startRotation * Quaternion.Euler(angle, 0f, 0f);
+            }
+
+            // --------------------------------------------------
+            // Z軸回転
+            // --------------------------------------------------
+            else if (axis == RotationAxis.Z)
+            {
+                endRotation = startRotation * Quaternion.Euler(0f, 0f, angle);
+            }
+
+            // --------------------------------------------------
+            // 補間処理
+            // --------------------------------------------------
+            while (elapsed < DURATION)
+            {
+                elapsed += Time.deltaTime;
+
+                float t = elapsed / DURATION;
+
+                target.rotation = Quaternion.Lerp(
+                    startRotation,
+                    endRotation,
+                    t
+                );
+
+                await UniTask.Yield();
+            }
+
+            // --------------------------------------------------
+            // 最終値保証
+            // --------------------------------------------------
+            target.rotation = endRotation;
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
 
         /// <summary>
-        /// 移動計画を生成
+        /// 駒の移動計画を生成
         /// </summary>
         private List<MovePlanData> CreateMovePlans(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {

@@ -41,16 +41,29 @@ namespace BoardSystem.Presentation
         private int _connectCount;
 
         /// <summary>
-        /// 1P駒Prefab
+        /// 盤面の列指定表示
         /// </summary>
         [SerializeField]
-        private GameObject _playerOnePrefab;
+        private GameObject _columnSelect;
+
+        [Header("駒")]
+        /// <summary>
+        /// 駒の Prefab
+        /// </summary>
+        [SerializeField]
+        private GameObject _piecePrefab;
 
         /// <summary>
-        /// 2P駒Prefab
+        /// 駒のマテリアル配列
         /// </summary>
         [SerializeField]
-        private GameObject _playerTwoPrefab;
+        private Material[] _pieceMaterials;
+
+        /// <summary>
+        /// 駒のスケール倍率
+        /// </summary>
+        [SerializeField, Range(0.5f, 1.0f)]
+        private float _pieceScaleFactor;
 
         [Header("レイヤー")]
         /// <summary>
@@ -121,7 +134,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立後、削除処理を開始するまでの待機時間（ミリ秒）
         /// </summary>
-        private const int LINE_DELETE_DELAY_MS = 500;
+        private const int LINE_DELETE_DELAY_MS = 1000;
 
         /// <summary>
         /// 各駒を削除する際のインターバル時間（ミリ秒）
@@ -132,7 +145,12 @@ namespace BoardSystem.Presentation
         /// 駒削除後、落下処理を開始するまでの待機時間（ミリ秒）
         /// </summary>
         private const int PIECE_DROP_DELAY_MS = 500;
-        
+
+        /// <summary>
+        /// 駒配置後、フェーズ切り替えを開始するまでの待機時間（ミリ秒）
+        /// </summary>
+        private const int PHASE_CHANGE_DELAY_MS = 500;
+
         // ======================================================
         // IUpdatable イベント
         // ======================================================
@@ -146,14 +164,17 @@ namespace BoardSystem.Presentation
             _view = new BoardView(
                 transform,
                 _boardSize,
-                _playerOnePrefab,
-                _playerTwoPrefab
+                _piecePrefab,
+                _pieceMaterials,
+                _pieceScaleFactor
             );
 
             _boardCollider = GetComponentInChildren<Collider>(true);
-            if (_boardCollider == null)
+
+            if (_boardCollider != null)
             {
-                throw new InvalidOperationException("BoardCollider が見つかりません");
+                // 回転影響を受けないようにコライダーを親から切り離す
+                _boardCollider.transform.SetParent(null);
             }
 
             // 初期プレイヤー設定
@@ -198,6 +219,22 @@ namespace BoardSystem.Presentation
             // ボタンB 押下
             InputManager.Instance.ButtonB.OnDown
                 .Subscribe(_ => HandleDropColumn())
+                .AddTo(_inputDisposables);
+
+            // ボタンX押下
+            InputManager.Instance.ButtonX.OnDown
+                .Subscribe(_ =>
+                {
+                    HandleRotateAsync(RotationAxis.X, RotationDirection.Positive).Forget();
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタンY押下
+            InputManager.Instance.ButtonY.OnDown
+                .Subscribe(_ =>
+                {
+                    HandleRotateAsync(RotationAxis.X, RotationDirection.Negative).Forget();
+                })
                 .AddTo(_inputDisposables);
 
             // --------------------------------------------------
@@ -251,10 +288,21 @@ namespace BoardSystem.Presentation
                     if (phase == PhaseType.Play_1)
                     {
                         _currentPlayer = PLAYER_ONE;
+
+                        // 入力ロック解除
+                        _isInputLocked = false;
                     }
                     else if (phase == PhaseType.Play_2)
                     {
                         _currentPlayer = PLAYER_TWO;
+
+                        // 入力ロック解除
+                        _isInputLocked = false;
+                    }
+                    else
+                    {
+                        // 入力ロック
+                        _isInputLocked = true;
                     }
                 });
         }
@@ -344,7 +392,7 @@ namespace BoardSystem.Presentation
             _model.ApplyPlace(index, _currentPlayer);
 
             // ライン成立チェック
-            CheckLine(_model.CheckLine());
+            await CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -352,9 +400,6 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
-            // 入力ロック
-            _isInputLocked = true;
-            
             // 演出待機
             await UniTask.Delay(LINE_DELETE_DELAY_MS);
 
@@ -399,7 +444,7 @@ namespace BoardSystem.Presentation
             await PiecesRepositionAsync(repositionPieces);
 
             // ライン成立チェック
-            CheckLine(_model.CheckLine());
+            await CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -442,7 +487,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立判定時の共通処理
         /// </summary>
-        private void CheckLine(bool isLine)
+        private async UniTask CheckLine(bool isLine)
         {
             // ラインが成立している場合は処理なし
             if (isLine)
@@ -450,11 +495,68 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // 入力ロック解除
-            _isInputLocked = false;
+            await UniTask.Delay(PHASE_CHANGE_DELAY_MS);
 
             // フェーズ終了通知
             _onPhaseEnd.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// 盤面回転処理
+        /// </summary>
+        /// <param name="axis">回転軸</param>
+        /// <param name="direction">回転方向（正・逆）</param>
+        private async UniTask HandleRotateAsync(
+            RotationAxis axis,
+            RotationDirection direction)
+        {
+            if (_isInputLocked) return;
+            _isInputLocked = true;
+
+            // --------------------------------------------------
+            // モデル回転 + 移動情報取得
+            // --------------------------------------------------
+            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                _model.Rotate90(axis, direction);
+
+            // --------------------------------------------------
+            // 駒辞書を回転後座標に更新
+            // --------------------------------------------------
+            ApplyViewMoves(moves);
+
+            // --------------------------------------------------
+            // ビュー回転アニメーション
+            // --------------------------------------------------
+            await _view.RotateAsync(
+                transform,
+                axis,
+                direction
+            );
+
+            // --------------------------------------------------
+            // 駒落下アニメーション
+            // --------------------------------------------------
+            await _view.MovePiecesAsync(moves);
+
+            // --------------------------------------------------
+            // 全列落下再配置
+            // --------------------------------------------------
+            List<(int x, int z)> allColumns = new List<(int, int)>();
+            for (int x = 0; x < _boardSize; x++)
+            {
+                for (int z = 0; z < _boardSize; z++)
+                {
+                    allColumns.Add((x, z));
+                }
+            }
+            await PiecesRepositionAsync(allColumns);
+
+            // --------------------------------------------------
+            // ラインチェック
+            // --------------------------------------------------
+            await CheckLine(_model.CheckLine());
+
+            _isInputLocked = false;
         }
 
         /// <summary>
