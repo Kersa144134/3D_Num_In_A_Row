@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _phaseType: 7
   _updatableTypeNames:
-  - UISystem.MainUIManager
+  - UISystem.Presentation.MainUIPresenter

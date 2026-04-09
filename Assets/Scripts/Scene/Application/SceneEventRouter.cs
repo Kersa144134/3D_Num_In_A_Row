@@ -14,7 +14,7 @@ using InputSystem;
 using PhaseSystem.Domain;
 using PhaseSystem.Presentation;
 using SceneSystem.Domain;
-using UISystem;
+using UISystem.Presentation;
 
 namespace SceneSystem.Application
 {
@@ -36,8 +36,8 @@ namespace SceneSystem.Application
         /// <summary>SceneObjectContainer キャッシュ配列</summary>
         private readonly BoardPresenter[] _boardPresenters;
 
-        /// <summary>MainUIManager キャッシュ</summary>
-        private readonly MainUIManager _mainUIManager;
+        /// <summary>MainUIPresenter キャッシュ</summary>
+        private readonly MainUIPresenter _mainUIPresenter;
 
         // ======================================================
         // フィールド
@@ -96,7 +96,7 @@ namespace SceneSystem.Application
 
             // Context からコンポーネントを取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
-            _mainUIManager = _context.Get<MainUIManager>();
+            _mainUIPresenter = _context.Get<MainUIPresenter>();
 
             // Play フェーズを定義
             _playPhases = new[]
@@ -152,7 +152,7 @@ namespace SceneSystem.Application
             // UI
             // --------------------------------------------------
             phasePresenter.OnLimitTimeUpdated
-                .Subscribe(e => _mainUIManager?.UpdateLimitTimeDisplay(e.RemainingTime))
+                .Subscribe(e => _mainUIPresenter?.UpdateLimitTimeDisplay(e.RemainingTime))
                 .AddTo(_disposables);
         }
 

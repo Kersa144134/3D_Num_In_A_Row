@@ -16,4 +16,4 @@ MonoBehaviour:
   _updatableTypeNames:
   - BoardSystem.Presentation.BoardPresenter
   - CameraSystem.Presentation.CameraPresenter
-  - UISystem.MainUIManager
+  - UISystem.Presentation.MainUIPresenter

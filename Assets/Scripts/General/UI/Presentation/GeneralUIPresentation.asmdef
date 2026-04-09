@@ -1,0 +1,23 @@
+{
+    "name": "GeneralUIPresentation",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2bafac87e7f4b9b418d9448d219b01ab",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:c579267770062bf448e75eb160330b7f",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
+        "GUID:d1bb8686503669547971dcf786e7b533",
+        "GUID:b67a2325e65d47f40b416c80b6ca1162",
+        "GUID:6040c79d4d91d454c97b789d223a0bb7",
+        "GUID:7f298fa99d37b494797bde85e70431f1"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
