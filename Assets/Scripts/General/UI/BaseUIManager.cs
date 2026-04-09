@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 using ShaderSystem.Controller;
 
 namespace UISystem

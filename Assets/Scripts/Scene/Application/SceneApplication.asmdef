@@ -1,17 +1,17 @@
 {
-    "name": "GeneralScene",
+    "name": "SceneApplication",
     "rootNamespace": "",
     "references": [
         "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:d13a400b4599d5f449a7c6551f9e466e",
+        "GUID:51f55471d491ff0449cad5ef05817479",
+        "GUID:9a899e7d95ced0b4d880cdbe8499328d",
         "GUID:ec6250c2a73cf504697941aef5cef7f1",
         "GUID:229141138b6a05b4da6cd1dd70a5e8dd",
-        "GUID:433dc8fa7bba50c48848eeb686617bd2",
-        "GUID:17a42a21b9c64fc4fb784e39e7890356",
         "GUID:d1bb8686503669547971dcf786e7b533",
-        "GUID:d5fbdf6a97d46b743b745796d7ea7f91",
-        "GUID:f9fa41c4e15615b4ebb03470d2d3c429",
+        "GUID:85b55030fd869204fba906bfd5a724ef",
         "GUID:6040c79d4d91d454c97b789d223a0bb7",
-        "GUID:5d652e922018dc24c9edbd95d87bdb80"
+        "GUID:8955a4a5f1d1d584cbade1c6bb2eebc0"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

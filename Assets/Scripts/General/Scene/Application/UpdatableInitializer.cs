@@ -7,9 +7,9 @@
 //            初期化済みコンテキストを生成する
 // ======================================================
 
-using SceneSystem.Data;
+using SceneSystem.Domain;
 
-namespace SceneSystem.Utility
+namespace SceneSystem.Application
 {
     /// <summary>
     /// IUpdatable 初期化処理

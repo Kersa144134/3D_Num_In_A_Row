@@ -12,11 +12,10 @@ using UniRx;
 using PhaseSystem.Application;
 using PhaseSystem.Presentation;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
-using SceneSystem.Service;
-using SceneSystem.Utility;
+using SceneSystem.Application;
+using SceneSystem.Domain;
 
-namespace SceneSystem.Manager
+namespace SceneSystem.Presentation
 {
     /// <summary>
     /// シーン遷移・フェーズ遷移・Update 実行を統括する
@@ -126,7 +125,7 @@ namespace SceneSystem.Manager
         private void Awake()
         {
             // フレームレート設定
-            Application.targetFrameRate = TARGET_FRAME_RATE;
+            UnityEngine.Application.targetFrameRate = TARGET_FRAME_RATE;
 
             // コンポーネント配列初期化
             _components = new GameObject[transform.childCount];

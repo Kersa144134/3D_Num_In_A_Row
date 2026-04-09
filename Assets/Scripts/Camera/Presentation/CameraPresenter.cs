@@ -8,7 +8,7 @@
 
 using UnityEngine;
 using CameraSystem.Domain;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 
 namespace CameraSystem.Presentation
 {

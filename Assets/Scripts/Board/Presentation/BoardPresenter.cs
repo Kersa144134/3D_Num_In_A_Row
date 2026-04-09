@@ -14,7 +14,7 @@ using UniRx;
 using BoardSystem.Domain;
 using InputSystem;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 
 namespace BoardSystem.Presentation
 {

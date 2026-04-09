@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SceneSystem.Data
+namespace SceneSystem.Domain
 {
     /// <summary>
     /// Updatable を保持するデータコンテキスト

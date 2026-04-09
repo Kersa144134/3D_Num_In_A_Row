@@ -6,10 +6,9 @@
 // 概要     : UpdatableExecutor に更新対象を登録するサービス
 // ======================================================
 
-using SceneSystem.Data;
-using SceneSystem.Runner;
+using SceneSystem.Domain;
 
-namespace SceneSystem.Service
+namespace SceneSystem.Application
 {
     /// <summary>
     /// UpdateController に更新対象を登録するサービス

@@ -13,10 +13,10 @@ using BoardSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Domain;
 using PhaseSystem.Presentation;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 using UISystem;
 
-namespace SceneSystem.Utility
+namespace SceneSystem.Application
 {
     /// <summary>
     /// シーン内イベントを仲介するクラス

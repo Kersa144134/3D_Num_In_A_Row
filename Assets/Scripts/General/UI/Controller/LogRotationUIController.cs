@@ -104,6 +104,9 @@ namespace UISystem.Controller
         // コンストラクタ
         // ======================================================
 
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public LogRotationUIController(
             in TextMeshProUGUI[] logTexts,
             in VerticalDirection verticalDirection,

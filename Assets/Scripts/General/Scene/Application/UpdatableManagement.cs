@@ -8,10 +8,9 @@
 
 using System.Collections.Generic;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
-using SceneSystem.Runner;
+using SceneSystem.Domain;
 
-namespace SceneSystem.Service
+namespace SceneSystem.Application
 {
     /// <summary>
     /// Updatable を管理するサービス

@@ -8,7 +8,7 @@
 
 using PhaseSystem.Domain;
 
-namespace SceneSystem.Data
+namespace SceneSystem.Domain
 {
     /// <summary>
     /// UpdateController によって管理される更新対象のためのインターフェース

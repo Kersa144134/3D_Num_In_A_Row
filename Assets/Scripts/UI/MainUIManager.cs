@@ -11,7 +11,7 @@ using UnityEngine.UI;
 using TMPro;
 using InputSystem;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 using UISystem.Service;
 
 namespace UISystem

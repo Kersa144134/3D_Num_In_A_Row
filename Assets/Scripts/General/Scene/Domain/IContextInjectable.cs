@@ -6,7 +6,7 @@
 // 概要     : UpdatableContext を外部から注入するためのインターフェース
 // ======================================================
 
-namespace SceneSystem.Data
+namespace SceneSystem.Domain
 {
     /// <summary>
     /// UpdatableContext を受け取り、

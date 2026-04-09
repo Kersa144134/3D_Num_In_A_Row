@@ -8,9 +8,9 @@
 
 using System.Collections.Generic;
 using PhaseSystem.Domain;
-using SceneSystem.Data;
+using SceneSystem.Domain;
 
-namespace SceneSystem.Runner
+namespace SceneSystem.Application
 {
     /// <summary>
     /// IUpdatable を保持し、毎フレーム処理を実行するランナー
