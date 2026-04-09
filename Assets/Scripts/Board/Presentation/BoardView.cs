@@ -96,6 +96,15 @@ namespace BoardSystem.Presentation
         private readonly Dictionary<BoardIndex, PieceData> _pieces;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>
+        /// 親 Transform の回転アニメーション時間（秒）
+        /// </summary>
+        private const float ROTATION_DURATION = 0.5f;
+        
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -307,57 +316,38 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // --------------------------------------------------
-            // 回転時間（秒）
-            // --------------------------------------------------
-            const float DURATION = 1.0f;
-
-            // --------------------------------------------------
             // 回転角度（±90）
-            // --------------------------------------------------
             float angle = direction == RotationDirection.Positive
                 ? -90f
                 : 90f;
 
-            // --------------------------------------------------
-            // 経過時間
-            // --------------------------------------------------
+            // 経過時間-
             float elapsed = 0f;
 
-            // --------------------------------------------------
             // 開始回転
-            // --------------------------------------------------
             Quaternion startRotation = target.rotation;
 
-            // --------------------------------------------------
             // 終了回転
-            // --------------------------------------------------
             Quaternion endRotation = startRotation;
 
-            // --------------------------------------------------
             // X軸回転
-            // --------------------------------------------------
             if (axis == RotationAxis.X)
             {
                 endRotation = startRotation * Quaternion.Euler(angle, 0f, 0f);
             }
 
-            // --------------------------------------------------
             // Z軸回転
-            // --------------------------------------------------
             else if (axis == RotationAxis.Z)
             {
                 endRotation = startRotation * Quaternion.Euler(0f, 0f, angle);
             }
 
-            // --------------------------------------------------
             // 補間処理
-            // --------------------------------------------------
-            while (elapsed < DURATION)
+            while (elapsed < ROTATION_DURATION)
             {
                 elapsed += Time.deltaTime;
 
-                float t = elapsed / DURATION;
+                float t = elapsed / ROTATION_DURATION;
 
                 target.rotation = Quaternion.Lerp(
                     startRotation,
@@ -368,9 +358,6 @@ namespace BoardSystem.Presentation
                 await UniTask.Yield();
             }
 
-            // --------------------------------------------------
-            // 最終値保証
-            // --------------------------------------------------
             target.rotation = endRotation;
         }
 
@@ -381,23 +368,28 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒の移動計画を生成
         /// </summary>
-        private List<MovePlanData> CreateMovePlans(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        private List<MovePlanData> CreateMovePlans(
+            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // スナップショット作成
             Dictionary<BoardIndex, PieceData> snapshot =
                 new Dictionary<BoardIndex, PieceData>(_pieces);
 
-            // 計画リスト生成
+            // 移動計画リスト生成
             List<MovePlanData> plans = new List<MovePlanData>(moves.Count);
 
             for (int i = 0; i < moves.Count; i++)
             {
-                // 移動情報取得
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
                 // スナップショットから駒を取得
-                if (!snapshot.TryGetValue(move.from, out PieceData piece))
+                PieceData piece;
+                if (!snapshot.TryGetValue(move.from, out piece))
                 {
+                    Debug.LogWarning(
+                        $"CreateMovePlans: スナップショットに駒が存在しません" +
+                        $"{move.from.X}, {move.from.Y}, {move.from.Z}"
+                    );
                     continue;
                 }
 
@@ -405,28 +397,28 @@ namespace BoardSystem.Presentation
                 Vector3 startPosition = piece.Transform.position;
 
                 // 終了位置算出
+                float targetX;
+                float targetY;
+                float targetZ;
                 _boardPositionConverter.ColumnToWorldPosition(
                     _cellSpacing,
                     move.to.X,
                     move.to.Y,
                     move.to.Z,
-                    out float targetX,
-                    out float targetY,
-                    out float targetZ
+                    out targetX,
+                    out targetY,
+                    out targetZ
                 );
 
-                Vector3 endPosition =
-                    new Vector3(targetX, targetY, targetZ);
+                Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
 
-                // 計画追加
-                plans.Add(
-                    new MovePlanData(
-                        piece,
-                        startPosition,
-                        endPosition,
-                        move.to
-                    )
-                );
+                // 移動計画追加
+                plans.Add(new MovePlanData(
+                    piece,
+                    startPosition,
+                    endPosition,
+                    move.to
+                ));
             }
 
             return plans;

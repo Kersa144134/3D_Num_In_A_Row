@@ -505,42 +505,35 @@ namespace BoardSystem.Presentation
         /// 盤面回転処理
         /// </summary>
         /// <param name="axis">回転軸</param>
-        /// <param name="direction">回転方向（正・逆）</param>
+        /// <param name="direction">回転方向</param>
         private async UniTask HandleRotateAsync(
             RotationAxis axis,
             RotationDirection direction)
         {
-            if (_isInputLocked) return;
+            // 多重実行防止
+            if (_isInputLocked)
+            {
+                return;
+            }
+
+            // 入力ロック
             _isInputLocked = true;
 
-            // --------------------------------------------------
-            // モデル回転 + 移動情報取得
-            // --------------------------------------------------
+            // モデル回転情報取得
             IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
                 _model.Rotate90(axis, direction);
 
-            // --------------------------------------------------
-            // 駒辞書を回転後座標に更新
-            // --------------------------------------------------
+            // ビュー辞書更新
             ApplyViewMoves(moves);
 
-            // --------------------------------------------------
             // ビュー回転アニメーション
-            // --------------------------------------------------
             await _view.RotateAsync(
                 transform,
                 axis,
                 direction
             );
 
-            // --------------------------------------------------
-            // 駒落下アニメーション
-            // --------------------------------------------------
-            await _view.MovePiecesAsync(moves);
-
-            // --------------------------------------------------
-            // 全列落下再配置
-            // --------------------------------------------------
+            // 全列再配置
             List<(int x, int z)> allColumns = new List<(int, int)>();
             for (int x = 0; x < _boardSize; x++)
             {
@@ -551,12 +544,8 @@ namespace BoardSystem.Presentation
             }
             await PiecesRepositionAsync(allColumns);
 
-            // --------------------------------------------------
             // ラインチェック
-            // --------------------------------------------------
             await CheckLine(_model.CheckLine());
-
-            _isInputLocked = false;
         }
 
         /// <summary>
@@ -565,41 +554,42 @@ namespace BoardSystem.Presentation
         private void ApplyViewMoves(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // スナップショット作成
-            Dictionary<BoardIndex, PieceData> snapshot =
-                new Dictionary<BoardIndex, PieceData>();
+            Dictionary<BoardIndex, PieceData> snapshot = new Dictionary<BoardIndex, PieceData>();
 
             for (int i = 0; i < moves.Count; i++)
             {
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
-                if (_view.TryGetPiece(move.from, out PieceData piece))
+                PieceData piece;
+                if (_view.TryGetPiece(move.from, out piece))
                 {
                     snapshot[move.from] = piece;
                 }
             }
 
-            // 重複排除用ハッシュセット
-            HashSet<BoardIndex> processedFrom =
-                new HashSet<BoardIndex>();
+            // 全 from の駒を削除
+            foreach (BoardIndex fromIndex in snapshot.Keys)
+            {
+                _view.RemovePiece(fromIndex);
+            }
 
-            // 辞書更新
+            // すべての to に駒をセット
             for (int i = 0; i < moves.Count; i++)
             {
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
-                // 多重実行防止
-                if (!processedFrom.Add(move.from))
+                PieceData piece;
+                if (snapshot.TryGetValue(move.from, out piece))
                 {
-                    continue;
+                    _view.SetPiece(move.to, piece);
                 }
-
-                if (!snapshot.TryGetValue(move.from, out PieceData piece))
+                else
                 {
-                    continue;
+                    Debug.LogError(
+                        $"ApplyViewMoves: スナップショットに存在しない駒" +
+                        $"{move.from.X}, {move.from.Y}, {move.from.Z}"
+                    );
                 }
-
-                _view.RemovePiece(move.from);
-                _view.SetPiece(move.to, piece);
             }
         }
     }
