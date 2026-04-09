@@ -10,8 +10,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UniRx;
 using PhaseSystem.Application;
-using PhaseSystem.Presentation;
 using PhaseSystem.Domain;
+using PhaseSystem.Presentation;
 using SceneSystem.Application;
 using SceneSystem.Domain;
 
@@ -45,16 +45,16 @@ namespace SceneSystem.Presentation
         private PhasePresenter _phasePresenter;
 
         /// <summary>フェーズの初期化を行うクラス</summary>
-        private readonly PhaseInitializer _phaseInitializer = new();
+        private readonly PhaseInitializer _phaseInitializer = new PhaseInitializer();
 
         /// <summary>Update を管理するサービス</summary>
         private UpdatableManagement _updatableManagement;
 
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
-        private readonly UpdatableCollector _updatableCollector = new();
+        private readonly UpdatableCollector _updatableCollector = new UpdatableCollector();
 
         /// <summary>IUpdatable の初期化を行うクラス</summary>
-        private readonly UpdatableInitializer _updatableInitializer = new();
+        private readonly UpdatableInitializer _updatableInitializer = new UpdatableInitializer();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private SceneEventRouter _sceneEventRouter;

@@ -6,10 +6,11 @@
 // 概要     : メインUIの描画処理を担当するビュー
 // ======================================================
 
+using System;
+using TMPro;
+using UISystem.Application;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using UISystem.Service;
 
 namespace UISystem.Presentation
 {
@@ -18,6 +19,13 @@ namespace UISystem.Presentation
     /// </summary>
     public sealed class MainUIView
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>時間フォーマットサービス</summary>
+        private readonly TextFormatter _timeFormatter;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -34,11 +42,11 @@ namespace UISystem.Presentation
         /// <summary>Canvas Rect</summary>
         private readonly RectTransform _canvasRect;
 
-        /// <summary>時間フォーマットサービス</summary>
-        private readonly TextFormatService _timeFormatService;
-
         /// <summary>前回表示秒数</summary>
         private int _previousDisplayTotalSeconds;
+
+        /// <summary>時間表示用の数値配列（分・秒）</summary>
+        private int[] _timeValues = new int[2];
 
         // ======================================================
         // 定数
@@ -72,9 +80,8 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (_limitTimeText != null)
             {
-                _timeFormatService =
-                    new TextFormatService(
-                        _limitTimeText,
+                _timeFormatter =
+                    new TextFormatter(
                         LIMIT_TIME_FORMAT,
                         LIMIT_TIME_DIGITS);
             }
@@ -128,11 +135,14 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // --------------------------------------------------
+            // 時間計算
+            // --------------------------------------------------
             // 秒へ変換
             int totalSeconds =
                 Mathf.FloorToInt(remainingTime);
 
-            // 同一値なら更新しない
+            // 同一値なら更新スキップ
             if (totalSeconds == _previousDisplayTotalSeconds)
             {
                 return;
@@ -146,9 +156,18 @@ namespace UISystem.Presentation
             // 秒計算
             int seconds = totalSeconds % 60;
 
+            // --------------------------------------------------
             // 表示更新
-            _timeFormatService.SetNumberText(
-                new int[] { minutes, seconds });
+            // --------------------------------------------------
+            // 時間表示配列を更新
+            _timeValues[0] = minutes;
+            _timeValues[1] = seconds;
+
+            // フォーマット済みバッファ取得
+            char[] buffer = _timeFormatter.Format(_timeValues);
+
+            // TextMeshPro に反映
+            _limitTimeText.SetCharArray(buffer);
         }
     }
 }

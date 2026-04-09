@@ -1,26 +1,21 @@
 // ======================================================
-// TextFormatService.cs
+// TextFormatter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-09
-// 更新日時 : 2026-03-09
-// 概要     : TextMeshProへGCを発生させず数値フォーマットを行う
+// 更新日時 : 2026-04-09
+// 概要     : 数値フォーマットを行い char 配列を生成するクラス
 // ======================================================
 
-using TMPro;
-
-namespace UISystem.Service
+namespace UISystem.Application
 {
     /// <summary>
-    /// テキストフォーマットサービス
+    /// 数値フォーマットクラス
     /// </summary>
-    public sealed class TextFormatService
+    public sealed class TextFormatter
     {
         // ======================================================
         // フィールド
         // ======================================================
-
-        /// <summary>出力先テキスト</summary>
-        private readonly TextMeshProUGUI _text;
 
         /// <summary>表示用文字バッファ</summary>
         private readonly char[] _buffer;
@@ -52,17 +47,14 @@ namespace UISystem.Service
         // ======================================================
 
         /// <summary>
-        /// TextFormatService を生成
+        /// TextFormatter を生成
         /// </summary>
-        /// <param name="text">出力先テキスト</param>
         /// <param name="format">フォーマット文字列</param>
         /// <param name="digits">各数値の表示桁数</param>
-        public TextFormatService(
-            in TextMeshProUGUI text,
+        public TextFormatter(
             in string format,
             in int[] digits)
         {
-            _text = text;
             _digits = digits;
 
             // フォーマット文字列長を取得
@@ -71,69 +63,57 @@ namespace UISystem.Service
             // プレースホルダごとの数値開始位置配列を生成
             _numberStartIndexes = new int[digits.Length];
 
-            // --------------------------------------------------
             // 一時バッファ生成
-            // --------------------------------------------------
-            // フォーマット文字数 + 数値桁数合計
+            // フォーマット + 数値桁数
             char[] temp = new char[length + TotalDigits(digits)];
 
             int writeIndex = 0;
 
             for (int i = 0; i < length; i++)
             {
-                // プレースホルダ開始文字検出
+                // プレースホルダ開始検出
                 if (format[i] == PLACEHOLDER_BEGIN)
                 {
-                    // プレースホルダ内の要素番号読み取り開始位置
                     int numberStart = i + 1;
-
-                    // プレースホルダの要素番号
                     int elementIndex = 0;
 
-                    // プレースホルダ終了文字に到達するまで数値を読み取る
+                    // プレースホルダ番号解析
                     while (format[numberStart] != PLACEHOLDER_END)
                     {
-                        // 数値を左シフトで 1 桁ずつ読み取り整数へ変換
-                        elementIndex = elementIndex * 10 + (format[numberStart] - ASCII_ZERO);
+                        elementIndex =
+                            elementIndex * 10 +
+                            (format[numberStart] - ASCII_ZERO);
 
-                        // 次の文字へ移動
                         numberStart++;
                     }
 
-                    // このプレースホルダの表示桁数を取得
                     int digit = digits[elementIndex];
 
-                    // このプレースホルダの数値書き込み開始位置をキャッシュ
+                    // 書き込み開始位置記録
                     _numberStartIndexes[elementIndex] = writeIndex;
 
-                    // 表示桁数分のゼロ文字をバッファへ挿入
+                    // 桁数分ゼロ埋め
                     for (int d = 0; d < digit; d++)
                     {
                         temp[writeIndex++] = ASCII_ZERO;
                     }
 
-                    // プレースホルダ終端の位置までスキップ
                     i = numberStart;
                 }
                 else
                 {
-                    // そのままバッファへ書き込む
                     temp[writeIndex++] = format[i];
                 }
             }
 
-            // --------------------------------------------------
             // 最終バッファ生成
-            // --------------------------------------------------
             _buffer = new char[writeIndex];
 
-            // 一時バッファ内容をコピー
             for (int i = 0; i < writeIndex; i++)
             {
                 _buffer[i] = temp[i];
             }
 
-            // プレースホルダ数を保存
             _placeholderCount = digits.Length;
         }
 
@@ -142,32 +122,34 @@ namespace UISystem.Service
         // ======================================================
 
         /// <summary>
-        /// 単一数値更新
+        /// 単一数値フォーマット
         /// </summary>
-        /// <param name="value">表示する数値</param>
-        public void SetNumberText(in int value)
+        /// <param name="value">数値</param>
+        /// <returns>フォーマット済み文字配列</returns>
+        public char[] Format(in int value)
         {
-            // 要素0へ数値を書き込み
+            // 要素 0 に書き込み
             WriteDigits(value, 0);
 
-            // TextMeshProへ文字配列を直接送信
-            _text.SetCharArray(_buffer);
+            // バッファ返却
+            return _buffer;
         }
 
         /// <summary>
-        /// 配列数値更新
+        /// 複数数値フォーマット
         /// </summary>
-        /// <param name="values">表示する数値配列</param>
-        public void SetNumberText(in int[] values)
+        /// <param name="values">数値配列</param>
+        /// <returns>フォーマット済み文字配列</returns>
+        public char[] Format(in int[] values)
         {
-            // 各プレースホルダへ数値を書き込み
+            // 各プレースホルダへ書き込み
             for (int i = 0; i < _placeholderCount; i++)
             {
                 WriteDigits(values[i], i);
             }
 
-            // TextMeshProへ文字配列を直接送信
-            _text.SetCharArray(_buffer);
+            // バッファ返却
+            return _buffer;
         }
 
         // ======================================================
@@ -175,56 +157,43 @@ namespace UISystem.Service
         // ======================================================
 
         /// <summary>
-        /// 数値を書き込む
+        /// 桁数合計取得
         /// </summary>
-        /// <param name="value">書き込む数値</param>
-        /// <param name="elementIndex">プレースホルダ番号</param>
-        private void WriteDigits(in int value, in int elementIndex)
+        private int TotalDigits(int[] digits)
         {
-            // 指定プレースホルダの表示桁数取得
-            int digits = _digits[elementIndex];
-
-            // 書き込み開始位置計算
-            int index = _numberStartIndexes[elementIndex] + digits - 1;
-
-            // 計算用数値コピー
-            int number = value;
-
-            // 指定桁数分ループ
-            for (int i = 0; i < digits; i++)
-            {
-                // 下位桁取得
-                int digit = number % 10;
-
-                // ASCII数値へ変換して書き込み
-                _buffer[index] = (char)(ASCII_ZERO + digit);
-
-                // 次桁計算
-                number /= 10;
-
-                // 書き込み位置を左へ移動
-                index--;
-            }
-        }
-
-        /// <summary>
-        /// 表示桁数合計取得
-        /// </summary>
-        /// <param name="digits">桁数配列</param>
-        /// <returns>桁数合計</returns>
-        private static int TotalDigits(int[] digits)
-        {
-            // 合計値
             int total = 0;
 
-            // 各桁数を加算
             for (int i = 0; i < digits.Length; i++)
             {
                 total += digits[i];
             }
 
-            // 合計返却
             return total;
+        }
+
+        /// <summary>
+        /// 数値を書き込む
+        /// </summary>
+        private void WriteDigits(in int value, in int elementIndex)
+        {
+            int digits = _digits[elementIndex];
+
+            int index =
+                _numberStartIndexes[elementIndex] + digits - 1;
+
+            int number = value;
+
+            for (int i = 0; i < digits; i++)
+            {
+                int digit = number % 10;
+
+                _buffer[index] =
+                    (char)(ASCII_ZERO + digit);
+
+                number /= 10;
+
+                index--;
+            }
         }
     }
 }
