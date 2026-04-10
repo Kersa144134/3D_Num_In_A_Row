@@ -83,6 +83,15 @@ namespace BoardSystem.Presentation
         /// <summary>列選択表示のルート Transform</summary>
         private readonly Transform _columnSelectRoot;
 
+        /// <summary>X 軸のみ移動する対象配列</summary>
+        private Transform[] _frameXTargets;
+
+        /// <summary>Z 軸のみ移動する対象配列</summary>
+        private Transform[] _frameZTargets;
+
+        /// <summary>制限なしで移動する対象配列</summary>
+        private Transform[] _freeTargets;
+
         /// <summary>列選択表示に使用する Renderer 配列</summary>
         private Renderer[] _columnSelectRenderers;
 
@@ -119,6 +128,16 @@ namespace BoardSystem.Presentation
 
         /// <summary>現在の列選択表示の可視状態</summary>
         public bool IsColumnSelectVisible => _isColumnSelectVisible;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>FrameX タグ</summary>
+        private const string TAG_FRAME_X = "FrameX";
+
+        /// <summary>FrameZ タグ</summary>
+        private const string TAG_FRAME_Z = "FrameZ";
 
         // ======================================================
         // コンストラクタ
@@ -173,7 +192,7 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            _columnSelectRenderers = _columnSelectRoot.GetComponentsInChildren<Renderer>(true);
+            InitializeColumnSelect();
         }
 
         // ======================================================
@@ -299,9 +318,6 @@ namespace BoardSystem.Presentation
                 Object.Destroy(
                     piece.Transform.gameObject
                 );
-
-                // Dictionaryからも削除する
-                _pieces.Remove(index);
             }
             else
             {
@@ -543,9 +559,10 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // 列インデックス → ワールド座標変換
             // --------------------------------------------------
-            // キャッシュ更新
+            // キャッシュにヒット位置をコピーする
             _cachedSelectPos = hitPos;
 
+            // スナップ位置を算出する
             ColumnToWorld(
                 x,
                 0,
@@ -563,17 +580,128 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // Y 座標はヒット位置を維持する
-            _columnSelectRoot.position = new Vector3(
-                _cachedSelectPos.x,
-                hitPos.y,
-                _cachedSelectPos.z
-            );
+            // X のみ移動
+            for (int i = 0; i < _frameXTargets.Length; i++)
+            {
+                Transform t = _frameXTargets[i];
+
+                Vector3 current = t.position;
+
+                t.position =
+                    new Vector3(
+                        _cachedSelectPos.x,
+                        0,
+                        current.z
+                    );
+            }
+
+            // Z のみ移動
+            for (int i = 0; i < _frameZTargets.Length; i++)
+            {
+                Transform t = _frameZTargets[i];
+
+                Vector3 current = t.position;
+
+                t.position =
+                    new Vector3(
+                        current.x,
+                        0,
+                        _cachedSelectPos.z
+                    );
+            }
+
+            // --------------------------------------------------
+            // 制限なし移動
+            // --------------------------------------------------
+            for (int i = 0; i < _freeTargets.Length; i++)
+            {
+                Transform t = _freeTargets[i];
+
+                t.position =
+                    new Vector3(
+                        _cachedSelectPos.x,
+                        0,
+                        _cachedSelectPos.z
+                    );
+            }
         }
 
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// 列選択表示オブジェクトを初期化する
+        /// </summary>
+        private void InitializeColumnSelect()
+        {
+            // 子階層すべてのRenderer取得
+            _columnSelectRenderers =
+                _columnSelectRoot.GetComponentsInChildren<Renderer>(true);
+
+            // 直下の子のみ取得
+            int childCount = _columnSelectRoot.childCount;
+
+            int xCount = 0;
+            int zCount = 0;
+            int freeCount = 0;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                Transform child = _columnSelectRoot.GetChild(i);
+
+                // FrameX タグ
+                if (child.CompareTag(TAG_FRAME_X))
+                {
+                    xCount++;
+                    continue;
+                }
+
+                // FrameZ タグ
+                if (child.CompareTag(TAG_FRAME_Z))
+                {
+                    zCount++;
+                    continue;
+                }
+
+                // その他
+                freeCount++;
+            }
+
+            // 配列確保
+            _frameXTargets = new Transform[xCount];
+            _frameZTargets = new Transform[zCount];
+            _freeTargets = new Transform[freeCount];
+
+            int xIndex = 0;
+            int zIndex = 0;
+            int freeIndex = 0;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                Transform child = _columnSelectRoot.GetChild(i);
+
+                // FrameX タグ
+                if (child.CompareTag(TAG_FRAME_X))
+                {
+                    _frameXTargets[xIndex] = child;
+                    xIndex++;
+                    continue;
+                }
+
+                // FrameZ タグ
+                if (child.CompareTag(TAG_FRAME_Z))
+                {
+                    _frameZTargets[zIndex] = child;
+                    zIndex++;
+                    continue;
+                }
+
+                // その他
+                _freeTargets[freeIndex] = child;
+                freeIndex++;
+            }
+        }
 
         /// <summary>
         /// 駒の移動計画を生成

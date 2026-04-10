@@ -41,10 +41,10 @@ namespace BoardSystem.Presentation
         private int _connectCount;
 
         /// <summary>
-        /// 盤面の列選択表示
+        /// 盤面の列選択表示ルート
         /// </summary>
         [SerializeField]
-        private GameObject _columnSelect;
+        private GameObject _columnSelectRoot;
 
         [Header("駒")]
         /// <summary>
@@ -101,8 +101,8 @@ namespace BoardSystem.Presentation
         /// <summary>盤面のクリック判定用 Collider</summary>
         private Collider _boardCollider;
 
-        /// <summary>盤面の列選択用 Renderer</summary>
-        private Renderer[] _columnSelectRenderers;
+        /// <summary>盤面の列選択表示プレーン</summary>
+        private Transform _columnSelectPlane;
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLocked = true;
@@ -143,6 +143,9 @@ namespace BoardSystem.Presentation
         /// <summary>2P ID</summary>
         private const int PLAYER_TWO = 2;
 
+        /// <summary>Planeタグ</summary>
+        private const string TAG_PLANE = "Plane";
+
         /// <summary>
         /// ライン成立後、削除処理を開始するまでの待機時間（ミリ秒）
         /// </summary>
@@ -180,7 +183,7 @@ namespace BoardSystem.Presentation
                 _boardSize,
                 _piecePrefab,
                 _pieceMaterials,
-                _columnSelect,
+                _columnSelectRoot,
                 _deleteParticle,
                 _pieceScaleFactor,
                 ROTATION_DURATION
@@ -192,7 +195,7 @@ namespace BoardSystem.Presentation
             // 子階層のコライダーを取得
             _boardCollider = GetComponentInChildren<Collider>(true);
 
-            if (_camera == null || _boardCollider == null || _columnSelect == null)
+            if (_camera == null || _boardCollider == null || _columnSelectRoot == null)
             {
                 Debug.LogError("[BoardPresenter] Camera または BoardCollider の取得に失敗しました。");
 
@@ -207,6 +210,21 @@ namespace BoardSystem.Presentation
 
             // 回転対象外のため親から分離
             _boardCollider.transform.SetParent(null);
+
+            // 列選択オブジェクトの直下の子数を取得
+            int childCount = _columnSelectRoot.transform.childCount;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                Transform child = _columnSelectRoot.transform.GetChild(i);
+
+                // Plane タグならキャッシュ
+                if (child.CompareTag(TAG_PLANE))
+                {
+                    _columnSelectPlane = child;
+                    return;
+                }
+            }
 
             // --------------------------------------------------
             // 常駐購読
@@ -384,8 +402,8 @@ namespace BoardSystem.Presentation
 
             // 列選択表示座標を列インデックスに変換
             _view.WorldToColumn(
-                _columnSelect.transform.position.x,
-                _columnSelect.transform.position.z,
+                _columnSelectPlane.position.x,
+                _columnSelectPlane.position.z,
                 out int x,
                 out int z);
 
@@ -648,7 +666,7 @@ namespace BoardSystem.Presentation
                 }
                 else
                 {
-                    Debug.LogError(
+                    Debug.LogWarning(
                         $"ApplyViewMoves: スナップショットに存在しない駒" +
                         $"{move.from.X}, {move.from.Y}, {move.from.Z}"
                     );
