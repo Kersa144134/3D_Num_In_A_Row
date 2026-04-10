@@ -92,6 +92,9 @@ namespace BoardSystem.Presentation
         /// <summary>列選択位置の計算に使用する一時キャッシュ座標</summary>
         private Vector3 _cachedSelectPos;
 
+        /// <summary>駒削除時に再生するパーティクル</summary>
+        private readonly GameObject _deleteParticle;
+
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
@@ -130,6 +133,7 @@ namespace BoardSystem.Presentation
             in GameObject piecePrefab,
             in Material[] pieceMaterials,
             in GameObject columnSelectRoot,
+            in GameObject deleteParticle,
             in float pieceScaleFactor,
             in float rotationDuration)
         {
@@ -137,6 +141,7 @@ namespace BoardSystem.Presentation
             _boardSize = boardSize;
             _piecePrefab = piecePrefab;
             _columnSelectRoot = columnSelectRoot.transform;
+            _deleteParticle = deleteParticle;
             _pieceScaleFactor = pieceScaleFactor;
             _rotationDuration = rotationDuration;
 
@@ -174,6 +179,45 @@ namespace BoardSystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        /// <summary>
+        /// 駒インスタンス生成と初期設定を行う
+        /// </summary>
+        /// <param name="startPosition">生成位置</param>
+        /// <param name="player">プレイヤー情報</param>
+        /// <returns>生成された駒</returns>
+        private GameObject CreatePiece(in Vector3 startPosition, in int player)
+        {
+            // プレハブから駒を生成する
+            GameObject piece =
+                Object.Instantiate(
+                    _piecePrefab,
+                    startPosition,
+                    Quaternion.identity,
+                    _root
+                );
+
+            // 生成した駒のRendererを取得する
+            Renderer renderer =
+                piece.GetComponent<Renderer>();
+
+            // プレイヤーに応じたマテリアルを適用する
+            _materialService.Apply(
+                renderer,
+                player
+            );
+
+            // ボードサイズに応じたスケール係数を計算する
+            float scaleFactor =
+                (1f / _boardSize) * _pieceScaleFactor;
+
+            // 駒のスケールを設定する
+            piece.transform.localScale =
+                Vector3.one * scaleFactor;
+
+            // 生成した駒を返却する
+            return piece;
+        }
 
         /// <summary>
         /// 駒登録
@@ -238,15 +282,33 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒オブジェクト破棄
         /// </summary>
+        /// <param name="index">ボード上のインデックス</param>
         public void DestroyPiece(in BoardIndex index)
         {
+            // 指定インデックスの駒を取得する
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
-                Object.Destroy(piece.Transform.gameObject);
+                // 駒のワールド座標を取得する
+                Vector3 position =
+                    piece.Transform.position;
+
+                // 削除時パーティクルを再生する
+                PlayDeleteParticle(position);
+
+                // 駒オブジェクトを破棄する
+                Object.Destroy(
+                    piece.Transform.gameObject
+                );
+
+                // Dictionaryからも削除する
+                _pieces.Remove(index);
             }
             else
             {
-                Debug.LogWarning($"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+                // 存在しない場合は警告ログを出す
+                Debug.LogWarning(
+                    $"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})"
+                );
             }
         }
 
@@ -334,29 +396,7 @@ namespace BoardSystem.Presentation
             Vector3 endPosition =
                 new Vector3(targetX, targetY, targetZ);
 
-            // プレハブ選択
-            GameObject prefab = _piecePrefab;
-
-            // インスタンス生成
-            GameObject piece =
-                Object.Instantiate(
-                    _piecePrefab,
-                    startPosition,
-                    Quaternion.identity,
-                    _root
-                );
-
-            // Renderer 取得
-            Renderer renderer = piece.GetComponent<Renderer>();
-
-            // マテリアル適用
-            _materialService.Apply(renderer, player);
-
-            // スケール調整
-            float scaleFactor = (1f / _boardSize) * _pieceScaleFactor;
-
-            piece.transform.localScale =
-                Vector3.one * scaleFactor;
+            GameObject piece = CreatePiece(startPosition, player);
 
             // 落下アニメーション
             await _dropAnimation.AnimateDropAsync(
@@ -619,6 +659,49 @@ namespace BoardSystem.Presentation
 
             // 全アニメーションの完了を待機
             await UniTask.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// 駒削除時パーティクルを再生する
+        /// </summary>
+        /// <param name="position">再生位置</param>
+        private void PlayDeleteParticle(Vector3 position)
+        {
+            // パーティクル未設定なら何もしない
+            if (_deleteParticle == null)
+            {
+                return;
+            }
+
+            // パーティクルインスタンス生成
+            GameObject particle =
+                Object.Instantiate(
+                    _deleteParticle,
+                    position,
+                    Quaternion.identity
+                );
+
+            // ParticleSystem 取得
+            ParticleSystem ps =
+                particle.GetComponent<ParticleSystem>();
+
+            // ParticleSystem が存在する場合のみ再生
+            if (ps != null)
+            {
+                // 再生
+                ps.Play();
+
+                // 再生終了後に破棄
+                Object.Destroy(
+                    particle,
+                    ps.main.duration + ps.main.startLifetime.constantMax
+                );
+            }
+            else
+            {
+                // ParticleSystemが無い場合は即破棄
+                Object.Destroy(particle);
+            }
         }
     }
 }

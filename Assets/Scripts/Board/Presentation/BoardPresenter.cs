@@ -60,6 +60,12 @@ namespace BoardSystem.Presentation
         private Material[] _pieceMaterials;
 
         /// <summary>
+        /// 駒削除時に再生するパーティクル
+        /// </summary>
+        [SerializeField]
+        private GameObject _deleteParticle;
+
+        /// <summary>
         /// 駒のスケール倍率
         /// </summary>
         [SerializeField, Range(0.5f, 1.0f)]
@@ -175,6 +181,7 @@ namespace BoardSystem.Presentation
                 _piecePrefab,
                 _pieceMaterials,
                 _columnSelect,
+                _deleteParticle,
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
