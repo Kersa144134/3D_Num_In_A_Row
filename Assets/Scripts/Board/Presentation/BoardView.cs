@@ -80,24 +80,16 @@ namespace BoardSystem.Presentation
         /// <summary>駒 Prefab</summary>
         private readonly GameObject _piecePrefab;
 
-        /// <summary>
-        /// 列選択表示に使用する Renderer 配列
-        /// </summary>
-        private Renderer[] _columnSelectRenderers;
-
-        /// <summary>
-        /// 列選択表示のルート Transform
-        /// </summary>
+        /// <summary>列選択表示のルート Transform</summary>
         private readonly Transform _columnSelectRoot;
 
-        /// <summary>
-        /// 現在の列選択表示の可視状態（無駄なRenderer更新防止用キャッシュ）
-        /// </summary>
+        /// <summary>列選択表示に使用する Renderer 配列</summary>
+        private Renderer[] _columnSelectRenderers;
+
+        /// <summary>現在の列選択表示の可視状態</summary>
         private bool _isColumnSelectVisible;
 
-        /// <summary>
-        /// 列選択位置の計算に使用する一時キャッシュ座標（不要な生成を抑制）
-        /// </summary>
+        /// <summary>列選択位置の計算に使用する一時キャッシュ座標</summary>
         private Vector3 _cachedSelectPos;
 
         /// <summary>盤面サイズ</summary>
@@ -117,6 +109,13 @@ namespace BoardSystem.Presentation
         /// BoardIndex をキーとして駒データを管理
         /// </summary>
         private readonly Dictionary<BoardIndex, PieceData> _pieces;
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>現在の列選択表示の可視状態</summary>
+        public bool IsColumnSelectVisible => _isColumnSelectVisible;
 
         // ======================================================
         // コンストラクタ
@@ -163,7 +162,7 @@ namespace BoardSystem.Presentation
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    Application.Quit();
+    UnityEngine.Application.Quit();
 #endif
 
                 return;
@@ -199,6 +198,41 @@ namespace BoardSystem.Presentation
             {
                 Debug.LogWarning($"RemovePiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
             }
+        }
+
+        /// <summary>
+        /// 指定した駒の Emission カラーを変更する
+        /// </summary>
+        /// <param name="index">対象の盤面インデックス</param>
+        /// <param name="emissionColor">設定する発光色</param>
+        public void SetPieceEmissionColor(in BoardIndex index, in Color emissionColor)
+        {
+            // 駒データ取得
+            if (_pieces.TryGetValue(index, out PieceData piece) == false)
+            {
+                // 対象が存在しない場合は警告
+                Debug.LogWarning($"SetPieceEmissionColor: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+                return;
+            }
+
+            // Renderer 取得
+            Renderer renderer = piece.Transform.GetComponent<Renderer>();
+
+            // Renderer が存在しない場合は処理なし
+            if (renderer == null)
+            {
+                Debug.LogWarning("SetPieceEmissionColor: Rendererが見つかりません");
+                return;
+            }
+
+            // マテリアル取得
+            Material material = renderer.material;
+
+            // Emission有効化
+            material.EnableKeyword("_EMISSION");
+
+            // Emissionカラー設定
+            material.SetColor("_EmissionColor", emissionColor);
         }
 
         /// <summary>

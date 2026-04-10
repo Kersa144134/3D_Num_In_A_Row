@@ -6,16 +6,15 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
-using BoardSystem.Application;
-using BoardSystem.Domain;
+using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UniRx;
+using BoardSystem.Domain;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
-using System;
-using System.Collections.Generic;
-using UniRx;
-using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -141,12 +140,12 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立後、削除処理を開始するまでの待機時間（ミリ秒）
         /// </summary>
-        private const int LINE_DELETE_DELAY_MS = 1000;
+        private const int LINE_DELETE_DELAY_MS = 600;
 
         /// <summary>
         /// 各駒を削除する際のインターバル時間（ミリ秒）
         /// </summary>
-        private const int PIECE_DELETE_DELAY_MS = 100;
+        private const int PIECE_DELETE_DELAY_MS = 200;
 
         /// <summary>
         /// 駒削除後、落下処理を開始するまでの待機時間（ミリ秒）
@@ -193,7 +192,7 @@ namespace BoardSystem.Presentation
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    Application.Quit();
+    UnityEngine.Application.Quit();
 #endif
 
                 return;
@@ -201,15 +200,27 @@ namespace BoardSystem.Presentation
 
             // 回転対象外のため親から分離
             _boardCollider.transform.SetParent(null);
+
+            // --------------------------------------------------
+            // 常駐購読
+            // --------------------------------------------------
+            // ライン成立
+            _model.OnLineComplete
+                .Subscribe(async lineEvent =>
+                {
+                    _onLineComplete.OnNext(lineEvent);
+
+                    await HandleLineDeleteAsync(lineEvent);
+                })
+                .AddTo(_otherDisposables);
         }
 
         public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
         {
-            // 入力ロック中は選択表示を非表示にする
-            _view.SetSelectVisible(!_isInputLocked);
-
+            // 入力ロック中は列選択表示を非表示
             if (_isInputLocked)
             {
+                _view.SetSelectVisible(false);
                 return;
             }
 
@@ -223,10 +234,14 @@ namespace BoardSystem.Presentation
                 _raycastLayerMask
             );
 
+            // ヒットしなかった場合は列選択表示を非表示
             if (isHit == false || hit.collider != _boardCollider)
             {
+                _view.SetSelectVisible(false);
                 return;
             }
+
+            _view.SetSelectVisible(true);
 
             // 列選択表示の座標更新
             _view.UpdateColumnSelect(hit.point);
@@ -281,22 +296,6 @@ namespace BoardSystem.Presentation
                     HandleRotateAsync(RotationAxis.X, RotationDirection.Negative).Forget();
                 })
                 .AddTo(_inputDisposables);
-
-            // --------------------------------------------------
-            // 常駐購読
-            // --------------------------------------------------
-            if (_otherDisposables.Count == 0)
-            {
-                _model.OnLineComplete
-                    .Subscribe(async lineEvent =>
-                    {
-                        _onLineComplete.OnNext(lineEvent);
-
-                        // ライン削除
-                        await HandleLineDeleteAsync(lineEvent);
-                    })
-                    .AddTo(_otherDisposables);
-            }
         }
 
         public void OnPhaseExit(in PhaseType phase)
@@ -306,9 +305,12 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // 入力のみ解除
+            // 入力のみ購読解除
             _inputDisposables?.Dispose();
             _inputDisposables = null;
+
+            // 列選択表示を非表示にする
+            _view.SetSelectVisible(false);
         }
 
         // ======================================================
@@ -367,8 +369,8 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void HandleDropColumn()
         {
-            // 入力ロック
-            if (_isInputLocked)
+            // 入力ロック、または列未選択状態なら処理なし
+            if (_isInputLocked || !_view.IsColumnSelectVisible)
             {
                 return;
             }
@@ -430,16 +432,66 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// ライン成立時に駒を削除して再配置
+        /// 盤面回転処理
+        /// </summary>
+        /// <param name="axis">回転軸</param>
+        /// <param name="direction">回転方向</param>
+        private async UniTask HandleRotateAsync(
+            RotationAxis axis,
+            RotationDirection direction)
+        {
+            // 多重実行防止
+            if (_isInputLocked)
+            {
+                return;
+            }
+
+            // 入力ロック
+            _isInputLocked = true;
+
+            // モデル回転情報取得
+            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                _model.Rotate90(axis, direction);
+
+            // ビュー辞書更新
+            ApplyViewMoves(moves);
+
+            // ビュー回転アニメーション
+            await _view.RotateAsync(
+                transform,
+                axis,
+                direction
+            );
+
+            // 全列再配置
+            List<(int x, int z)> allColumns = new List<(int, int)>();
+            for (int x = 0; x < _boardSize; x++)
+            {
+                for (int z = 0; z < _boardSize; z++)
+                {
+                    allColumns.Add((x, z));
+                }
+            }
+            await PiecesRepositionAsync(allColumns);
+
+            // ラインチェック
+            await CheckLine(_model.CheckLine());
+        }
+
+        /// <summary>
+        /// ライン成立時に駒を削除し再配置を行う
         /// </summary>
         private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
-            // 演出待機
-            await UniTask.Delay(LINE_DELETE_DELAY_MS);
+            // 削除対象駒
+            List<BoardIndex> deleteTargets = new List<BoardIndex>();
 
-            // 再配置対象列の HashSet
+            // 再配置対象列
             HashSet<(int x, int z)> pieceSet = new HashSet<(int, int)>();
 
+            // --------------------------------------------------
+            // Emission 処理
+            // --------------------------------------------------
             for (int i = 0; i < lineEvent.LinePositions.Length; i++)
             {
                 IReadOnlyList<BoardIndex> line = lineEvent.LinePositions[i];
@@ -448,36 +500,53 @@ namespace BoardSystem.Presentation
                 {
                     BoardIndex index = line[j];
 
-                    // 駒が存在する場合のみ削除
-                    if (_view.HasPiece(index))
-                    {
-                        // 演出待機
-                        await UniTask.Delay(PIECE_DELETE_DELAY_MS);
-
-                        _view.DestroyPiece(index);
-                        _view.RemovePiece(index);
-
-                        _model.ClearCell(index);
-
-                        pieceSet.Add((index.X, index.Z));
-                    }
-                    else
+                    if (_view.HasPiece(index) == false)
                     {
                         Debug.LogWarning($"BoardPresenter: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+                        continue;
                     }
+
+                    _view.SetPieceEmissionColor(index, Color.white);
+
+                    // 削除対象追加
+                    deleteTargets.Add(index);
+
+                    // 再配置対象追加
+                    pieceSet.Add((index.X, index.Z));
+
+                    // 演出待機
+                    await UniTask.Delay(PIECE_DELETE_DELAY_MS);
                 }
             }
 
-            // 再配置対象駒をリスト化
+            // 演出待機
+            await UniTask.Delay(LINE_DELETE_DELAY_MS);
+
+            // --------------------------------------------------
+            // 削除処理
+            // --------------------------------------------------
+            for (int i = 0; i < deleteTargets.Count; i++)
+            {
+                BoardIndex index = deleteTargets[i];
+
+                _view.DestroyPiece(index);
+                _view.RemovePiece(index);
+                _model.ClearCell(index);
+            }
+
+            // --------------------------------------------------
+            // 再配置処理
+            // --------------------------------------------------
             List<(int x, int z)> repositionPieces = new List<(int, int)>(pieceSet);
 
             // 演出待機
             await UniTask.Delay(PIECE_DROP_DELAY_MS);
 
-            // 駒再配置処理
             await PiecesRepositionAsync(repositionPieces);
 
+            // --------------------------------------------------
             // ライン成立チェック
+            // --------------------------------------------------
             await CheckLine(_model.CheckLine());
         }
 
@@ -536,56 +605,9 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 盤面回転処理
-        /// </summary>
-        /// <param name="axis">回転軸</param>
-        /// <param name="direction">回転方向</param>
-        private async UniTask HandleRotateAsync(
-            RotationAxis axis,
-            RotationDirection direction)
-        {
-            // 多重実行防止
-            if (_isInputLocked)
-            {
-                return;
-            }
-
-            // 入力ロック
-            _isInputLocked = true;
-
-            // モデル回転情報取得
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                _model.Rotate90(axis, direction);
-
-            // ビュー辞書更新
-            ApplyViewMoves(moves);
-
-            // ビュー回転アニメーション
-            await _view.RotateAsync(
-                transform,
-                axis,
-                direction
-            );
-
-            // 全列再配置
-            List<(int x, int z)> allColumns = new List<(int, int)>();
-            for (int x = 0; x < _boardSize; x++)
-            {
-                for (int z = 0; z < _boardSize; z++)
-                {
-                    allColumns.Add((x, z));
-                }
-            }
-            await PiecesRepositionAsync(allColumns);
-
-            // ラインチェック
-            await CheckLine(_model.CheckLine());
-        }
-
-        /// <summary>
         /// ビューの駒辞書を移動情報に基づいて更新
         /// </summary>
-        private void ApplyViewMoves(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        private void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // スナップショット作成
             Dictionary<BoardIndex, PieceData> snapshot = new Dictionary<BoardIndex, PieceData>();
