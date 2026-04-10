@@ -74,14 +74,31 @@ namespace BoardSystem.Presentation
         // フィールド
         // ======================================================
 
-        /// <summary>親 Transform</summary>
+        /// <summary>盤面の親 Transform</summary>
         private readonly Transform _root;
 
         /// <summary>駒 Prefab</summary>
         private readonly GameObject _piecePrefab;
 
-        /// <summary>駒スケール倍率</summary>
-        private readonly float _pieceScaleFactor;
+        /// <summary>
+        /// 列選択表示に使用する Renderer 配列
+        /// </summary>
+        private Renderer[] _columnSelectRenderers;
+
+        /// <summary>
+        /// 列選択表示のルート Transform
+        /// </summary>
+        private readonly Transform _columnSelectRoot;
+
+        /// <summary>
+        /// 現在の列選択表示の可視状態（無駄なRenderer更新防止用キャッシュ）
+        /// </summary>
+        private bool _isColumnSelectVisible;
+
+        /// <summary>
+        /// 列選択位置の計算に使用する一時キャッシュ座標（不要な生成を抑制）
+        /// </summary>
+        private Vector3 _cachedSelectPos;
 
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
@@ -89,21 +106,18 @@ namespace BoardSystem.Presentation
         /// <summary>セル間隔</summary>
         private readonly float _cellSpacing;
 
+        /// <summary>駒スケール倍率</summary>
+        private readonly float _pieceScaleFactor;
+
+        /// <summary>盤面の回転アニメーション時間（秒）</summary>
+        private readonly float _rotationDuration;
+
         /// <summary>
         /// 生成駒辞書
         /// BoardIndex をキーとして駒データを管理
         /// </summary>
         private readonly Dictionary<BoardIndex, PieceData> _pieces;
 
-        // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>
-        /// 親 Transform の回転アニメーション時間（秒）
-        /// </summary>
-        private const float ROTATION_DURATION = 0.5f;
-        
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -116,12 +130,16 @@ namespace BoardSystem.Presentation
             in int boardSize,
             in GameObject piecePrefab,
             in Material[] pieceMaterials,
-            in float pieceScaleFactor)
+            in GameObject columnSelectRoot,
+            in float pieceScaleFactor,
+            in float rotationDuration)
         {
             _root = root;
             _boardSize = boardSize;
             _piecePrefab = piecePrefab;
+            _columnSelectRoot = columnSelectRoot.transform;
             _pieceScaleFactor = pieceScaleFactor;
+            _rotationDuration = rotationDuration;
 
             // セル間隔算出
             _cellSpacing = root.localScale.x / _boardSize;
@@ -136,6 +154,22 @@ namespace BoardSystem.Presentation
                 root.position
             );
             _materialService = new PieceMaterialService(pieceMaterials);
+
+            // 子階層を含めてRendererをすべて取得
+            if (_columnSelectRoot == null)
+            {
+                Debug.LogError("[BoardView] ColumnSelectRoot の取得に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
+
+                return;
+            }
+
+            _columnSelectRenderers = _columnSelectRoot.GetComponentsInChildren<Renderer>(true);
         }
 
         // ======================================================
@@ -217,6 +251,28 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
+        /// 列インデックスからワールド座標に変換
+        /// </summary>
+        public void ColumnToWorld(
+            in int x,
+            in int y,
+            in int z,
+            out float targetX,
+            out float targetY,
+            out float targetZ)
+        {
+            _boardPositionConverter.ColumnToWorldPosition(
+                _cellSpacing,
+                x,
+                y,
+                z,
+                out targetX,
+                out targetY,
+                out targetZ
+            );
+        }
+
+        /// <summary>
         /// 駒生成
         /// </summary>
         public async UniTask<PieceData> SpawnPieceAsync(
@@ -226,8 +282,7 @@ namespace BoardSystem.Presentation
             int player)
         {
             // 目標座標算出
-            _boardPositionConverter.ColumnToWorldPosition(
-                _cellSpacing,
+            ColumnToWorld(
                 x,
                 y,
                 z,
@@ -321,7 +376,7 @@ namespace BoardSystem.Presentation
                 ? -90f
                 : 90f;
 
-            // 経過時間-
+            // 経過時間
             float elapsed = 0f;
 
             // 開始回転
@@ -343,11 +398,11 @@ namespace BoardSystem.Presentation
             }
 
             // 補間処理
-            while (elapsed < ROTATION_DURATION)
+            while (elapsed < _rotationDuration)
             {
                 elapsed += Time.deltaTime;
 
-                float t = elapsed / ROTATION_DURATION;
+                float t = elapsed / _rotationDuration;
 
                 target.rotation = Quaternion.Lerp(
                     startRotation,
@@ -359,6 +414,87 @@ namespace BoardSystem.Presentation
             }
 
             target.rotation = endRotation;
+        }
+
+        /// <summary>
+        /// 列選択表示の表示状態を切り替える
+        /// </summary>
+        /// <param name="isVisible">表示は true、非表示は false</param>
+        public void SetSelectVisible(in bool isVisible)
+        {
+            // 状態が同じ場合は処理なし
+            if (_isColumnSelectVisible == isVisible)
+            {
+                return;
+            }
+
+            // 表示状態を更新
+            _isColumnSelectVisible = isVisible;
+
+            if (_columnSelectRenderers == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _columnSelectRenderers.Length; i++)
+            {
+                Renderer renderer = _columnSelectRenderers[i];
+
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                // 描画切り替え
+                renderer.enabled = isVisible;
+            }
+        }
+
+        /// <summary>
+        /// ヒットしたワールド座標から列位置を算出し、選択表示の位置を更新する
+        /// </summary>
+        /// <param name="hitPos">レイキャストで取得したヒット座標</param>
+        public void UpdateColumnSelect(in Vector3 hitPos)
+        {
+            // --------------------------------------------------
+            // ワールド座標 → 列インデックス変換
+            // --------------------------------------------------
+            WorldToColumn(
+                hitPos.x,
+                hitPos.z,
+                out int x,
+                out int z
+            );
+
+            // --------------------------------------------------
+            // 列インデックス → ワールド座標変換
+            // --------------------------------------------------
+            // キャッシュ更新
+            _cachedSelectPos = hitPos;
+
+            ColumnToWorld(
+                x,
+                0,
+                z,
+                out _cachedSelectPos.x,
+                out _cachedSelectPos.y,
+                out _cachedSelectPos.z
+            );
+
+            // --------------------------------------------------
+            // Transform 反映
+            // --------------------------------------------------
+            if (_columnSelectRoot == null)
+            {
+                return;
+            }
+
+            // Y 座標はヒット位置を維持する
+            _columnSelectRoot.position = new Vector3(
+                _cachedSelectPos.x,
+                hitPos.y,
+                _cachedSelectPos.z
+            );
         }
 
         // ======================================================
@@ -400,8 +536,8 @@ namespace BoardSystem.Presentation
                 float targetX;
                 float targetY;
                 float targetZ;
-                _boardPositionConverter.ColumnToWorldPosition(
-                    _cellSpacing,
+
+                ColumnToWorld(
                     move.to.X,
                     move.to.Y,
                     move.to.Z,

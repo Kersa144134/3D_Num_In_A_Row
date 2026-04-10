@@ -40,6 +40,7 @@ namespace SceneSystem.Application
 
         /// <summary>
         /// IUpdatable を登録する
+        /// SceneManager の子オブジェクトの配置順に登録される
         /// </summary>
         /// <param name="updatables">IUpdatable 配列</param>
         public void AssignUpdatables(in IUpdatable[] updatables)

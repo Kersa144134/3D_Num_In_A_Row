@@ -6,15 +6,16 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UniRx;
+using BoardSystem.Application;
 using BoardSystem.Domain;
+using Cysharp.Threading.Tasks;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
+using System;
+using System.Collections.Generic;
+using UniRx;
+using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -41,7 +42,7 @@ namespace BoardSystem.Presentation
         private int _connectCount;
 
         /// <summary>
-        /// 盤面の列指定表示
+        /// 盤面の列選択表示
         /// </summary>
         [SerializeField]
         private GameObject _columnSelect;
@@ -86,14 +87,20 @@ namespace BoardSystem.Presentation
         // フィールド
         // ======================================================
 
+        /// <summary>カメラ</summary>
+        private Camera _camera; 
+        
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
         /// <summary>盤面のクリック判定用 Collider</summary>
         private Collider _boardCollider;
 
+        /// <summary>盤面の列選択用 Renderer</summary>
+        private Renderer[] _columnSelectRenderers;
+
         /// <summary>入力ロックフラグ</summary>
-        private bool _isInputLocked;
+        private bool _isInputLocked = true;
 
         // ======================================================
         // UniRx 変数
@@ -151,13 +158,15 @@ namespace BoardSystem.Presentation
         /// </summary>
         private const int PHASE_CHANGE_DELAY_MS = 500;
 
+        /// <summary>
+        /// 盤面の回転アニメーション時間（秒）
+        /// </summary>
+        private const float ROTATION_DURATION = 0.5f;
+
         // ======================================================
         // IUpdatable イベント
         // ======================================================
 
-        /// <summary>
-        /// 初期化処理
-        /// </summary>
         public void OnEnter()
         {
             _model = new BoardModel(_boardSize, _connectCount);
@@ -166,24 +175,63 @@ namespace BoardSystem.Presentation
                 _boardSize,
                 _piecePrefab,
                 _pieceMaterials,
-                _pieceScaleFactor
+                _columnSelect,
+                _pieceScaleFactor,
+                ROTATION_DURATION
             );
 
+            // シーン内のメインカメラを取得
+            _camera = Camera.main;
+
+            // 子階層のコライダーを取得
             _boardCollider = GetComponentInChildren<Collider>(true);
 
-            if (_boardCollider != null)
+            if (_camera == null || _boardCollider == null || _columnSelect == null)
             {
-                // 回転影響を受けないようにコライダーを親から切り離す
-                _boardCollider.transform.SetParent(null);
+                Debug.LogError("[BoardPresenter] Camera または BoardCollider の取得に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
+
+                return;
             }
 
-            // 初期プレイヤー設定
-            _currentPlayer = PLAYER_ONE;
+            // 回転対象外のため親から分離
+            _boardCollider.transform.SetParent(null);
         }
 
-        /// <summary>
-        /// 終了処理
-        /// </summary>
+        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
+        {
+            // 入力ロック中は選択表示を非表示にする
+            _view.SetSelectVisible(!_isInputLocked);
+
+            if (_isInputLocked)
+            {
+                return;
+            }
+
+            // Ray 生成
+            Ray ray = _camera.ScreenPointToRay(InputManager.Instance.Pointer);
+
+            bool isHit = Physics.Raycast(
+                ray,
+                out RaycastHit hit,
+                Mathf.Infinity,
+                _raycastLayerMask
+            );
+
+            if (isHit == false || hit.collider != _boardCollider)
+            {
+                return;
+            }
+
+            // 列選択表示の座標更新
+            _view.UpdateColumnSelect(hit.point);
+        }
+
         public void OnExit()
         {
             // 入力購読解除
@@ -195,9 +243,6 @@ namespace BoardSystem.Presentation
             _model.Dispose();
         }
 
-        /// <summary>
-        /// フェーズ開始時処理
-        /// </summary>
         public void OnPhaseEnter(in PhaseType phase)
         {
             if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2) ||
@@ -211,17 +256,17 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             _inputDisposables = new CompositeDisposable();
 
-            // ボタンA 押下
+            // ボタン A 押下
             InputManager.Instance.ButtonA.OnDown
                 .Subscribe(_ => HandleDropColumn())
                 .AddTo(_inputDisposables);
 
-            // ボタンB 押下
+            // ボタン B 押下
             InputManager.Instance.ButtonB.OnDown
                 .Subscribe(_ => HandleDropColumn())
                 .AddTo(_inputDisposables);
 
-            // ボタンX押下
+            // ボタン X 押下
             InputManager.Instance.ButtonX.OnDown
                 .Subscribe(_ =>
                 {
@@ -229,7 +274,7 @@ namespace BoardSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // ボタンY押下
+            // ボタン Y 押下
             InputManager.Instance.ButtonY.OnDown
                 .Subscribe(_ =>
                 {
@@ -254,9 +299,6 @@ namespace BoardSystem.Presentation
             }
         }
 
-        /// <summary>
-        /// フェーズ終了時処理
-        /// </summary>
         public void OnPhaseExit(in PhaseType phase)
         {
             if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2))
@@ -330,21 +372,13 @@ namespace BoardSystem.Presentation
             {
                 return;
             }
-            
-            // カメラから Ray生成
-            Ray ray = Camera.main.ScreenPointToRay(InputManager.Instance.Pointer);
 
-            // Ray 判定
-            bool isHit = Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _raycastLayerMask);
-
-            if (!isHit || hit.collider != _boardCollider)
-            {
-                return;
-            }
-
-            // ヒット座標を列インデックスに変換
-            Vector3 hitPos = hit.point;
-            _view.WorldToColumn(hitPos.x, hitPos.z, out int x, out int z);
+            // 列選択表示座標を列インデックスに変換
+            _view.WorldToColumn(
+                _columnSelect.transform.position.x,
+                _columnSelect.transform.position.z,
+                out int x,
+                out int z);
 
             // 駒落下処理
             HandleDropAsync(x, z).Forget();
