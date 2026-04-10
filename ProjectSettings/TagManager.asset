@@ -7,6 +7,7 @@ TagManager:
   - FrameX
   - FrameZ
   - Plane
+  - FrameNone
   layers:
   - Default
   - TransparentFX
@@ -15,11 +16,11 @@ TagManager:
   - Water
   - UI
   - 
-  - Board
+  - BeforePiece
   - 
   - Piece
   - 
-  - Selecter
+  - AfterPiece
   - 
   - 
   - 

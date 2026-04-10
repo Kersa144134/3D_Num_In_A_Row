@@ -225,19 +225,6 @@ namespace BoardSystem.Presentation
                     return;
                 }
             }
-
-            // --------------------------------------------------
-            // í’“w“Ç
-            // --------------------------------------------------
-            // ƒ‰ƒCƒ“¬—§
-            _model.OnLineComplete
-                .Subscribe(async lineEvent =>
-                {
-                    _onLineComplete.OnNext(lineEvent);
-
-                    await HandleLineDeleteAsync(lineEvent);
-                })
-                .AddTo(_otherDisposables);
         }
 
         public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
@@ -321,6 +308,25 @@ namespace BoardSystem.Presentation
                     HandleRotateAsync(RotationAxis.X, RotationDirection.Negative).Forget();
                 })
                 .AddTo(_inputDisposables);
+
+
+            // --------------------------------------------------
+            // í’“w“Ç
+            // --------------------------------------------------
+            if (_otherDisposables.Count != 0)
+            {
+                return;
+            }
+            
+            // ƒ‰ƒCƒ“¬—§
+            _model.OnLineComplete
+                .Subscribe(async lineEvent =>
+                {
+                    _onLineComplete.OnNext(lineEvent);
+
+                    await HandleLineDeleteAsync(lineEvent);
+                })
+                .AddTo(_otherDisposables);
         }
 
         public void OnPhaseExit(in PhaseType phase)

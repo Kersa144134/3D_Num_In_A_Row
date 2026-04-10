@@ -2,7 +2,7 @@
 // BoardView.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
-// 更新日時 : 2026-04-07
+// 更新日時 : 2026-04-10
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
@@ -55,7 +55,7 @@ namespace BoardSystem.Presentation
                 To = to;
             }
         }
-        
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -63,12 +63,14 @@ namespace BoardSystem.Presentation
         /// <summary>座標変換サービス</summary>
         private readonly BoardPositionConverter _boardPositionConverter;
 
-        /// <summary>落下アニメーションサービス</summary>
-        private readonly DropAnimationService _dropAnimation =
-            new DropAnimationService();
+        /// <summary>駒アニメーションビュー</summary>
+        private readonly PieceAnimationView _pieceAnimationView;
 
         /// <summary>マテリアル適用サービス</summary>
         private readonly PieceMaterialService _materialService;
+
+        /// <summary>列選択ビュー</summary>
+        private readonly ColumnSelectView _columnSelectView;
 
         // ======================================================
         // フィールド
@@ -79,30 +81,6 @@ namespace BoardSystem.Presentation
 
         /// <summary>駒 Prefab</summary>
         private readonly GameObject _piecePrefab;
-
-        /// <summary>列選択表示のルート Transform</summary>
-        private readonly Transform _columnSelectRoot;
-
-        /// <summary>X 軸のみ移動する対象配列</summary>
-        private Transform[] _frameXTargets;
-
-        /// <summary>Z 軸のみ移動する対象配列</summary>
-        private Transform[] _frameZTargets;
-
-        /// <summary>制限なしで移動する対象配列</summary>
-        private Transform[] _freeTargets;
-
-        /// <summary>列選択表示に使用する Renderer 配列</summary>
-        private Renderer[] _columnSelectRenderers;
-
-        /// <summary>現在の列選択表示の可視状態</summary>
-        private bool _isColumnSelectVisible;
-
-        /// <summary>列選択位置の計算に使用する一時キャッシュ座標</summary>
-        private Vector3 _cachedSelectPos;
-
-        /// <summary>駒削除時に再生するパーティクル</summary>
-        private readonly GameObject _deleteParticle;
 
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
@@ -127,17 +105,7 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>現在の列選択表示の可視状態</summary>
-        public bool IsColumnSelectVisible => _isColumnSelectVisible;
-
-        // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>FrameX タグ</summary>
-        private const string TAG_FRAME_X = "FrameX";
-
-        /// <summary>FrameZ タグ</summary>
-        private const string TAG_FRAME_Z = "FrameZ";
+        public bool IsColumnSelectVisible => _columnSelectView.IsVisible;
 
         // ======================================================
         // コンストラクタ
@@ -159,8 +127,6 @@ namespace BoardSystem.Presentation
             _root = root;
             _boardSize = boardSize;
             _piecePrefab = piecePrefab;
-            _columnSelectRoot = columnSelectRoot.transform;
-            _deleteParticle = deleteParticle;
             _pieceScaleFactor = pieceScaleFactor;
             _rotationDuration = rotationDuration;
 
@@ -178,21 +144,33 @@ namespace BoardSystem.Presentation
             );
             _materialService = new PieceMaterialService(pieceMaterials);
 
-            // 子階層を含めてRendererをすべて取得
-            if (_columnSelectRoot == null)
+            // ColumnSelectRoot の null チェック
+            if (columnSelectRoot == null)
             {
                 Debug.LogError("[BoardView] ColumnSelectRoot の取得に失敗しました。");
 
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    UnityEngine.Application.Quit();
+                UnityEngine.Application.Quit();
 #endif
-
                 return;
             }
 
-            InitializeColumnSelect();
+            // 列選択ビュー初期化
+            _columnSelectView =
+                new ColumnSelectView(
+                    columnSelectRoot.transform,
+                    _boardPositionConverter,
+                    _cellSpacing
+                );
+
+            // 駒アニメーションビュー初期化
+            _pieceAnimationView =
+                new PieceAnimationView(
+                    new DropAnimationService(),
+                    deleteParticle
+                );
         }
 
         // ======================================================
@@ -202,12 +180,9 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒インスタンス生成と初期設定を行う
         /// </summary>
-        /// <param name="startPosition">生成位置</param>
-        /// <param name="player">プレイヤー情報</param>
-        /// <returns>生成された駒</returns>
         private GameObject CreatePiece(in Vector3 startPosition, in int player)
         {
-            // プレハブから駒を生成する
+            // 指定された位置にプレハブから駒を生成
             GameObject piece =
                 Object.Instantiate(
                     _piecePrefab,
@@ -216,25 +191,21 @@ namespace BoardSystem.Presentation
                     _root
                 );
 
-            // 生成した駒のRendererを取得する
-            Renderer renderer =
-                piece.GetComponent<Renderer>();
+            // Renderer を取得
+            Renderer renderer = piece.GetComponent<Renderer>();
 
-            // プレイヤーに応じたマテリアルを適用する
+            // プレイヤーに応じたマテリアルを適用
             _materialService.Apply(
                 renderer,
                 player
             );
 
-            // ボードサイズに応じたスケール係数を計算する
-            float scaleFactor =
-                (1f / _boardSize) * _pieceScaleFactor;
+            // ボードサイズに応じたスケール係数を計算
+            float scaleFactor = (1f / _boardSize) * _pieceScaleFactor;
 
-            // 駒のスケールを設定する
-            piece.transform.localScale =
-                Vector3.one * scaleFactor;
+            // 駒のスケールを設定
+            piece.transform.localScale = Vector3.one * scaleFactor;
 
-            // 生成した駒を返却する
             return piece;
         }
 
@@ -266,62 +237,47 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 指定した駒の Emission カラーを変更する
         /// </summary>
-        /// <param name="index">対象の盤面インデックス</param>
-        /// <param name="emissionColor">設定する発光色</param>
         public void SetPieceEmissionColor(in BoardIndex index, in Color emissionColor)
         {
-            // 駒データ取得
             if (_pieces.TryGetValue(index, out PieceData piece) == false)
             {
-                // 対象が存在しない場合は警告
                 Debug.LogWarning($"SetPieceEmissionColor: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
                 return;
             }
 
-            // Renderer 取得
+            // Renderer を取得する
             Renderer renderer = piece.Transform.GetComponent<Renderer>();
 
-            // Renderer が存在しない場合は処理なし
             if (renderer == null)
             {
                 Debug.LogWarning("SetPieceEmissionColor: Rendererが見つかりません");
                 return;
             }
 
-            // マテリアル取得
+            // マテリアルを取得
             Material material = renderer.material;
 
-            // Emission有効化
+            // Emission を有効化
             material.EnableKeyword("_EMISSION");
 
-            // Emissionカラー設定
+            // 指定された Emission カラーを設定
             material.SetColor("_EmissionColor", emissionColor);
         }
 
         /// <summary>
         /// 駒オブジェクト破棄
         /// </summary>
-        /// <param name="index">ボード上のインデックス</param>
         public void DestroyPiece(in BoardIndex index)
         {
-            // 指定インデックスの駒を取得する
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
-                // 駒のワールド座標を取得する
-                Vector3 position =
-                    piece.Transform.position;
+                // 削除演出を再生
+                _pieceAnimationView.PlayDeleteEffect(piece.Transform.position);
 
-                // 削除時パーティクルを再生する
-                PlayDeleteParticle(position);
-
-                // 駒オブジェクトを破棄する
-                Object.Destroy(
-                    piece.Transform.gameObject
-                );
+                Object.Destroy(piece.Transform.gameObject);
             }
             else
             {
-                // 存在しない場合は警告ログを出す
                 Debug.LogWarning(
                     $"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})"
                 );
@@ -393,7 +349,7 @@ namespace BoardSystem.Presentation
             int z,
             int player)
         {
-            // 目標座標算出
+            // 指定インデックスから目標ワールド座標を算出
             ColumnToWorld(
                 x,
                 y,
@@ -403,25 +359,28 @@ namespace BoardSystem.Presentation
                 out float targetZ
             );
 
-            // 初期位置生成
-            float spawnY = _boardPositionConverter.GetSpawnWorldY(_cellSpacing);
+            // 駒の生成開始 Y 座標を取得
+            float spawnY =
+                _boardPositionConverter.GetSpawnWorldY(_cellSpacing);
 
+            // 落下開始位置を生成
             Vector3 startPosition =
                 new Vector3(targetX, spawnY, targetZ);
 
+            // 最終到達位置を生成
             Vector3 endPosition =
                 new Vector3(targetX, targetY, targetZ);
 
+            // 駒インスタンスを生成
             GameObject piece = CreatePiece(startPosition, player);
 
-            // 落下アニメーション
-            await _dropAnimation.AnimateDropAsync(
+            // 落下アニメーションを再生
+            await _pieceAnimationView.PlayDropAsync(
                 piece.transform,
                 startPosition,
                 endPosition
             );
 
-            // PieceData を生成して返却
             return new PieceData(
                 piece.transform,
                 player
@@ -433,24 +392,22 @@ namespace BoardSystem.Presentation
         /// </summary>
         public async UniTask MovePiecesAsync(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            // 移動計画作成
+            // 移動計画リストを生成
             List<MovePlanData> plans = CreateMovePlans(moves);
 
+            // 移動対象が存在しない場合は処理なし
             if (plans.Count == 0)
             {
                 return;
             }
 
-            // アニメーション実行
+            // 移動アニメーションを実行
             await ExecuteMoveAnimations(plans);
         }
 
         /// <summary>
         /// 指定オブジェクトを軸と方向に応じて回転させる
         /// </summary>
-        /// <param name="target">回転対象 Transform</param>
-        /// <param name="axis">回転軸</param>
-        /// <param name="direction">回転方向</param>
         public async UniTask RotateAsync(
             Transform target,
             RotationAxis axis,
@@ -461,45 +418,54 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // 回転角度（±90）
-            float angle = direction == RotationDirection.Positive
+            // 回転角度を方向に応じて決定（±90度）
+            float angle =
+                direction == RotationDirection.Positive
                 ? -90f
                 : 90f;
 
-            // 経過時間
+            // 経過時間を初期化
             float elapsed = 0f;
 
-            // 開始回転
-            Quaternion startRotation = target.rotation;
+            // 開始時の回転状態を保持
+            Quaternion startRotation =
+                target.rotation;
 
-            // 終了回転
-            Quaternion endRotation = startRotation;
+            // 終了回転を初期値として開始回転を設定
+            Quaternion endRotation =
+                startRotation;
 
-            // X軸回転
+            // X軸回転の場合の終了回転を算出
             if (axis == RotationAxis.X)
             {
-                endRotation = startRotation * Quaternion.Euler(angle, 0f, 0f);
+                endRotation =
+                    startRotation * Quaternion.Euler(angle, 0f, 0f);
             }
-
-            // Z軸回転
+            // Z軸回転の場合の終了回転を算出
             else if (axis == RotationAxis.Z)
             {
-                endRotation = startRotation * Quaternion.Euler(0f, 0f, angle);
+                endRotation =
+                    startRotation * Quaternion.Euler(0f, 0f, angle);
             }
 
-            // 補間処理
+            // 指定時間まで補間処理を行う
             while (elapsed < _rotationDuration)
             {
+                // 経過時間を更新
                 elapsed += Time.deltaTime;
 
+                // 補間係数を算出（0 ～ 1）
                 float t = elapsed / _rotationDuration;
 
-                target.rotation = Quaternion.Lerp(
-                    startRotation,
-                    endRotation,
-                    t
-                );
+                // 回転を線形補間で更新
+                target.rotation =
+                    Quaternion.Lerp(
+                        startRotation,
+                        endRotation,
+                        t
+                    );
 
+                // 1フレーム待機
                 await UniTask.Yield();
             }
 
@@ -509,121 +475,17 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 列選択表示の表示状態を切り替える
         /// </summary>
-        /// <param name="isVisible">表示は true、非表示は false</param>
         public void SetSelectVisible(in bool isVisible)
         {
-            // 状態が同じ場合は処理なし
-            if (_isColumnSelectVisible == isVisible)
-            {
-                return;
-            }
-
-            // 表示状態を更新
-            _isColumnSelectVisible = isVisible;
-
-            if (_columnSelectRenderers == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _columnSelectRenderers.Length; i++)
-            {
-                Renderer renderer = _columnSelectRenderers[i];
-
-                if (renderer == null)
-                {
-                    continue;
-                }
-
-                // 描画切り替え
-                renderer.enabled = isVisible;
-            }
+            _columnSelectView.SetVisible(isVisible);
         }
 
         /// <summary>
         /// ヒットしたワールド座標から列位置を算出し、選択表示の位置を更新する
         /// </summary>
-        /// <param name="hitPos">レイキャストで取得したヒット座標</param>
         public void UpdateColumnSelect(in Vector3 hitPos)
         {
-            // --------------------------------------------------
-            // ワールド座標 → 列インデックス変換
-            // --------------------------------------------------
-            WorldToColumn(
-                hitPos.x,
-                hitPos.z,
-                out int x,
-                out int z
-            );
-
-            // --------------------------------------------------
-            // 列インデックス → ワールド座標変換
-            // --------------------------------------------------
-            // キャッシュにヒット位置をコピーする
-            _cachedSelectPos = hitPos;
-
-            // スナップ位置を算出する
-            ColumnToWorld(
-                x,
-                0,
-                z,
-                out _cachedSelectPos.x,
-                out _cachedSelectPos.y,
-                out _cachedSelectPos.z
-            );
-
-            // --------------------------------------------------
-            // Transform 反映
-            // --------------------------------------------------
-            if (_columnSelectRoot == null)
-            {
-                return;
-            }
-
-            // X のみ移動
-            for (int i = 0; i < _frameXTargets.Length; i++)
-            {
-                Transform t = _frameXTargets[i];
-
-                Vector3 current = t.position;
-
-                t.position =
-                    new Vector3(
-                        _cachedSelectPos.x,
-                        0,
-                        current.z
-                    );
-            }
-
-            // Z のみ移動
-            for (int i = 0; i < _frameZTargets.Length; i++)
-            {
-                Transform t = _frameZTargets[i];
-
-                Vector3 current = t.position;
-
-                t.position =
-                    new Vector3(
-                        current.x,
-                        0,
-                        _cachedSelectPos.z
-                    );
-            }
-
-            // --------------------------------------------------
-            // 制限なし移動
-            // --------------------------------------------------
-            for (int i = 0; i < _freeTargets.Length; i++)
-            {
-                Transform t = _freeTargets[i];
-
-                t.position =
-                    new Vector3(
-                        _cachedSelectPos.x,
-                        0,
-                        _cachedSelectPos.z
-                    );
-            }
+            _columnSelectView.UpdatePosition(hitPos);
         }
 
         // ======================================================
@@ -631,97 +493,25 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 列選択表示オブジェクトを初期化する
-        /// </summary>
-        private void InitializeColumnSelect()
-        {
-            // 子階層すべてのRenderer取得
-            _columnSelectRenderers =
-                _columnSelectRoot.GetComponentsInChildren<Renderer>(true);
-
-            // 直下の子のみ取得
-            int childCount = _columnSelectRoot.childCount;
-
-            int xCount = 0;
-            int zCount = 0;
-            int freeCount = 0;
-
-            for (int i = 0; i < childCount; i++)
-            {
-                Transform child = _columnSelectRoot.GetChild(i);
-
-                // FrameX タグ
-                if (child.CompareTag(TAG_FRAME_X))
-                {
-                    xCount++;
-                    continue;
-                }
-
-                // FrameZ タグ
-                if (child.CompareTag(TAG_FRAME_Z))
-                {
-                    zCount++;
-                    continue;
-                }
-
-                // その他
-                freeCount++;
-            }
-
-            // 配列確保
-            _frameXTargets = new Transform[xCount];
-            _frameZTargets = new Transform[zCount];
-            _freeTargets = new Transform[freeCount];
-
-            int xIndex = 0;
-            int zIndex = 0;
-            int freeIndex = 0;
-
-            for (int i = 0; i < childCount; i++)
-            {
-                Transform child = _columnSelectRoot.GetChild(i);
-
-                // FrameX タグ
-                if (child.CompareTag(TAG_FRAME_X))
-                {
-                    _frameXTargets[xIndex] = child;
-                    xIndex++;
-                    continue;
-                }
-
-                // FrameZ タグ
-                if (child.CompareTag(TAG_FRAME_Z))
-                {
-                    _frameZTargets[zIndex] = child;
-                    zIndex++;
-                    continue;
-                }
-
-                // その他
-                _freeTargets[freeIndex] = child;
-                freeIndex++;
-            }
-        }
-
-        /// <summary>
         /// 駒の移動計画を生成
         /// </summary>
         private List<MovePlanData> CreateMovePlans(
             IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            // スナップショット作成
+            // スナップショットを作成
             Dictionary<BoardIndex, PieceData> snapshot =
                 new Dictionary<BoardIndex, PieceData>(_pieces);
 
-            // 移動計画リスト生成
+            // 移動計画リスト
             List<MovePlanData> plans = new List<MovePlanData>(moves.Count);
 
             for (int i = 0; i < moves.Count; i++)
             {
                 (BoardIndex from, BoardIndex to) move = moves[i];
 
-                // スナップショットから駒を取得
                 PieceData piece;
+
+                // スナップショットから駒取得
                 if (!snapshot.TryGetValue(move.from, out piece))
                 {
                     Debug.LogWarning(
@@ -731,14 +521,16 @@ namespace BoardSystem.Presentation
                     continue;
                 }
 
-                // 開始位置取得
-                Vector3 startPosition = piece.Transform.position;
+                // 現在の開始位置を取得
+                Vector3 startPosition =
+                    piece.Transform.position;
 
-                // 終了位置算出
+                // 移動目標座標
                 float targetX;
                 float targetY;
                 float targetZ;
 
+                // 移動先インデックスからワールド座標を算出
                 ColumnToWorld(
                     move.to.X,
                     move.to.Y,
@@ -748,15 +540,19 @@ namespace BoardSystem.Presentation
                     out targetZ
                 );
 
-                Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
+                // 終了位置を生成
+                Vector3 endPosition =
+                    new Vector3(targetX, targetY, targetZ);
 
-                // 移動計画追加
-                plans.Add(new MovePlanData(
-                    piece,
-                    startPosition,
-                    endPosition,
-                    move.to
-                ));
+                // 移動計画リストに追加
+                plans.Add(
+                    new MovePlanData(
+                        piece,
+                        startPosition,
+                        endPosition,
+                        move.to
+                    )
+                );
             }
 
             return plans;
@@ -767,17 +563,16 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask ExecuteMoveAnimations(List<MovePlanData> plans)
         {
-            // タスクリスト生成
-            List<UniTask> tasks =
-                new List<UniTask>(plans.Count);
+            // ビュー用移動計画リストを生成
+            List<PieceAnimationView.MovePlanData> viewPlans =
+                new List<PieceAnimationView.MovePlanData>(plans.Count);
 
             for (int i = 0; i < plans.Count; i++)
             {
                 MovePlanData plan = plans[i];
 
-                // アニメーション登録
-                tasks.Add(
-                    _dropAnimation.AnimateDropAsync(
+                viewPlans.Add(
+                    new PieceAnimationView.MovePlanData(
                         plan.Piece.Transform,
                         plan.Start,
                         plan.End
@@ -785,47 +580,8 @@ namespace BoardSystem.Presentation
                 );
             }
 
-            // 全アニメーションの完了を待機
-            await UniTask.WhenAll(tasks);
-        }
-
-        /// <summary>
-        /// 駒削除時パーティクルを再生する
-        /// </summary>
-        /// <param name="position">再生位置</param>
-        private void PlayDeleteParticle(Vector3 position)
-        {
-            if (_deleteParticle == null)
-            {
-                return;
-            }
-
-            // パーティクルインスタンス生成
-            GameObject particle =
-                Object.Instantiate(
-                    _deleteParticle,
-                    position,
-                    Quaternion.identity
-                );
-
-            // ParticleSystem 取得
-            ParticleSystem ps =
-                particle.GetComponent<ParticleSystem>();
-
-            if (ps != null)
-            {
-                ps.Play();
-
-                // 再生終了後に破棄
-                Object.Destroy(
-                    particle,
-                    ps.main.duration + ps.main.startLifetime.constantMax
-                );
-            }
-            else
-            {
-                Object.Destroy(particle);
-            }
+            // アニメーション実行
+            await _pieceAnimationView.PlayMovesAsync(viewPlans);
         }
     }
 }
