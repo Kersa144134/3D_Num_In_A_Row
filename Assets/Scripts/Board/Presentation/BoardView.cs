@@ -667,7 +667,6 @@ namespace BoardSystem.Presentation
         /// <param name="position">再生位置</param>
         private void PlayDeleteParticle(Vector3 position)
         {
-            // パーティクル未設定なら何もしない
             if (_deleteParticle == null)
             {
                 return;
@@ -685,10 +684,8 @@ namespace BoardSystem.Presentation
             ParticleSystem ps =
                 particle.GetComponent<ParticleSystem>();
 
-            // ParticleSystem が存在する場合のみ再生
             if (ps != null)
             {
-                // 再生
                 ps.Play();
 
                 // 再生終了後に破棄
@@ -699,7 +696,6 @@ namespace BoardSystem.Presentation
             }
             else
             {
-                // ParticleSystemが無い場合は即破棄
                 Object.Destroy(particle);
             }
         }
