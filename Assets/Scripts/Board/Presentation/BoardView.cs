@@ -235,6 +235,34 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
+        /// 駒オブジェクト破棄
+        /// </summary>
+        public void DestroyPiece(in BoardIndex index)
+        {
+            if (_pieces.TryGetValue(index, out PieceData piece))
+            {
+                // 削除演出を再生
+                _pieceAnimationView.PlayDeleteEffect(piece.Transform.position);
+
+                Object.Destroy(piece.Transform.gameObject);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})"
+                );
+            }
+        }
+
+        /// <summary>
+        /// 駒取得
+        /// </summary>
+        public bool TryGetPiece(in BoardIndex index, out PieceData piece)
+        {
+            return _pieces.TryGetValue(index, out piece);
+        }
+
+        /// <summary>
         /// 指定した駒の Emission カラーを変更する
         /// </summary>
         public void SetPieceEmissionColor(in BoardIndex index, in Color emissionColor)
@@ -262,42 +290,6 @@ namespace BoardSystem.Presentation
 
             // 指定された Emission カラーを設定
             material.SetColor("_EmissionColor", emissionColor);
-        }
-
-        /// <summary>
-        /// 駒オブジェクト破棄
-        /// </summary>
-        public void DestroyPiece(in BoardIndex index)
-        {
-            if (_pieces.TryGetValue(index, out PieceData piece))
-            {
-                // 削除演出を再生
-                _pieceAnimationView.PlayDeleteEffect(piece.Transform.position);
-
-                Object.Destroy(piece.Transform.gameObject);
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})"
-                );
-            }
-        }
-
-        /// <summary>
-        /// 駒存在判定
-        /// </summary>
-        public bool HasPiece(BoardIndex index)
-        {
-            return _pieces.ContainsKey(index);
-        }
-
-        /// <summary>
-        /// 駒取得
-        /// </summary>
-        public bool TryGetPiece(in BoardIndex index, out PieceData piece)
-        {
-            return _pieces.TryGetValue(index, out piece);
         }
 
         /// <summary>
@@ -418,58 +410,80 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // 回転角度を方向に応じて決定（±90度）
+            // --------------------------------------------------
+            // 回転パラメータ初期化
+            // --------------------------------------------------
+            // 回転角度（±90度）
             float angle =
                 direction == RotationDirection.Positive
                 ? -90f
                 : 90f;
 
-            // 経過時間を初期化
+            // 経過時間
             float elapsed = 0f;
 
-            // 開始時の回転状態を保持
+            // 開始回転
             Quaternion startRotation =
                 target.rotation;
 
-            // 終了回転を初期値として開始回転を設定
+            // 終了回転
             Quaternion endRotation =
                 startRotation;
 
-            // X軸回転の場合の終了回転を算出
+            // --------------------------------------------------
+            // 終了回転算出
+            // --------------------------------------------------
+            // X軸回転
             if (axis == RotationAxis.X)
             {
                 endRotation =
                     startRotation * Quaternion.Euler(angle, 0f, 0f);
             }
-            // Z軸回転の場合の終了回転を算出
+            // Z軸回転
             else if (axis == RotationAxis.Z)
             {
                 endRotation =
                     startRotation * Quaternion.Euler(0f, 0f, angle);
             }
 
-            // 指定時間まで補間処理を行う
-            while (elapsed < _rotationDuration)
+            try
             {
-                // 経過時間を更新
-                elapsed += Time.deltaTime;
+                // --------------------------------------------------
+                // 補間ループ
+                // --------------------------------------------------
+                while (elapsed < _rotationDuration)
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
 
-                // 補間係数を算出（0 ～ 1）
-                float t = elapsed / _rotationDuration;
+                    // 経過時間加算
+                    elapsed += Time.deltaTime;
 
-                // 回転を線形補間で更新
-                target.rotation =
-                    Quaternion.Lerp(
-                        startRotation,
-                        endRotation,
-                        t
-                    );
+                    // 補間係数
+                    float t =
+                        Mathf.Clamp01(elapsed / _rotationDuration);
 
-                // 1フレーム待機
-                await UniTask.Yield();
+                    // 回転補間適用
+                    target.rotation =
+                        Quaternion.Lerp(
+                            startRotation,
+                            endRotation,
+                            t
+                        );
+
+                    // Updateタイミングで1フレーム待機
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
             }
-
-            target.rotation = endRotation;
+            finally
+            {
+                if (target != null)
+                {
+                    target.rotation = endRotation;
+                }
+            }
         }
 
         /// <summary>
