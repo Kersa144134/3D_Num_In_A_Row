@@ -176,7 +176,6 @@ namespace SceneSystem.Presentation
                 .AddTo(_disposables);
 
             _sceneEventRouter.Subscribe(_phasePresenter);
-            _phasePresenter.BindPhaseEvents();
         }
 
         private void Update()
@@ -236,7 +235,6 @@ namespace SceneSystem.Presentation
             // イベント購読解除
             _disposables.Dispose();
             _sceneEventRouter.Dispose();
-            _phasePresenter.UnbindPhaseEvents();
         }
 
         // ======================================================
@@ -285,6 +283,7 @@ namespace SceneSystem.Presentation
 
             // 現在フェーズ更新
             _currentPhase.Value = nextPhase;
+            Debug.Log(_currentPhase.Value);
         }
     }
 }

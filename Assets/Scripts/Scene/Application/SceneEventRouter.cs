@@ -24,6 +24,31 @@ namespace SceneSystem.Application
     public sealed class SceneEventRouter
     {
         // ======================================================
+        // 構造体
+        // ======================================================
+
+        /// <summary>
+        /// 入力アクション種別
+        /// </summary>
+        private enum InputActionType
+        {
+            /// <summary>
+            /// 未定義
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// 駒を配置するアクション
+            /// </summary>
+            Drop,
+
+            /// <summary>
+            /// 盤面を回転するアクション
+            /// </summary>
+            Rotate
+        }
+        
+        // ======================================================
         // コンポーネント参照
         // ======================================================
 
@@ -55,7 +80,7 @@ namespace SceneSystem.Application
 
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
-        
+
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseType> _onPhaseChanged = new Subject<PhaseType>();
 
@@ -65,14 +90,24 @@ namespace SceneSystem.Application
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
 
-        /// <summary>入力マッピング変更ストリーム</summary>
-        public IObservable<int> OnMappingChanged => _onMappingChanged;
+        /// <summary>駒配置入力用 Subject</summary>
+        private readonly Subject<Unit> _onDropRequested =
+            new Subject<Unit>();
+
+        /// <summary>駒配置入力ストリーム</summary>
+        public IObservable<Unit> OnDropRequested =>
+            _onDropRequested;
+
+        /// <summary>回転入力用 Subject</summary>
+        private readonly Subject<RotationCommand> _onRotateRequested =
+            new Subject<RotationCommand>();
+
+        /// <summary>回転入力ストリーム</summary>
+        public IObservable<RotationCommand> OnRotateRequested =>
+            _onRotateRequested;
 
         /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
-
-        /// <summary>ライン成立ストリーム</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
         /// <summary>現在フェーズストリーム参照</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
@@ -116,17 +151,52 @@ namespace SceneSystem.Application
         public void Subscribe(in PhasePresenter phasePresenter)
         {
             // --------------------------------------------------
-            // フェーズ
-            // --------------------------------------------------
-            phasePresenter.OnStartButtonPressed
-                .Subscribe(e => OnStartButtonPressed(e))
-                .AddTo(_disposables);
-
-            // --------------------------------------------------
             // 入力
             // --------------------------------------------------
             _inputManager.BindMappingStream(_onMappingChanged);
-            
+
+            // ボタン A 押下
+            InputManager.Instance.ButtonA.OnUp
+                .Subscribe(_ =>
+                {
+                    // 駒配置イベント発火
+                    _onDropRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_disposables);
+
+            // ボタン X 押下
+            InputManager.Instance.ButtonX.OnDown
+                .Subscribe(_ =>
+                {
+                    // 回転イベント発火（X+）
+                    _onRotateRequested.OnNext(
+                        new RotationCommand(
+                            RotationAxis.X,
+                            RotationDirection.Positive
+                        )
+                    );
+                })
+                .AddTo(_disposables);
+
+            // ボタン Y 押下
+            InputManager.Instance.ButtonY.OnDown
+                .Subscribe(_ =>
+                {
+                    // 回転イベント発火（X-）
+                    _onRotateRequested.OnNext(
+                        new RotationCommand(
+                            RotationAxis.X,
+                            RotationDirection.Negative
+                        )
+                    );
+                })
+                .AddTo(_disposables);
+
+            // スタートボタン押下
+            InputManager.Instance.StartButton.OnDown
+                .Subscribe(e => OnStartButtonPressed(new StartButtonEvent(_currentPhase.Value)))
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // ボード
             // --------------------------------------------------
@@ -138,6 +208,7 @@ namespace SceneSystem.Application
                 }
 
                 boardPresenter.BindPhaseStream(_currentPhase);
+                boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
                 boardPresenter.OnLineComplete
                     .Subscribe(e => _onLineComplete.OnNext(e))
@@ -181,6 +252,7 @@ namespace SceneSystem.Application
                 }
 
                 boardPresenter.UnbindPhaseStream();
+                boardPresenter.UnbindInputStream();
             }
         }
 

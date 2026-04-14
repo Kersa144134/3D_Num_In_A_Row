@@ -7,6 +7,7 @@
 // ======================================================
 
 using System.Collections.Generic;
+using Unity.Multiplayer.PlayMode;
 
 namespace BoardSystem.Domain
 {
@@ -75,10 +76,14 @@ namespace BoardSystem.Domain
             in BoardIndex index,
             in int player)
         {
-            // 既に駒が存在する場合は配置不可
-            int currentValue = board.Get(index);
-
-            if (currentValue != EMPTY)
+            // プレイヤー番号が不正値なら処理なし
+            if (player < 0)
+            {
+                return;
+            }
+            
+            // 既に駒が存在する場合は処理なし
+            if (board.Get(index) != EMPTY)
             {
                 return;
             }

@@ -6,10 +6,6 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
-using System;
-using UniRx;
-using InputSystem;
-
 namespace PhaseSystem.Domain
 {
     /// <summary>
@@ -37,19 +33,6 @@ namespace PhaseSystem.Domain
         /// <summary>フェーズ経過時間</summary>
         public float ElapsedTime => _elapsedTime;
 
-        /// <summary>スタートボタン押下ストリーム</summary>
-        public IObservable<Unit> OnStartButtonPressed => _onStartButtonPressed;
-
-        // ======================================================
-        // UniRx 変数
-        // ======================================================
-
-        /// <summary>購読管理</summary>
-        private CompositeDisposable _disposables;
-
-        /// <summary>スタートボタン押下通知用 Subject</summary>
-        private readonly Subject<Unit> _onStartButtonPressed = new Subject<Unit>();
-
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -72,15 +55,6 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnEnter()
         {
-            _disposables = new CompositeDisposable();
-
-            // --------------------------------------------------
-            // イベント購読
-            // --------------------------------------------------
-            // スタートボタン押下時
-            InputManager.Instance.StartButton.OnDown
-                .Subscribe(_ => PublishStartButtonPressed())
-                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -88,8 +62,6 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnExit()
         {
-            // イベント購読解除
-            _disposables?.Dispose();
         }
 
         /// <summary>
@@ -98,18 +70,6 @@ namespace PhaseSystem.Domain
         public void OnUpdate(in float unscaledDeltaTime)
         {
             _elapsedTime += unscaledDeltaTime;
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// スタートボタン押下イベントを発火する
-        /// </summary>
-        private void PublishStartButtonPressed()
-        {
-            _onStartButtonPressed?.OnNext(Unit.Default);
         }
     }
 }

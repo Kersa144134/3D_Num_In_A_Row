@@ -6,16 +6,16 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using Cysharp.Threading.Tasks;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
-using NUnit.Framework.Internal.Commands;
+using System;
+using System.Collections.Generic;
+using UniRx;
+using Unity.Multiplayer.PlayMode;
+using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -112,32 +112,6 @@ namespace BoardSystem.Presentation
         private bool _isRotating = false;
 
         // ======================================================
-        // UniRx 変数
-        // ======================================================
-
-        /// <summary>入力購読管理</summary>
-        private CompositeDisposable _inputDisposables;
-
-        /// <summary>常駐購読管理</summary>
-        private readonly CompositeDisposable _otherDisposables =
-            new CompositeDisposable();
-
-        /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
-
-        /// <summary>ライン成立ストリーム</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
-
-        /// <summary>フェーズ終了通知用 Subject</summary>
-        private readonly Subject<Unit> _onPhaseEnd = new Subject<Unit>();
-
-        /// <summary>フェーズ終了ストリーム</summary>
-        public IObservable<Unit> OnPhaseEnd => _onPhaseEnd;
-
-        /// <summary>フェーズ購読</summary>
-        private IDisposable _phaseSubscription;
-
-        // ======================================================
         // 定数
         // ======================================================
 
@@ -174,6 +148,32 @@ namespace BoardSystem.Presentation
         /// 盤面の回転アニメーション時間（秒）
         /// </summary>
         private const float ROTATION_DURATION = 0.5f;
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>入力用イベント購読管理</summary>
+        private CompositeDisposable _inputDisposables;
+
+        /// <summary>ライン成立通知用 Subject</summary>
+        private readonly Subject<LineCompleteEvent> _onLineComplete =
+            new Subject<LineCompleteEvent>();
+
+        /// <summary>ライン成立ストリーム</summary>
+        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+
+        /// <summary>フェーズ終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onPhaseEnd = new Subject<Unit>();
+
+        /// <summary>フェーズ終了ストリーム</summary>
+        public IObservable<Unit> OnPhaseEnd => _onPhaseEnd;
+
+        /// <summary>フェーズ購読</summary>
+        private IDisposable _phaseSubscription;
 
         // ======================================================
         // IUpdatable イベント
@@ -233,8 +233,8 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
         {
-            // 入力ロック中は列選択表示を非表示
-            if (_isInputLocked)
+            // 入力ロック中、またはプレイヤー番号が不正値なら列選択表示を非表示
+            if (_isInputLocked || _currentPlayer == -1)
             {
                 _view.SetSelectVisible(false);
                 return;
@@ -265,72 +265,21 @@ namespace BoardSystem.Presentation
 
         public void OnExit()
         {
-            // 入力購読解除
-            _inputDisposables?.Dispose();
+            // 購読解除
+            _disposables.Dispose();
 
-            // 常駐購読解除
-            _otherDisposables.Dispose();
+            UnbindPhaseStream();
+            UnbindInputStream();
 
             _model.Dispose();
         }
 
         public void OnPhaseEnter(in PhaseType phase)
         {
-            if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2) ||
-                _inputDisposables != null)
-            {
-                return;
-            }
-
             // --------------------------------------------------
-            // 入力購読
+            // イベント購読
             // --------------------------------------------------
-            _inputDisposables = new CompositeDisposable();
-
-            // ボタン A 押下
-            InputManager.Instance.ButtonA.OnDown
-                .Subscribe(_ =>
-                {
-                    if (_isInputLocked)
-                    {
-                        return;
-                    }
-
-                    HandleDropColumn();
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン X 押下
-            InputManager.Instance.ButtonX.OnDown
-                .Subscribe(_ =>
-                {
-                    if (_isInputLocked || _isRotating)
-                    {
-                        return;
-                    }
-
-                    HandleRotateAsync(RotationAxis.X, RotationDirection.Positive).Forget();
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン Y 押下
-            InputManager.Instance.ButtonY.OnDown
-                .Subscribe(_ =>
-                {
-                    if (_isInputLocked || _isRotating)
-                    {
-                        return;
-                    }
-
-                    HandleRotateAsync(RotationAxis.X, RotationDirection.Negative).Forget();
-                })
-                .AddTo(_inputDisposables);
-
-
-            // --------------------------------------------------
-            // 常駐購読
-            // --------------------------------------------------
-            if (_otherDisposables.Count != 0)
+            if (_disposables.Count != 0)
             {
                 return;
             }
@@ -343,7 +292,7 @@ namespace BoardSystem.Presentation
 
                     await HandleLineDeleteAsync(lineEvent);
                 })
-                .AddTo(_otherDisposables);
+                .AddTo(_disposables);
         }
 
         public void OnPhaseExit(in PhaseType phase)
@@ -352,10 +301,6 @@ namespace BoardSystem.Presentation
             {
                 return;
             }
-
-            // 入力のみ購読解除
-            _inputDisposables?.Dispose();
-            _inputDisposables = null;
 
             // 列選択表示を非表示にする
             _view.SetSelectVisible(false);
@@ -369,7 +314,7 @@ namespace BoardSystem.Presentation
         /// フェーズ変更ストリームを購読する
         /// </summary>
         /// <param name="stream">フェーズストリーム</param>
-        public void BindPhaseStream(IObservable<PhaseType> stream)
+        public void BindPhaseStream(in IObservable<PhaseType> stream)
         {
             // 多重購読防止
             _phaseSubscription?.Dispose();
@@ -393,6 +338,8 @@ namespace BoardSystem.Presentation
                     }
                     else
                     {
+                        _currentPlayer = -1;
+
                         // 入力ロック
                         _isInputLocked = true;
                     }
@@ -408,6 +355,59 @@ namespace BoardSystem.Presentation
             _phaseSubscription = null;
         }
 
+        /// <summary>
+        /// 入力検知ストリームを購読する
+        /// </summary>
+        /// <param name="stream">フェーズストリーム</param>
+        public void BindInputStream(
+            in IObservable<Unit> dropStream,
+            in IObservable<RotationCommand> rotateStream)
+        {
+            // 多重購読防止
+            _inputDisposables?.Dispose();
+
+            _inputDisposables = new CompositeDisposable();
+
+            // --------------------------------------------------
+            // 駒配置
+            // --------------------------------------------------
+            dropStream
+                .Subscribe(_ =>
+                {
+                    if (_isInputLocked || _currentPlayer == -1)
+                    {
+                        return;
+                    }
+
+                    HandleDropColumn();
+                })
+                .AddTo(_inputDisposables);
+
+            // --------------------------------------------------
+            // 回転
+            // --------------------------------------------------
+            rotateStream
+                .Subscribe(cmd =>
+                {
+                    if (_isInputLocked || _isRotating)
+                    {
+                        return;
+                    }
+
+                    HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
+                })
+                .AddTo(_inputDisposables);
+        }
+
+        /// <summary>
+        /// 入力検知ストリームの購読を解除する
+        /// </summary>
+        public void UnbindInputStream()
+        {
+            _inputDisposables?.Dispose();
+            _inputDisposables = null;
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -417,8 +417,8 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void HandleDropColumn()
         {
-            // 入力ロック、または列未選択状態なら処理なし
-            if (_isInputLocked || !_view.IsColumnSelectVisible)
+            // 列未選択状態なら処理なし
+            if (!_view.IsColumnSelectVisible)
             {
                 return;
             }
@@ -439,13 +439,6 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleDropAsync(int x, int z)
         {
-            // 多重実行防止
-            if (_isInputLocked)
-            {
-                return;
-            }
-
-            // 入力ロック
             _isInputLocked = true;
 
             // 配置可能判定
@@ -486,12 +479,6 @@ namespace BoardSystem.Presentation
             RotationAxis axis,
             RotationDirection direction)
         {
-            // 多重実行防止
-            if (_isRotating)
-            {
-                return;
-            }
-
             _isRotating = true;
 
             try
@@ -540,10 +527,10 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
-            // 削除対象駒
+            // 削除対象駒ハッシュセット
             HashSet<BoardIndex> deleteTargetSet = new HashSet<BoardIndex>();
 
-            // 再配置対象列
+            // 再配置対象列ハッシュセット
             HashSet<(int x, int z)> pieceSet = new HashSet<(int, int)>();
 
             // --------------------------------------------------
@@ -691,17 +678,15 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            // from 重複防止用
+            // from 重複防止用ハッシュセット
             HashSet<BoardIndex> uniqueFromSet = new HashSet<BoardIndex>();
 
-            // to 重複防止用
+            // to 重複防止用ハッシュセット
             HashSet<BoardIndex> uniqueToSet = new HashSet<BoardIndex>();
 
             // 重複排除処理後の移動リスト
             List<(BoardIndex from, BoardIndex to)> filteredMoves =
                 new List<(BoardIndex, BoardIndex)>();
-
-            Debug.Log(moves.Count);
 
             // --------------------------------------------------
             // 重複排除処理
@@ -755,7 +740,7 @@ namespace BoardSystem.Presentation
             }
 
             // --------------------------------------------------
-            // 元位置削除
+            // from 削除
             // --------------------------------------------------
             foreach (BoardIndex fromIndex in snapshot.Keys)
             {
@@ -763,7 +748,7 @@ namespace BoardSystem.Presentation
             }
 
             // --------------------------------------------------
-            // 新位置配置
+            // to 配置
             // --------------------------------------------------
             for (int i = 0; i < filteredMoves.Count; i++)
             {

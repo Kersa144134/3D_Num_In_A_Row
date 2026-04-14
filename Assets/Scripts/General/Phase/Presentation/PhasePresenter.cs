@@ -48,15 +48,6 @@ namespace PhaseSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>購読管理</summary>
-        private CompositeDisposable _disposables;
-
-        /// <summary>スタートボタン押下用 Subject</summary>
-        private readonly Subject<StartButtonEvent> _onStartButtonPressed = new Subject<StartButtonEvent>();
-
-        /// <summary>スタートボタン押下ストリーム</summary>
-        public IObservable<StartButtonEvent> OnStartButtonPressed => _onStartButtonPressed;
-
         /// <summary>残り時間更新用 Subject<</summary>
         private readonly Subject<LimitTimeEvent> _onLimitTimeUpdated = new Subject<LimitTimeEvent>();
 
@@ -89,67 +80,6 @@ namespace PhaseSystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
-
-        /// <summary>
-        /// フェーズイベントを購読する
-        /// </summary>
-        public void BindPhaseEvents()
-        {
-            // --------------------------------------------------
-            // 多重購読防止
-            // --------------------------------------------------
-            _disposables?.Dispose();
-
-            _disposables = new CompositeDisposable();
-
-            // --------------------------------------------------
-            // Play フェーズ
-            // --------------------------------------------------
-            for (int i = 0; i < _playPhases.Length; i++)
-            {
-                PhaseType phase = _playPhases[i];
-
-                PlayPhaseState play = _model.GetState(phase) as PlayPhaseState;
-
-                if (play != null)
-                {
-                    play.OnStartButtonPressed
-                        .Subscribe(_ =>
-                        {
-                            // Play フェーズのスタート押下として通知
-                            _onStartButtonPressed.OnNext(
-                                new StartButtonEvent(phase));
-                        })
-                        .AddTo(_disposables);
-                }
-            }
-
-            // --------------------------------------------------
-            // Pause フェーズ
-            // --------------------------------------------------
-            PausePhaseState pause = _model.GetState(PhaseType.Pause) as PausePhaseState;
-
-            if (pause != null)
-            {
-                pause.OnStartButtonPressed
-                    .Subscribe(_ =>
-                    {
-                        // Pause フェーズのスタート押下として通知
-                        _onStartButtonPressed.OnNext(
-                            new StartButtonEvent(PhaseType.Pause));
-                    })
-                    .AddTo(_disposables);
-            }
-        }
-
-        /// <summary>
-        /// フェーズイベントの購読を解除する
-        /// </summary>
-        public void UnbindPhaseEvents()
-        {
-            _disposables?.Dispose();
-            _disposables = null;
-        }
 
         /// <summary>
         /// フェーズ進行の更新処理
