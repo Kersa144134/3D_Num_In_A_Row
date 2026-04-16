@@ -21,10 +21,7 @@ namespace SceneSystem.Application
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 登録管理用のセット
-        /// 重複登録を防ぐ目的で HashSet を使用
-        /// </summary>
+        /// <summary>登録管理用のセット</summary>
         private readonly HashSet<IUpdatable> _updateSet = new();
 
         /// <summary>毎フレーム実行用の Updatable 配列キャッシュ</summary>
@@ -32,16 +29,6 @@ namespace SceneSystem.Application
 
         /// <summary>登録内容に変更があったかどうかを示すフラグ</summary>
         private bool _isDirty = true;
-
-        // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>インゲーム用入力マッピングインデックス</summary>
-        private const int INPUT_MAPPING_INGAME = 0;
-
-        /// <summary>アウトゲーム用入力マッピングインデックス</summary>
-        private const int INPUT_MAPPING_OUTGAME = 1;
 
         // ======================================================
         // パブリックメソッド
@@ -52,14 +39,14 @@ namespace SceneSystem.Application
         /// </summary>
         /// <param name="unscaledDeltaTime">timeScale の影響を受けない経過時間</param>
         /// <param name="elapsedTime">ゲームの経過時間</param>
-        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
+        public void OnUpdate(in float unscaledDeltaTime)
         {
             // 実行前にキャッシュを最新化する
             RebuildCache();
 
             for (int i = 0; i < _updateArray.Length; i++)
             {
-                _updateArray[i].OnUpdate(unscaledDeltaTime, elapsedTime);
+                _updateArray[i].OnUpdate(unscaledDeltaTime);
             }
         }
 

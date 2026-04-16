@@ -22,16 +22,13 @@ namespace PhaseSystem.Domain
         /// <summary>ゲーム開始前フェーズ</summary>
         Ready,
 
-        /// <summary>ゲーム内の 1P 通常フェーズ</summary>
-        Play_1,
+        /// <summary>ゲーム内のプレイフェーズ</summary>
+        Play,
 
-        /// <summary>ゲーム内の 1P 通常フェーズ</summary>
-        Play_2,
-
-        /// <summary>イベント中フェーズ</summary>
+        /// <summary>ゲーム内のイベント中フェーズ</summary>
         Event,
 
-        /// <summary>一時停止中フェーズ</summary>
+        /// <summary>ゲーム内の一時停止中フェーズ</summary>
         Pause,
 
         /// <summary>ゲーム終了後フェーズ</summary>

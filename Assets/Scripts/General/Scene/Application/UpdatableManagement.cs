@@ -56,9 +56,9 @@ namespace SceneSystem.Application
         // IUpdatable ƒCƒxƒ“ƒg
         // ======================================================
 
-        public void Update(in float unscaledDeltaTime, in float elapsedTime)
+        public void Update(in float unscaledDeltaTime)
         {
-            _updatableExecutor.OnUpdate(unscaledDeltaTime, elapsedTime);
+            _updatableExecutor.OnUpdate(unscaledDeltaTime);
         }
 
         public void LateUpdate(in float unscaledDeltaTime)

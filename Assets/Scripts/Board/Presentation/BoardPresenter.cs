@@ -14,7 +14,6 @@ using SceneSystem.Domain;
 using System;
 using System.Collections.Generic;
 using UniRx;
-using Unity.Multiplayer.PlayMode;
 using UnityEngine;
 
 namespace BoardSystem.Presentation
@@ -115,6 +114,9 @@ namespace BoardSystem.Presentation
         // 定数
         // ======================================================
 
+        /// <summary>プレイヤー未指定 ID</summary>
+        private const int PLAYER_NONE = -1;
+
         /// <summary>1P ID</summary>
         private const int PLAYER_ONE = 1;
 
@@ -159,6 +161,12 @@ namespace BoardSystem.Presentation
         /// <summary>入力用イベント購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
+        /// <summary>駒落下通知用 Subject</summary>
+        private readonly Subject<Unit> _onPieceDropped = new Subject<Unit>();
+
+        /// <summary>駒落下ストリーム</summary>
+        public IObservable<Unit> OnPieceDropped => _onPieceDropped;
+
         /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete =
             new Subject<LineCompleteEvent>();
@@ -167,10 +175,10 @@ namespace BoardSystem.Presentation
         public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
         /// <summary>フェーズ終了通知用 Subject</summary>
-        private readonly Subject<Unit> _onPhaseEnd = new Subject<Unit>();
+        private readonly Subject<int> _onPhaseEnd = new Subject<int>();
 
         /// <summary>フェーズ終了ストリーム</summary>
-        public IObservable<Unit> OnPhaseEnd => _onPhaseEnd;
+        public IObservable<int> OnPhaseEnd => _onPhaseEnd;
 
         /// <summary>フェーズ購読</summary>
         private IDisposable _phaseSubscription;
@@ -201,7 +209,7 @@ namespace BoardSystem.Presentation
 
             if (_camera == null || _boardCollider == null || _columnSelectRoot == null)
             {
-                Debug.LogError("[BoardPresenter] Camera または BoardCollider の取得に失敗しました。");
+                Debug.LogError("[BoardPresenter] クラスの初期化に失敗しました。");
 
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -229,12 +237,14 @@ namespace BoardSystem.Presentation
                     return;
                 }
             }
+
+            _currentPlayer = PLAYER_NONE;
         }
 
-        public void OnUpdate(in float unscaledDeltaTime, in float elapsedTime)
+        public void OnUpdate(in float unscaledDeltaTime)
         {
             // 入力ロック中、またはプレイヤー番号が不正値なら列選択表示を非表示
-            if (_isInputLocked || _currentPlayer == -1)
+            if (_isInputLocked || _currentPlayer == PLAYER_NONE)
             {
                 _view.SetSelectVisible(false);
                 return;
@@ -297,7 +307,7 @@ namespace BoardSystem.Presentation
 
         public void OnPhaseExit(in PhaseType phase)
         {
-            if (!(phase == PhaseType.Play_1 || phase == PhaseType.Play_2))
+            if (!(phase == PhaseType.Play))
             {
                 return;
             }
@@ -322,14 +332,14 @@ namespace BoardSystem.Presentation
             _phaseSubscription = stream
                 .Subscribe(phase =>
                 {
-                    if (phase == PhaseType.Play_1)
+                    if (phase == PhaseType.Play)
                     {
                         _currentPlayer = PLAYER_ONE;
 
                         // 入力ロック解除
                         _isInputLocked = false;
                     }
-                    else if (phase == PhaseType.Play_2)
+                    else if (phase == PhaseType.Play)
                     {
                         _currentPlayer = PLAYER_TWO;
 
@@ -338,8 +348,6 @@ namespace BoardSystem.Presentation
                     }
                     else
                     {
-                        _currentPlayer = -1;
-
                         // 入力ロック
                         _isInputLocked = true;
                     }
@@ -374,7 +382,7 @@ namespace BoardSystem.Presentation
             dropStream
                 .Subscribe(_ =>
                 {
-                    if (_isInputLocked || _currentPlayer == -1)
+                    if (_isInputLocked || _currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
@@ -429,6 +437,9 @@ namespace BoardSystem.Presentation
                 _columnSelectPlane.position.z,
                 out int x,
                 out int z);
+
+            // 駒落下通知
+            _onPieceDropped.OnNext(Unit.Default);
 
             // 駒落下処理
             HandleDropAsync(x, z).Forget();
@@ -670,7 +681,7 @@ namespace BoardSystem.Presentation
             await UniTask.Delay(PHASE_CHANGE_DELAY_MS);
 
             // フェーズ終了通知
-            _onPhaseEnd.OnNext(Unit.Default);
+            _onPhaseEnd.OnNext(_currentPlayer);
         }
 
         /// <summary>

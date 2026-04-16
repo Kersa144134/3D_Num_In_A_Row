@@ -6,15 +6,15 @@
 // 概要     : シーン内イベントの仲介を行う
 // ======================================================
 
-using System;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using InputSystem;
+using PhaseSystem.Application;
 using PhaseSystem.Domain;
-using PhaseSystem.Presentation;
 using SceneSystem.Domain;
+using System;
 using UISystem.Presentation;
+using UniRx;
 
 namespace SceneSystem.Application
 {
@@ -67,9 +67,6 @@ namespace SceneSystem.Application
         // ======================================================
         // フィールド
         // ======================================================
-
-        /// <summary>Play フェーズ配列</summary>
-        private readonly PhaseType[] _playPhases;
 
         /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
         private PhaseType _cachedActivePhase;
@@ -132,13 +129,6 @@ namespace SceneSystem.Application
             // Context からコンポーネントを取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
             _mainUIPresenter = _context.Get<MainUIPresenter>();
-
-            // Play フェーズを定義
-            _playPhases = new[]
-            {
-                PhaseType.Play_1,
-                PhaseType.Play_2
-            };
         }
 
         // ======================================================
@@ -148,7 +138,7 @@ namespace SceneSystem.Application
         /// <summary>
         /// イベント購読
         /// </summary>
-        public void Subscribe(in PhasePresenter phasePresenter)
+        public void Subscribe()
         {
             // --------------------------------------------------
             // 入力
@@ -215,16 +205,16 @@ namespace SceneSystem.Application
                     .AddTo(_disposables);
 
                 boardPresenter.OnPhaseEnd
-                    .Subscribe(_ => TogglePlayPhase())
+                    .Subscribe(e => ChangePlayPhase(e))
                     .AddTo(_disposables);
             }
 
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
-            phasePresenter.OnLimitTimeUpdated
-                .Subscribe(e => _mainUIPresenter?.UpdateLimitTimeDisplay(e.RemainingTime))
-                .AddTo(_disposables);
+            //phaseMachine.OnLimitTimeUpdated
+            //    .Subscribe(e => _mainUIPresenter?.UpdateLimitTimeDisplay(e.RemainingTime))
+            //    .AddTo(_disposables);
         }
 
         /// <summary>
@@ -263,25 +253,22 @@ namespace SceneSystem.Application
         // フェーズ
         // --------------------------------------------------
         /// <summary>
-        /// Playフェーズをトグルする
+        /// Playフェーズを変更する
         /// </summary>
-        private void TogglePlayPhase()
+        private void ChangePlayPhase(in int player)
         {
-            // 現在フェーズ取得
-            PhaseType current = _currentPhase.Value;
-
             // トグル後のフェーズ
             PhaseType nextPhase;
 
             // Play_1 → Play_2
-            if (current == PhaseType.Play_1)
+            if (player == 1)
             {
-                nextPhase = PhaseType.Play_2;
+                nextPhase = PhaseType.Play;
             }
             // Play_2 → Play_1
-            else if (current == PhaseType.Play_2)
+            else if (player == 2)
             {
-                nextPhase = PhaseType.Play_1;
+                nextPhase = PhaseType.Play;
             }
             // Play 以外は無視
             else
@@ -309,16 +296,12 @@ namespace SceneSystem.Application
             // Play フェーズ判定
             bool isPlayPhases = false;
 
-            for (int i = 0; i < _playPhases.Length; i++)
+            if (e.Phase == PhaseType.Play)
             {
-                if (e.Phase == _playPhases[i])
-                {
-                    isPlayPhases = true;
+                isPlayPhases = true;
 
-                    // 現在のアクティブ状態フェーズをキャッシュ
-                    _cachedActivePhase = e.Phase;
-                    break;
-                }
+                // 現在のアクティブ状態フェーズをキャッシュ
+                _cachedActivePhase = e.Phase;
             }
 
             if (isPlayPhases)
