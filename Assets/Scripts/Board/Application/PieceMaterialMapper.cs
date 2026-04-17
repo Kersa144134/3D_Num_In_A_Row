@@ -1,6 +1,9 @@
 // ======================================================
-// PieceMaterialService.cs
-// 概要 : プレイヤーIDに応じたマテリアル適用サービス
+// PieceMaterialMapper.cs
+// 作成者   : 高橋一翔
+// 作成日時 : 2026-04-10
+// 更新日時 : 2026-04-10
+// 概要     : プレイヤーIDに応じたマテリアル適用サービス
 // ======================================================
 
 using UnityEngine;
@@ -10,7 +13,7 @@ namespace BoardSystem.Application
     /// <summary>
     /// 駒マテリアル適用サービス
     /// </summary>
-    public sealed class PieceMaterialService
+    public sealed class PieceMaterialMapper
     {
         // ======================================================
         // フィールド
@@ -26,7 +29,7 @@ namespace BoardSystem.Application
         /// <summary>
         /// 初期化
         /// </summary>
-        public PieceMaterialService(Material[] materials)
+        public PieceMaterialMapper(Material[] materials)
         {
             _materials = materials;
         }

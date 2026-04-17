@@ -51,11 +51,15 @@ namespace BoardSystem.Presentation
         }
 
         // ======================================================
-        // フィールド
+        // コンポーネント参照
         // ======================================================
 
-        /// <summary>落下アニメーションサービス</summary>
-        private readonly DropAnimationService _dropAnimation;
+        /// <summary>落下アニメーション</summary>
+        private readonly PieceDropAnimator _dropAnimator;
+
+        // ======================================================
+        // フィールド
+        // ======================================================
 
         /// <summary>削除時パーティクル</summary>
         private readonly GameObject _deleteParticle;
@@ -68,11 +72,11 @@ namespace BoardSystem.Presentation
         /// コンストラクタ
         /// </summary>
         public PieceAnimationView(
-            DropAnimationService dropAnimation,
+            PieceDropAnimator dropAnimation,
             GameObject deleteParticle)
         {
             // 落下アニメーションサービスを保持する
-            _dropAnimation = dropAnimation;
+            _dropAnimator = dropAnimation;
 
             // 削除パーティクルを保持する
             _deleteParticle = deleteParticle;
@@ -91,7 +95,7 @@ namespace BoardSystem.Presentation
             Vector3 end)
         {
             // アニメーションを実行する
-            await _dropAnimation.AnimateDropAsync(
+            await _dropAnimator.AnimateDropAsync(
                 target,
                 start,
                 end
@@ -114,7 +118,7 @@ namespace BoardSystem.Presentation
                 MovePlanData plan = plans[i];
 
                 tasks.Add(
-                    _dropAnimation.AnimateDropAsync(
+                    _dropAnimator.AnimateDropAsync(
                         plan.Transform,
                         plan.Start,
                         plan.End

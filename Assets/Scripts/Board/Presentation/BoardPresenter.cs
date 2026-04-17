@@ -8,9 +8,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UniRx;
+using BoardSystem.Application;
 using BoardSystem.Domain;
 using InputSystem;
 using PhaseSystem.Domain;
@@ -88,6 +89,10 @@ namespace BoardSystem.Presentation
         /// <summary>ビュー</summary>
         private BoardView _view;
 
+        private BoardDropUseCase _dropUseCase;
+        private BoardRotateUseCase _rotateUseCase;
+        private BoardLineUseCase _lineUseCase;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -105,10 +110,10 @@ namespace BoardSystem.Presentation
         private Transform _columnSelectPlane;
 
         /// <summary>入力ロックフラグ</summary>
-        private bool _isInputLocked = true;
+        private bool _isInputLock = true;
 
         /// <summary>回転実行中フラグ</summary>
-        private bool _isRotating = false;
+        private bool _isRotate = false;
 
         // ======================================================
         // 定数
@@ -192,6 +197,9 @@ namespace BoardSystem.Presentation
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
+            _dropUseCase = new BoardDropUseCase(_model, _view);
+            _rotateUseCase = new BoardRotateUseCase(_model, _boardSize);
+            _lineUseCase = new BoardLineUseCase(_model);
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
@@ -236,7 +244,7 @@ namespace BoardSystem.Presentation
         public void OnUpdate(in float unscaledDeltaTime)
         {
             // 入力ロック中、またはプレイヤー番号が不正値なら列選択表示を非表示
-            if (_isInputLocked || _currentPlayer == PLAYER_NONE)
+            if (_isInputLock || _currentPlayer == PLAYER_NONE)
             {
                 _view.SetSelectVisible(false);
                 return;
@@ -327,12 +335,12 @@ namespace BoardSystem.Presentation
                     if (phase == PhaseType.Play)
                     {
                         // 入力ロック解除
-                        _isInputLocked = false;
+                        _isInputLock = false;
                     }
                     else
                     {
                         // 入力ロック
-                        _isInputLocked = true;
+                        _isInputLock = true;
                     }
                 });
         }
@@ -391,7 +399,7 @@ namespace BoardSystem.Presentation
             dropStream
                 .Subscribe(_ =>
                 {
-                    if (_isInputLocked || _currentPlayer == PLAYER_NONE)
+                    if (_isInputLock || _currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
@@ -406,7 +414,7 @@ namespace BoardSystem.Presentation
             rotateStream
                 .Subscribe(cmd =>
                 {
-                    if (_isInputLocked || _isRotating)
+                    if (_isInputLock || _isRotate)
                     {
                         return;
                     }
@@ -462,34 +470,18 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleDropAsync(int x, int z)
         {
-            _isInputLocked = true;
+            _isInputLock = true;
 
             // 配置可能判定
             int y = _model.CalculatePlace(x, z);
 
             if (y < 0)
             {
-                _isInputLocked = false;
+                _isInputLock = false;
                 return;
             }
 
-            // 駒生成
-            PieceData piece =
-                await _view.SpawnPieceAsync(
-                    x,
-                    y,
-                    z,
-                    _currentPlayer
-                );
-
-            // インデックス生成
-            BoardIndex index = new BoardIndex(x, y, z);
-
-            // ビューに駒情報登録
-            _view.SetPiece(index, piece);
-
-            // モデルの盤面更新
-            _model.ApplyPlace(index, _currentPlayer);
+            await _dropUseCase.HandleDropAsync(x, y, z, _currentPlayer);
 
             // ライン成立チェック
             CheckLine(_model.CheckLine());
@@ -502,12 +494,12 @@ namespace BoardSystem.Presentation
             RotationAxis axis,
             RotationDirection direction)
         {
-            _isRotating = true;
+            _isRotate = true;
 
             try
             {
                 // 入力ロック
-                _isInputLocked = true;
+                _isInputLock = true;
 
                 // モデル回転情報取得
                 IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
@@ -541,7 +533,7 @@ namespace BoardSystem.Presentation
             }
             finally
             {
-                _isRotating = false;
+                _isRotate = false;
             }
         }
 

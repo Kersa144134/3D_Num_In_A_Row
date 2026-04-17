@@ -67,7 +67,7 @@ namespace BoardSystem.Presentation
         private readonly PieceAnimationView _pieceAnimationView;
 
         /// <summary>マテリアル適用サービス</summary>
-        private readonly PieceMaterialService _materialService;
+        private readonly PieceMaterialMapper _materialMapper;
 
         /// <summary>列選択ビュー</summary>
         private readonly ColumnSelectView _columnSelectView;
@@ -142,7 +142,7 @@ namespace BoardSystem.Presentation
                 boardSize,
                 root.position
             );
-            _materialService = new PieceMaterialService(pieceMaterials);
+            _materialMapper = new PieceMaterialMapper(pieceMaterials);
 
             // ColumnSelectRoot の null チェック
             if (columnSelectRoot == null)
@@ -168,7 +168,7 @@ namespace BoardSystem.Presentation
             // 駒アニメーションビュー初期化
             _pieceAnimationView =
                 new PieceAnimationView(
-                    new DropAnimationService(),
+                    new PieceDropAnimator(),
                     deleteParticle
                 );
         }
@@ -195,7 +195,7 @@ namespace BoardSystem.Presentation
             Renderer renderer = piece.GetComponent<Renderer>();
 
             // プレイヤーに応じたマテリアルを適用
-            _materialService.Apply(
+            _materialMapper.Apply(
                 renderer,
                 player
             );

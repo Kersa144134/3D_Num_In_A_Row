@@ -1,9 +1,9 @@
 // ======================================================
-// DropAnimationService.cs
+// PieceDropAnimator.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-02
 // 更新日時 : 2026-04-02
-// 概要     : 駒の落下アニメーションサービス
+// 概要     : 駒の落下アニメーション
 // ======================================================
 
 using Cysharp.Threading.Tasks;
@@ -12,9 +12,9 @@ using UnityEngine;
 namespace BoardSystem.Application
 {
     /// <summary>
-    /// 駒落下アニメーションサービス
+    /// 駒落下アニメーション
     /// </summary>
-    public sealed class DropAnimationService
+    public sealed class PieceDropAnimator
     {
         // ======================================================
         // 定数
