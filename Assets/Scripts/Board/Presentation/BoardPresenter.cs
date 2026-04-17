@@ -6,15 +6,15 @@
 // 概要     : 3D 目並べゲームの盤面を制御するクラス
 // ======================================================
 
-using BoardSystem.Domain;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using Cysharp.Threading.Tasks;
+using UniRx;
+using BoardSystem.Domain;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
-using System;
-using System.Collections.Generic;
-using UniRx;
-using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -136,11 +136,6 @@ namespace BoardSystem.Presentation
         private const int PIECE_DROP_DELAY_MS = 500;
 
         /// <summary>
-        /// 駒配置後、フェーズ切り替えを開始するまでの待機時間（ミリ秒）
-        /// </summary>
-        private const int PHASE_CHANGE_DELAY_MS = 500;
-
-        /// <summary>
         /// 盤面の回転アニメーション時間（秒）
         /// </summary>
         private const float ROTATION_DURATION = 0.5f;
@@ -155,11 +150,11 @@ namespace BoardSystem.Presentation
         /// <summary>入力用イベント購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
-        /// <summary>駒落下通知用 Subject</summary>
-        private readonly Subject<Unit> _onPieceDropped = new Subject<Unit>();
+        /// <summary>プレイヤー入力通知用 Subject</summary>
+        private readonly Subject<Unit> _onInputReceived = new Subject<Unit>();
 
-        /// <summary>駒落下ストリーム</summary>
-        public IObservable<Unit> OnPieceDropped => _onPieceDropped;
+        /// <summary>プレイヤー入力ストリーム</summary>
+        public IObservable<Unit> OnInputReceived => _onInputReceived;
 
         /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete =
@@ -416,6 +411,9 @@ namespace BoardSystem.Presentation
                         return;
                     }
 
+                    // 入力通知
+                    _onInputReceived.OnNext(Unit.Default);
+
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 })
                 .AddTo(_inputDisposables);
@@ -452,8 +450,8 @@ namespace BoardSystem.Presentation
                 out int x,
                 out int z);
 
-            // 駒落下通知
-            _onPieceDropped.OnNext(Unit.Default);
+            // 入力通知
+            _onInputReceived.OnNext(Unit.Default);
 
             // 駒落下処理
             HandleDropAsync(x, z).Forget();
@@ -494,7 +492,7 @@ namespace BoardSystem.Presentation
             _model.ApplyPlace(index, _currentPlayer);
 
             // ライン成立チェック
-            await CheckLine(false);
+            CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -539,7 +537,7 @@ namespace BoardSystem.Presentation
                 await PiecesRepositionAsync(allColumns);
 
                 // ライン成立チェック
-                await CheckLine(_model.CheckLine());
+                CheckLine(_model.CheckLine());
             }
             finally
             {
@@ -626,7 +624,7 @@ namespace BoardSystem.Presentation
             await PiecesRepositionAsync(repositionPieces);
 
             // ライン成立チェック
-            await CheckLine(_model.CheckLine());
+            CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -684,15 +682,13 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立判定時の共通処理
         /// </summary>
-        private async UniTask CheckLine(bool isLine)
+        private void CheckLine(bool isLine)
         {
             // ラインが成立している場合は処理なし
             if (isLine)
             {
                 return;
             }
-
-            await UniTask.Delay(PHASE_CHANGE_DELAY_MS);
 
             // フェーズ終了通知
             _onPlayerEnd.OnNext(Unit.Default);

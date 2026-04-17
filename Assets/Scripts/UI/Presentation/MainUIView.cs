@@ -6,11 +6,10 @@
 // 概要     : メインUIの描画処理を担当するビュー
 // ======================================================
 
-using System;
-using TMPro;
-using UISystem.Application;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+using UISystem.Application;
 
 namespace UISystem.Presentation
 {
@@ -107,6 +106,9 @@ namespace UISystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
         /// <summary>
         /// ポインター位置更新
         /// </summary>
@@ -125,10 +127,27 @@ namespace UISystem.Presentation
             _pointerRect.anchoredPosition = anchoredPos;
         }
 
+        // --------------------------------------------------
+        // 制限時間テキスト
+        // --------------------------------------------------
+        /// <summary>
+        /// 制限時間テキストの表示状態を切り替える
+        /// </summary>
+        /// <param name="isVisible">表示する場合はtrue</param>
+        public void SetLimitTimeVisible(in bool isVisible)
+        {
+            if (_limitTimeText == null)
+            {
+                return;
+            }
+
+            _limitTimeText.enabled = isVisible;
+        }
+
         /// <summary>
         /// 制限時間表示更新
         /// </summary>
-        public void UpdateLimitTime(in float remainingTime)
+        public void UpdateLimitTime(in float limitTime)
         {
             if (_limitTimeText == null)
             {
@@ -139,8 +158,7 @@ namespace UISystem.Presentation
             // 時間計算
             // --------------------------------------------------
             // 秒へ変換
-            int totalSeconds =
-                Mathf.FloorToInt(remainingTime);
+            int totalSeconds = Mathf.CeilToInt(limitTime);
 
             // 同一値なら更新スキップ
             if (totalSeconds == _previousDisplayTotalSeconds)

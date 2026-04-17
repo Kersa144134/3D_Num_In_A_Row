@@ -95,12 +95,21 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 経過時間と制限時間から残り時間を計算し、UI に表示する
+        /// 制限時間テキストの表示状態を更新する
         /// </summary>
-        /// <param name="remainingTime">残り時間（秒）</param>
-        public void UpdateLimitTimeDisplay(in float remainingTime)
+        /// <param name="isVisible">表示する場合はtrue</param>
+        public void SetLimitTimeVisible(in bool isVisible)
         {
-            _mainUIView.UpdateLimitTime(remainingTime);
+            _mainUIView.SetLimitTimeVisible(isVisible);
+        }
+
+        /// <summary>
+        /// 制限時間を UI に表示する
+        /// </summary>
+        /// <param name="limitTime">残り時間（秒）</param>
+        public void UpdateLimitTimeDisplay(in float limitTime)
+        {
+            _mainUIView.UpdateLimitTime(limitTime);
         }
     }
 }

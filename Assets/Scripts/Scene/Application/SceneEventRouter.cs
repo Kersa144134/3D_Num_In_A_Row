@@ -6,15 +6,15 @@
 // 概要     : シーン内イベントの仲介を行う
 // ======================================================
 
+using System;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
-using System;
 using UISystem.Presentation;
-using UniRx;
 
 namespace SceneSystem.Application
 {
@@ -226,10 +226,10 @@ namespace SceneSystem.Application
                 boardPresenter.BindPlayerChangeStream(_onPayerChanged);
                 boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
-                boardPresenter.OnPieceDropped
+                boardPresenter.OnInputReceived
                     .Subscribe(_ => SetTargetPhase(_currentPhase.Value))
-                    .AddTo(_disposables); 
-                
+                    .AddTo(_disposables);
+
                 boardPresenter.OnLineComplete
                     .Subscribe(e => _onLineComplete.OnNext(e))
                     .AddTo(_disposables);
@@ -242,9 +242,12 @@ namespace SceneSystem.Application
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
-            //phaseMachine.OnLimitTimeUpdated
-            //    .Subscribe(e => _mainUIPresenter?.UpdateLimitTimeDisplay(e.RemainingTime))
-            //    .AddTo(_disposables);
+            _phaseMachine.LimitTime
+                .Subscribe(e =>
+                {
+                    _mainUIPresenter.UpdateLimitTimeDisplay(e);
+                })
+                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -283,7 +286,14 @@ namespace SceneSystem.Application
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseChanged(in PhaseType phase)
         {
-            
+            if (phase == PhaseType.Play)
+            {
+                _mainUIPresenter.SetLimitTimeVisible(true);
+            }
+            else
+            {
+                _mainUIPresenter.SetLimitTimeVisible(false);
+            }
         }
 
         /// <summary>
@@ -299,7 +309,7 @@ namespace SceneSystem.Application
             }
             else if (currentPhase == PhaseType.Event)
             {
-                nextPhase = PhaseType.Play;
+                nextPhase = PhaseType.ChangePlayer;
             }
             else
             {

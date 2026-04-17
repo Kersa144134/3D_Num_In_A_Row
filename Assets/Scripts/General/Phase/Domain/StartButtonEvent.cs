@@ -18,7 +18,7 @@ namespace PhaseSystem.Domain
         // ======================================================
 
         /// <summary>押下されたフェーズ</summary>
-        public readonly PhaseType Phase;
+        public PhaseType Phase { get; }
 
         // ======================================================
         // コンストラクタ

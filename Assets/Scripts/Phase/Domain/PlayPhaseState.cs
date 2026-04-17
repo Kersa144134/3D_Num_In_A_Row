@@ -6,6 +6,7 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
+using UnityEngine;
 using UniRx;
 
 namespace PhaseSystem.Domain
@@ -74,8 +75,11 @@ namespace PhaseSystem.Domain
                 _playerCount = playerCount;
             }
 
-            // 初期プレイヤー設定
-            _currentPlayerIndex = new ReactiveProperty<int>(_playerCount);
+            // --------------------------------------------------
+            // 初期プレイヤーをランダムに設定
+            // --------------------------------------------------
+            int initialPlayerIndex = Random.Range(1, _playerCount + 1);
+            _currentPlayerIndex = new ReactiveProperty<int>(initialPlayerIndex);
         }
 
         // ======================================================
@@ -113,7 +117,7 @@ namespace PhaseSystem.Domain
         private void NextPlayer()
         {
             // --------------------------------------------------
-            // 1スタート対応の循環処理
+            // 1 ベースの循環処理
             // --------------------------------------------------
             // 0 ベースに変換
             int zeroBasedIndex = _currentPlayerIndex.Value - 1;

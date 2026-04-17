@@ -210,8 +210,8 @@ namespace SceneSystem.Presentation
             _sceneEventRouter.OnPhaseChanged
                 .Subscribe(e =>
                 {
-                    // 即時反映ではなくターゲットだけ更新
-                    SetTargetPhase(e.NextPhaseType);
+                    // マシンだけ更新
+                    SetPhaseMachine(e.NextPhaseType);
                 })
                 .AddTo(_disposables);
 
@@ -332,6 +332,21 @@ namespace SceneSystem.Presentation
 
             // 遷移先フェーズを更新
             _targetPhase = nextPhase;
+        }
+        
+        /// <summary>
+        /// 遷移先フェーズを設定する
+        /// </summary>
+        private void SetPhaseMachine(in PhaseType nextPhase)
+        {
+            // 同一フェーズなら更新しない
+            if (_targetPhase == nextPhase)
+            {
+                return;
+            }
+
+            // 遷移先フェーズを更新
+            _phaseMachine.ChangePhase(nextPhase);
         }
     }
 }

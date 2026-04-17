@@ -7,7 +7,6 @@
 // ======================================================
 
 using System;
-using System.Collections.Generic;
 using UniRx;
 using PhaseSystem.Domain;
 
@@ -38,6 +37,9 @@ namespace PhaseSystem.Application
         /// <summary>現在のフェーズ種別</summary>
         private PhaseType _currentPhaseType;
 
+        /// <summary>現在のフェーズ種別</summary>
+        private float _maxLimitTime;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -48,16 +50,24 @@ namespace PhaseSystem.Application
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
+        /// <summary>フェーズ経過時間通知用 Subject</summary>
+        private readonly ReactiveProperty<float> _limitTime =
+            new ReactiveProperty<float>(0.0f);
+
+        /// <summary>フェーズ経過時間ストリーム</summary>
+        public IReadOnlyReactiveProperty<float> LimitTime => _limitTime;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
 
         public PhaseMachine(
             PhaseType initialPhase,
-            PhaseTransitionConfig config)
+            PhaseTransitionConfig transitionConfig)
         {
-            _transitionConfig = config;
-            
+            _transitionConfig = transitionConfig;
+            _maxLimitTime = _transitionConfig.PerPlayerLimitTime;
+
             // --------------------------------------------------
             // フェーズ生成
             // --------------------------------------------------
@@ -100,18 +110,26 @@ namespace PhaseSystem.Application
             // 状態更新
             _currentState.OnUpdate(unscaledDeltaTime);
 
+            // 状態から値を取得して通知
+            _limitTime.Value = _maxLimitTime - _currentState.ElapsedTime;
+
             // 遷移判定
             PhaseType nextPhase = _transitionRule.Resolve(_currentState, unscaledDeltaTime);
 
-            // 遷移なし
             if (nextPhase == _currentPhaseType)
             {
                 return;
             }
 
-            // --------------------------------------------------
             // フェーズ遷移
-            // --------------------------------------------------
+            ChangePhase(nextPhase);
+        }
+
+        /// <summary>
+        /// フェーズ切替を行う
+        /// </summary>
+        public void ChangePhase(in PhaseType nextPhaseType)
+        {
             // 終了処理
             _currentState.OnExit();
 
@@ -119,14 +137,14 @@ namespace PhaseSystem.Application
             _onPhaseChanged.OnNext(
                 new PhaseChangeEvent(
                     _currentPhaseType,
-                    nextPhase
+                    nextPhaseType
                 )
             );
 
             // 新しい State 取得
-            _currentPhaseType = nextPhase;
+            _currentPhaseType = nextPhaseType;
 
-            _currentState = _stateRepository.GetPhaseState(nextPhase);
+            _currentState = _stateRepository.GetPhaseState(nextPhaseType);
 
             // 開始処理
             _currentState.OnEnter();

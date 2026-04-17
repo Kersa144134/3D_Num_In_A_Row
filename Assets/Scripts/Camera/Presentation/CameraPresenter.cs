@@ -15,7 +15,7 @@ namespace CameraSystem.Presentation
     /// <summary>
     /// カメラ制御用プレゼンター
     /// </summary>
-    public class CameraPresenter : MonoBehaviour, IUpdatable
+    public sealed class CameraPresenter : MonoBehaviour, IUpdatable
     {
         // ======================================================
         // コンポーネント参照
