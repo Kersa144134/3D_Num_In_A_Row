@@ -198,9 +198,11 @@ namespace BoardSystem.Presentation
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
+            _deleteHandler = new BoardDeleteHandler(_model, _view);
             _dropHandler = new BoardDropHandler(_model, _view);
             _rotateUseCase = new BoardRotateUseCase(_model, _boardSize);
-            _deleteHandler = new BoardDeleteHandler(_model, _view);
+            _repositionUseCase = new BoardRepositionUseCase(_model);
+            _viewMoveHandler = new BoardViewMoveHandler(_view);
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
