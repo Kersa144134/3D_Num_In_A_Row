@@ -16,7 +16,7 @@ namespace SceneSystem.Domain
     public readonly struct RotationCommand
     {
         // ======================================================
-        // フィールド
+        // プロパティ
         // ======================================================
 
         /// <summary>

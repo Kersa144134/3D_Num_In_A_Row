@@ -89,9 +89,20 @@ namespace BoardSystem.Presentation
         /// <summary>ビュー</summary>
         private BoardView _view;
 
-        private BoardDropUseCase _dropUseCase;
+        /// <summary>駒削除ハンドラ</summary>
+        private BoardDeleteHandler _deleteHandler;
+
+        /// <summary>駒落下ハンドラ</summary>
+        private BoardDropHandler _dropHandler;
+
+        /// <summary>盤面回転ユースケース</summary>
         private BoardRotateUseCase _rotateUseCase;
-        private BoardLineUseCase _lineUseCase;
+
+        /// <summary>駒再配置ユースケース</summary>
+        private BoardRepositionUseCase _repositionUseCase;
+
+        /// <summary>駒ビュー更新ハンドラ</summary>
+        private BoardViewMoveHandler _viewMoveHandler;
 
         // ======================================================
         // フィールド
@@ -100,14 +111,14 @@ namespace BoardSystem.Presentation
         /// <summary>カメラ</summary>
         private Camera _camera; 
         
-        /// <summary>現在のプレイヤーID</summary>
-        private int _currentPlayer;
-
         /// <summary>盤面のクリック判定用 Collider</summary>
         private Collider _boardCollider;
 
         /// <summary>盤面の列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
+
+        /// <summary>現在のプレイヤーID</summary>
+        private int _currentPlayer;
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
@@ -124,16 +135,6 @@ namespace BoardSystem.Presentation
 
         /// <summary>Planeタグ</summary>
         private const string TAG_PLANE = "Plane";
-
-        /// <summary>
-        /// ライン成立後、削除処理を開始するまでの待機時間（ミリ秒）
-        /// </summary>
-        private const int LINE_DELETE_DELAY_MS = 600;
-
-        /// <summary>
-        /// 各駒を削除する際のインターバル時間（ミリ秒）
-        /// </summary>
-        private const int PIECE_DELETE_DELAY_MS = 200;
 
         /// <summary>
         /// 駒削除後、落下処理を開始するまでの待機時間（ミリ秒）
@@ -197,9 +198,9 @@ namespace BoardSystem.Presentation
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
-            _dropUseCase = new BoardDropUseCase(_model, _view);
+            _dropHandler = new BoardDropHandler(_model, _view);
             _rotateUseCase = new BoardRotateUseCase(_model, _boardSize);
-            _lineUseCase = new BoardLineUseCase(_model);
+            _deleteHandler = new BoardDeleteHandler(_model, _view);
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
@@ -481,7 +482,8 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            await _dropUseCase.HandleDropAsync(x, y, z, _currentPlayer);
+            // ユースケース実行
+            await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
 
             // ライン成立チェック
             CheckLine(_model.CheckLine());
@@ -501,38 +503,36 @@ namespace BoardSystem.Presentation
                 // 入力ロック
                 _isInputLock = true;
 
-                // モデル回転情報取得
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                    _model.Rotate90(axis, direction);
+                // --------------------------------------------------
+                // 回転ユースケース実行
+                // --------------------------------------------------
+                RotationResult result =
+                    await _rotateUseCase.HandleRotateAsync(axis, direction);
 
                 // ビュー辞書更新
-                ApplyViewMoves(moves);
+                ApplyViewMoves(result.RotateMoves);
 
-                // 回転アニメーション
+                // --------------------------------------------------
+                // ビュー更新
+                // --------------------------------------------------
                 await _view.RotateAsync(
                     transform,
                     axis,
                     direction
                 );
 
-                // 全列再配置
-                List<(int x, int z)> allColumns = new List<(int, int)>();
+                // 再配置アニメーション
+                await _view.MovePiecesAsync(result.RepositionMoves);
 
-                for (int x = 0; x < _boardSize; x++)
-                {
-                    for (int z = 0; z < _boardSize; z++)
-                    {
-                        allColumns.Add((x, z));
-                    }
-                }
-
-                await PiecesRepositionAsync(allColumns);
+                // 再配置後の位置をViewに確定反映
+                ApplyViewMoves(result.RepositionMoves);
 
                 // ライン成立チェック
                 CheckLine(_model.CheckLine());
             }
             finally
             {
+                // 回転終了
                 _isRotate = false;
             }
         }
@@ -542,78 +542,16 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
         {
-            // 削除対象駒ハッシュセット
-            HashSet<BoardIndex> deleteTargetSet = new HashSet<BoardIndex>();
-
-            // 再配置対象列ハッシュセット
-            HashSet<(int x, int z)> pieceSet = new HashSet<(int, int)>();
-
-            // --------------------------------------------------
-            // Emission 処理
-            // --------------------------------------------------
-            for (int i = 0; i < lineEvent.LinePositions.Length; i++)
-            {
-                IReadOnlyList<BoardIndex> line = lineEvent.LinePositions[i];
-
-                for (int j = 0; j < line.Count; j++)
-                {
-                    BoardIndex index = line[j];
-
-                    // 既に対象ならスキップ
-                    if (deleteTargetSet.Contains(index))
-                    {
-                        continue;
-                    }
-
-                    PieceData piece;
-
-                    // ビュー辞書に存在しない場合はスキップ
-                    if (_view.TryGetPiece(index, out piece) == false)
-                    {
-                        continue;
-                    }
-
-                    _view.SetPieceEmissionColor(index, Color.white);
-
-                    // 削除対象に追加
-                    deleteTargetSet.Add(index);
-
-                    // 再配置対象追加
-                    pieceSet.Add((index.X, index.Z));
-
-                    // 演出待機
-                    await UniTask.Delay(PIECE_DELETE_DELAY_MS);
-                }
-            }
-
-            // 演出待機
-            await UniTask.Delay(LINE_DELETE_DELAY_MS);
-
-            // --------------------------------------------------
-            // 削除処理
-            // --------------------------------------------------
-            foreach (BoardIndex index in deleteTargetSet)
-            {
-                if (_view.TryGetPiece(index, out _) == false)
-                {
-                    continue;
-                }
-
-                _view.DestroyPiece(index);
-                _view.RemovePiece(index);
-                _model.ClearCell(index);
-            }
+            LineDeleteResult result = 
+                await _deleteHandler.HandleLineDeleteAsync(lineEvent);
 
             // --------------------------------------------------
             // 再配置処理
-            // --------------------------------------------------
-            List<(int x, int z)> repositionPieces =
-                new List<(int, int)>(pieceSet);
-
+            //// --------------------------------------------------
             // 演出待機
             await UniTask.Delay(PIECE_DROP_DELAY_MS);
 
-            await PiecesRepositionAsync(repositionPieces);
+            await PiecesRepositionAsync(result.RepositionColumns);
 
             // ライン成立チェック
             CheckLine(_model.CheckLine());
@@ -624,51 +562,27 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask PiecesRepositionAsync(IReadOnlyList<(int x, int z)> pieces)
         {
-            // 全移動情報リスト
-            List<(BoardIndex from, BoardIndex to)> allMoves =
-                new List<(BoardIndex, BoardIndex)>();
-
             // --------------------------------------------------
-            // 移動情報収集
+            // ユースケース実行
             // --------------------------------------------------
-            for (int i = 0; i < pieces.Count; i++)
-            {
-                // 対象列取得
-                (int x, int z) column = pieces[i];
-
-                // モデルから移動情報取得
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                    _model.CalculateReposition(column.x, column.z);
-
-                // 全体リストに追加
-                allMoves.AddRange(moves);
-            }
+            BoardRepositionResult result =
+                await _repositionUseCase.HandleRepositionAsync(pieces);
 
             // 移動がない場合は処理なし
-            if (allMoves.Count == 0)
+            if (result.Moves.Count == 0)
             {
                 return;
             }
 
             // --------------------------------------------------
-            // モデル更新
-            // --------------------------------------------------
-            for (int i = 0; i < pieces.Count; i++)
-            {
-                (int x, int z) piece = pieces[i];
-
-                _model.ApplyReposition(piece.x, piece.z);
-            }
-
-            // --------------------------------------------------
             // ビューアニメーション
             // --------------------------------------------------
-            await _view.MovePiecesAsync(allMoves);
+            await _view.MovePiecesAsync(result.Moves);
 
             // --------------------------------------------------
             // ビュー辞書更新
             // --------------------------------------------------
-            ApplyViewMoves(allMoves);
+            ApplyViewMoves(result.Moves);
         }
 
         /// <summary>
@@ -691,90 +605,7 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            // from 重複防止用ハッシュセット
-            HashSet<BoardIndex> uniqueFromSet = new HashSet<BoardIndex>();
-
-            // to 重複防止用ハッシュセット
-            HashSet<BoardIndex> uniqueToSet = new HashSet<BoardIndex>();
-
-            // 重複排除処理後の移動リスト
-            List<(BoardIndex from, BoardIndex to)> filteredMoves =
-                new List<(BoardIndex, BoardIndex)>();
-
-            // --------------------------------------------------
-            // 重複排除処理
-            // --------------------------------------------------
-            for (int i = 0; i < moves.Count; i++)
-            {
-                // 現在の移動情報を取得
-                (BoardIndex from, BoardIndex to) move = moves[i];
-
-                // from が既に使用されている場合はスキップ
-                if (uniqueFromSet.Contains(move.from))
-                {
-                    continue;
-                }
-
-                // to が既に使用されている場合はスキップ
-                if (uniqueToSet.Contains(move.to))
-                {
-                    continue;
-                }
-
-                // from を記録
-                uniqueFromSet.Add(move.from);
-
-                // to を記録
-                uniqueToSet.Add(move.to);
-
-                // 有効な移動として追加
-                filteredMoves.Add(move);
-            }
-
-            // --------------------------------------------------
-            // スナップショット作成
-            // --------------------------------------------------
-            // 移動前の駒情報を保持する辞書
-            Dictionary<BoardIndex, PieceData> snapshot =
-                new Dictionary<BoardIndex, PieceData>();
-
-            for (int i = 0; i < filteredMoves.Count; i++)
-            {
-                // 移動情報取得
-                (BoardIndex from, BoardIndex to) move = filteredMoves[i];
-
-                PieceData piece;
-
-                // from に駒が存在する場合のみ記録
-                if (_view.TryGetPiece(move.from, out piece))
-                {
-                    snapshot[move.from] = piece;
-                }
-            }
-
-            // --------------------------------------------------
-            // from 削除
-            // --------------------------------------------------
-            foreach (BoardIndex fromIndex in snapshot.Keys)
-            {
-                _view.RemovePiece(fromIndex);
-            }
-
-            // --------------------------------------------------
-            // to 配置
-            // --------------------------------------------------
-            for (int i = 0; i < filteredMoves.Count; i++)
-            {
-                (BoardIndex from, BoardIndex to) move = filteredMoves[i];
-
-                PieceData piece;
-
-                // スナップショットに存在する場合のみ配置
-                if (snapshot.TryGetValue(move.from, out piece))
-                {
-                    _view.SetPiece(move.to, piece);
-                }
-            }
+            _viewMoveHandler.ApplyViewMoves(moves);
         }
     }
 }

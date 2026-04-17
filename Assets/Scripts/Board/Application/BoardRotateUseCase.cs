@@ -1,6 +1,9 @@
 // ======================================================
 // BoardRotateUseCase.cs
-// 概要 : 盤面回転と再配置計算を担当するユースケース
+// 作成者   : 高橋一翔
+// 作成日時 : 2026-04-17
+// 更新日時 : 2026-04-17
+// 概要     : 盤面回転と再配置計算を担当するクラス
 // ======================================================
 
 using System.Collections.Generic;
@@ -14,28 +17,43 @@ namespace BoardSystem.Application
     /// </summary>
     public sealed class BoardRotateUseCase
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
         /// <summary>盤面モデル</summary>
         private readonly BoardModel _model;
+
+        // ======================================================
+        // フィールド
+        // ======================================================
 
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
+        // ======================================================
+        // コンストラクタ
+        // ======================================================
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardRotateUseCase(BoardModel model, int boardSize)
+        public BoardRotateUseCase(
+            in BoardModel model,
+            in int boardSize)
         {
-            // モデル参照を保持
             _model = model;
-
-            // 盤面サイズを保持
             _boardSize = boardSize;
         }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
 
         /// <summary>
         /// 回転処理を実行
         /// </summary>
-        public UniTask<RotateResult> ExecuteAsync(
+        public UniTask<RotationResult> HandleRotateAsync(
             RotationAxis axis,
             RotationDirection direction)
         {
@@ -81,44 +99,8 @@ namespace BoardSystem.Application
                 _model.ApplyReposition(col.x, col.z);
             }
 
-            // ライン判定
-            bool isLine = _model.CheckLine();
-
             // 結果返却
-            return UniTask.FromResult(new RotateResult(moves, repositionMoves, isLine));
-        }
-    }
-
-    /// <summary>
-    /// 回転結果
-    /// </summary>
-    public readonly struct RotateResult
-    {
-        /// <summary>回転移動</summary>
-        public readonly IReadOnlyList<(BoardIndex from, BoardIndex to)> RotateMoves;
-
-        /// <summary>再配置移動</summary>
-        public readonly IReadOnlyList<(BoardIndex from, BoardIndex to)> RepositionMoves;
-
-        /// <summary>ライン成立</summary>
-        public readonly bool IsLine;
-
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        public RotateResult(
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves,
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves,
-            bool isLine)
-        {
-            // 回転移動を設定
-            RotateMoves = rotateMoves;
-
-            // 再配置移動を設定
-            RepositionMoves = repositionMoves;
-
-            // ライン状態を設定
-            IsLine = isLine;
+            return UniTask.FromResult(new RotationResult(moves, repositionMoves));
         }
     }
 }
