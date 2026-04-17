@@ -7,80 +7,84 @@
 // ======================================================
 
 using System;
+using System.Collections.Generic;
 using UniRx;
 using PhaseSystem.Domain;
 
 namespace PhaseSystem.Application
 {
-    /// <summary>
-    /// フェーズ遷移と状態更新を制御するステートマシン
-    /// </summary>
     public sealed class PhaseMachine
     {
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>フェーズ設定データ</summary>
-        private readonly PhaseTransitionConfig _config;
+        /// <summary>フェーズ状態リポジトリ</summary>
+        private readonly PhaseStateRepository _stateRepository;
+
+        /// <summary>遷移設定データ</summary>
+        private readonly PhaseTransitionConfig _transitionConfig;
+
+        /// <summary>遷移ルール</summary>
+        private readonly PhaseTransitionRule _transitionRule;
 
         // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>現在アクティブなフェーズ状態</summary>
+        /// <summary>現在のフェーズ状態</summary>
         private IPhaseState _currentState;
 
-        /// <summary>フェーズ遷移ルール</summary>
-        private IPhaseTransitionRule _transitionRule;
-
-        // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>現在のフェーズ状態</summary>
-        public IPhaseState CurrentState => _currentState;
+        /// <summary>現在のフェーズ種別</summary>
+        private PhaseType _currentPhaseType;
 
         // ======================================================
         // UniRx 変数
         // ======================================================
 
-        /// <summary>フェーズ変更通知</summary>
-        private readonly Subject<PhaseChangeEvent> _onPhaseChanged;
+        /// <summary>フェーズ変更通知用 Subject</summary>
+        private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
 
-        /// <summary>フェーズ変更通知</summary>
+        /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
         // ======================================================
         // コンストラクタ
         // ======================================================
 
-        /// <summary>
-        /// PhaseMachine を生成
-        /// </summary>
         public PhaseMachine(
-            IPhaseState initialState,
+            PhaseType initialPhase,
             PhaseTransitionConfig config)
         {
-            // 初期状態設定
-            _currentState = initialState;
+            _transitionConfig = config;
+            
+            // --------------------------------------------------
+            // フェーズ生成
+            // --------------------------------------------------
+            _stateRepository = new PhaseStateRepository(_transitionConfig);
 
-            // 遷移ルール保持
-            //_transitionRule = new IPhaseTransitionRule();
+            // --------------------------------------------------
+            // 初期フェーズ設定
+            // --------------------------------------------------
+            _currentPhaseType = initialPhase;
 
-            // 設定保持
-            _config = config;
+            _currentState = _stateRepository.GetPhaseState(initialPhase);
 
-            // イベント生成
-            _onPhaseChanged = new Subject<PhaseChangeEvent>();
-
-            // 初期状態開始
+            // 開始処理
             _currentState.OnEnter();
 
+            // --------------------------------------------------
+            // イベント設定
+            // --------------------------------------------------
             // 初期通知
             _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(null, _currentState)
+                new PhaseChangeEvent(
+                    PhaseType.None,
+                    _currentPhaseType
+                )
             );
+
+            _transitionRule = new PhaseTransitionRule(_stateRepository, _transitionConfig);
         }
 
         // ======================================================
@@ -88,38 +92,52 @@ namespace PhaseSystem.Application
         // ======================================================
 
         /// <summary>
-        /// フェーズ更新処理
+        /// フェーズ進行の更新処理を行う
         /// </summary>
-        public void Update(float deltaTime)
+        /// <param name="unscaledDeltaTime">経過時間</param>
+        public void Update(float unscaledDeltaTime)
         {
-            // 現在状態更新
-            _currentState.OnUpdate(deltaTime);
+            // 状態更新
+            _currentState.OnUpdate(unscaledDeltaTime);
 
             // 遷移判定
-            IPhaseState nextState =
-                _transitionRule.Resolve(_currentState, deltaTime);
+            PhaseType nextPhase = _transitionRule.Resolve(_currentState, unscaledDeltaTime);
 
-            if (nextState == null)
+            // 遷移なし
+            if (nextPhase == _currentPhaseType)
             {
                 return;
             }
 
-            // 前状態保持
-            IPhaseState prevState = _currentState;
-
+            // --------------------------------------------------
+            // フェーズ遷移
+            // --------------------------------------------------
             // 終了処理
             _currentState.OnExit();
 
-            // 状態更新
-            _currentState = nextState;
+            // 通知
+            _onPhaseChanged.OnNext(
+                new PhaseChangeEvent(
+                    _currentPhaseType,
+                    nextPhase
+                )
+            );
+
+            // 新しい State 取得
+            _currentPhaseType = nextPhase;
+
+            _currentState = _stateRepository.GetPhaseState(nextPhase);
 
             // 開始処理
             _currentState.OnEnter();
+        }
 
-            // 通知
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(prevState, _currentState)
-            );
+        /// <summary>
+        /// PlayPhaseState を取得する
+        /// </summary>
+        public PlayPhaseState GetPlayState()
+        {
+            return _stateRepository.GetPhaseState(PhaseType.Play) as PlayPhaseState;
         }
     }
 }

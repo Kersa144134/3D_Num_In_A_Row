@@ -6,6 +6,8 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
+using UniRx;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
@@ -17,24 +19,35 @@ namespace PhaseSystem.Domain
         // フィールド
         // ======================================================
 
-        /// <summary>現在のプレイヤーインデックス</summary>
-        private int _currentPlayerIndex;
-
         /// <summary>プレイヤー総数</summary>
         private readonly int _playerCount;
 
         /// <summary>フェーズ経過時間</summary>
-        private float _elapsedTime;
+        private float _elapsedTime = 0.0f;
 
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>現在のプレイヤーインデックス</summary>
-        public int CurrentPlayerIndex => _currentPlayerIndex;
-
         /// <summary>フェーズ経過時間</summary>
         public float ElapsedTime => _elapsedTime;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>プレイヤー最低人数</summary>
+        private const int MIN_PLAYER_COUNT = 2;
+
+        // ======================================================
+        // UniR 変数
+        // ======================================================
+
+        /// <summary>現在プレイヤーインデックス取得用 Subject</summary>
+        private readonly ReactiveProperty<int> _currentPlayerIndex;
+
+        /// <summary>現在プレイヤーインデックスストリーム</summary>
+        public IReadOnlyReactiveProperty<int> CurrentPlayerIndex => _currentPlayerIndex;
 
         // ======================================================
         // コンストラクタ
@@ -46,13 +59,23 @@ namespace PhaseSystem.Domain
         /// <param name="playerCount">プレイヤー人数</param>
         public PlayPhaseState(in int playerCount)
         {
-            _playerCount = playerCount;
+            // プレイヤー人数が MIN_PLAYER_COUNT 未満の場合は不正
+            if (playerCount < MIN_PLAYER_COUNT)
+            {
+                UnityEngine.Debug.LogError(
+                    "PlayPhaseState: PlayerCount が MIN_PLAYER_COUNT 未満です。"
+                );
 
-            // 初期プレイヤーは0番
-            _currentPlayerIndex = 0;
+                // 最低人数に補正
+                _playerCount = 2;
+            }
+            else
+            {
+                _playerCount = playerCount;
+            }
 
-            // 経過時間初期化
-            _elapsedTime = 0.0f;
+            // 初期プレイヤー設定
+            _currentPlayerIndex = new ReactiveProperty<int>(_playerCount);
         }
 
         // ======================================================
@@ -64,8 +87,9 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnEnter()
         {
-            // プレイヤー状態をリセットする場合はここ
             _elapsedTime = 0.0f;
+
+            NextPlayer();
         }
 
         /// <summary>
@@ -73,7 +97,6 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnExit()
         {
-
         }
 
         /// <summary>
@@ -81,30 +104,25 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 経過時間加算
             _elapsedTime += unscaledDeltaTime;
         }
-
-        // ======================================================
-        // プレイヤー制御
-        // ======================================================
 
         /// <summary>
         /// 次のプレイヤーへ遷移
         /// </summary>
-        public void NextPlayer()
+        private void NextPlayer()
         {
-            // 循環で次プレイヤーへ
-            _currentPlayerIndex =
-                (_currentPlayerIndex + 1) % _playerCount;
-        }
+            // --------------------------------------------------
+            // 1スタート対応の循環処理
+            // --------------------------------------------------
+            // 0 ベースに変換
+            int zeroBasedIndex = _currentPlayerIndex.Value - 1;
 
-        /// <summary>
-        /// 現在プレイヤーを取得
-        /// </summary>
-        public int GetCurrentPlayer()
-        {
-            return _currentPlayerIndex;
+            // 循環処理
+            zeroBasedIndex = (zeroBasedIndex + 1) % _playerCount;
+
+            // 1 ベースに変換
+            _currentPlayerIndex.Value = zeroBasedIndex + 1;
         }
     }
 }

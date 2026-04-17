@@ -44,6 +44,9 @@ namespace SceneSystem.Presentation
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _playToFinishWaitTime = 120.0f;
 
+        /// <summary>ChangePlayer フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
+        [SerializeField, Min(0f)] private float _changePlayerToPlayWaitTime = 2.0f;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -86,6 +89,16 @@ namespace SceneSystem.Presentation
         private bool _isSceneChanged = true;
 
         // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
+        /// <summary>現在のフェーズ</summary>
+        private readonly ReactiveProperty<PhaseType> _currentPhase =
+            new ReactiveProperty<PhaseType>(PhaseType.None);
+
+        /// <summary>遷移予定のフェーズ</summary>
+        private PhaseType _targetPhase = PhaseType.None;
+
+        // --------------------------------------------------
         // Updatables
         // --------------------------------------------------
         /// <summary>IUpdatable を保持している GameObject 群</summary>
@@ -96,10 +109,6 @@ namespace SceneSystem.Presentation
 
         /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
         private Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
-
-        /// <summary>現在のフェーズ</summary>
-        private readonly ReactiveProperty<PhaseType> _currentPhase =
-            new ReactiveProperty<PhaseType>(PhaseType.None);
 
         // ======================================================
         // 定数
@@ -144,6 +153,8 @@ namespace SceneSystem.Presentation
             _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
             _isSceneChanged = true;
+            _currentPhase.Value = _startPhase;
+            _targetPhase = _startPhase;
         }
 
         private void Start()
@@ -170,27 +181,41 @@ namespace SceneSystem.Presentation
             // --------------------------------------------------
             // フェーズ遷移マシン初期化
             // --------------------------------------------------
-            // コンポーネント初期化
+            // フェーズ遷移設定
             _phaseTransitionConfig = new PhaseTransitionConfig(
                 _playerCount,
                 _perPlayerLimitTime,
                 _readyToPlayWaitTime,
-                _playToFinishWaitTime
+                _playToFinishWaitTime,
+                _changePlayerToPlayWaitTime
             );
 
-            //_phaseMachine = new PhaseMachine(_phaseTransitionConfig);
+            // フェーズ遷移管理マシン生成
+            _phaseMachine = new PhaseMachine(
+                _startPhase,
+                _phaseTransitionConfig
+            );
 
             // --------------------------------------------------
             // イベント購読
             // --------------------------------------------------
-            _sceneEventRouter.OnPhaseChanged
-                .Subscribe(phase =>
+            _phaseMachine.OnPhaseChanged
+                .Subscribe(e =>
                 {
-                    //SetTargetPhase(phase);
+                    // 即時反映ではなくターゲットだけ更新
+                    SetTargetPhase(e.NextPhaseType);
                 })
                 .AddTo(_disposables);
 
-            _sceneEventRouter.Subscribe();
+            _sceneEventRouter.OnPhaseChanged
+                .Subscribe(e =>
+                {
+                    // 即時反映ではなくターゲットだけ更新
+                    SetTargetPhase(e.NextPhaseType);
+                })
+                .AddTo(_disposables);
+
+            _sceneEventRouter.Subscribe(_phaseMachine);
         }
 
         private void Update()
@@ -238,6 +263,14 @@ namespace SceneSystem.Presentation
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             _updatableManagement.LateUpdate(unscaledDeltaTime);
+
+            // --------------------------------------------------
+            // フェーズ反映
+            // --------------------------------------------------
+            if (_currentPhase.Value != _targetPhase)
+            {
+                ChangePhase(_targetPhase);
+            }
         }
 
         private void OnDestroy()
@@ -284,7 +317,21 @@ namespace SceneSystem.Presentation
 
             // 現在フェーズ更新
             _currentPhase.Value = nextPhase;
-            Debug.Log(_currentPhase.Value);
+        }
+
+        /// <summary>
+        /// 遷移先フェーズを設定する
+        /// </summary>
+        private void SetTargetPhase(in PhaseType nextPhase)
+        {
+            // 同一フェーズなら更新しない
+            if (_targetPhase == nextPhase)
+            {
+                return;
+            }
+
+            // 遷移先フェーズを更新
+            _targetPhase = nextPhase;
         }
     }
 }

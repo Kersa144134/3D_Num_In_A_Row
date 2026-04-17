@@ -36,7 +36,7 @@ namespace PhaseSystem.Domain
         /// </summary>
         public void OnEnter()
         {
-
+            _elapsedTime = 0.0f;
         }
 
         /// <summary>

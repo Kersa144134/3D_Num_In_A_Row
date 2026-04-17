@@ -28,6 +28,9 @@ namespace PhaseSystem.Domain
         /// <summary>ゲーム内のイベント中フェーズ</summary>
         Event,
 
+        /// <summary>ゲーム内のプレイヤー切り替え中フェーズ</summary>
+        ChangePlayer,
+
         /// <summary>ゲーム内の一時停止中フェーズ</summary>
         Pause,
 

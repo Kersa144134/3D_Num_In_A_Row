@@ -47,10 +47,13 @@ namespace SceneSystem.Application
             /// </summary>
             Rotate
         }
-        
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
+
+        /// <summary>フェーズ遷移管理マシン</summary>
+        private PhaseMachine _phaseMachine;
 
         /// <summary>シーン内で共有されるコンテキスト</summary>
         private readonly UpdatableContext _context;
@@ -79,10 +82,13 @@ namespace SceneSystem.Application
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
         /// <summary>フェーズ変更通知用 Subject</summary>
-        private readonly Subject<PhaseType> _onPhaseChanged = new Subject<PhaseType>();
+        private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
 
         /// <summary>フェーズ変更ストリーム</summary>
-        public IObservable<PhaseType> OnPhaseChanged => _onPhaseChanged;
+        public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
+
+        /// <summary>プレイヤー変更用 Subject</summary>
+        private readonly Subject<int> _onPayerChanged = new Subject<int>();
 
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
@@ -91,20 +97,13 @@ namespace SceneSystem.Application
         private readonly Subject<Unit> _onDropRequested =
             new Subject<Unit>();
 
-        /// <summary>駒配置入力ストリーム</summary>
-        public IObservable<Unit> OnDropRequested =>
-            _onDropRequested;
-
         /// <summary>回転入力用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateRequested =
             new Subject<RotationCommand>();
 
-        /// <summary>回転入力ストリーム</summary>
-        public IObservable<RotationCommand> OnRotateRequested =>
-            _onRotateRequested;
-
         /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
+        private readonly Subject<LineCompleteEvent> _onLineComplete =
+            new Subject<LineCompleteEvent>();
 
         /// <summary>現在フェーズストリーム参照</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
@@ -138,15 +137,41 @@ namespace SceneSystem.Application
         /// <summary>
         /// イベント購読
         /// </summary>
-        public void Subscribe()
+        public void Subscribe(in PhaseMachine phaseMachine)
         {
+            _phaseMachine = phaseMachine;
+
+            // --------------------------------------------------
+            // フェーズ
+            // --------------------------------------------------
+            _currentPhase
+                .DistinctUntilChanged()
+                .Subscribe(phase =>
+                {
+                    HandlePhaseChanged(phase);
+                })
+                .AddTo(_disposables);
+
+            PlayPhaseState playState = _phaseMachine.GetPlayState();
+
+            if (playState != null)
+            {
+                playState.CurrentPlayerIndex
+                    .DistinctUntilChanged()
+                    .Subscribe(player =>
+                    {
+                        _onPayerChanged.OnNext(player);
+                    })
+                    .AddTo(_disposables);
+            }
+
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
             _inputManager.BindMappingStream(_onMappingChanged);
 
             // ボタン A 押下
-            InputManager.Instance.ButtonA.OnUp
+            _inputManager.ButtonA.OnUp
                 .Subscribe(_ =>
                 {
                     // 駒配置イベント発火
@@ -155,7 +180,7 @@ namespace SceneSystem.Application
                 .AddTo(_disposables);
 
             // ボタン X 押下
-            InputManager.Instance.ButtonX.OnDown
+            _inputManager.ButtonX.OnDown
                 .Subscribe(_ =>
                 {
                     // 回転イベント発火（X+）
@@ -169,7 +194,7 @@ namespace SceneSystem.Application
                 .AddTo(_disposables);
 
             // ボタン Y 押下
-            InputManager.Instance.ButtonY.OnDown
+            _inputManager.ButtonY.OnDown
                 .Subscribe(_ =>
                 {
                     // 回転イベント発火（X-）
@@ -183,8 +208,8 @@ namespace SceneSystem.Application
                 .AddTo(_disposables);
 
             // スタートボタン押下
-            InputManager.Instance.StartButton.OnDown
-                .Subscribe(e => OnStartButtonPressed(new StartButtonEvent(_currentPhase.Value)))
+            _inputManager.StartButton.OnDown
+                .Subscribe(e => HandleStartButtonPressed(new StartButtonEvent(_currentPhase.Value)))
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -198,14 +223,19 @@ namespace SceneSystem.Application
                 }
 
                 boardPresenter.BindPhaseStream(_currentPhase);
+                boardPresenter.BindPlayerChangeStream(_onPayerChanged);
                 boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
+                boardPresenter.OnPieceDropped
+                    .Subscribe(_ => SetTargetPhase(_currentPhase.Value))
+                    .AddTo(_disposables); 
+                
                 boardPresenter.OnLineComplete
                     .Subscribe(e => _onLineComplete.OnNext(e))
                     .AddTo(_disposables);
 
-                boardPresenter.OnPhaseEnd
-                    .Subscribe(e => ChangePlayPhase(e))
+                boardPresenter.OnPlayerEnd
+                    .Subscribe(_ => SetTargetPhase(_currentPhase.Value))
                     .AddTo(_disposables);
             }
 
@@ -225,13 +255,6 @@ namespace SceneSystem.Application
             // 購読解除
             _disposables.Dispose();
 
-            // サブジェクト終了
-            _onPhaseChanged.OnCompleted();
-            _onPhaseChanged.Dispose();
-
-            _onLineComplete.OnCompleted();
-            _onLineComplete.Dispose();
-
             _inputManager.UnbindMappingStream();
 
             foreach (BoardPresenter boardPresenter in _boardPresenters)
@@ -242,6 +265,7 @@ namespace SceneSystem.Application
                 }
 
                 boardPresenter.UnbindPhaseStream();
+                boardPresenter.UnbindPlayerChangeStream();
                 boardPresenter.UnbindInputStream();
             }
         }
@@ -249,35 +273,46 @@ namespace SceneSystem.Application
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
         // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
         /// <summary>
-        /// Playフェーズを変更する
+        /// フェーズ変更時の内部処理
         /// </summary>
-        private void ChangePlayPhase(in int player)
+        /// <param name="phase">変更後のフェーズ</param>
+        private void HandlePhaseChanged(in PhaseType phase)
         {
-            // トグル後のフェーズ
+            
+        }
+
+        /// <summary>
+        /// フェーズを変更する
+        /// </summary>
+        private void SetTargetPhase(in PhaseType currentPhase)
+        {
             PhaseType nextPhase;
 
-            // Play_1 → Play_2
-            if (player == 1)
+            if (currentPhase == PhaseType.Play)
+            {
+                nextPhase = PhaseType.Event;
+            }
+            else if (currentPhase == PhaseType.Event)
             {
                 nextPhase = PhaseType.Play;
             }
-            // Play_2 → Play_1
-            else if (player == 2)
-            {
-                nextPhase = PhaseType.Play;
-            }
-            // Play 以外は無視
             else
             {
                 return;
             }
 
             // フェーズ変更通知
-            _onPhaseChanged.OnNext(nextPhase);
+            _onPhaseChanged.OnNext(
+                new PhaseChangeEvent(
+                    _currentPhase.Value,
+                    nextPhase
+                )
+            );
         }
 
         // --------------------------------------------------
@@ -287,27 +322,20 @@ namespace SceneSystem.Application
         /// スタートボタン押下時の処理を行う
         /// </summary>
         /// <param name="e">スタートボタンイベント</param>
-        private void OnStartButtonPressed(in StartButtonEvent e)
+        private void HandleStartButtonPressed(in StartButtonEvent e)
         {
             // フェーズに応じてマッピングと遷移先を決定
             int mappingIndex;
             PhaseType nextPhase;
 
-            // Play フェーズ判定
-            bool isPlayPhases = false;
-
             if (e.Phase == PhaseType.Play)
             {
-                isPlayPhases = true;
+                mappingIndex = 1;
+
+                nextPhase = PhaseType.Pause;
 
                 // 現在のアクティブ状態フェーズをキャッシュ
                 _cachedActivePhase = e.Phase;
-            }
-
-            if (isPlayPhases)
-            {
-                mappingIndex = 1;
-                nextPhase = PhaseType.Pause;
             }
             else if (e.Phase == PhaseType.Pause)
             {
@@ -325,7 +353,12 @@ namespace SceneSystem.Application
             _onMappingChanged.OnNext(mappingIndex);
 
             // フェーズ変更通知
-            _onPhaseChanged.OnNext(nextPhase);
+            _onPhaseChanged.OnNext(
+                new PhaseChangeEvent(
+                    _currentPhase.Value,
+                    nextPhase
+                )
+            );
         }
     }
 }

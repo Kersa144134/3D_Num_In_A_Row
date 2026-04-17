@@ -2725,9 +2725,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 513ace15bda16cc4385abf12d0d05e2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
+  _playerCount: 2
+  _perPlayerLimitTime: 1
   _startPhase: 2
   _readyToPlayWaitTime: 0
   _playToFinishWaitTime: 360
+  _changePlayerToPlayWaitTime: 2
 --- !u!1 &2127354812
 GameObject:
   m_ObjectHideFlags: 0

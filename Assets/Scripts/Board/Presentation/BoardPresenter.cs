@@ -117,12 +117,6 @@ namespace BoardSystem.Presentation
         /// <summary>プレイヤー未指定 ID</summary>
         private const int PLAYER_NONE = -1;
 
-        /// <summary>1P ID</summary>
-        private const int PLAYER_ONE = 1;
-
-        /// <summary>2P ID</summary>
-        private const int PLAYER_TWO = 2;
-
         /// <summary>Planeタグ</summary>
         private const string TAG_PLANE = "Plane";
 
@@ -174,14 +168,17 @@ namespace BoardSystem.Presentation
         /// <summary>ライン成立ストリーム</summary>
         public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
 
-        /// <summary>フェーズ終了通知用 Subject</summary>
-        private readonly Subject<int> _onPhaseEnd = new Subject<int>();
+        /// <summary>プレイヤー行動終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
 
-        /// <summary>フェーズ終了ストリーム</summary>
-        public IObservable<int> OnPhaseEnd => _onPhaseEnd;
+        /// <summary>プレイヤー行動終了ストリーム</summary>
+        public IObservable<Unit> OnPlayerEnd => _onPlayerEnd;
 
         /// <summary>フェーズ購読</summary>
         private IDisposable _phaseSubscription;
+
+        /// <summary>プレイヤーインデックス購読</summary>
+        private IDisposable _playerIndexSubscription;
 
         // ======================================================
         // IUpdatable イベント
@@ -321,9 +318,9 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// フェーズ変更ストリームを購読する
+        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
         /// </summary>
-        /// <param name="stream">フェーズストリーム</param>
+        /// <param name="stream">フェーズ種別を通知するストリーム</param>
         public void BindPhaseStream(in IObservable<PhaseType> stream)
         {
             // 多重購読防止
@@ -334,15 +331,6 @@ namespace BoardSystem.Presentation
                 {
                     if (phase == PhaseType.Play)
                     {
-                        _currentPlayer = PLAYER_ONE;
-
-                        // 入力ロック解除
-                        _isInputLocked = false;
-                    }
-                    else if (phase == PhaseType.Play)
-                    {
-                        _currentPlayer = PLAYER_TWO;
-
                         // 入力ロック解除
                         _isInputLocked = false;
                     }
@@ -364,9 +352,35 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 入力検知ストリームを購読する
+        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
         /// </summary>
-        /// <param name="stream">フェーズストリーム</param>
+        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
+        public void BindPlayerChangeStream(in IObservable<int> player)
+        {
+            // 多重購読防止
+            _playerIndexSubscription?.Dispose();
+
+            _playerIndexSubscription = player
+                .Subscribe(player =>
+                {
+                    _currentPlayer = player;
+                });
+        }
+
+        /// <summary>
+        /// プレイヤー変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPlayerChangeStream()
+        {
+            _playerIndexSubscription?.Dispose();
+            _playerIndexSubscription = null;
+        }
+
+        /// <summary>
+        /// 入力ストリームを購読し、駒配置および回転入力を処理する
+        /// </summary>
+        /// <param name="dropStream">駒配置入力を通知するストリーム</param>
+        /// <param name="rotateStream">回転入力を通知するストリーム</param>
         public void BindInputStream(
             in IObservable<Unit> dropStream,
             in IObservable<RotationCommand> rotateStream)
@@ -408,7 +422,7 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 入力検知ストリームの購読を解除する
+        /// 入力ストリームの購読を解除する
         /// </summary>
         public void UnbindInputStream()
         {
@@ -681,7 +695,7 @@ namespace BoardSystem.Presentation
             await UniTask.Delay(PHASE_CHANGE_DELAY_MS);
 
             // フェーズ終了通知
-            _onPhaseEnd.OnNext(_currentPlayer);
+            _onPlayerEnd.OnNext(Unit.Default);
         }
 
         /// <summary>
