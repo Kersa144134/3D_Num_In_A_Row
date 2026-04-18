@@ -37,9 +37,9 @@ namespace InputSystem
         /// <summary>入力マッピング配列</summary>
         [SerializeField] private InputMappingConfig[] _inputMappingConfigs;
 
-        [Header("入力マッピング設定")]
+        [Header("ポインター")]
         /// <summary>ポインター移動速度</summary>
-        [SerializeField, Range(100f, 5000f)] private float _pointerSpeed = 1000f;
+        [SerializeField, Range(1000f, 5000f)] private float _pointerSpeed = 1000f;
 
         // ======================================================
         // コンポーネント参照

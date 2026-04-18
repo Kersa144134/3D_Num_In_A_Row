@@ -719,7 +719,7 @@ MonoBehaviour:
   _inputMappingConfigs:
   - {fileID: 11400000, guid: 3934b295d2e15244da856cfe5c8850f5, type: 2}
   - {fileID: 11400000, guid: 766eb0904e4ad1e47a66705487acf007, type: 2}
-  _pointerSpeed: 1000
+  _pointerSpeed: 2000
 --- !u!4 &491275592
 Transform:
   m_ObjectHideFlags: 0

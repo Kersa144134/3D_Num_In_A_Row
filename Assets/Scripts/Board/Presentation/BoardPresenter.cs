@@ -104,6 +104,9 @@ namespace BoardSystem.Presentation
         /// <summary>駒ビュー更新ハンドラ</summary>
         private BoardViewMoveHandler _viewMoveHandler;
 
+        /// <summary>InputManager キャッシュ</summary>
+        private InputManager _inputManager;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -198,6 +201,7 @@ namespace BoardSystem.Presentation
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
+
             _deleteHandler = new BoardDeleteHandler(_model, _view);
             _dropHandler = new BoardDropHandler(_model, _view);
             _rotateUseCase = new BoardRotateUseCase(_model, _boardSize);
@@ -206,6 +210,9 @@ namespace BoardSystem.Presentation
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
+
+            // インスタンスからコンポーネント取得
+            _inputManager = InputManager.Instance;
 
             // 子階層のコライダーを取得
             _boardCollider = GetComponentInChildren<Collider>(true);
@@ -254,7 +261,7 @@ namespace BoardSystem.Presentation
             }
 
             // Ray 生成
-            Ray ray = _camera.ScreenPointToRay(InputManager.Instance.Pointer);
+            Ray ray = _camera.ScreenPointToRay(_inputManager.Pointer);
 
             bool isHit = Physics.Raycast(
                 ray,

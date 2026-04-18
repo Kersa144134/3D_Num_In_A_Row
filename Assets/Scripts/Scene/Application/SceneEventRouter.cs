@@ -122,10 +122,10 @@ namespace SceneSystem.Application
             _context = context;
             _currentPhase = currentPhase;
 
-            // インスタンスからコンポーネントを取得
+            // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
 
-            // Context からコンポーネントを取得
+            // Context からコンポーネント取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
             _mainUIPresenter = _context.Get<MainUIPresenter>();
         }

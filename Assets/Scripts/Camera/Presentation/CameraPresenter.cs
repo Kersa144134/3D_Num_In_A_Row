@@ -6,9 +6,10 @@
 // 概要     : カメラ入力・状態更新・描画反映を管理するプレゼンター
 // ======================================================
 
-using UnityEngine;
 using CameraSystem.Domain;
+using InputSystem;
 using SceneSystem.Domain;
+using UnityEngine;
 
 namespace CameraSystem.Presentation
 {
@@ -26,6 +27,9 @@ namespace CameraSystem.Presentation
 
         /// <summary>ビュー</summary>
         private CameraView _cameraView;
+
+        /// <summary>InputManager キャッシュ</summary>
+        private InputManager _inputManager;
 
         // ======================================================
         // インスペクタ設定
@@ -55,17 +59,6 @@ namespace CameraSystem.Presentation
 
         public void OnEnter()
         {
-            // 子オブジェクトから Camera コンポーネントを取得する
-            Camera cameraComponent = GetComponentInChildren<Camera>();
-
-            // Cameraが存在しない場合は処理を停止する
-            if (cameraComponent == null)
-            {
-                // エラーログを出力して原因を明示する
-                Debug.LogError("Cameraが子オブジェクトに存在しません");
-                return;
-            }
-
             // Transform の回転を Euler 角で取得
             Vector3 euler = transform.rotation.eulerAngles;
 
@@ -80,6 +73,9 @@ namespace CameraSystem.Presentation
                 _maxRotationX
             );
             _cameraView = new CameraView(transform);
+
+            // インスタンスからコンポーネント取得
+            _inputManager = InputManager.Instance;
         }
 
         public void OnLateUpdate(in float unscaledDeltaTime)
@@ -88,10 +84,10 @@ namespace CameraSystem.Presentation
             // 入力取得
             // --------------------------------------------------
             // 左右入力を取得する
-            float inputHorizontal = Input.GetAxis("Horizontal");
+            float inputHorizontal = _inputManager.LeftStick.x;
 
             // 上下入力を取得する
-            float inputVertical = Input.GetAxis("Vertical");
+            float inputVertical = _inputManager.LeftStick.y;
 
             // --------------------------------------------------
             // モデル更新
