@@ -153,7 +153,6 @@ namespace SceneSystem.Presentation
             _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
             _isSceneChanged = true;
-            _currentPhase.Value = _startPhase;
             _targetPhase = _startPhase;
         }
 
@@ -312,7 +311,7 @@ namespace SceneSystem.Presentation
                 return;
             }
 
-            // フェーズ変更時処理
+            // Updatable のフェーズ変更時処理
             _updatableManagement.ChangePhase(nextPhase);
 
             // 現在フェーズ更新
@@ -345,7 +344,7 @@ namespace SceneSystem.Presentation
                 return;
             }
 
-            // 遷移先フェーズを更新
+            // PhaseMachine の遷移先フェーズを更新
             _phaseMachine.ChangePhase(nextPhase);
         }
     }
