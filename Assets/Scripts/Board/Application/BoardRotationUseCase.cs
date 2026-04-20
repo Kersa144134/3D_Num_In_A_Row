@@ -1,5 +1,5 @@
 // ======================================================
-// BoardRotateUseCase.cs
+// BoardRotationUseCase.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-17
 // 更新日時 : 2026-04-17
@@ -15,7 +15,7 @@ namespace BoardSystem.Application
     /// <summary>
     /// 盤面回転ユースケース
     /// </summary>
-    public sealed class BoardRotateUseCase
+    public sealed class BoardRotationUseCase
     {
         // ======================================================
         // コンポーネント参照
@@ -38,7 +38,7 @@ namespace BoardSystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardRotateUseCase(
+        public BoardRotationUseCase(
             in BoardModel model,
             in int boardSize)
         {

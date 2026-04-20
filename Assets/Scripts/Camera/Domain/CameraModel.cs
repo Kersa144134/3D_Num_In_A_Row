@@ -6,8 +6,6 @@
 // ŠT—v     : ƒJƒƒ‰‚Ì‰ñ“]ó‘Ô‚ğŠÇ—‚·‚éƒ‚ƒfƒ‹
 // ======================================================
 
-using UnityEngine;
-
 namespace CameraSystem.Domain
 {
     /// <summary>

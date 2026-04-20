@@ -10,6 +10,7 @@ using System;
 using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
+using CameraSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
@@ -24,45 +25,23 @@ namespace SceneSystem.Application
     public sealed class SceneEventRouter
     {
         // ======================================================
-        // 構造体
-        // ======================================================
-
-        /// <summary>
-        /// 入力アクション種別
-        /// </summary>
-        private enum InputActionType
-        {
-            /// <summary>
-            /// 未定義
-            /// </summary>
-            None,
-
-            /// <summary>
-            /// 駒を配置するアクション
-            /// </summary>
-            Drop,
-
-            /// <summary>
-            /// 盤面を回転するアクション
-            /// </summary>
-            Rotate
-        }
-
-        // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>フェーズ遷移管理マシン</summary>
         private PhaseMachine _phaseMachine;
 
-        /// <summary>シーン内で共有されるコンテキスト</summary>
-        private readonly UpdatableContext _context;
-
         /// <summary>InputManager キャッシュ</summary>
         private readonly InputManager _inputManager;
 
+        /// <summary>シーン内で共有されるコンテキスト</summary>
+        private readonly UpdatableContext _context;
+
         /// <summary>SceneObjectContainer キャッシュ配列</summary>
         private readonly BoardPresenter[] _boardPresenters;
+
+        /// <summary>CameraPresenter キャッシュ</summary>
+        private readonly CameraPresenter _cameraPresenter;
 
         /// <summary>MainUIPresenter キャッシュ</summary>
         private readonly MainUIPresenter _mainUIPresenter;
@@ -127,6 +106,7 @@ namespace SceneSystem.Application
 
             // Context からコンポーネント取得
             _boardPresenters = _context.GetAll<BoardPresenter>();
+            _cameraPresenter = _context.Get<CameraPresenter>();
             _mainUIPresenter = _context.Get<MainUIPresenter>();
         }
 
@@ -240,6 +220,11 @@ namespace SceneSystem.Application
             }
 
             // --------------------------------------------------
+            // カメラ
+            // --------------------------------------------------
+            _cameraPresenter.BindPhaseStream(_currentPhase);
+
+            // --------------------------------------------------
             // UI
             // --------------------------------------------------
             _phaseMachine.LimitTime
@@ -271,6 +256,8 @@ namespace SceneSystem.Application
                 boardPresenter.UnbindPlayerChangeStream();
                 boardPresenter.UnbindInputStream();
             }
+
+            _cameraPresenter.UnbindPhaseStream();
         }
 
         // ======================================================

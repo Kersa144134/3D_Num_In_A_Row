@@ -1,7 +1,9 @@
 {
     "name": "CameraApplication",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:6997ef1b42c40634eb175555bf85ca8d"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

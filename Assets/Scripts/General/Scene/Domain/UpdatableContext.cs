@@ -44,7 +44,8 @@ namespace SceneSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// Updatable “o˜^i“¯ˆêŒ^•¡”“o˜^‰Â”\j
+        /// Updatable “o˜^
+        /// “¯ˆêŒ^‚ğ•¡”“o˜^‰Â”\
         /// </summary>
         /// <param name="type">Œ^</param>
         /// <param name="instance">ƒCƒ“ƒXƒ^ƒ“ƒX</param>

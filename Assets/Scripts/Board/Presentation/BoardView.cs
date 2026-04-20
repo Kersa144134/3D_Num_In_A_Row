@@ -144,7 +144,6 @@ namespace BoardSystem.Presentation
             );
             _materialMapper = new PieceMaterialMapper(pieceMaterials);
 
-            // ColumnSelectRoot の null チェック
             if (columnSelectRoot == null)
             {
                 Debug.LogError("[BoardView] ColumnSelectRoot の取得に失敗しました。");

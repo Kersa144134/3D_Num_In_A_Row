@@ -96,7 +96,7 @@ namespace BoardSystem.Presentation
         private BoardDropHandler _dropHandler;
 
         /// <summary>盤面回転ユースケース</summary>
-        private BoardRotateUseCase _rotateUseCase;
+        private BoardRotationUseCase _rotationUseCase;
 
         /// <summary>駒再配置ユースケース</summary>
         private BoardRepositionUseCase _repositionUseCase;
@@ -204,7 +204,7 @@ namespace BoardSystem.Presentation
 
             _deleteHandler = new BoardDeleteHandler(_model, _view);
             _dropHandler = new BoardDropHandler(_model, _view);
-            _rotateUseCase = new BoardRotateUseCase(_model, _boardSize);
+            _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
             _repositionUseCase = new BoardRepositionUseCase(_model);
             _viewMoveHandler = new BoardViewMoveHandler(_view);
 
@@ -516,7 +516,7 @@ namespace BoardSystem.Presentation
                 // 回転ユースケース実行
                 // --------------------------------------------------
                 RotationResult result =
-                    await _rotateUseCase.HandleRotateAsync(axis, direction);
+                    await _rotationUseCase.HandleRotateAsync(axis, direction);
 
                 // ビュー辞書更新
                 ApplyViewMoves(result.RotateMoves);
