@@ -110,8 +110,11 @@ namespace PhaseSystem.Application
             // 状態更新
             _currentState.OnUpdate(unscaledDeltaTime);
 
-            // 状態から制限時間を取得
-            _limitTime.Value = _maxLimitTime - _currentState.ElapsedTime;
+            // Play中のみ制限時間更新
+            if (_currentState is PlayPhaseState playState)
+            {
+                _limitTime.Value = _maxLimitTime - playState.PlayElapsedTime;
+            }
 
             // 遷移判定
             PhaseType nextPhase = _transitionRule.Resolve(_currentState);

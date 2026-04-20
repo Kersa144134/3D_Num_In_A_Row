@@ -283,6 +283,15 @@ namespace SceneSystem.Application
                 _mainUIPresenter.SetLimitTimeVisible(false);
                 _mainUIPresenter.SetPointerVisible(false);
             }
+
+            if (phase == PhaseType.Pause)
+            {
+                _mainUIPresenter.SetPauseState(true);
+            }
+            else
+            {
+                _mainUIPresenter.SetPauseState(false);
+            }
         }
 
         /// <summary>

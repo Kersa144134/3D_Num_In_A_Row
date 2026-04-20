@@ -42,13 +42,36 @@ namespace UISystem.Presentation
         [SerializeField]
         private Image _pointerImage;
 
+        // --------------------------------------------------
+        // アニメーター
+        // --------------------------------------------------
+        [Header("アニメーター")]
+        /// <summary>連続更新対象のキャンバス</summary>
+        [SerializeField]
+        private Animator _continuousCanvasAnimator;
+
+        /// <summary>断続更新対象のキャンバス</summary>
+        [SerializeField]
+        private Animator _intermittentCanvasAnimator;
+
+        /// <summary>ポーズ状態のキャンバス</summary>
+        [SerializeField]
+        private Animator _pauseCanvasAnimator;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>ビュー</summary>
         private MainUIView _mainUIView;
-        
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>ポーズパラメータ名</summary>
+        private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
+
         // ======================================================
         // IUpdatable 派生イベント
         // ======================================================
@@ -125,6 +148,24 @@ namespace UISystem.Presentation
         public void SetPointerVisible(in bool isVisible)
         {
             _mainUIView.SetPointerVisible(isVisible);
+        }
+
+        // --------------------------------------------------
+        // アニメーター
+        // --------------------------------------------------
+        /// <summary>
+        /// ポーズ状態アニメーターの状態を切り替える
+        /// </summary>
+        /// <param name="isPause">ポーズ状態の場合はtrue</param>
+        public void SetPauseState(in bool isPause)
+        {
+            // Animator未設定なら何もしない
+            if (_pauseCanvasAnimator == null)
+            {
+                return;
+            }
+
+            _pauseCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
         }
     }
 }

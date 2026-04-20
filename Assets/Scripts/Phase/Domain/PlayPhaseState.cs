@@ -14,7 +14,7 @@ namespace PhaseSystem.Domain
     /// <summary>
     /// プレイフェーズの処理
     /// </summary>
-    public sealed class PlayPhaseState : IPhaseState
+    public sealed class PlayPhaseState : IPhaseState, IPhaseEnterHandler
     {
         // ======================================================
         // フィールド
@@ -98,6 +98,23 @@ namespace PhaseSystem.Domain
         public void OnEnter()
         {
             _elapsedTime = 0.0f;
+        }
+
+        /// <summary>
+        /// フェーズ開始時処理
+        /// 遷移元フェーズ付きの例外処理
+        /// </summary>
+        /// <param name="previousPhase">遷移元のフェーズ種別</param>
+        public void OnEnter(in PhaseType previousPhase)
+        {
+            _elapsedTime = 0.0f;
+
+            // ChangePlayer → Play の場合のみ次プレイヤーへ進める
+            if (previousPhase == PhaseType.ChangePlayer)
+            {
+                // 次のプレイヤーへ遷移する
+                NextPlayer();
+            }
         }
 
         /// <summary>

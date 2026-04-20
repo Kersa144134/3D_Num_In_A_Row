@@ -105,7 +105,7 @@ namespace PhaseSystem.Application
         /// <returns>遷移先フェーズ種別</returns>
         private PhaseType ResolvePlay(in PlayPhaseState state)
         {
-            if (state.ElapsedTime >= _transitionConfig.PerPlayerLimitTime)
+            if (state.PlayElapsedTime >= _transitionConfig.PerPlayerLimitTime)
             {
                 return PhaseType.ChangePlayer;
             }
