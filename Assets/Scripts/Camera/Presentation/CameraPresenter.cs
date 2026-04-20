@@ -6,15 +6,14 @@
 // 概要     : カメラ入力・状態更新・描画反映を管理するプレゼンター
 // ======================================================
 
+using System;
+using UnityEngine;
+using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
-using System;
-using UniRx;
-using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace CameraSystem.Presentation
 {
@@ -45,6 +44,23 @@ namespace CameraSystem.Presentation
         [SerializeField]
         private float _maxRotationX = 90.0f;
 
+        [Header("投影設定")]
+        /// <summary>透視時の視野角</summary>
+        [SerializeField]
+        private float _perspectiveFov = 60.0f;
+
+        /// <summary>平行時のサイズ</summary>
+        [SerializeField]
+        private float _orthographicSize = 0.75f;
+
+        /// <summary>NearClip</summary>
+        [SerializeField]
+        private float _nearClip = 0.1f;
+
+        /// <summary>FarClip</summary>
+        [SerializeField]
+        private float _farClip = 100.0f;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -55,10 +71,14 @@ namespace CameraSystem.Presentation
         /// <summary>ビュー</summary>
         private CameraView _cameraView;
 
+        /// <summary>角度計算ユーティリティ</summary>
         private readonly CameraAngleUtility _angleUtility = new CameraAngleUtility();
 
         /// <summary>回転ユースケース</summary>
         private CameraRotationUseCase _rotationUseCase;
+
+        /// <summary>投影補間サービス</summary>
+        private CameraProjectionService _projectionService;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
@@ -66,6 +86,9 @@ namespace CameraSystem.Presentation
         // ======================================================
         // フィールド
         // ======================================================
+
+        /// <summary>カメラ参照</summary>
+        private Camera _camera;
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
@@ -83,6 +106,9 @@ namespace CameraSystem.Presentation
 
         public void OnEnter()
         {
+            // カメラ取得
+            _camera = Camera.main;
+            
             // 現在の Transform の回転を取得する
             Vector3 euler = transform.rotation.eulerAngles;
 
@@ -101,7 +127,13 @@ namespace CameraSystem.Presentation
             );
             _cameraView = new CameraView(transform);
 
-            // ユースケース初期化
+            // 初期化
+            _projectionService = new CameraProjectionService(
+                _perspectiveFov,
+                _orthographicSize,
+                _nearClip,
+                _farClip
+            );
             _rotationUseCase = new CameraRotationUseCase(
                 _cameraModel,
                 _rotationSpeedX,
@@ -114,6 +146,9 @@ namespace CameraSystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
+            // --------------------------------------------------
+            // 回転処理
+            // --------------------------------------------------
             // 入力がロックされている場合は処理を行わない
             if (_isInputLock)
             {
@@ -121,9 +156,6 @@ namespace CameraSystem.Presentation
                 return;
             }
 
-            // --------------------------------------------------
-            // 入力取得
-            // --------------------------------------------------
             // 左右入力を取得する
             float inputHorizontal = _inputManager.LeftStick.x;
 
@@ -133,21 +165,15 @@ namespace CameraSystem.Presentation
             // 入力値を Vector2 としてまとめる
             Vector2 input = new Vector2(inputHorizontal, inputVertical);
 
-            // --------------------------------------------------
-            // ユースケース実行
-            // --------------------------------------------------
             // 入力とデルタ時間を渡して回転をモデルへ反映する
             _rotationUseCase.UpdateRotation(input, unscaledDeltaTime);
 
-            // --------------------------------------------------
-            // ビュー反映
-            // --------------------------------------------------
             // モデルの回転値をビューへ適用する
             _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
         }
 
         // ======================================================
-        // フェーズ制御
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
@@ -182,6 +208,15 @@ namespace CameraSystem.Presentation
         {
             _phaseSubscription?.Dispose();
             _phaseSubscription = null;
+        }
+
+        /// <summary>
+        /// 投影方式を透視または平行に切り替える
+        /// </summary>
+        /// <param name="isPerspective">true:透視 / false:平行</param>
+        public void SwitchProjection(in bool isPerspective)
+        {
+            _projectionService.SetProjection(_camera, isPerspective);
         }
     }
 }

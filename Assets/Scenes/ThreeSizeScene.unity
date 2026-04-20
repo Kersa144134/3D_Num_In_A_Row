@@ -391,8 +391,8 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
-  far clip plane: 1000
+  near clip plane: 0.1
+  far clip plane: 100
   field of view: 60
   orthographic: 1
   orthographic size: 0.75
@@ -1386,6 +1386,10 @@ MonoBehaviour:
   _rotationSpeedX: 180
   _minRotationX: -90
   _maxRotationX: 90
+  _perspectiveFov: 60
+  _orthographicSize: 0.75
+  _nearClip: 0.1
+  _farClip: 100
 --- !u!1 &1095903383
 GameObject:
   m_ObjectHideFlags: 0
@@ -1994,6 +1998,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1337849778}
   - component: {fileID: 1337849777}
+  - component: {fileID: 1337849779}
   m_Layer: 0
   m_Name: MainUI
   m_TagString: Untagged
@@ -2031,6 +2036,12 @@ MonoBehaviour:
   _greyScaleNoise: 0
   _greyScaleLight: {r: 0, g: 0, b: 0, a: 0}
   _greyScaleDark: {r: 0, g: 0, b: 0, a: 0}
+  _distortionFeature: {fileID: -345652857613902587, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+  _distortionMaterial: {fileID: -876546973899608171, guid: 525d77932589f7e409004c68d3e9a33e, type: 3}
+  _isDistortionEnabled: 0
+  _distortionCenter: {x: 0.5, y: 0.5}
+  _distortionStrength: 0
+  _distortionNoise: 1000
   _limitTimeText: {fileID: 1796908266}
   _pointerImage: {fileID: 496150921}
   _continuousCanvasAnimator: {fileID: 1581882915}
@@ -2051,6 +2062,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2111107905}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &1337849779
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337849776}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 54afaff1b6e1a1d49bab34629b13589c, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1349622997
 GameObject:
   m_ObjectHideFlags: 0

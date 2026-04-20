@@ -138,6 +138,46 @@ namespace UISystem.Presentation
         [SerializeField]
         private Color _greyScaleDark;
 
+        // --------------------------------------------------
+        // 演出 <歪み>
+        // --------------------------------------------------
+        /// <summary>
+        /// 歪みのRenderFeature
+        /// </summary>
+        [Header("演出 <歪み>")]
+        [SerializeField]
+        private ScriptableRendererFeature _distortionFeature;
+
+        /// <summary>
+        /// 歪み用マテリアル
+        /// </summary>
+        [SerializeField]
+        private Material _distortionMaterial;
+
+        /// <summary>
+        /// 歪みの有効状態
+        /// </summary>
+        [SerializeField]
+        private bool _isDistortionEnabled;
+
+        /// <summary>
+        /// 歪み中心
+        /// </summary>
+        [SerializeField]
+        private Vector2 _distortionCenter;
+
+        /// <summary>
+        /// 歪み強度
+        /// </summary>
+        [SerializeField]
+        private float _distortionStrength;
+
+        /// <summary>
+        /// ノイズ強度
+        /// </summary>
+        [SerializeField]
+        private float _distortionNoise;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -168,7 +208,9 @@ namespace UISystem.Presentation
                 _binarizationFeature,
                 _binarizationMaterial,
                 _greyScaleFeature,
-                _greyScaleMaterial
+                _greyScaleMaterial,
+                _distortionFeature,
+                _distortionMaterial
             );
 
             SetAnimatorUnscaledTime(_effectAnimator);
@@ -192,7 +234,11 @@ namespace UISystem.Presentation
                 _greyScaleDistortionStrength,
                 _greyScaleNoise,
                 _greyScaleLight,
-                _greyScaleDark
+                _greyScaleDark,
+                _isDistortionEnabled,
+                _distortionCenter,
+                _distortionStrength,
+                _distortionNoise
             );
             
             OnLateUpdateInternal(unscaledDeltaTime);

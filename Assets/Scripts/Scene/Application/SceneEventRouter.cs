@@ -233,6 +233,13 @@ namespace SceneSystem.Application
                     _mainUIPresenter.UpdateLimitTimeDisplay(e);
                 })
                 .AddTo(_disposables);
+
+            _mainUIPresenter.OnSwitchProjection
+                .Subscribe(e =>
+                {
+                    _cameraPresenter.SwitchProjection(e);
+                })
+                .AddTo(_disposables);
         }
 
         /// <summary>

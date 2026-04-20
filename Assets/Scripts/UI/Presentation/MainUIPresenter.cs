@@ -6,12 +6,14 @@
 // 概要     : メインシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using InputSystem;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
+using System;
+using TMPro;
+using UniRx;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace UISystem.Presentation
 {
@@ -72,6 +74,16 @@ namespace UISystem.Presentation
         /// <summary>ポーズパラメータ名</summary>
         private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
 
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>投影切り替え用 Subject</summary>
+        private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
+
+        /// <summary>投影切り替えストリーム</summary>
+        public IObservable<bool> OnSwitchProjection => _onSwitchProjection;
+        
         // ======================================================
         // IUpdatable 派生イベント
         // ======================================================
@@ -166,6 +178,25 @@ namespace UISystem.Presentation
             }
 
             _pauseCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+        }
+
+        // --------------------------------------------------
+        // アニメーションイベント
+        // --------------------------------------------------
+        /// <summary>
+        /// 投影切り替え開始イベント
+        /// </summary>
+        public void OnSwitchProjectionStart()
+        {
+            _onSwitchProjection.OnNext(true);
+        }
+
+        /// <summary>
+        /// 投影切り替え終了イベント
+        /// </summary>
+        public void OnSwitchProjectionEnd()
+        {
+            _onSwitchProjection.OnNext(false);
         }
     }
 }

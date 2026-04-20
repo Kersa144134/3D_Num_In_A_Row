@@ -31,6 +31,11 @@ namespace UISystem.Presentation
         /// </summary>
         private readonly GreyScalePostProcessController _greyScale;
 
+        /// <summary>
+        /// 歪み制御クラス
+        /// </summary>
+        private readonly DistortionPostProcessController _distortion;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -42,13 +47,18 @@ namespace UISystem.Presentation
             ScriptableRendererFeature binFeature,
             Material binMaterial,
             ScriptableRendererFeature greyFeature,
-            Material greyMaterial)
+            Material greyMaterial,
+            ScriptableRendererFeature disFeature,
+            Material disMaterial)
         {
             // 2 値化エフェクト制御クラスを生成する
             _binarization = new BinarizationPostProcessController(binFeature, binMaterial);
 
             // グレースケール制御クラスを生成する
             _greyScale = new GreyScalePostProcessController(greyFeature, greyMaterial);
+
+            // 歪み制御クラスを生成する
+            _distortion = new DistortionPostProcessController(disFeature, disMaterial);
         }
 
         // ======================================================
@@ -72,7 +82,11 @@ namespace UISystem.Presentation
             float greyDistortion,
             float greyNoise,
             Color greyLight,
-            Color greyDark)
+            Color greyDark,
+            bool disEnabled,
+            Vector2 disCenter,
+            float disStrength,
+            float disNoise)
         {
             // 2 値化エフェクトの状態とパラメータを反映する
             _binarization?.Update(
@@ -94,6 +108,14 @@ namespace UISystem.Presentation
                 greyNoise,
                 greyLight,
                 greyDark
+            );
+
+            // 歪みエフェクトの状態とパラメータを反映する
+            _distortion?.Update(
+                disEnabled,
+                disCenter,
+                disStrength,
+                disNoise
             );
         }
     }
