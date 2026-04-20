@@ -276,10 +276,12 @@ namespace SceneSystem.Application
             if (phase == PhaseType.Play)
             {
                 _mainUIPresenter.SetLimitTimeVisible(true);
+                _mainUIPresenter.SetPointerVisible(true);
             }
             else
             {
                 _mainUIPresenter.SetLimitTimeVisible(false);
+                _mainUIPresenter.SetPointerVisible(false);
             }
         }
 

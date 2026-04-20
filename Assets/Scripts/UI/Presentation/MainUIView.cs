@@ -107,28 +107,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
-        // ポインター
-        // --------------------------------------------------
-        /// <summary>
-        /// ポインター位置更新
-        /// </summary>
-        public void UpdatePointer(in Vector2 screenPosition)
-        {
-            if (_pointerRect == null || _canvasRect == null)
-            {
-                return;
-            }
-
-            // Canvas中心基準へ変換
-            Vector2 anchoredPos =
-                screenPosition - (_canvasRect.sizeDelta * 0.5f);
-
-            // 位置反映
-            _pointerRect.anchoredPosition = anchoredPos;
-        }
-
-        // --------------------------------------------------
-        // 制限時間テキスト
+        // タイマー
         // --------------------------------------------------
         /// <summary>
         /// 制限時間テキストの表示状態を切り替える
@@ -187,5 +166,42 @@ namespace UISystem.Presentation
             // TextMeshPro に反映
             _limitTimeText.SetCharArray(buffer);
         }
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        /// <summary>
+        /// ポインターの表示状態を切り替える
+        /// </summary>
+        /// <param name="isVisible">表示する場合はtrue</param>
+        public void SetPointerVisible(in bool isVisible)
+        {
+            if (_pointerImage == null)
+            {
+                return;
+            }
+
+            _pointerImage.enabled = isVisible;
+        }
+
+        /// <summary>
+        /// ポインター位置更新
+        /// </summary>
+        public void UpdatePointer(in Vector2 screenPosition)
+        {
+            if (_pointerRect == null || _canvasRect == null)
+            {
+                return;
+            }
+
+            // Canvas中心基準へ変換
+            Vector2 anchoredPos =
+                screenPosition - (_canvasRect.sizeDelta * 0.5f);
+
+            // 位置反映
+            _pointerRect.anchoredPosition = anchoredPos;
+        }
+
+
     }
 }

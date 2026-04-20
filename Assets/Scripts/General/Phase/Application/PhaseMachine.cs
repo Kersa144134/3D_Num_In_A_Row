@@ -37,9 +37,9 @@ namespace PhaseSystem.Application
         /// <summary>現在のフェーズ種別</summary>
         private PhaseType _currentPhaseType;
 
-        /// <summary>現在のフェーズ種別</summary>
+        /// <summary>現在のフェーズの制限時間</summary>
         private float _maxLimitTime;
-
+        
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -110,11 +110,11 @@ namespace PhaseSystem.Application
             // 状態更新
             _currentState.OnUpdate(unscaledDeltaTime);
 
-            // 状態から値を取得して通知
+            // 状態から制限時間を取得
             _limitTime.Value = _maxLimitTime - _currentState.ElapsedTime;
 
             // 遷移判定
-            PhaseType nextPhase = _transitionRule.Resolve(_currentState, unscaledDeltaTime);
+            PhaseType nextPhase = _transitionRule.Resolve(_currentState);
 
             if (nextPhase == _currentPhaseType)
             {
@@ -130,6 +130,9 @@ namespace PhaseSystem.Application
         /// </summary>
         public void ChangePhase(in PhaseType nextPhaseType)
         {
+            // 遷移前フェーズを保持
+            PhaseType previousPhase = _currentPhaseType;
+
             // 終了処理
             _currentState.OnExit();
 
@@ -147,7 +150,14 @@ namespace PhaseSystem.Application
             _currentState = _stateRepository.GetPhaseState(nextPhaseType);
 
             // 開始処理
-            _currentState.OnEnter();
+            if (_currentState is IPhaseEnterHandler handler)
+            {
+                handler.OnEnter(previousPhase);
+            }
+            else
+            {
+                _currentState.OnEnter();
+            }
         }
 
         /// <summary>

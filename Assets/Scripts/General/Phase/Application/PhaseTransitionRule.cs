@@ -47,9 +47,7 @@ namespace PhaseSystem.Application
         /// <param name="currentState">現在のフェーズ状態</param>
         /// <param name="deltaTime">フレーム経過時間</param>
         /// <returns>遷移先フェーズ種別</returns>
-        public PhaseType Resolve(
-            in IPhaseState currentState,
-            in float deltaTime)
+        public PhaseType Resolve(in IPhaseState currentState)
         {
             // --------------------------------------------------
             // Ready
@@ -92,9 +90,9 @@ namespace PhaseSystem.Application
         /// <returns>遷移先フェーズ種別</returns>
         private PhaseType ResolveReady(in ReadyPhaseState state)
         {
-            if (state.ElapsedTime >= _transitionConfig.ReadyToPlayWaitTime)
+            if (state.ElapsedTime >= _transitionConfig.ReadyToChangePlayerWaitTime)
             {
-                return PhaseType.Play;
+                return PhaseType.ChangePlayer;
             }
 
             return PhaseType.Ready;

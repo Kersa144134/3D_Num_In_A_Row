@@ -20,7 +20,7 @@ namespace PhaseSystem.Domain
         // フィールド
         // ======================================================
 
-        /// <summary>フェーズインスタンスマップ</summary>
+        /// <summary>フェーズ状態マップ</summary>
         private readonly Dictionary<PhaseType, IPhaseState> _stateMap;
 
         /// <summary>型→フェーズ逆引きマップ</summary>
@@ -82,7 +82,6 @@ namespace PhaseSystem.Domain
                 return state;
             }
 
-            // 未定義フェーズ
             return null;
         }
 

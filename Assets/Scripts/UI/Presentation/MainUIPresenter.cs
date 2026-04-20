@@ -94,6 +94,9 @@ namespace UISystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // タイマー
+        // --------------------------------------------------
         /// <summary>
         /// 制限時間テキストの表示状態を更新する
         /// </summary>
@@ -110,6 +113,18 @@ namespace UISystem.Presentation
         public void UpdateLimitTimeDisplay(in float limitTime)
         {
             _mainUIView.UpdateLimitTime(limitTime);
+        }
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        /// <summary>
+        /// ポインターの表示状態を更新する
+        /// </summary>
+        /// <param name="isVisible">表示する場合はtrue</param>
+        public void SetPointerVisible(in bool isVisible)
+        {
+            _mainUIView.SetPointerVisible(isVisible);
         }
     }
 }

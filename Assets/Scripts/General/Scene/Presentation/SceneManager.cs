@@ -39,7 +39,7 @@ namespace SceneSystem.Presentation
 
         [Header("フェーズ遷移設定")]
         /// <summary>Ready フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
-        [SerializeField, Min(0f)] private float _readyToPlayWaitTime = 3.0f;
+        [SerializeField, Min(0f)] private float _readyToChangePlayerWaitTime = 3.0f;
 
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _playToFinishWaitTime = 120.0f;
@@ -185,7 +185,7 @@ namespace SceneSystem.Presentation
             _phaseTransitionConfig = new PhaseTransitionConfig(
                 _playerCount,
                 _perPlayerLimitTime,
-                _readyToPlayWaitTime,
+                _readyToChangePlayerWaitTime,
                 _playToFinishWaitTime,
                 _changePlayerToPlayWaitTime
             );

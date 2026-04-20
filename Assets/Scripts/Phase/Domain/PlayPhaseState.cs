@@ -26,12 +26,18 @@ namespace PhaseSystem.Domain
         /// <summary>フェーズ経過時間</summary>
         private float _elapsedTime = 0.0f;
 
+        /// <summary>プレイ専用経過時間</summary>
+        private float _playElapsedTime = 0.0f;
+
         // ======================================================
         // プロパティ
         // ======================================================
 
         /// <summary>フェーズ経過時間</summary>
         public float ElapsedTime => _elapsedTime;
+
+        /// <summary>プレイ専用経過時間</summary>
+        public float PlayElapsedTime => _playElapsedTime;
 
         // ======================================================
         // 定数
@@ -92,8 +98,6 @@ namespace PhaseSystem.Domain
         public void OnEnter()
         {
             _elapsedTime = 0.0f;
-
-            NextPlayer();
         }
 
         /// <summary>
@@ -109,12 +113,13 @@ namespace PhaseSystem.Domain
         public void OnUpdate(in float unscaledDeltaTime)
         {
             _elapsedTime += unscaledDeltaTime;
+            _playElapsedTime += unscaledDeltaTime;
         }
 
         /// <summary>
         /// 次のプレイヤーへ遷移
         /// </summary>
-        private void NextPlayer()
+        public void NextPlayer()
         {
             // --------------------------------------------------
             // 1 ベースの循環処理
@@ -127,6 +132,11 @@ namespace PhaseSystem.Domain
 
             // 1 ベースに変換
             _currentPlayerIndex.Value = zeroBasedIndex + 1;
+
+            // --------------------------------------------------
+            // プレイ専用経過時間のリセット
+            // --------------------------------------------------
+            _playElapsedTime = 0.0f;
         }
     }
 }
