@@ -275,7 +275,20 @@ namespace SceneSystem.Application
         // フェーズ
         // --------------------------------------------------
         /// <summary>
-        /// フェーズ変更時の内部処理
+        /// フェーズ変更を通知する
+        /// </summary>
+        private void NotifyPhaseChanged(in PhaseType nextPhase)
+        {
+            _onPhaseChanged.OnNext(
+                new PhaseChangeEvent(
+                    _currentPhase.Value,
+                    nextPhase
+                )
+            );
+        }
+
+        /// <summary>
+        /// フェーズ変更時の処理
         /// </summary>
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseChanged(in PhaseType phase)
@@ -298,6 +311,15 @@ namespace SceneSystem.Application
             else
             {
                 _mainUIPresenter.SetPauseState(false);
+            }
+
+            if (phase == PhaseType.Ready)
+            {
+                _mainUIPresenter.SetReadyState(true);
+            }
+            else
+            {
+                _mainUIPresenter.SetReadyState(false);
             }
         }
 
@@ -334,19 +356,25 @@ namespace SceneSystem.Application
         // 入力
         // --------------------------------------------------
         /// <summary>
+        /// 入力マッピング変更を通知する
+        /// </summary>
+        private void NotifyMappingChanged(in int mappingIndex)
+        {
+            _onMappingChanged.OnNext(mappingIndex);
+        }
+
+        /// <summary>
         /// スタートボタン押下時の処理を行う
         /// </summary>
-        /// <param name="e">スタートボタンイベント</param>
         private void HandleStartButtonPressed(in StartButtonEvent e)
         {
-            // フェーズに応じてマッピングと遷移先を決定
+            // マッピングと遷移先を決定する
             int mappingIndex;
             PhaseType nextPhase;
 
             if (e.Phase == PhaseType.Play)
             {
                 mappingIndex = 1;
-
                 nextPhase = PhaseType.Pause;
 
                 // 現在のアクティブ状態フェーズをキャッシュ
@@ -364,16 +392,8 @@ namespace SceneSystem.Application
                 return;
             }
 
-            // 入力マッピング変更通知
-            _onMappingChanged.OnNext(mappingIndex);
-
-            // フェーズ変更通知
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(
-                    _currentPhase.Value,
-                    nextPhase
-                )
-            );
+            NotifyMappingChanged(mappingIndex);
+            NotifyPhaseChanged(nextPhase);
         }
     }
 }

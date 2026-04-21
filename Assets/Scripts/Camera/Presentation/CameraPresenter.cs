@@ -26,14 +26,14 @@ namespace CameraSystem.Presentation
         // インスペクタ設定
         // ======================================================
 
-        [Header("回転速度設定")]
-        /// <summary>水平回転速度</summary>
+        [Header("回転補間設定")]
+        /// <summary>回転の最大速度（度 / 秒）補間時の上限速度として使用される</summary>
         [SerializeField]
-        private float _rotationSpeedY = 120.0f;
+        private float _maxRotationSpeed = 360.0f;
 
-        /// <summary>垂直回転速度</summary>
+        /// <summary>回転の加速度（度 / 秒の2乗）</summary>
         [SerializeField]
-        private float _rotationSpeedX = 120.0f;
+        private float _rotationAcceleration = 720.0f;
 
         [Header("回転制限設定")]
         /// <summary>X 回転の最小値</summary>
@@ -136,8 +136,8 @@ namespace CameraSystem.Presentation
             );
             _rotationUseCase = new CameraRotationUseCase(
                 _cameraModel,
-                _rotationSpeedX,
-                _rotationSpeedY
+                _maxRotationSpeed,
+                _rotationAcceleration
             );
 
             // InputManagerのシングルトンインスタンスを取得

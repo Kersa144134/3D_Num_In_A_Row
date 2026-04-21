@@ -56,9 +56,9 @@ namespace UISystem.Presentation
         [SerializeField]
         private Animator _intermittentCanvasAnimator;
 
-        /// <summary>ポーズ状態のキャンバス</summary>
+        /// <summary>アウトゲーム関連のキャンバス</summary>
         [SerializeField]
-        private Animator _pauseCanvasAnimator;
+        private Animator _outgameCanvasAnimator;
 
         // ======================================================
         // コンポーネント参照
@@ -71,7 +71,10 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>ポーズパラメータ名</summary>
+        /// <summary>Ready パラメータ名</summary>
+        private static readonly int IS_READY_HASH = Animator.StringToHash("IsReady");
+
+        /// <summary>Pause パラメータ名</summary>
         private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
 
         // ======================================================
@@ -166,18 +169,31 @@ namespace UISystem.Presentation
         // アニメーター
         // --------------------------------------------------
         /// <summary>
-        /// ポーズ状態アニメーターの状態を切り替える
+        /// Ready 状態アニメーターの状態を切り替える
         /// </summary>
-        /// <param name="isPause">ポーズ状態の場合はtrue</param>
-        public void SetPauseState(in bool isPause)
+        /// <param name="isReady">Ready 状態の場合はtrue</param>
+        public void SetReadyState(in bool isReady)
         {
-            // Animator未設定なら何もしない
-            if (_pauseCanvasAnimator == null)
+            if (_outgameCanvasAnimator == null)
             {
                 return;
             }
 
-            _pauseCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+            _outgameCanvasAnimator.SetBool(IS_READY_HASH, isReady);
+        }
+
+        /// <summary>
+        /// Pause 状態アニメーターの状態を切り替える
+        /// </summary>
+        /// <param name="isPause">Pause 状態の場合はtrue</param>
+        public void SetPauseState(in bool isPause)
+        {
+            if (_outgameCanvasAnimator == null)
+            {
+                return;
+            }
+
+            _outgameCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
         }
 
         // --------------------------------------------------
