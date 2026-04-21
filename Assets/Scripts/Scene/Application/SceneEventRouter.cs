@@ -297,6 +297,9 @@ namespace SceneSystem.Application
             {
                 _mainUIPresenter.SetLimitTimeVisible(true);
                 _mainUIPresenter.SetPointerVisible(true);
+
+                PlayPhaseState playState = _phaseMachine.GetPlayState();
+                int playerID = playState.CurrentPlayerIndex.Value;
             }
             else
             {
