@@ -1,5 +1,5 @@
 // ======================================================
-// SceneManager.cs
+// GameManager.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-08
 // 更新日時 : 2026-04-08
@@ -19,7 +19,7 @@ namespace SceneSystem.Presentation
     /// <summary>
     /// シーン遷移・フェーズ遷移・Update 実行を統括する
     /// </summary>
-    public sealed class SceneManager : MonoBehaviour
+    public sealed class GameManager : MonoBehaviour
     {
         // ======================================================
         // インスペクタ設定
@@ -51,14 +51,11 @@ namespace SceneSystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>フェーズ遷移管理マシン</summary>
+        /// <summary>フェーズ管理マシン</summary>
         private PhaseMachine _phaseMachine;
 
         /// <summary>フェーズ遷移およびプレイ進行設定</summary>
         private PhaseTransitionConfig _phaseTransitionConfig;
-
-        /// <summary>フェーズの初期化を行うクラス</summary>
-        private readonly PhaseInitializer _phaseInitializer = new PhaseInitializer();
 
         /// <summary>Update を管理するサービス</summary>
         private UpdatableManagement _updatableManagement;
@@ -70,7 +67,7 @@ namespace SceneSystem.Presentation
         private readonly UpdatableInitializer _updatableInitializer = new UpdatableInitializer();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
-        private SceneEventRouter _sceneEventRouter;
+        private GameEventRouter _eventRouter;
 
         // ======================================================
         // フィールド
@@ -107,18 +104,12 @@ namespace SceneSystem.Presentation
         /// <summary>Updatable を保持するコンテキスト</summary>
         private UpdatableContext _updatableContexts;
 
-        /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
-        private Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
-
         // ======================================================
         // 定数
         // ======================================================
 
         /// <summary>アプリケーション全体で固定する目標 FPS</summary>
         private const int TARGET_FRAME_RATE = 120;
-        
-        /// <summary>PhaseData を配置している Resources フォルダパス</summary>
-        private const string PHASE_DATA_RESOURCES_PATH = "Phase";
 
         // ======================================================
         // UniRx 変数
@@ -161,21 +152,15 @@ namespace SceneSystem.Presentation
             // --------------------------------------------------
             // Updatable 初期化
             // --------------------------------------------------
-            // フェーズデータ読み込み
-            PhaseData[] phaseDataList = Resources.LoadAll<PhaseData>(PHASE_DATA_RESOURCES_PATH);
-
             // インスペクタから IUpdatable を収集
             IUpdatable[] updatables = _updatableCollector.Collect(_components);
 
             // コンテキスト作成
             _updatableContexts = _updatableInitializer.InitializeUpdatables(updatables);
 
-            // フェーズごと登録
-            _phaseUpdatablesMap = _phaseInitializer.CreatePhaseMap(updatables, phaseDataList);
-
             // コンポーネント初期化
-            _updatableManagement = new UpdatableManagement(_phaseUpdatablesMap);
-            _sceneEventRouter = new SceneEventRouter(_updatableContexts, _currentPhase);
+            _updatableManagement = new UpdatableManagement(updatables);
+            _eventRouter = new GameEventRouter(_updatableContexts, _currentPhase);
 
             // --------------------------------------------------
             // フェーズ遷移マシン初期化
@@ -206,7 +191,7 @@ namespace SceneSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            _sceneEventRouter.OnPhaseChanged
+            _eventRouter.OnPhaseChanged
                 .Subscribe(e =>
                 {
                     // マシンだけ更新
@@ -214,7 +199,7 @@ namespace SceneSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            _sceneEventRouter.Subscribe(_phaseMachine);
+            _eventRouter.Subscribe(_phaseMachine);
         }
 
         private void Update()
@@ -276,7 +261,7 @@ namespace SceneSystem.Presentation
         {
             // イベント購読解除
             _disposables.Dispose();
-            _sceneEventRouter.Dispose();
+            _eventRouter.Dispose();
         }
 
         // ======================================================
@@ -288,7 +273,6 @@ namespace SceneSystem.Presentation
         /// </summary>
         private void ChangeScene(in string sceneName)
         {
-            // 無効なシーン名なら処理なし
             if (string.IsNullOrEmpty(sceneName))
             {
                 return;

@@ -27,8 +27,7 @@ namespace SceneSystem.Domain
         /// <summary>
         /// 型ごとの Updatable リスト辞書
         /// </summary>
-        private readonly Dictionary<Type, List<object>> _services
-            = new Dictionary<Type, List<object>>();
+        private readonly Dictionary<Type, List<object>> _services = new Dictionary<Type, List<object>>();
 
         // ======================================================
         // プロパティ

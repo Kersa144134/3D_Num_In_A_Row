@@ -27,20 +27,22 @@ namespace SceneSystem.Application
         /// <returns>初期化済みコンテキスト</returns>
         public UpdatableContext InitializeUpdatables(in IUpdatable[] updatables)
         {
-            // --------------------------------------------------
-            // コンテキスト生成: 型ごとに複数登録可能
-            // --------------------------------------------------
+            // コンテキスト生成
             UpdatableContext context = BuildContext(updatables);
 
-            // --------------------------------------------------
-            // コンテキスト注入: IContextInjectable を実装している場合のみ
-            // --------------------------------------------------
+            // コンテキスト注入
             InjectContext(context);
 
-            // --------------------------------------------------
-            // 初期化処理実行: OnEnter を呼ぶ
-            // --------------------------------------------------
-            Initialize(context);
+            foreach (IUpdatable updatable in context.Updatables)
+            {
+                if (updatable == null)
+                {
+                    continue;
+                }
+
+                // 開始処理
+                updatable.OnEnter();
+            }
 
             return context;
         }
@@ -58,7 +60,7 @@ namespace SceneSystem.Application
                     continue;
                 }
 
-                // フェーズ終了処理
+                // 終了処理
                 updatable.OnExit();
             }
         }
@@ -81,9 +83,7 @@ namespace SceneSystem.Application
                 Updatables = updatables
             };
 
-            // --------------------------------------------------
-            // 型キャッシュ登録: 型ごとに複数のオブジェクトをリスト化
-            // --------------------------------------------------
+            //  型ごとに複数のオブジェクトをリスト化
             foreach (IUpdatable updatable in updatables)
             {
                 if (updatable == null)
@@ -112,30 +112,12 @@ namespace SceneSystem.Application
                 }
 
                 // --------------------------------------------------
-                // IContextInjectable を実装しているならコンテキストを注入
+                // IContextInjectable を実装しているコンテキストを注入
                 // --------------------------------------------------
                 if (updatable is IContextInjectable injectable)
                 {
                     injectable.InjectContext(context);
                 }
-            }
-        }
-
-        /// <summary>
-        /// すべての IUpdatable の OnEnter を呼び出す
-        /// </summary>
-        /// <param name="context">共有コンテキスト</param>
-        private void Initialize(in UpdatableContext context)
-        {
-            foreach (IUpdatable updatable in context.Updatables)
-            {
-                if (updatable == null)
-                {
-                    continue;
-                }
-
-                // フェーズ開始処理
-                updatable.OnEnter();
             }
         }
     }

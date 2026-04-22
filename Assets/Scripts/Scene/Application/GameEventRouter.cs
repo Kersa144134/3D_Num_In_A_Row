@@ -1,5 +1,5 @@
 // ======================================================
-// SceneEventRouter.cs
+// GameEventRouter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
 // 更新日時 : 2026-03-06
@@ -22,7 +22,7 @@ namespace SceneSystem.Application
     /// <summary>
     /// シーン内イベントを仲介するクラス
     /// </summary>
-    public sealed class SceneEventRouter
+    public sealed class GameEventRouter
     {
         // ======================================================
         // コンポーネント参照
@@ -92,9 +92,9 @@ namespace SceneSystem.Application
         // ======================================================
 
         /// <summary>
-        /// SceneEventRouter を生成
+        /// コンストラクタ
         /// </summary>
-        public SceneEventRouter(
+        public GameEventRouter(
             in UpdatableContext context,
             in IReadOnlyReactiveProperty<PhaseType> currentPhase)
         {

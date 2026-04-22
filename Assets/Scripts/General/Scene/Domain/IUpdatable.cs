@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-05
 // 更新日時 : 2026-01-23
-// 概要     : UpdateController から呼び出される更新処理用インターフェース
+// 概要     : UpdatableExecutor から呼び出される更新処理用インターフェース
 // ======================================================
 
 using PhaseSystem.Domain;
@@ -11,8 +11,7 @@ using PhaseSystem.Domain;
 namespace SceneSystem.Domain
 {
     /// <summary>
-    /// UpdateController によって管理される更新対象のためのインターフェース
-    /// シーンおよびフェーズに対応したイベントを提供する
+    /// UpdatableExecutor から呼び出される更新処理用インターフェース
     /// </summary>
     public interface IUpdatable
     {
@@ -43,13 +42,13 @@ namespace SceneSystem.Domain
         void OnExit() { }
 
         /// <summary>
-        /// フェーズ突入時に 1 度だけ呼ばれる初期化処理
+        /// フェーズ開始時に 1 度だけ呼ばれる初期化処理
         /// </summary>
         /// <param name="phase">遷移先のフェーズ</param>
         void OnPhaseEnter(in PhaseType phase) { }
 
         /// <summary>
-        /// フェーズ離脱時に 1 度だけ呼ばれる終了処理
+        /// フェーズ終了時に 1 度だけ呼ばれる終了処理
         /// </summary>
         /// <param name="phase">現在のフェーズ</param>
         void OnPhaseExit(in PhaseType phase) { }

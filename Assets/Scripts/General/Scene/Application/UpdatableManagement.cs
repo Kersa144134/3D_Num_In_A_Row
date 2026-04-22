@@ -6,7 +6,6 @@
 // 概要     : Updatable を管理するサービス
 // ======================================================
 
-using System.Collections.Generic;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
 
@@ -24,9 +23,6 @@ namespace SceneSystem.Application
         /// <summary>毎フレーム処理を実行するランナー</summary>
         private readonly UpdatableExecutor _updatableExecutor = new UpdatableExecutor();
 
-        /// <summary>フェーズ切替制御クラス</summary>
-        private AssignUpdatablesService _assignUpdatablesService;
-
         // ======================================================
         // フィールド
         // ======================================================
@@ -34,8 +30,7 @@ namespace SceneSystem.Application
         /// <summary>現在適用中のフェーズ</summary>
         private PhaseType _currentPhase = PhaseType.None;
 
-        /// <summary>フェーズごとの IUpdatable 配列を保持する辞書</summary>
-        private readonly Dictionary<PhaseType, IUpdatable[]> _phaseUpdatablesMap;
+        private IUpdatable[] _updatables;
 
         // ======================================================
         // コンストラクタ
@@ -45,11 +40,9 @@ namespace SceneSystem.Application
         /// UpdateManagement を生成する
         /// </summary>
         /// <param name="phaseUpdatablesMap">フェーズごとの IUpdatable 配列を保持する辞書</param>
-        public UpdatableManagement(in Dictionary<PhaseType, IUpdatable[]> phaseUpdatablesMap)
+        public UpdatableManagement(in IUpdatable[] updatables)
         {
-            _phaseUpdatablesMap = phaseUpdatablesMap;
-
-            _assignUpdatablesService = new AssignUpdatablesService(_updatableExecutor);
+            _updatables = updatables;
         }
 
         // ======================================================
@@ -85,11 +78,10 @@ namespace SceneSystem.Application
             // UpdateController をリセット
             _updatableExecutor.Clear();
 
-            // フェーズに対応する Updatable を取得
-            if (_phaseUpdatablesMap.TryGetValue(nextPhase, out IUpdatable[] updatables))
+            // UpdatableExecutor に反映
+            foreach (IUpdatable updatable in _updatables)
             {
-                // UpdateController に反映
-                _assignUpdatablesService.AssignUpdatables(updatables);
+                _updatableExecutor.Add(updatable);
             }
 
             // 遷移先フェーズの Enter を呼ぶ
