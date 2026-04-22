@@ -56,9 +56,6 @@ namespace SceneSystem.Presentation
         /// <summary>フェーズ遷移およびプレイ進行設定</summary>
         private PhaseTransitionConfig _phaseTransitionConfig;
 
-        /// <summary>Update を管理するサービス</summary>
-        private UpdatableManagement _updatableManagement;
-
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
         private readonly UpdatableCollector _updatableCollector = new UpdatableCollector();
 
@@ -90,10 +87,6 @@ namespace SceneSystem.Presentation
         // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
-        /// <summary>現在のフェーズ</summary>
-        private readonly ReactiveProperty<PhaseType> _currentPhase =
-            new ReactiveProperty<PhaseType>(PhaseType.None);
-
         /// <summary>遷移予定のフェーズ</summary>
         private PhaseType _targetPhase = PhaseType.None;
 
@@ -120,6 +113,9 @@ namespace SceneSystem.Presentation
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables =
             new CompositeDisposable();
+
+        /// <summary>現在のフェーズストリーム</summary>
+        public IReadOnlyReactiveProperty<PhaseType> CurrentPhase => _phaseMachine.CurrentPhaseType;
 
         // ======================================================
         // Unity イベント
@@ -165,12 +161,9 @@ namespace SceneSystem.Presentation
 
             // Updatable の開始時処理
             _updatableLifecycleRunner.RunEnter(updatableEnumerable);
-
-            // コンポーネント初期化
-            _updatableManagement = new UpdatableManagement(updatables);
             
             // --------------------------------------------------
-            // フェーズ遷移マシン初期化
+            // フェーズ管理マシン初期化
             // --------------------------------------------------
             // フェーズ遷移設定
             _phaseTransitionConfig = new PhaseTransitionConfig(
@@ -181,31 +174,32 @@ namespace SceneSystem.Presentation
                 _changePlayerToPlayWaitTime
             );
 
-            // フェーズ遷移管理マシン生成
+            // フェーズ管理マシン生成
             _phaseMachine = new PhaseMachine(
                 _startPhase,
-                _phaseTransitionConfig
+                _phaseTransitionConfig,
+                updatables
             );
 
             // --------------------------------------------------
             // イベント購読
             // --------------------------------------------------
             IUpdatableReader updatableReader = _updatableContexts;
-            _eventRouter = new GameEventRouter(updatableReader, _currentPhase);
+            _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
             
-            _phaseMachine.OnPhaseChanged
+            _eventRouter.OnPhaseChanged
                 .Subscribe(e =>
                 {
-                    // 即時反映ではなくターゲットだけ更新
                     SetTargetPhase(e.NextPhaseType);
                 })
                 .AddTo(_disposables);
 
-            _eventRouter.OnPhaseChanged
+            _phaseMachine.CurrentPhaseType
+                .DistinctUntilChanged()
+                .Skip(1)
                 .Subscribe(e =>
                 {
-                    // マシンだけ更新
-                    SetPhaseMachine(e.NextPhaseType);
+                    _targetPhase = e;
                 })
                 .AddTo(_disposables);
 
@@ -215,7 +209,7 @@ namespace SceneSystem.Presentation
         private void Update()
         {
             // --------------------------------------------------
-            // シーン遷移
+            // シーン遷移判定
             // --------------------------------------------------
             if (_currentScene != _targetScene)
             {
@@ -230,16 +224,11 @@ namespace SceneSystem.Presentation
             }
 
             // --------------------------------------------------
-            // Updatable 処理
+            // フェーズ処理
             // --------------------------------------------------
             float unscaledDeltaTime = Time.unscaledDeltaTime;
-
-            _updatableManagement.Update(unscaledDeltaTime);
-
-            // --------------------------------------------------
-            // フェーズ遷移判定
-            // --------------------------------------------------
-            _phaseMachine.Update(unscaledDeltaTime);
+            
+            _phaseMachine.OnUpdate(unscaledDeltaTime);
         }
 
         private void LateUpdate()
@@ -252,16 +241,16 @@ namespace SceneSystem.Presentation
             }
 
             // --------------------------------------------------
-            // Updatable 処理
+            // フェーズ処理
             // --------------------------------------------------
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
-            _updatableManagement.LateUpdate(unscaledDeltaTime);
+            _phaseMachine.OnLateUpdate(unscaledDeltaTime);
 
             // --------------------------------------------------
-            // フェーズ反映
+            // フェーズ遷移判定
             // --------------------------------------------------
-            if (_currentPhase.Value != _targetPhase)
+            if (CurrentPhase.Value != _targetPhase)
             {
                 ChangePhase(_targetPhase);
             }
@@ -299,20 +288,18 @@ namespace SceneSystem.Presentation
         }
 
         /// <summary>
-        /// フェーズ切替を行う
+        /// フェーズ遷移を行う
         /// </summary>
         private void ChangePhase(in PhaseType nextPhase)
         {
-            if (_currentPhase.Value == nextPhase)
+            // 同一フェーズなら更新しない
+            if (CurrentPhase.Value == nextPhase)
             {
                 return;
             }
 
-            // Updatable のフェーズ変更時処理
-            _updatableManagement.ChangePhase(nextPhase);
-
-            // 現在フェーズ更新
-            _currentPhase.Value = nextPhase;
+            // PhaseMachine の遷移先フェーズを更新
+            _phaseMachine.ChangePhase(nextPhase);
         }
 
         /// <summary>
@@ -328,21 +315,6 @@ namespace SceneSystem.Presentation
 
             // 遷移先フェーズを更新
             _targetPhase = nextPhase;
-        }
-        
-        /// <summary>
-        /// 遷移先フェーズを設定する
-        /// </summary>
-        private void SetPhaseMachine(in PhaseType nextPhase)
-        {
-            // 同一フェーズなら更新しない
-            if (_targetPhase == nextPhase)
-            {
-                return;
-            }
-
-            // PhaseMachine の遷移先フェーズを更新
-            _phaseMachine.ChangePhase(nextPhase);
         }
     }
 }

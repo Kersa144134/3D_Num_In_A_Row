@@ -38,5 +38,10 @@ namespace PhaseSystem.Domain
         /// フェーズ更新処理
         /// </summary>
         void OnUpdate(in float unscaledDeltaTime);
+
+        /// <summary>
+        /// フェーズ更新処理
+        /// </summary>
+        void OnLateUpdate(in float unscaledDeltaTime);
     }
 }

@@ -4121,7 +4121,7 @@ MonoBehaviour:
   _playerCount: 2
   _perPlayerLimitTime: 30
   _startPhase: 2
-  _readyToChangePlayerWaitTime: 10
+  _readyToChangePlayerWaitTime: 5
   _playToFinishWaitTime: 360
   _changePlayerToPlayWaitTime: 2
 --- !u!1 &2127354812

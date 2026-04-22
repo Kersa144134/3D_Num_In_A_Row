@@ -122,6 +122,7 @@ namespace SceneSystem.Application
             // --------------------------------------------------
             _currentPhase
                 .DistinctUntilChanged()
+                .Skip(1)
                 .Subscribe(phase =>
                 {
                     HandlePhaseChanged(phase);

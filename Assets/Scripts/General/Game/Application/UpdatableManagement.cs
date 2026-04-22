@@ -2,10 +2,11 @@
 // UpdatableManagement.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
-// 更新日時 : 2026-01-23
+// 更新日時 : 2026-04-22
 // 概要     : Updatable を管理するサービス
 // ======================================================
 
+using System;
 using PhaseSystem.Domain;
 using SceneSystem.Domain;
 
@@ -20,43 +21,25 @@ namespace SceneSystem.Application
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>毎フレーム処理を実行するランナー</summary>
-        private readonly UpdatableExecutor _updatableExecutor = new UpdatableExecutor();
+        /// <summary>Updatable 実行専用インターフェース</summary>
+        private readonly IUpdatableRunner _runner;
 
-        // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>現在適用中のフェーズ</summary>
-        private PhaseType _currentPhase = PhaseType.None;
-
-        private IUpdatable[] _updatables;
+        /// <summary>Updatable 変更専用インターフェース</summary>
+        private readonly IUpdatableRunnerModifier _modifier;
 
         // ======================================================
         // コンストラクタ
         // ======================================================
 
         /// <summary>
-        /// UpdateManagement を生成する
+        /// UpdatableManagement を生成する
         /// </summary>
-        /// <param name="phaseUpdatablesMap">フェーズごとの IUpdatable 配列を保持する辞書</param>
-        public UpdatableManagement(in IUpdatable[] updatables)
+        public UpdatableManagement()
         {
-            _updatables = updatables;
-        }
-
-        // ======================================================
-        // IUpdatable イベント
-        // ======================================================
-
-        public void Update(in float unscaledDeltaTime)
-        {
-            _updatableExecutor.OnUpdate(unscaledDeltaTime);
-        }
-
-        public void LateUpdate(in float unscaledDeltaTime)
-        {
-            _updatableExecutor.OnLateUpdate(unscaledDeltaTime);
+            // Runner を生成する
+            UpdatableRunner runner = new UpdatableRunner();
+            _runner = runner;
+            _modifier = runner;
         }
 
         // ======================================================
@@ -64,31 +47,77 @@ namespace SceneSystem.Application
         // ======================================================
 
         /// <summary>
-        /// フェーズ変更時に Exit / Enter を実行する
+        /// 毎フレームの Update 処理
         /// </summary>
-        /// <param name="nextPhase">遷移先フェーズ</param>
-        public void ChangePhase(in PhaseType nextPhase)
+        /// <param name="unscaledDeltaTime">経過時間</param>
+        public void ExecuteUpdate(in float unscaledDeltaTime)
         {
-            // 現在フェーズの Exit を呼ぶ
-            if (_currentPhase != PhaseType.None)
+            _runner.OnUpdate(unscaledDeltaTime);
+        }
+
+        /// <summary>
+        /// 毎フレームの LateUpdate 処理
+        /// </summary>
+        /// <param name="unscaledDeltaTime">経過時間</param>
+        public void ExecuteLateUpdate(in float unscaledDeltaTime)
+        {
+            _runner.OnLateUpdate(unscaledDeltaTime);
+        }
+
+        /// <summary>
+        /// フェーズ開始処理を実行する
+        /// </summary>
+        /// <param name="phase">開始対象フェーズ</param>
+        public void ExecutePhaseEnter(in PhaseType phase)
+        {
+            _runner.OnPhaseEnter(phase);
+        }
+
+        /// <summary>
+        /// フェーズ終了処理を実行する
+        /// </summary>
+        /// <param name="phase">終了対象フェーズ</param>
+        public void ExecutePhaseExit(in PhaseType phase)
+        {
+            _runner.OnPhaseExit(phase);
+        }
+
+        /// <summary>
+        /// Updatable の登録内容を外部指定で再構築する
+        /// </summary>
+        /// <param name="updatables">登録対象の Updatable 配列</param>
+        public void RebuildUpdatables(in IUpdatable[] updatables)
+        {
+            // null安全化
+            IUpdatable[] safeArray = updatables ?? Array.Empty<IUpdatable>();
+
+            // null除去＋最小コピーで新配列を作る
+            IUpdatable[] buffer = new IUpdatable[safeArray.Length];
+
+            int index = 0;
+
+            for (int i = 0; i < safeArray.Length; i++)
             {
-                _updatableExecutor.OnPhaseExit(_currentPhase);
+                IUpdatable updatable = safeArray[i];
+
+                if (updatable == null)
+                {
+                    continue;
+                }
+
+                buffer[index] = updatable;
+                index++;
             }
 
-            // UpdateController をリセット
-            _updatableExecutor.Clear();
+            // 実サイズに合わせて再生成
+            IUpdatable[] result = new IUpdatable[index];
 
-            // UpdatableExecutor に反映
-            foreach (IUpdatable updatable in _updatables)
+            for (int i = 0; i < index; i++)
             {
-                _updatableExecutor.Add(updatable);
+                result[i] = buffer[i];
             }
 
-            // 遷移先フェーズの Enter を呼ぶ
-            _updatableExecutor.OnPhaseEnter(nextPhase);
-
-            // フェーズを更新
-            _currentPhase = nextPhase;
+            _modifier.Replace(result);
         }
     }
 }

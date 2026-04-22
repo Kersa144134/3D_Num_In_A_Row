@@ -66,7 +66,7 @@ namespace SceneSystem.Domain
         /// </summary>
         /// <param name="type">“o˜^‘ÎÛ‚ÌŒ^</param>
         /// <param name="instance">“o˜^‚·‚éƒCƒ“ƒXƒ^ƒ“ƒX</param>
-        void IUpdatableWriter.Register(Type type, object instance)
+        void IUpdatableWriter.Register(in Type type, in object instance)
         {
             // Œ^‚É‘Î‰‚·‚éƒŠƒXƒg‚ª‘¶İ‚·‚é‚©Šm”F‚·‚é
             if (!_updatables.TryGetValue(type, out List<object>? list))

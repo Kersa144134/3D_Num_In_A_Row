@@ -1,32 +1,28 @@
 // ======================================================
-// IUpdatableWriter.cs
+// IUpdatableRunnerModifier.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-22
 // 更新日時 : 2026-04-22
-// 概要     : Updatable の登録専用インターフェース
+// 概要     : UpdatableRunner の状態変更を行うインターフェース
 // ======================================================
 
 #nullable enable
 
-using System;
-
 namespace SceneSystem.Domain
 {
     /// <summary>
-    /// Updatable の登録専用インターフェース
+    /// UpdatableRunner の登録内容を変更する
     /// </summary>
-    public interface IUpdatableWriter
+    public interface IUpdatableRunnerModifier
     {
         // ======================================================
-        // パブリックメソッド
+        // 置換処理
         // ======================================================
 
         /// <summary>
-        /// Updatable を型ごとに登録する
-        /// 同一型の複数登録を許可する
+        /// 登録されている Updatable を丸ごと置換する
         /// </summary>
-        /// <param name="type">登録対象の型</param>
-        /// <param name="instance">登録するインスタンス</param>
-        void Register(in Type type, in object instance);
+        /// <param name="updatables">新しい Updatable 配列</param>
+        void Replace(in IUpdatable[] updatables);
     }
 }

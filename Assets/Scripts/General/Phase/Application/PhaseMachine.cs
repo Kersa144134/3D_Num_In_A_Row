@@ -6,9 +6,10 @@
 // 概要     : フェーズ状態の実行および遷移制御を行うステートマシン
 // ======================================================
 
-using System;
 using UniRx;
 using PhaseSystem.Domain;
+using SceneSystem.Application;
+using SceneSystem.Domain;
 
 namespace PhaseSystem.Application
 {
@@ -27,6 +28,9 @@ namespace PhaseSystem.Application
         /// <summary>遷移ルール</summary>
         private readonly PhaseTransitionRule _transitionRule;
 
+        /// <summary>Update を管理するサービス</summary>
+        private readonly UpdatableManagement _updatableManagement = new UpdatableManagement();
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -34,27 +38,28 @@ namespace PhaseSystem.Application
         /// <summary>現在のフェーズ状態</summary>
         private IPhaseState _currentState;
 
-        /// <summary>現在のフェーズ種別</summary>
-        private PhaseType _currentPhaseType;
-
         /// <summary>現在のフェーズの制限時間</summary>
         private float _maxLimitTime;
-        
+
+        /// <summary>現在のフェーズ状態</summary>
+        private IUpdatable[] _updatables;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
 
-        /// <summary>フェーズ変更通知用 Subject</summary>
-        private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
+        /// <summary>現在のフェーズ</summary>
+        private readonly ReactiveProperty<PhaseType> _currentPhaseType =
+            new ReactiveProperty<PhaseType>(PhaseType.None);
 
-        /// <summary>フェーズ変更ストリーム</summary>
-        public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
+        /// <summary>現在のフェーズ</summary>
+        public IReadOnlyReactiveProperty<PhaseType> CurrentPhaseType => _currentPhaseType;
 
-        /// <summary>フェーズ経過時間通知用 Subject</summary>
+        /// <summary>フェーズ経過時間</summary>
         private readonly ReactiveProperty<float> _limitTime =
             new ReactiveProperty<float>(0.0f);
 
-        /// <summary>フェーズ経過時間ストリーム</summary>
+        /// <summary>フェーズ経過時間</summary>
         public IReadOnlyReactiveProperty<float> LimitTime => _limitTime;
 
         // ======================================================
@@ -62,11 +67,12 @@ namespace PhaseSystem.Application
         // ======================================================
 
         public PhaseMachine(
-            PhaseType initialPhase,
-            PhaseTransitionConfig transitionConfig)
+            in PhaseType initialPhase,
+            in PhaseTransitionConfig transitionConfig,
+            in IUpdatable[] updatables)
         {
             _transitionConfig = transitionConfig;
-            _maxLimitTime = _transitionConfig.PerPlayerLimitTime;
+            _updatables = updatables;
 
             // --------------------------------------------------
             // フェーズ生成
@@ -76,7 +82,7 @@ namespace PhaseSystem.Application
             // --------------------------------------------------
             // 初期フェーズ設定
             // --------------------------------------------------
-            _currentPhaseType = initialPhase;
+            _currentPhaseType.Value = initialPhase;
 
             _currentState = _stateRepository.GetPhaseState(initialPhase);
 
@@ -84,17 +90,10 @@ namespace PhaseSystem.Application
             _currentState.OnEnter();
 
             // --------------------------------------------------
-            // イベント設定
+            // フェーズ遷移設定
             // --------------------------------------------------
-            // 初期通知
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(
-                    PhaseType.None,
-                    _currentPhaseType
-                )
-            );
-
             _transitionRule = new PhaseTransitionRule(_stateRepository, _transitionConfig);
+            _maxLimitTime = _transitionConfig.PerPlayerLimitTime;
         }
 
         // ======================================================
@@ -105,8 +104,9 @@ namespace PhaseSystem.Application
         /// フェーズ進行の更新処理を行う
         /// </summary>
         /// <param name="unscaledDeltaTime">経過時間</param>
-        public void Update(float unscaledDeltaTime)
+        public void OnUpdate(in float unscaledDeltaTime)
         {
+            _updatableManagement.ExecuteUpdate(unscaledDeltaTime);
             // 状態更新
             _currentState.OnUpdate(unscaledDeltaTime);
 
@@ -115,11 +115,22 @@ namespace PhaseSystem.Application
             {
                 _limitTime.Value = _maxLimitTime - playState.PlayElapsedTime;
             }
+        }
+
+        /// <summary>
+        /// フェーズ進行の更新処理を行う
+        /// </summary>
+        /// <param name="unscaledDeltaTime">経過時間</param>
+        public void OnLateUpdate(in float unscaledDeltaTime)
+        {
+            _updatableManagement.ExecuteLateUpdate(unscaledDeltaTime);
+            // 状態更新
+            _currentState.OnLateUpdate(unscaledDeltaTime);
 
             // 遷移判定
             PhaseType nextPhase = _transitionRule.Resolve(_currentState);
 
-            if (nextPhase == _currentPhaseType)
+            if (nextPhase == _currentPhaseType.Value)
             {
                 return;
             }
@@ -134,28 +145,24 @@ namespace PhaseSystem.Application
         public void ChangePhase(in PhaseType nextPhaseType)
         {
             // 遷移前フェーズを保持
-            PhaseType previousPhase = _currentPhaseType;
+            PhaseType previousPhaseType = _currentPhaseType.Value;
 
             // 終了処理
+            _updatableManagement.ExecutePhaseExit(previousPhaseType);
             _currentState.OnExit();
 
-            // 通知
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(
-                    _currentPhaseType,
-                    nextPhaseType
-                )
-            );
-
             // 新しい State 取得
-            _currentPhaseType = nextPhaseType;
-
+            _currentPhaseType.Value = nextPhaseType;
             _currentState = _stateRepository.GetPhaseState(nextPhaseType);
 
+            // Updatables 再構築
+            _updatableManagement.RebuildUpdatables(_updatables);
+
             // 開始処理
+            _updatableManagement.ExecutePhaseEnter(nextPhaseType);
             if (_currentState is IPhaseEnterHandler handler)
             {
-                handler.OnEnter(previousPhase);
+                handler.OnEnter(previousPhaseType);
             }
             else
             {

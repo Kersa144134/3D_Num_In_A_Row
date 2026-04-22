@@ -134,6 +134,14 @@ namespace PhaseSystem.Domain
         }
 
         /// <summary>
+        /// フェーズ更新後処理
+        /// </summary>
+        public void OnLateUpdate(in float unscaledDeltaTime)
+        {
+
+        }
+
+        /// <summary>
         /// 次のプレイヤーへ遷移
         /// </summary>
         public void NextPlayer()
