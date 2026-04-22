@@ -34,9 +34,6 @@ namespace SceneSystem.Application
         /// <summary>InputManager キャッシュ</summary>
         private readonly InputManager _inputManager;
 
-        /// <summary>シーン内で共有されるコンテキスト</summary>
-        private readonly UpdatableContext _context;
-
         /// <summary>SceneObjectContainer キャッシュ配列</summary>
         private readonly BoardPresenter[] _boardPresenters;
 
@@ -95,19 +92,18 @@ namespace SceneSystem.Application
         /// コンストラクタ
         /// </summary>
         public GameEventRouter(
-            in UpdatableContext context,
+            in IUpdatableReader updatableReader,
             in IReadOnlyReactiveProperty<PhaseType> currentPhase)
         {
-            _context = context;
             _currentPhase = currentPhase;
+
+            // Context からコンポーネント取得
+            _boardPresenters = updatableReader.GetAll<BoardPresenter>();
+            _cameraPresenter = updatableReader.Get<CameraPresenter>();
+            _mainUIPresenter = updatableReader.Get<MainUIPresenter>();
 
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
-
-            // Context からコンポーネント取得
-            _boardPresenters = _context.GetAll<BoardPresenter>();
-            _cameraPresenter = _context.Get<CameraPresenter>();
-            _mainUIPresenter = _context.Get<MainUIPresenter>();
         }
 
         // ======================================================

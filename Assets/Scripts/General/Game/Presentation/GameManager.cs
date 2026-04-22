@@ -6,7 +6,6 @@
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
-using System.Collections.Generic;
 using UnityEngine;
 using UniRx;
 using PhaseSystem.Application;
@@ -63,8 +62,11 @@ namespace SceneSystem.Presentation
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
         private readonly UpdatableCollector _updatableCollector = new UpdatableCollector();
 
-        /// <summary>IUpdatable の初期化を行うクラス</summary>
-        private readonly UpdatableInitializer _updatableInitializer = new UpdatableInitializer();
+        /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
+        private readonly UpdatableContextFactory _updatableContextFactory = new UpdatableContextFactory();
+
+        /// <summary>IUpdatable のライフサイクル実行クラス</summary>
+        private readonly UpdatableLifecycleRunner _updatableLifecycleRunner = new UpdatableLifecycleRunner();
 
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private GameEventRouter _eventRouter;
@@ -102,7 +104,7 @@ namespace SceneSystem.Presentation
         private GameObject[] _components;
 
         /// <summary>Updatable を保持するコンテキスト</summary>
-        private UpdatableContext _updatableContexts;
+        private UpdatableContexts _updatableContexts;
 
         // ======================================================
         // 定数
@@ -156,12 +158,17 @@ namespace SceneSystem.Presentation
             IUpdatable[] updatables = _updatableCollector.Collect(_components);
 
             // コンテキスト作成
-            _updatableContexts = _updatableInitializer.InitializeUpdatables(updatables);
+            _updatableContexts = _updatableContextFactory.Create(updatables);
+
+            // 列挙専用として扱う
+            IUpdatableEnumerable updatableEnumerable = _updatableContexts;
+
+            // Updatable の開始時処理
+            _updatableLifecycleRunner.RunEnter(updatableEnumerable);
 
             // コンポーネント初期化
             _updatableManagement = new UpdatableManagement(updatables);
-            _eventRouter = new GameEventRouter(_updatableContexts, _currentPhase);
-
+            
             // --------------------------------------------------
             // フェーズ遷移マシン初期化
             // --------------------------------------------------
@@ -183,6 +190,9 @@ namespace SceneSystem.Presentation
             // --------------------------------------------------
             // イベント購読
             // --------------------------------------------------
+            IUpdatableReader updatableReader = _updatableContexts;
+            _eventRouter = new GameEventRouter(updatableReader, _currentPhase);
+            
             _phaseMachine.OnPhaseChanged
                 .Subscribe(e =>
                 {
@@ -278,8 +288,11 @@ namespace SceneSystem.Presentation
                 return;
             }
 
+            // 列挙専用として扱う
+            IUpdatableEnumerable updatableEnumerable = _updatableContexts;
+
             // Updatable の終了時処理
-            _updatableInitializer.FinalizeUpdatables(_updatableContexts);
+            _updatableLifecycleRunner.RunExit(updatableEnumerable);
 
             // シーンロード
             UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);

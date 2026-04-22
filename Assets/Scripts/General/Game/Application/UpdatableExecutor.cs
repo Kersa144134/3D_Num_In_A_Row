@@ -22,7 +22,7 @@ namespace SceneSystem.Application
         // ======================================================
 
         /// <summary>登録管理用のセット</summary>
-        private readonly HashSet<IUpdatable> _updateSet = new();
+        private readonly HashSet<IUpdatable> _updatables = new();
 
         /// <summary>毎フレーム実行用の Updatable 配列キャッシュ</summary>
         private IUpdatable[] _updateArray = new IUpdatable[0];
@@ -41,7 +41,6 @@ namespace SceneSystem.Application
         /// <param name="elapsedTime">ゲームの経過時間</param>
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 実行前にキャッシュを最新化する
             RebuildCache();
 
             for (int i = 0; i < _updateArray.Length; i++)
@@ -56,7 +55,6 @@ namespace SceneSystem.Application
         /// <param name="unscaledDeltaTime">timeScale の影響を受けない経過時間</param>
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
-            // 実行前にキャッシュを最新化する
             RebuildCache();
 
             for (int i = 0; i < _updateArray.Length; i++)
@@ -71,7 +69,6 @@ namespace SceneSystem.Application
         /// <param name="phase">遷移先のフェーズ</param>
         public void OnPhaseEnter(in PhaseType phase)
         {
-            // 実行前にキャッシュを最新化する
             RebuildCache();
 
             for (int i = 0; i < _updateArray.Length; i++)
@@ -86,7 +83,6 @@ namespace SceneSystem.Application
         /// <param name="phase">現在のフェーズ</param>
         public void OnPhaseExit(in PhaseType phase)
         {
-            // 実行前にキャッシュを最新化する
             RebuildCache();
 
             for (int i = 0; i < _updateArray.Length; i++)
@@ -107,7 +103,7 @@ namespace SceneSystem.Application
             }
 
             // 新規追加に成功した場合のみ Dirty を立てる
-            if (_updateSet.Add(updatable))
+            if (_updatables.Add(updatable))
             {
                 _isDirty = true;
             }
@@ -119,7 +115,7 @@ namespace SceneSystem.Application
         public void Clear()
         {
             // 登録情報を全削除
-            _updateSet.Clear();
+            _updatables.Clear();
 
             // 実行配列を空にする
             _updateArray = new IUpdatable[0];
@@ -144,12 +140,12 @@ namespace SceneSystem.Application
             }
 
             // 登録数に応じた配列を新規生成する
-            _updateArray = new IUpdatable[_updateSet.Count];
+            _updateArray = new IUpdatable[_updatables.Count];
 
             int index = 0;
 
             // HashSet から配列へ要素をコピーする
-            foreach (IUpdatable updatable in _updateSet)
+            foreach (IUpdatable updatable in _updatables)
             {
                 _updateArray[index] = updatable;
                 index++;
