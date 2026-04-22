@@ -9,9 +9,9 @@
 
 using System;
 using PhaseSystem.Domain;
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 
-namespace SceneSystem.Application
+namespace UpdateSystem.Application
 {
     /// <summary>
     /// IUpdatable を保持し、毎フレーム処理を実行するランナー

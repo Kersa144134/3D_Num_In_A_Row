@@ -8,9 +8,9 @@
 
 using System;
 using PhaseSystem.Domain;
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 
-namespace SceneSystem.Application
+namespace UpdateSystem.Application
 {
     /// <summary>
     /// Updatable を管理するサービス

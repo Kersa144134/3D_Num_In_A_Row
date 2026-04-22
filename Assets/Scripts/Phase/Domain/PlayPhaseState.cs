@@ -95,7 +95,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ開始時処理
         /// </summary>
-        public void OnEnter()
+        public void OnEnterState()
         {
             _elapsedTime = 0.0f;
         }
@@ -105,7 +105,7 @@ namespace PhaseSystem.Domain
         /// 遷移元フェーズ付きの例外処理
         /// </summary>
         /// <param name="previousPhase">遷移元のフェーズ種別</param>
-        public void OnEnter(in PhaseType previousPhase)
+        public void OnEnterState(in PhaseType previousPhase)
         {
             _elapsedTime = 0.0f;
 
@@ -120,14 +120,14 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ終了時処理
         /// </summary>
-        public void OnExit()
+        public void OnExitState()
         {
         }
 
         /// <summary>
         /// フェーズ更新処理
         /// </summary>
-        public void OnUpdate(in float unscaledDeltaTime)
+        public void OnUpdateState(in float unscaledDeltaTime)
         {
             _elapsedTime += unscaledDeltaTime;
             _playElapsedTime += unscaledDeltaTime;
@@ -136,7 +136,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ更新後処理
         /// </summary>
-        public void OnLateUpdate(in float unscaledDeltaTime)
+        public void OnLateUpdateState(in float unscaledDeltaTime)
         {
 
         }

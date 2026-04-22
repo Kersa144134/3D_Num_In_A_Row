@@ -8,7 +8,7 @@
 
 using BoardSystem.Domain;
 
-namespace SceneSystem.Domain
+namespace UpdateSystem.Domain
 {
     /// <summary>
     /// ‰ñ“]“ü—ÍƒRƒ}ƒ“ƒh

@@ -9,9 +9,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 
-namespace SceneSystem.Application
+namespace UpdateSystem.Application
 {
     /// <summary>
     /// IUpdatable を実装しているコンポーネントをシーンルートから収集する

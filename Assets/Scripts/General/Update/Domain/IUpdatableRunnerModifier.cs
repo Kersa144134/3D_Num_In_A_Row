@@ -8,7 +8,7 @@
 
 #nullable enable
 
-namespace SceneSystem.Domain
+namespace UpdateSystem.Domain
 {
     /// <summary>
     /// UpdatableRunner ‚Ì“o˜^“à—e‚ğ•ÏX‚·‚é

@@ -27,21 +27,21 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ開始時処理
         /// </summary>
-        void OnEnter();
+        void OnEnterState();
 
         /// <summary>
         /// フェーズ終了時処理
         /// </summary>
-        void OnExit();
+        void OnExitState();
         
         /// <summary>
         /// フェーズ更新処理
         /// </summary>
-        void OnUpdate(in float unscaledDeltaTime);
+        void OnUpdateState(in float unscaledDeltaTime);
 
         /// <summary>
         /// フェーズ更新処理
         /// </summary>
-        void OnLateUpdate(in float unscaledDeltaTime);
+        void OnLateUpdateState(in float unscaledDeltaTime);
     }
 }

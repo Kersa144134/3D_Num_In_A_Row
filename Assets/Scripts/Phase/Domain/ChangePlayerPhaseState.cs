@@ -6,6 +6,8 @@
 // 概要     : プレイヤー切り替えフェーズの振る舞い
 // ======================================================
 
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
@@ -34,7 +36,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ開始時処理
         /// </summary>
-        public void OnEnter()
+        public void OnEnterState()
         {
             _elapsedTime = 0.0f;
         }
@@ -42,7 +44,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ終了時処理
         /// </summary>
-        public void OnExit()
+        public void OnExitState()
         {
 
         }
@@ -50,7 +52,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ更新処理
         /// </summary>
-        public void OnUpdate(in float unscaledDeltaTime)
+        public void OnUpdateState(in float unscaledDeltaTime)
         {
             _elapsedTime += unscaledDeltaTime;
         }
@@ -58,7 +60,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// フェーズ更新後処理
         /// </summary>
-        public void OnLateUpdate(in float unscaledDeltaTime)
+        public void OnLateUpdateState(in float unscaledDeltaTime)
         {
 
         }

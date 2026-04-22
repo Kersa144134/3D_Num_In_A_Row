@@ -8,7 +8,7 @@
 
 #nullable enable
 
-namespace SceneSystem.Domain
+namespace UpdateSystem.Domain
 {
     /// <summary>
     /// Updatable の列挙専用インターフェース

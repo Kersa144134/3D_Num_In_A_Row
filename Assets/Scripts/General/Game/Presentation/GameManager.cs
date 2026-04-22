@@ -8,12 +8,13 @@
 
 using UnityEngine;
 using UniRx;
+using GameSystem.Application;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
-using SceneSystem.Application;
-using SceneSystem.Domain;
+using UpdateSystem.Application;
+using UpdateSystem.Domain;
 
-namespace SceneSystem.Presentation
+namespace GameSystem.Presentation
 {
     /// <summary>
     /// シーン遷移・フェーズ遷移・Update 実行を統括する
@@ -163,7 +164,7 @@ namespace SceneSystem.Presentation
             _updatableLifecycleRunner.RunEnter(updatableEnumerable);
             
             // --------------------------------------------------
-            // フェーズ管理マシン初期化
+            // フェーズ管理初期化
             // --------------------------------------------------
             // フェーズ遷移設定
             _phaseTransitionConfig = new PhaseTransitionConfig(
@@ -174,11 +175,11 @@ namespace SceneSystem.Presentation
                 _changePlayerToPlayWaitTime
             );
 
-            // フェーズ管理マシン生成
+            // フェーズ管理マシン初期化
             _phaseMachine = new PhaseMachine(
                 _startPhase,
                 _phaseTransitionConfig,
-                updatables
+                _updatableContexts
             );
 
             // --------------------------------------------------

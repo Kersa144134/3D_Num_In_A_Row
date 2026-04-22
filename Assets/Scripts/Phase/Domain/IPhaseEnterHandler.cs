@@ -18,9 +18,10 @@ namespace PhaseSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// フェーズ開始時処理（遷移元フェーズ付き）
+        /// フェーズ開始時処理
+        /// 遷移元フェーズ付き
         /// </summary>
         /// <param name="previousPhase">遷移元のフェーズ種別</param>
-        void OnEnter(in PhaseType previousPhase);
+        void OnEnterState(in PhaseType previousPhase);
     }
 }

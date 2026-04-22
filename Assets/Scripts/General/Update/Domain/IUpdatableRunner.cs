@@ -10,7 +10,7 @@
 
 using PhaseSystem.Domain;
 
-namespace SceneSystem.Domain
+namespace UpdateSystem.Domain
 {
     /// <summary>
     /// Updatable ‚ÌÀsˆ—‚ğ’ñ‹Ÿ‚·‚é

@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using PhaseSystem.Domain;
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
 {

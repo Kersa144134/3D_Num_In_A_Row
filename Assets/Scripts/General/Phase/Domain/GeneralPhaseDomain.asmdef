@@ -1,9 +1,7 @@
 {
     "name": "GeneralPhaseDomain",
     "rootNamespace": "",
-    "references": [
-        "GUID:6040c79d4d91d454c97b789d223a0bb7"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

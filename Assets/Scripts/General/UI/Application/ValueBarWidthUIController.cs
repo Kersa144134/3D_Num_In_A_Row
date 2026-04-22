@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UISystem.Controller
+namespace UISystem.Application
 {
     /// <summary>
     /// 最大値・現在値・差分バーの横幅を

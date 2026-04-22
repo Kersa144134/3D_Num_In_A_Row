@@ -7,9 +7,9 @@
 //            初期化済みコンテキストを生成する
 // ======================================================
 
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 
-namespace SceneSystem.Application
+namespace UpdateSystem.Application
 {
     /// <summary>
     /// IUpdatable ライフサイクル実行クラス

@@ -11,7 +11,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UISystem.Controller
+namespace UISystem.Application
 {
     public sealed class SlotRotationUIController
     {

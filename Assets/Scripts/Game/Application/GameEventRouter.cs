@@ -14,10 +14,10 @@ using CameraSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
-using SceneSystem.Domain;
+using UpdateSystem.Domain;
 using UISystem.Presentation;
 
-namespace SceneSystem.Application
+namespace GameSystem.Application
 {
     /// <summary>
     /// シーン内イベントを仲介するクラス

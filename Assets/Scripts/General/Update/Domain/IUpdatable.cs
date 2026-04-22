@@ -8,13 +8,19 @@
 
 using PhaseSystem.Domain;
 
-namespace SceneSystem.Domain
+namespace UpdateSystem.Domain
 {
     /// <summary>
     /// UpdatableExecutor から呼び出される更新処理用インターフェース
     /// </summary>
     public interface IUpdatable
     {
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        UpdatableType UpdatableType { get; }
+        
         // ======================================================
         // メソッド
         // ======================================================
