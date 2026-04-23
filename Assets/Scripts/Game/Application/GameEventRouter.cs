@@ -67,23 +67,20 @@ namespace GameSystem.Application
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
-        /// <summary>プレイヤー変更用 Subject</summary>
-        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
-
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
 
+        /// <summary>プレイヤー変更用 Subject</summary>
+        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
+
         /// <summary>駒配置入力用 Subject</summary>
-        private readonly Subject<Unit> _onDropRequested =
-            new Subject<Unit>();
+        private readonly Subject<Unit> _onDropRequested = new Subject<Unit>();
 
         /// <summary>回転入力用 Subject</summary>
-        private readonly Subject<RotationCommand> _onRotateRequested =
-            new Subject<RotationCommand>();
+        private readonly Subject<RotationCommand> _onRotateRequested = new Subject<RotationCommand>();
 
         /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete =
-            new Subject<LineCompleteEvent>();
+        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
 
         /// <summary>現在フェーズストリーム参照</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
@@ -149,6 +146,13 @@ namespace GameSystem.Application
                 })
                 .AddTo(_disposables);
 
+            _phaseMachine.LimitTime
+                .Subscribe(e =>
+                {
+                    _mainUIPresenter.UpdateLimitTimeDisplay(e);
+                })
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
@@ -190,33 +194,19 @@ namespace GameSystem.Application
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
+            _mainUIPresenter.BindInputLockStream(
+                _currentPhase.Select(phase => phase != PhaseType.Play)
+            );
             _mainUIPresenter.BindPhaseStream(_currentPhase);
-
-            _phaseMachine.LimitTime
-                .Subscribe(e =>
-                {
-                    _mainUIPresenter.UpdateLimitTimeDisplay(e);
-                })
-                .AddTo(_disposables);
+            _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
+            _mainUIPresenter.BindRotateStream(
+                _onRotateRequested.Select(_ => Unit.Default)
+            );
 
             _mainUIPresenter.OnSwitchProjection
                 .Subscribe(e =>
                 {
                     _cameraPresenter.SwitchProjection(e);
-                })
-                .AddTo(_disposables);
-
-            _onRotateRequested
-                .Subscribe(e =>
-                {
-                    _mainUIPresenter.SetSwitchProjection(true);
-                })
-                .AddTo(_disposables);
-
-            _onPlayerChanged
-                .Subscribe(e =>
-                {
-                    _mainUIPresenter.SetChangePlayerState(e);
                 })
                 .AddTo(_disposables);
         }
@@ -244,7 +234,10 @@ namespace GameSystem.Application
 
             _cameraPresenter.UnbindInputLockStream();
 
+            _mainUIPresenter.UnbindInputLockStream();
             _mainUIPresenter.UnbindPhaseStream();
+            _mainUIPresenter.UnbindPlayerChangeStream();
+            _mainUIPresenter.UnbindRotateStream();
         }
 
         // ======================================================

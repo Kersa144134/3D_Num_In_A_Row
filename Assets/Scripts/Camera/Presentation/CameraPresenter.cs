@@ -12,7 +12,6 @@ using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
 using InputSystem;
-using PhaseSystem.Domain;
 using UpdateSystem.Domain;
 
 namespace CameraSystem.Presentation
@@ -141,7 +140,7 @@ namespace CameraSystem.Presentation
                 _rotationAcceleration
             );
 
-            // InputManagerのインスタンスを取得
+            // InputManager のインスタンスを取得
             _inputManager = InputManager.Instance;
         }
 
@@ -155,6 +154,11 @@ namespace CameraSystem.Presentation
 
             // 回転処理を実行
             UpdateRotation(unscaledDeltaTime);
+        }
+
+        public void OnExit()
+        {
+            UnbindInputLockStream();
         }
 
         // ======================================================
@@ -179,7 +183,7 @@ namespace CameraSystem.Presentation
         }
 
         /// <summary>
-        /// 入力ロック状ストリームの購読を解除する
+        /// 入力ロック状態ストリームの購読を解除する
         /// </summary>
         public void UnbindInputLockStream()
         {

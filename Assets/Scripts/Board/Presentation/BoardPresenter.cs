@@ -293,10 +293,10 @@ namespace BoardSystem.Presentation
         {
             // 購読解除
             _disposables.Dispose();
-
-            UnbindInputStream();
-
             _model.Dispose();
+
+            UnbindPlayerChangeStream();
+            UnbindInputStream();
         }
 
         public void OnPhaseEnter(in PhaseType phase)
@@ -334,31 +334,6 @@ namespace BoardSystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
-
-        /// <summary>
-        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
-        /// </summary>
-        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
-        public void BindPlayerChangeStream(in IObservable<int> player)
-        {
-            // 多重購読防止
-            _playerIndexSubscription?.Dispose();
-
-            _playerIndexSubscription = player
-                .Subscribe(player =>
-                {
-                    _currentPlayer = player;
-                });
-        }
-
-        /// <summary>
-        /// プレイヤー変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPlayerChangeStream()
-        {
-            _playerIndexSubscription?.Dispose();
-            _playerIndexSubscription = null;
-        }
 
         /// <summary>
         /// 入力ストリームを購読し、駒配置および回転入力を処理する
@@ -418,6 +393,31 @@ namespace BoardSystem.Presentation
 
             // 入力不可
             _canInput = false;
+        }
+
+        /// <summary>
+        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
+        /// </summary>
+        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
+        public void BindPlayerChangeStream(in IObservable<int> player)
+        {
+            // 多重購読防止
+            _playerIndexSubscription?.Dispose();
+
+            _playerIndexSubscription = player
+                .Subscribe(player =>
+                {
+                    _currentPlayer = player;
+                });
+        }
+
+        /// <summary>
+        /// プレイヤー変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPlayerChangeStream()
+        {
+            _playerIndexSubscription?.Dispose();
+            _playerIndexSubscription = null;
         }
 
         // ======================================================

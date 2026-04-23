@@ -254,6 +254,11 @@ namespace UISystem.Presentation
             OnPhaseExitInternal(phase);
         }
 
+        public void OnExit()
+        {
+            OnExitInternal();
+        }
+
         // ======================================================
         // 継承メソッド
         // ======================================================
@@ -265,6 +270,8 @@ namespace UISystem.Presentation
         protected virtual void OnPhaseEnterInternal(in PhaseType phase) { }
 
         protected virtual void OnPhaseExitInternal(in PhaseType phase) { }
+
+        protected virtual void OnExitInternal() { }
 
         // ======================================================
         // プライベートメソッド

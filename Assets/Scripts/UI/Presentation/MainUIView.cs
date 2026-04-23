@@ -195,13 +195,10 @@ namespace UISystem.Presentation
             }
 
             // Canvas’†SŠî€‚Ö•ÏŠ·
-            Vector2 anchoredPos =
-                screenPosition - (_canvasRect.sizeDelta * 0.5f);
+            Vector2 anchoredPos = screenPosition - (_canvasRect.sizeDelta * 0.5f);
 
             // ˆÊ’u”½‰f
             _pointerRect.anchoredPosition = anchoredPos;
         }
-
-
     }
 }

@@ -68,6 +68,16 @@ namespace UISystem.Presentation
         /// <summary>ビュー</summary>
         private MainUIView _mainUIView;
 
+        /// <summary>InputManager キャッシュ</summary>
+        private InputManager _inputManager;
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>入力ロックフラグ</summary>
+        private bool _isInputLock = true;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -88,15 +98,24 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>フェーズ購読保持</summary>
-        private IDisposable _phaseSubscription;
-
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
         /// <summary>投影切り替えストリーム</summary>
         public IObservable<bool> OnSwitchProjection => _onSwitchProjection;
-        
+
+        /// <summary>入力ロック状態購読</summary>
+        private IDisposable _inputLockSubscription;
+
+        /// <summary>フェーズ購読</summary>
+        private IDisposable _phaseSubscription;
+
+        /// <summary>プレイヤーインデックス購読</summary>
+        private IDisposable _playerIndexSubscription;
+
+        /// <summary>回転入力購読</summary>
+        private IDisposable _rotationSubscription;
+
         // ======================================================
         // IUpdatable 派生イベント
         // ======================================================
@@ -105,24 +124,29 @@ namespace UISystem.Presentation
         {
             base.OnEnterInternal();
 
-            // View生成
+            // ビュー生成
             _mainUIView =
                 new MainUIView(
                     _limitTimeText,
                     _pointerImage);
+
+            // InputManager のインスタンスを取得
+            _inputManager = InputManager.Instance;
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
         {
             base.OnLateUpdateInternal(unscaledDeltaTime);
 
-            // Input取得
-            Vector2 screenPos =
-                InputManager.Instance != null
-                    ? InputManager.Instance.Pointer
-                    : Vector2.zero;
+            if (_isInputLock)
+            {
+                return;
+            }
+            
+            // ポインター取得
+            Vector2 screenPos = _inputManager.Pointer;
 
-            // Viewへ反映
+            // ビューへ反映
             _mainUIView.UpdatePointer(screenPos);
         }
 
@@ -130,13 +154,47 @@ namespace UISystem.Presentation
 
         protected override void OnPhaseExitInternal(in PhaseType phase) { }
 
+        protected override void OnExitInternal()
+        {
+            base.OnExitInternal();
+
+            // イベント購読解除
+            UnbindInputLockStream();
+            UnbindPhaseStream();
+            UnbindPlayerChangeStream();
+            UnbindRotateStream();
+        }
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
-        // --------------------------------------------------
-        // フェーズ
-        // --------------------------------------------------
+        /// <summary>
+        /// 入力ロック状態を購読する
+        /// </summary>
+        /// <param name="stream">true:ロック / false:解除</param>
+        public void BindInputLockStream(in IObservable<bool> stream)
+        {
+            // 多重購読防止
+            _inputLockSubscription?.Dispose();
+
+            _inputLockSubscription = stream
+                .Subscribe(isLock =>
+                {
+                    // 入力ロック状態を更新
+                    _isInputLock = isLock;
+                });
+        }
+
+        /// <summary>
+        /// 入力ロック状態ストリームの購読を解除する
+        /// </summary>
+        public void UnbindInputLockStream()
+        {
+            _inputLockSubscription?.Dispose();
+            _inputLockSubscription = null;
+        }
+        
         /// <summary>
         /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
         /// </summary>
@@ -182,7 +240,61 @@ namespace UISystem.Presentation
             _phaseSubscription?.Dispose();
             _phaseSubscription = null;
         }
-        
+
+        /// <summary>
+        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
+        /// </summary>
+        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
+        public void BindPlayerChangeStream(in IObservable<int> player)
+        {
+            // 多重購読防止
+            _playerIndexSubscription?.Dispose();
+
+            _playerIndexSubscription = player
+                .Subscribe(player =>
+                {
+                    SetChangePlayerState(player);
+                });
+        }
+
+        /// <summary>
+        /// プレイヤー変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPlayerChangeStream()
+        {
+            _playerIndexSubscription?.Dispose();
+            _playerIndexSubscription = null;
+        }
+
+        /// <summary>
+        /// 回転入力ストリームを購読する
+        /// </summary>
+        /// <param name="command">回転コマンド通知ストリーム</param>
+        public void BindRotateStream(in IObservable<Unit> stream)
+        {
+            // 多重購読防止
+            _rotationSubscription?.Dispose();
+
+            _rotationSubscription = stream
+                .Subscribe(_ =>
+                {
+                    SetSwitchProjection(true);
+                });
+        }
+
+        /// <summary>
+        /// 回転入力ストリームの購読を解除する
+        /// </summary>
+        public void UnbindRotateStream()
+        {
+            _rotationSubscription?.Dispose();
+            _rotationSubscription = null;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
@@ -237,7 +349,7 @@ namespace UISystem.Presentation
         /// ChangePlayer 状態アニメーターの状態を切り替える
         /// </summary>
         /// <param name="playerId">プレイヤーインデックス</param>
-        public void SetChangePlayerState(in int playerId)
+        private void SetChangePlayerState(in int playerId)
         {
             if (_intermittentCanvasAnimator == null)
             {
@@ -265,7 +377,7 @@ namespace UISystem.Presentation
         /// 投影方式を切り替える
         /// </summary>
         /// <param name="isSwitch">true:透視 / false:平行</param>
-        public void SetSwitchProjection(in bool isSwitch)
+        private void SetSwitchProjection(in bool isSwitch)
         {
             if (_effectAnimator == null)
             {
@@ -275,9 +387,10 @@ namespace UISystem.Presentation
             _effectAnimator.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
         }
 
-        // --------------------------------------------------
-        // アニメーションイベント
-        // --------------------------------------------------
+        // ======================================================
+        // アニメーションイベントメソッド
+        // ======================================================
+
         /// <summary>
         /// 投影切り替え開始イベント
         /// </summary>
