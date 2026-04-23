@@ -162,7 +162,7 @@ namespace PhaseSystem.Application
             _currentState = _stateRepository.GetPhaseState(nextPhaseType);
 
             // Updatables 再構築
-            _updatableManagement.RebuildUpdatables(Rebuild());
+            _updatableManagement.RebuildUpdatables(ResolvePhaseUpdatables());
 
             // 開始処理
             _updatableManagement.ExecutePhaseEnter(nextPhaseType);
@@ -188,44 +188,38 @@ namespace PhaseSystem.Application
         // プライベートメソッド
         // ======================================================
 
-        private IUpdatable[] Rebuild()
+        /// <summary>
+        /// 現在のフェーズ定義に基づき、実行対象となるUpdatable配列を解決する
+        /// </summary>
+        /// <returns>実行対象となるUpdatable配列</returns>
+        private IUpdatable[] ResolvePhaseUpdatables()
         {
-            // --------------------------------------------------
-            // フェーズ定義チェック
-            // --------------------------------------------------
             if (!(_currentState is IPhaseUpdatableDefinition definition))
             {
-                // フェーズが未定義の場合は空配列を返す
                 return Array.Empty<IUpdatable>();
             }
 
-            // --------------------------------------------------
-            // フェーズが要求するUpdatable種別を取得
-            // --------------------------------------------------
+            // フェーズが要求する Updatable 種別を取得
             UpdatableType[] types = definition.GetUpdatableTypes();
 
-            // --------------------------------------------------
-            // 解決結果リスト
-            // --------------------------------------------------
             List<IUpdatable> result = new List<IUpdatable>();
 
-            // --------------------------------------------------
-            // enum → 実体解決
-            // --------------------------------------------------
             for (int i = 0; i < types.Length; i++)
             {
                 UpdatableType type = types[i];
 
-                // コンテキストから対応するUpdatableを取得
+                // コンテキストから対応する Updatable 取得
                 IUpdatable updatable = _updatableContexts.Get(type);
 
-                // 結果リストへ追加
+                if (updatable == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Updatableが見つかりません。Type: {type}");
+                }
+
                 result.Add(updatable);
             }
 
-            // --------------------------------------------------
-            // 配列化して返却
-            // --------------------------------------------------
             return result.ToArray();
         }
     }

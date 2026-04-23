@@ -3,8 +3,8 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-22
 // 更新日時 : 2026-04-22
-// 概要     : UpdatableBindAttributeを走査し
-//            UpdatableContextsへ自動登録を行うクラス
+// 概要     : UpdatableBindAttribute を走査し
+//            UpdatableContexts へ自動登録を行うクラス
 // ======================================================
 
 using System;
@@ -13,7 +13,7 @@ using System.Reflection;
 namespace UpdateSystem.Domain
 {
     /// <summary>
-    /// UpdatableBindAttributeを解析し、自動登録を行うクラス
+    /// UpdatableBindAttribute を解析し、自動登録を行うクラス
     /// </summary>
     public sealed class UpdatableAttributeScanner
     {
@@ -22,7 +22,7 @@ namespace UpdateSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// インスタンス配列からAttributeを解析し登録する
+        /// インスタンス配列から Attribute を解析し登録する
         /// </summary>
         /// <param name="writer">登録先</param>
         /// <param name="instances">対象インスタンス</param>
@@ -51,7 +51,7 @@ namespace UpdateSystem.Domain
                 Type type = instance.GetType();
 
                 // --------------------------------------------------
-                // Attribute取得
+                // Attribute 取得
                 // --------------------------------------------------
                 UpdatableBindAttribute attribute = type.GetCustomAttribute<UpdatableBindAttribute>();
 
