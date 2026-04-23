@@ -169,7 +169,6 @@ namespace GameSystem.Application
                 }
 
                 boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
-                boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
                 boardPresenter.OnInputReceived
                     .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
@@ -212,7 +211,7 @@ namespace GameSystem.Application
         }
 
         /// <summary>
-        /// イベント解除
+        /// イベント購読解除
         /// </summary>
         public void Dispose()
         {
@@ -271,6 +270,8 @@ namespace GameSystem.Application
             // --------------------------------------------------
             if (phase == PhaseType.Play)
             {
+                BindPlayPhaseInputCommands();
+                
                 foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
                     if (boardPresenter == null)
@@ -280,11 +281,11 @@ namespace GameSystem.Application
 
                     boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
                 }
-
-                BindPlayPhaseInputCommands();
             }
             else
             {
+                UnbindPlayPhaseInputCommands();
+
                 foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
                     if (boardPresenter == null)
@@ -294,8 +295,6 @@ namespace GameSystem.Application
 
                     boardPresenter.UnbindInputStream();
                 }
-
-                UnbindPlayPhaseInputCommands();
             }
         }
 
@@ -311,7 +310,7 @@ namespace GameSystem.Application
         }
 
         /// <summary>
-        /// Playフェーズ用の入力コマンド購読を登録する
+        /// Play フェーズ用の入力コマンド購読を登録する
         /// </summary>
         private void BindPlayPhaseInputCommands()
         {
@@ -351,7 +350,7 @@ namespace GameSystem.Application
         }
 
         /// <summary>
-        /// Playフェーズ用の入力コマンド購読を解除する
+        /// Play フェーズ用の入力コマンド購読を解除する
         /// </summary>
         private void UnbindPlayPhaseInputCommands()
         {
