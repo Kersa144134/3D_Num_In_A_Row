@@ -6,19 +6,17 @@
 // 概要     : フェーズごとに実行対象となる Updatable 群を明示的に定義するインターフェース
 // ======================================================
 
-#nullable enable
-
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain
 {
     /// <summary>
-    /// フェーズごとのUpdatable実行対象を識別子で定義する
+    /// フェーズごとの Updatabl e実行対象を識別子で定義する
     /// </summary>
     public interface IPhaseUpdatableDefinition
     {
         /// <summary>
-        /// このフェーズで実行されるUpdatable種別一覧
+        /// このフェーズで実行される Updatable 種別一覧
         /// </summary>
         UpdatableType[] GetUpdatableTypes();
     }

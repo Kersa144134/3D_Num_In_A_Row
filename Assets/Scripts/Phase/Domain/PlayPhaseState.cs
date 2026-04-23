@@ -15,7 +15,7 @@ namespace PhaseSystem.Domain
     /// <summary>
     /// プレイフェーズの処理
     /// </summary>
-    public sealed class PlayPhaseState : IPhaseState, IPhaseEnterHandler, IPhaseUpdatableDefinition
+    public sealed class PlayPhaseState : PhaseStateBase, IPhaseEnterHandler
     {
         // ======================================================
         // IPhaseUpdatableDefinition 実装
@@ -24,7 +24,7 @@ namespace PhaseSystem.Domain
         /// <summary>
         /// このフェーズで更新対象となる Updatable 種別を返す
         /// </summary>
-        public UpdatableType[] GetUpdatableTypes()
+        public override UpdatableType[] GetUpdatableTypes()
         {
             return new UpdatableType[]
             {
@@ -41,18 +41,12 @@ namespace PhaseSystem.Domain
         /// <summary>プレイヤー総数</summary>
         private readonly int _playerCount;
 
-        /// <summary>フェーズ経過時間</summary>
-        private float _elapsedTime = 0.0f;
-
         /// <summary>プレイ専用経過時間</summary>
         private float _playElapsedTime = 0.0f;
 
         // ======================================================
         // プロパティ
         // ======================================================
-
-        /// <summary>フェーズ経過時間</summary>
-        public float ElapsedTime => _elapsedTime;
 
         /// <summary>プレイ専用経過時間</summary>
         public float PlayElapsedTime => _playElapsedTime;
@@ -87,9 +81,7 @@ namespace PhaseSystem.Domain
             // プレイヤー人数が MIN_PLAYER_COUNT 未満の場合は不正
             if (playerCount < MIN_PLAYER_COUNT)
             {
-                UnityEngine.Debug.LogError(
-                    "PlayPhaseState: PlayerCount が MIN_PLAYER_COUNT 未満です。"
-                );
+                Debug.LogError("PlayPhaseState: PlayerCount が MIN_PLAYER_COUNT 未満です。");
 
                 // 最低人数に補正
                 _playerCount = 2;
@@ -107,16 +99,41 @@ namespace PhaseSystem.Domain
         }
 
         // ======================================================
-        // パブリックメソッド
+        // IPhaseState 実装
         // ======================================================
 
         /// <summary>
         /// フェーズ開始時処理
         /// </summary>
-        public void OnEnterState()
+        protected override void OnEnterStateInternal()
         {
-            _elapsedTime = 0.0f;
         }
+
+        /// <summary>
+        /// フェーズ終了時処理
+        /// </summary>
+        protected override void OnExitStateInternal()
+        {
+        }
+
+        /// <summary>
+        /// フェーズ更新処理
+        /// </summary>
+        protected override void OnUpdateStateInternal(in float unscaledDeltaTime)
+        {
+            _playElapsedTime += unscaledDeltaTime;
+        }
+
+        /// <summary>
+        /// フェーズ更新後処理
+        /// </summary>
+        protected override void OnLateUpdateStateInternal(in float unscaledDeltaTime)
+        {
+        }
+
+        // ======================================================
+        // IPhaseEnterHandler 実装
+        // ======================================================
 
         /// <summary>
         /// フェーズ開始時処理
@@ -135,29 +152,9 @@ namespace PhaseSystem.Domain
             }
         }
 
-        /// <summary>
-        /// フェーズ終了時処理
-        /// </summary>
-        public void OnExitState()
-        {
-        }
-
-        /// <summary>
-        /// フェーズ更新処理
-        /// </summary>
-        public void OnUpdateState(in float unscaledDeltaTime)
-        {
-            _elapsedTime += unscaledDeltaTime;
-            _playElapsedTime += unscaledDeltaTime;
-        }
-
-        /// <summary>
-        /// フェーズ更新後処理
-        /// </summary>
-        public void OnLateUpdateState(in float unscaledDeltaTime)
-        {
-
-        }
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
 
         /// <summary>
         /// 次のプレイヤーへ遷移
