@@ -147,30 +147,14 @@ namespace CameraSystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
-            // --------------------------------------------------
-            // 回転処理
-            // --------------------------------------------------
-            // 入力がロックされている場合は処理を行わない
+            // 入力がロックされている場合は処理なし
             if (_isInputLock)
             {
-                // 入力無効のため早期リターン
                 return;
             }
 
-            // 左右入力を取得する
-            float inputHorizontal = _inputManager.LeftStick.x;
-
-            // 上下入力を取得する
-            float inputVertical = _inputManager.LeftStick.y;
-
-            // 入力値を Vector2 としてまとめる
-            Vector2 input = new Vector2(inputHorizontal, inputVertical);
-
-            // 入力とデルタ時間を渡して回転をモデルへ反映する
-            _rotationUseCase.UpdateRotation(input, unscaledDeltaTime);
-
-            // モデルの回転値をビューへ適用する
-            _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+            // 回転処理を実行
+            UpdateRotation(unscaledDeltaTime);
         }
 
         // ======================================================
@@ -218,6 +202,39 @@ namespace CameraSystem.Presentation
         public void SwitchProjection(in bool isPerspective)
         {
             _projectionService.SetProjection(_camera, isPerspective);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// カメラ回転処理
+        /// </summary>
+        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
+        private void UpdateRotation(in float unscaledDeltaTime)
+        {
+            // --------------------------------------------------
+            // 入力取得
+            // --------------------------------------------------
+            // 左右入力を取得する
+            float inputHorizontal = _inputManager.LeftStick.x;
+
+            // 上下入力を取得する
+            float inputVertical = _inputManager.LeftStick.y;
+
+            // 入力値を Vector2 としてまとめる
+            Vector2 input = new Vector2(inputHorizontal, inputVertical);
+
+            // --------------------------------------------------
+            // 回転更新
+            // --------------------------------------------------
+            _rotationUseCase.UpdateRotation(input, unscaledDeltaTime);
+
+            // --------------------------------------------------
+            // ビュー反映
+            // --------------------------------------------------
+            _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
         }
     }
 }
