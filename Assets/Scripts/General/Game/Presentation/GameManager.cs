@@ -13,6 +13,7 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
+using UnityEditor.Build;
 
 namespace GameSystem.Presentation
 {
@@ -56,6 +57,9 @@ namespace GameSystem.Presentation
 
         /// <summary>フェーズ遷移およびプレイ進行設定</summary>
         private PhaseTransitionConfig _phaseTransitionConfig;
+
+        /// <summary>UpdatableBindAttribute を走査し UpdatableContexts へ自動登録を行うクラス</summary>
+        private readonly UpdatableAttributeScanner _updatableAttributeScanner = new UpdatableAttributeScanner();
 
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
         private readonly UpdatableCollector _updatableCollector = new UpdatableCollector();
@@ -157,12 +161,21 @@ namespace GameSystem.Presentation
             // コンテキスト作成
             _updatableContexts = _updatableContextFactory.Create(updatables);
 
+            // 書き込み専用として扱う
+            IUpdatableWriter updatableWriter = _updatableContexts;
+
+            // Attribute ベース自動登録
+            _updatableAttributeScanner.RegisterFromAssembly(
+                writer: updatableWriter,
+                instances: updatables
+            );
+
             // 列挙専用として扱う
             IUpdatableEnumerable updatableEnumerable = _updatableContexts;
 
             // Updatable の開始時処理
             _updatableLifecycleRunner.RunEnter(updatableEnumerable);
-            
+
             // --------------------------------------------------
             // フェーズ管理初期化
             // --------------------------------------------------

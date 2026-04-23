@@ -6,13 +6,32 @@
 // 概要     : イベントフェーズの振る舞い
 // ======================================================
 
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// Event フェーズの処理
     /// </summary>
-    public sealed class EventPhaseState : IPhaseState
+    public sealed class EventPhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.BoardPresenter,
+                UpdatableType.CameraPresenter,
+                UpdatableType.MainUIPresenter
+            };
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

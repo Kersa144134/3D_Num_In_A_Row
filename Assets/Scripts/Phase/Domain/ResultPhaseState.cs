@@ -6,13 +6,28 @@
 // 概要     : リザルトフェーズの振る舞い
 // ======================================================
 
+using System;
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// Resultフェーズの処理
     /// </summary>
-    public sealed class ResultPhaseState : IPhaseState
+    public sealed class ResultPhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return Array.Empty<UpdatableType>();
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

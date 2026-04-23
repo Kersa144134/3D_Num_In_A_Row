@@ -6,13 +6,28 @@
 // 概要     : 未初期化フェーズの振る舞い
 // ======================================================
 
+using System;
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// Noneフェーズの処理
     /// </summary>
-    public sealed class NonePhaseState : IPhaseState
+    public sealed class NonePhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return Array.Empty<UpdatableType>();
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

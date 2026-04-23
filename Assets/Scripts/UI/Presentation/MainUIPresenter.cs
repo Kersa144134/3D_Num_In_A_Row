@@ -6,20 +6,21 @@
 // 概要     : メインシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UniRx;
 using InputSystem;
 using PhaseSystem.Domain;
 using UpdateSystem.Domain;
-using System;
-using TMPro;
-using UniRx;
-using UnityEngine;
-using UnityEngine.UI;
 
 namespace UISystem.Presentation
 {
     /// <summary>
     /// メインシーンにおける UI 演出を管理するプレゼンター
     /// </summary>
+    [UpdatableBind(UpdatableType.MainUIPresenter)]
     public sealed class MainUIPresenter : BaseUIPresenter, IUpdatable
     {
         // ======================================================

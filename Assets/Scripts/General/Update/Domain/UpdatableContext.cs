@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
 // 更新日時 : 2026-04-22
-// 概要     : Updatableを識別子(enum)で管理するコンテキスト
+// 概要     : Updatable を enum で管理するコンテキスト
 //          : 同一識別子に複数登録可能
 // ======================================================
 
@@ -43,26 +43,19 @@ namespace UpdateSystem.Domain
         /// <param name="instance">登録インスタンス</param>
         void IUpdatableWriter.Register(in UpdatableType type, in IUpdatable instance)
         {
-            // --------------------------------------------------
-            // null防御（外部呼び出し対策）
-            // --------------------------------------------------
             if (instance == null)
             {
                 return;
             }
 
-            // --------------------------------------------------
-            // 型ごとのリスト取得または生成
-            // --------------------------------------------------
+            // 型ごとのリストを取得または生成
             if (!_map.TryGetValue(type, out List<IUpdatable>? list))
             {
                 list = new List<IUpdatable>();
                 _map[type] = list;
             }
 
-            // --------------------------------------------------
             // 登録
-            // --------------------------------------------------
             list.Add(instance);
         }
 
@@ -71,46 +64,33 @@ namespace UpdateSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// 指定識別子の全Updatable取得
+        /// 指定識別子の全 Updatable 取得
         /// </summary>
         public IUpdatable[] GetAll(in UpdatableType type)
         {
-            // --------------------------------------------------
             // 存在しない場合は空配列
-            // --------------------------------------------------
             if (!_map.TryGetValue(type, out List<IUpdatable>? list))
             {
                 return Array.Empty<IUpdatable>();
             }
 
-            // --------------------------------------------------
-            // コピーして返却
-            // --------------------------------------------------
             return list.ToArray();
         }
 
         /// <summary>
-        /// 指定識別子の代表Updatable取得
+        /// 指定識別子の Updatable 取得
         /// </summary>
         public IUpdatable? Get(in UpdatableType type)
         {
-            // --------------------------------------------------
-            // 存在確認
-            // --------------------------------------------------
+            // 存在する場合は先頭要素を返す
             if (_map.TryGetValue(type, out List<IUpdatable>? list))
             {
-                // --------------------------------------------------
-                // 先頭要素を返す
-                // --------------------------------------------------
                 if (list.Count > 0)
                 {
                     return list[0];
                 }
             }
 
-            // --------------------------------------------------
-            // 未登録または空
-            // --------------------------------------------------
             return null;
         }
 
@@ -119,13 +99,11 @@ namespace UpdateSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// 全Updatable取得（デバッグ・管理用）
+        /// 全Updatable取得
         /// </summary>
         IUpdatable[] IUpdatableEnumerable.GetAllUpdatables()
         {
-            // --------------------------------------------------
-            // 全リスト結合
-            // --------------------------------------------------
+            // 全リストを結合する
             List<IUpdatable> result = new List<IUpdatable>();
 
             foreach (var pair in _map)

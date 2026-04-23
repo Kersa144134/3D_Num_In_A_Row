@@ -22,6 +22,7 @@ namespace BoardSystem.Presentation
     /// <summary>
     /// 目並べプレゼンター
     /// </summary>
+    [UpdatableBind(UpdatableType.BoardPresenter)]
     public sealed class BoardPresenter : MonoBehaviour, IUpdatable
     {
         // ======================================================
@@ -72,9 +73,15 @@ namespace BoardSystem.Presentation
         [SerializeField, Range(0.5f, 1.0f)]
         private float _pieceScaleFactor;
 
-        [Header("レイヤー")]
+        [Header("ヒット判定")]
         /// <summary>
-        /// Ray判定用レイヤー
+        /// 盤面のクリック判定用 Collider
+        /// </summary>
+        [SerializeField]
+        private Collider _boardCollider;
+
+        /// <summary>
+        /// Ray 判定用レイヤー
         /// </summary>
         [SerializeField]
         private LayerMask _raycastLayerMask;
@@ -114,9 +121,6 @@ namespace BoardSystem.Presentation
         /// <summary>カメラ</summary>
         private Camera _camera; 
         
-        /// <summary>盤面のクリック判定用 Collider</summary>
-        private Collider _boardCollider;
-
         /// <summary>盤面の列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
 
@@ -213,9 +217,6 @@ namespace BoardSystem.Presentation
 
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
-
-            // 子階層のコライダーを取得
-            _boardCollider = GetComponentInChildren<Collider>(true);
 
             if (_camera == null || _boardCollider == null || _columnSelectRoot == null)
             {

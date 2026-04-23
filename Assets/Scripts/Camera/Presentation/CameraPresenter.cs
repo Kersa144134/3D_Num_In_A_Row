@@ -20,6 +20,7 @@ namespace CameraSystem.Presentation
     /// <summary>
     /// カメラ制御用プレゼンター
     /// </summary>
+    [UpdatableBind(UpdatableType.CameraPresenter)]
     public sealed class CameraPresenter : MonoBehaviour, IUpdatable
     {
         // ======================================================

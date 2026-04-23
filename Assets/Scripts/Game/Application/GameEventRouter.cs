@@ -6,16 +6,17 @@
 // 概要     : シーン内イベントの仲介を行う
 // ======================================================
 
-using System;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
-using UpdateSystem.Domain;
+using System;
+using System.Linq;
 using UISystem.Presentation;
+using UniRx;
+using UpdateSystem.Domain;
 
 namespace GameSystem.Application
 {
@@ -98,9 +99,16 @@ namespace GameSystem.Application
             _currentPhase = currentPhase;
 
             // Context からコンポーネント取得
-            _boardPresenters = updatableReader.GetAll<BoardPresenter>();
-            _cameraPresenter = updatableReader.Get<CameraPresenter>();
-            _mainUIPresenter = updatableReader.Get<MainUIPresenter>();
+            _boardPresenters = updatableReader
+                .GetAll(UpdatableType.BoardPresenter)
+                .Cast<BoardPresenter>()
+                .ToArray();
+
+            _cameraPresenter = (CameraPresenter)
+                updatableReader.Get(UpdatableType.CameraPresenter);
+
+            _mainUIPresenter = (MainUIPresenter)
+                updatableReader.Get(UpdatableType.MainUIPresenter);
 
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;

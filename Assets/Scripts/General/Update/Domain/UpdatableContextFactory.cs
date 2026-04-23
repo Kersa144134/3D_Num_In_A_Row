@@ -7,6 +7,7 @@
 // ======================================================
 
 using System;
+using System.Reflection;
 
 namespace UpdateSystem.Domain
 {
@@ -24,7 +25,7 @@ namespace UpdateSystem.Domain
         /// </summary>
         /// <param name="updatables">収集済みIUpdatable配列</param>
         /// <returns>生成されたコンテキスト</returns>
-        public UpdatableContexts Create(ref IUpdatable[] updatables)
+        public UpdatableContexts Create(IUpdatable[] updatables)
         {
             if (updatables == null)
             {
@@ -36,13 +37,11 @@ namespace UpdateSystem.Domain
             // --------------------------------------------------
             UpdatableContexts context = new UpdatableContexts();
 
-            // --------------------------------------------------
-            // 書き込みインターフェース取得
-            // --------------------------------------------------
+            // 書き込み専用として扱う
             IUpdatableWriter writer = context;
 
             // --------------------------------------------------
-            // Updatable登録
+            // 登録
             // --------------------------------------------------
             for (int i = 0; i < updatables.Length; i++)
             {
@@ -53,16 +52,32 @@ namespace UpdateSystem.Domain
                     continue;
                 }
 
-                // --------------------------------------------------
-                // enumベースで登録
-                // --------------------------------------------------
-                writer.Register(updatable.UpdatableType, updatable);
+                // 外部定義された UpdatableType で登録する
+                writer.Register(GetTypeFrom(updatables[i]), updatable);
             }
 
-            // --------------------------------------------------
-            // 完成したコンテキストを返却
-            // --------------------------------------------------
             return context;
+        }
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>
+        /// Updatable に対する識別子を決定する
+        /// </summary>
+        private UpdatableType GetTypeFrom(IUpdatable updatable)
+        {
+            UpdatableBindAttribute attribute =
+                updatable.GetType().GetCustomAttribute<UpdatableBindAttribute>();
+
+            if (attribute == null)
+            {
+                throw new InvalidOperationException(
+                    $"UpdatableBindAttribute not found: {updatable.GetType().Name}");
+            }
+
+            return attribute.Type;
         }
     }
 }

@@ -6,13 +6,30 @@
 // 概要     : 一時停止フェーズの振る舞い
 // ======================================================
 
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// Pauseフェーズの処理
     /// </summary>
-    public sealed class PausePhaseState : IPhaseState
+    public sealed class PausePhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.MainUIPresenter
+            };
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

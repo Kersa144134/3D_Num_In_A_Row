@@ -6,13 +6,28 @@
 // 概要     : タイトルフェーズの振る舞い
 // ======================================================
 
+using System;
+using UpdateSystem.Domain;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// タイトルフェーズの処理
     /// </summary>
-    public sealed class TitlePhaseState : IPhaseState
+    public sealed class TitlePhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return Array.Empty<UpdatableType>();
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

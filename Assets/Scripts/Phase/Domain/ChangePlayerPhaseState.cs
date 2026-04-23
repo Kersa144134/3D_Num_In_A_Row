@@ -13,8 +13,23 @@ namespace PhaseSystem.Domain
     /// <summary>
     /// ChangePlayer フェーズの処理
     /// </summary>
-    public sealed class ChangePlayerPhaseState : IPhaseState
+    public sealed class ChangePlayerPhaseState : IPhaseState, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.MainUIPresenter
+            };
+        }
+
         // ======================================================
         // フィールド
         // ======================================================

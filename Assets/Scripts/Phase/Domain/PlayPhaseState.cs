@@ -6,16 +6,34 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
-using UnityEngine;
 using UniRx;
+using UnityEngine;
+using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain
 {
     /// <summary>
     /// プレイフェーズの処理
     /// </summary>
-    public sealed class PlayPhaseState : IPhaseState, IPhaseEnterHandler
+    public sealed class PlayPhaseState : IPhaseState, IPhaseEnterHandler, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// </summary>
+        public UpdatableType[] GetUpdatableTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.BoardPresenter,
+                UpdatableType.CameraPresenter,
+                UpdatableType.MainUIPresenter
+            };
+        }
+
         // ======================================================
         // フィールド
         // ======================================================
