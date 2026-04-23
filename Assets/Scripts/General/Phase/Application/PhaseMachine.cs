@@ -22,7 +22,7 @@ namespace PhaseSystem.Application
         // ======================================================
 
         /// <summary>フェーズ状態リポジトリ</summary>
-        private readonly PhaseStateRepository _stateRepository;
+        private readonly PhaseStateRepository _stateRepository = new PhaseStateRepository();
 
         /// <summary>遷移設定データ</summary>
         private readonly PhaseTransitionConfig _transitionConfig;
@@ -46,6 +46,16 @@ namespace PhaseSystem.Application
         /// <summary>現在のフェーズの制限時間</summary>
         private float _maxLimitTime;
 
+        /// <summary>プレイヤー総数</summary>
+        private readonly int _playerCount;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>プレイヤー最低人数</summary>
+        private const int MIN_PLAYER_COUNT = 2;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -64,6 +74,12 @@ namespace PhaseSystem.Application
         /// <summary>フェーズ経過時間</summary>
         public IReadOnlyReactiveProperty<float> LimitTime => _limitTime;
 
+        /// <summary>現在プレイヤーインデックス取得用 Subject</summary>
+        private readonly ReactiveProperty<int> _currentPlayerIndex;
+
+        /// <summary>現在プレイヤーインデックスストリーム</summary>
+        public IReadOnlyReactiveProperty<int> CurrentPlayerIndex => _currentPlayerIndex;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -75,11 +91,6 @@ namespace PhaseSystem.Application
         {
             _transitionConfig = transitionConfig;
             _updatableContexts = updatableContexts;
-
-            // --------------------------------------------------
-            // フェーズ生成
-            // --------------------------------------------------
-            _stateRepository = new PhaseStateRepository(_transitionConfig);
 
             // --------------------------------------------------
             // 初期フェーズ設定
@@ -96,6 +107,28 @@ namespace PhaseSystem.Application
             _transitionRule = new PhaseTransitionRule(_stateRepository, _transitionConfig);
 
             _maxLimitTime = _transitionConfig.PerPlayerLimitTime;
+
+            // --------------------------------------------------
+            // 初期プレイヤー設定
+            // --------------------------------------------------
+            // プレイヤー人数が MIN_PLAYER_COUNT 未満の場合は不正
+            if (_transitionConfig.PlayerCount < MIN_PLAYER_COUNT)
+            {
+                UnityEngine.Debug.LogError("PlayPhaseState: PlayerCount が MIN_PLAYER_COUNT 未満です。");
+
+                // 最低人数に補正
+                _playerCount = 2;
+            }
+            else
+            {
+                _playerCount = _transitionConfig.PlayerCount;
+            }
+
+            // --------------------------------------------------
+            // 初期プレイヤーをランダムに設定
+            // --------------------------------------------------
+            int initialPlayerIndex = UnityEngine.Random.Range(1, _playerCount + 1);
+            _currentPlayerIndex = new ReactiveProperty<int>(initialPlayerIndex);
         }
 
         // ======================================================
@@ -174,14 +207,11 @@ namespace PhaseSystem.Application
             {
                 _currentState.OnEnterState();
             }
-        }
 
-        /// <summary>
-        /// PlayPhaseState を取得する
-        /// </summary>
-        public PlayPhaseState GetPlayState()
-        {
-            return _stateRepository.GetPhaseState(PhaseType.Play) as PlayPhaseState;
+            if (nextPhaseType is PhaseType.ChangePlayer)
+            {
+                NextPlayer();
+            }
         }
 
         // ======================================================
@@ -221,6 +251,24 @@ namespace PhaseSystem.Application
             }
 
             return result.ToArray();
+        }
+
+        /// <summary>
+        /// 次のプレイヤーへ遷移
+        /// </summary>
+        private void NextPlayer()
+        {
+            // --------------------------------------------------
+            // 1 ベースの循環処理
+            // --------------------------------------------------
+            // 0 ベースに変換
+            int zeroBasedIndex = _currentPlayerIndex.Value - 1;
+
+            // 循環処理
+            zeroBasedIndex = (zeroBasedIndex + 1) % _playerCount;
+
+            // 1 ベースに変換
+            _currentPlayerIndex.Value = zeroBasedIndex + 1;
         }
     }
 }

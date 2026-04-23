@@ -34,8 +34,7 @@ namespace PhaseSystem.Domain
         /// コンストラクタ
         /// </summary>
         /// <param name="config">フェーズ遷移設定</param>
-        public PhaseStateRepository(
-            in PhaseTransitionConfig config)
+        public PhaseStateRepository()
         {
             // --------------------------------------------------
             // フェーズインスタンス生成
@@ -45,7 +44,7 @@ namespace PhaseSystem.Domain
                 { PhaseType.None,         new NonePhaseState() },
                 { PhaseType.Title,        new TitlePhaseState() },
                 { PhaseType.Ready,        new ReadyPhaseState() },
-                { PhaseType.Play,         new PlayPhaseState(config.PlayerCount) },
+                { PhaseType.Play,         new PlayPhaseState() },
                 { PhaseType.Event,        new EventPhaseState() },
                 { PhaseType.ChangePlayer, new ChangePlayerPhaseState() },
                 { PhaseType.Pause,        new PausePhaseState() },

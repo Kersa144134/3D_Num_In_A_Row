@@ -75,8 +75,14 @@ namespace UISystem.Presentation
         /// <summary>Ready パラメータ名</summary>
         private static readonly int IS_READY_HASH = Animator.StringToHash("IsReady");
 
+        /// <summary>PlayerID パラメータ名</summary>
+        private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
+
         /// <summary>Pause パラメータ名</summary>
         private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
+
+        /// <summary>SwitchProjection パラメータ名</summary>
+        private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
 
         // ======================================================
         // UniRx 変数
@@ -117,17 +123,9 @@ namespace UISystem.Presentation
             _mainUIView.UpdatePointer(screenPos);
         }
 
-        // ======================================================
-        // IUpdatable 派生イベント
-        // ======================================================
+        protected override void OnPhaseEnterInternal(in PhaseType phase) { }
 
-        protected override void OnPhaseEnterInternal(in PhaseType phase)
-        {
-        }
-
-        protected override void OnPhaseExitInternal(in PhaseType phase)
-        {
-        }
+        protected override void OnPhaseExitInternal(in PhaseType phase) { }
 
         // ======================================================
         // パブリックメソッド
@@ -184,6 +182,20 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// ChangePlayer 状態アニメーターの状態を切り替える
+        /// </summary>
+        /// <param name="playerId">プレイヤーインデックス</param>
+        public void SetChangePlayerState(in int playerId)
+        {
+            if (_intermittentCanvasAnimator == null)
+            {
+                return;
+            }
+
+            _intermittentCanvasAnimator.SetInteger(IS_PLAYER_ID_HASH, playerId);
+        }
+
+        /// <summary>
         /// Pause 状態アニメーターの状態を切り替える
         /// </summary>
         /// <param name="isPause">Pause 状態の場合はtrue</param>
@@ -195,6 +207,20 @@ namespace UISystem.Presentation
             }
 
             _outgameCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+        }
+
+        /// <summary>
+        /// 投影方式を切り替える
+        /// </summary>
+        /// <param name="isSwitch">true:透視 / false:平行</param>
+        public void SetSwitchProjection(in bool isSwitch)
+        {
+            if (_effectAnimator == null)
+            {
+                return;
+            }
+
+            _effectAnimator.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
         }
 
         // --------------------------------------------------

@@ -194,7 +194,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// エフェクト用アニメーター
         /// </summary>
-        private Animator _effectAnimator;
+        protected Animator _effectAnimator;
 
         // ======================================================
         // IUpdatable イベント

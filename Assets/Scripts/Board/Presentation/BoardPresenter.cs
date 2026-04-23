@@ -127,8 +127,8 @@ namespace BoardSystem.Presentation
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
-        /// <summary>入力ロックフラグ</summary>
-        private bool _isInputLock = true;
+        /// <summary>落下実行中フラグ</summary>
+        private bool _isDrop = false;
 
         /// <summary>回転実行中フラグ</summary>
         private bool _isRotate = false;
@@ -147,6 +147,11 @@ namespace BoardSystem.Presentation
         /// 駒削除後、落下処理を開始するまでの待機時間（ミリ秒）
         /// </summary>
         private const int PIECE_DROP_DELAY_MS = 500;
+
+        /// <summary>
+        /// ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（ミリ秒）
+        /// </summary>
+        private const int FINISH_LINE_CHECK_DELAY_MS = 1000;
 
         /// <summary>
         /// 盤面の回転アニメーション時間（秒）
@@ -181,9 +186,6 @@ namespace BoardSystem.Presentation
 
         /// <summary>プレイヤー行動終了ストリーム</summary>
         public IObservable<Unit> OnPlayerEnd => _onPlayerEnd;
-
-        /// <summary>フェーズ購読</summary>
-        private IDisposable _phaseSubscription;
 
         /// <summary>プレイヤーインデックス購読</summary>
         private IDisposable _playerIndexSubscription;
@@ -254,8 +256,8 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 入力ロック中、またはプレイヤー番号が不正値なら列選択表示を非表示
-            if (_isInputLock || _currentPlayer == PLAYER_NONE)
+            // 落下実行中、またはプレイヤー番号が不正値なら列選択表示を非表示
+            if (_isDrop || _currentPlayer == PLAYER_NONE)
             {
                 _view.SetSelectVisible(false);
                 return;
@@ -289,7 +291,6 @@ namespace BoardSystem.Presentation
             // 購読解除
             _disposables.Dispose();
 
-            UnbindPhaseStream();
             UnbindInputStream();
 
             _model.Dispose();
@@ -330,40 +331,6 @@ namespace BoardSystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
-
-        /// <summary>
-        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
-        /// </summary>
-        /// <param name="stream">フェーズ種別を通知するストリーム</param>
-        public void BindPhaseStream(in IObservable<PhaseType> stream)
-        {
-            // 多重購読防止
-            _phaseSubscription?.Dispose();
-
-            _phaseSubscription = stream
-                .Subscribe(phase =>
-                {
-                    if (phase == PhaseType.Play)
-                    {
-                        // 入力ロック解除
-                        _isInputLock = false;
-                    }
-                    else
-                    {
-                        // 入力ロック
-                        _isInputLock = true;
-                    }
-                });
-        }
-
-        /// <summary>
-        /// フェーズ変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPhaseStream()
-        {
-            _phaseSubscription?.Dispose();
-            _phaseSubscription = null;
-        }
 
         /// <summary>
         /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
@@ -410,7 +377,7 @@ namespace BoardSystem.Presentation
             dropStream
                 .Subscribe(_ =>
                 {
-                    if (_isInputLock || _currentPlayer == PLAYER_NONE)
+                    if (_isDrop || _currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
@@ -425,13 +392,10 @@ namespace BoardSystem.Presentation
             rotateStream
                 .Subscribe(cmd =>
                 {
-                    if (_isInputLock || _isRotate)
+                    if (_isRotate)
                     {
                         return;
                     }
-
-                    // 入力通知
-                    _onInputReceived.OnNext(Unit.Default);
 
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 })
@@ -469,9 +433,6 @@ namespace BoardSystem.Presentation
                 out int x,
                 out int z);
 
-            // 入力通知
-            _onInputReceived.OnNext(Unit.Default);
-
             // 駒落下処理
             HandleDropAsync(x, z).Forget();
         }
@@ -481,22 +442,31 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleDropAsync(int x, int z)
         {
-            _isInputLock = true;
-
             // 配置可能判定
             int y = _model.CalculatePlace(x, z);
 
             if (y < 0)
             {
-                _isInputLock = false;
                 return;
             }
 
-            // ユースケース実行
-            await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
+            // 入力通知
+            _onInputReceived.OnNext(Unit.Default);
 
-            // ライン成立チェック
-            CheckLine(_model.CheckLine());
+            _isDrop = true;
+
+            try
+            {
+                // ユースケース実行
+                await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
+
+                // ライン成立チェック
+                await CheckLine(_model.CheckLine());
+            }
+            finally
+            {
+                _isDrop = false;
+            }
         }
 
         /// <summary>
@@ -506,18 +476,17 @@ namespace BoardSystem.Presentation
             RotationAxis axis,
             RotationDirection direction)
         {
+            // 入力通知
+            _onInputReceived.OnNext(Unit.Default);
+
             _isRotate = true;
 
             try
             {
-                // 入力ロック
-                _isInputLock = true;
-
                 // --------------------------------------------------
                 // 回転ユースケース実行
                 // --------------------------------------------------
-                RotationResult result =
-                    await _rotationUseCase.HandleRotateAsync(axis, direction);
+                RotationResult result = await _rotationUseCase.HandleRotateAsync(axis, direction);
 
                 // ビュー辞書更新
                 ApplyViewMoves(result.RotateMoves);
@@ -538,7 +507,7 @@ namespace BoardSystem.Presentation
                 ApplyViewMoves(result.RepositionMoves);
 
                 // ライン成立チェック
-                CheckLine(_model.CheckLine());
+                await CheckLine(_model.CheckLine());
             }
             finally
             {
@@ -564,7 +533,7 @@ namespace BoardSystem.Presentation
             await PiecesRepositionAsync(result.RepositionColumns);
 
             // ライン成立チェック
-            CheckLine(_model.CheckLine());
+            await CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -598,13 +567,16 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立判定時の共通処理
         /// </summary>
-        private void CheckLine(bool isLine)
+        private async UniTask CheckLine(bool isLine)
         {
             // ラインが成立している場合は処理なし
             if (isLine)
             {
                 return;
             }
+
+            // 演出待機
+            await UniTask.Delay(FINISH_LINE_CHECK_DELAY_MS);
 
             // フェーズ終了通知
             _onPlayerEnd.OnNext(Unit.Default);

@@ -13,7 +13,6 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
-using UnityEditor.Build;
 
 namespace GameSystem.Presentation
 {
@@ -209,11 +208,10 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             _phaseMachine.CurrentPhaseType
-                .DistinctUntilChanged()
                 .Skip(1)
                 .Subscribe(e =>
                 {
-                    _targetPhase = e;
+                    SetTargetPhase(e);
                 })
                 .AddTo(_disposables);
 
@@ -306,7 +304,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private void ChangePhase(in PhaseType nextPhase)
         {
-            // 同一フェーズなら更新しない
+            // 同一フェーズでないなら実行しない
             if (CurrentPhase.Value == nextPhase)
             {
                 return;

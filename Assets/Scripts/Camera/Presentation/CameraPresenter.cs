@@ -75,11 +75,11 @@ namespace CameraSystem.Presentation
         /// <summary>角度計算ユーティリティ</summary>
         private readonly CameraAngleUtility _angleUtility = new CameraAngleUtility();
 
-        /// <summary>回転ユースケース</summary>
-        private CameraRotationUseCase _rotationUseCase;
-
         /// <summary>投影補間サービス</summary>
         private CameraProjectionService _projectionService;
+
+        /// <summary>回転ユースケース</summary>
+        private CameraRotationUseCase _rotationUseCase;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
@@ -141,7 +141,7 @@ namespace CameraSystem.Presentation
                 _rotationAcceleration
             );
 
-            // InputManagerのシングルトンインスタンスを取得
+            // InputManagerのインスタンスを取得
             _inputManager = InputManager.Instance;
         }
 

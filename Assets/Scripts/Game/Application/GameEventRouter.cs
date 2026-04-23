@@ -13,9 +13,11 @@ using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using UISystem.Presentation;
 using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Application
@@ -65,7 +67,7 @@ namespace GameSystem.Application
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
         /// <summary>プレイヤー変更用 Subject</summary>
-        private readonly Subject<int> _onPayerChanged = new Subject<int>();
+        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
 
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
@@ -137,18 +139,14 @@ namespace GameSystem.Application
                 })
                 .AddTo(_disposables);
 
-            PlayPhaseState playState = _phaseMachine.GetPlayState();
-
-            if (playState != null)
-            {
-                playState.CurrentPlayerIndex
-                    .DistinctUntilChanged()
-                    .Subscribe(player =>
-                    {
-                        _onPayerChanged.OnNext(player);
-                    })
-                    .AddTo(_disposables);
-            }
+            _phaseMachine.CurrentPlayerIndex
+                .DistinctUntilChanged()
+                .Skip(1)
+                .Subscribe(player =>
+                {
+                    _onPlayerChanged.OnNext(player);
+                })
+                .AddTo(_disposables);
 
             // --------------------------------------------------
             // 入力
@@ -207,12 +205,12 @@ namespace GameSystem.Application
                     continue;
                 }
 
-                boardPresenter.BindPhaseStream(_currentPhase);
-                boardPresenter.BindPlayerChangeStream(_onPayerChanged);
+                boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
                 boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
+                // スタートボタン押下
                 boardPresenter.OnInputReceived
-                    .Subscribe(_ => SetTargetPhase(_currentPhase.Value))
+                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                     .AddTo(_disposables);
 
                 boardPresenter.OnLineComplete
@@ -220,7 +218,7 @@ namespace GameSystem.Application
                     .AddTo(_disposables);
 
                 boardPresenter.OnPlayerEnd
-                    .Subscribe(_ => SetTargetPhase(_currentPhase.Value))
+                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
                     .AddTo(_disposables);
             }
 
@@ -245,6 +243,20 @@ namespace GameSystem.Application
                     _cameraPresenter.SwitchProjection(e);
                 })
                 .AddTo(_disposables);
+
+            _onRotateRequested
+                .Subscribe(e =>
+                {
+                    _mainUIPresenter.SetSwitchProjection(true);
+                })
+                .AddTo(_disposables);
+
+            _onPlayerChanged
+                .Subscribe(e =>
+                {
+                    _mainUIPresenter.SetChangePlayerState(e);
+                })
+                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -264,7 +276,6 @@ namespace GameSystem.Application
                     continue;
                 }
 
-                boardPresenter.UnbindPhaseStream();
                 boardPresenter.UnbindPlayerChangeStream();
                 boardPresenter.UnbindInputStream();
             }
@@ -298,66 +309,54 @@ namespace GameSystem.Application
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseChanged(in PhaseType phase)
         {
-            if (phase == PhaseType.Play)
-            {
-                _mainUIPresenter.SetLimitTimeVisible(true);
-                _mainUIPresenter.SetPointerVisible(true);
+            // Ready
+            bool isReady = phase == PhaseType.Ready;
 
-                PlayPhaseState playState = _phaseMachine.GetPlayState();
-                int playerID = playState.CurrentPlayerIndex.Value;
+            _mainUIPresenter.SetReadyState(isReady);
+
+            // Play
+            bool isPlay = phase == PhaseType.Play;
+
+            _mainUIPresenter.SetLimitTimeVisible(isPlay);
+            _mainUIPresenter.SetPointerVisible(isPlay);
+
+            if (isPlay)
+            {
+                foreach (BoardPresenter boardPresenter in _boardPresenters)
+                {
+                    if (boardPresenter == null)
+                    {
+                        continue;
+                    }
+
+                    boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
+                }
             }
             else
             {
-                _mainUIPresenter.SetLimitTimeVisible(false);
-                _mainUIPresenter.SetPointerVisible(false);
+                foreach (BoardPresenter boardPresenter in _boardPresenters)
+                {
+                    if (boardPresenter == null)
+                    {
+                        continue;
+                    }
+
+                    boardPresenter.UnbindInputStream();
+                }
             }
 
-            if (phase == PhaseType.Pause)
-            {
-                _mainUIPresenter.SetPauseState(true);
-            }
-            else
-            {
-                _mainUIPresenter.SetPauseState(false);
-            }
+            // Pause
+            bool isPause = phase == PhaseType.Pause;
+            _mainUIPresenter.SetPauseState(isPause);
 
-            if (phase == PhaseType.Ready)
-            {
-                _mainUIPresenter.SetReadyState(true);
-            }
-            else
-            {
-                _mainUIPresenter.SetReadyState(false);
-            }
-        }
+            // Event
 
-        /// <summary>
-        /// フェーズを変更する
-        /// </summary>
-        private void SetTargetPhase(in PhaseType currentPhase)
-        {
-            PhaseType nextPhase;
+            bool isEvent = phase == PhaseType.Event;
 
-            if (currentPhase == PhaseType.Play)
+            if (!isEvent)
             {
-                nextPhase = PhaseType.Event;
+                _mainUIPresenter.SetSwitchProjection(false);
             }
-            else if (currentPhase == PhaseType.Event)
-            {
-                nextPhase = PhaseType.ChangePlayer;
-            }
-            else
-            {
-                return;
-            }
-
-            // フェーズ変更通知
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(
-                    _currentPhase.Value,
-                    nextPhase
-                )
-            );
         }
 
         // --------------------------------------------------
