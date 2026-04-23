@@ -6,18 +6,16 @@
 // 概要     : シーン内イベントの仲介を行う
 // ======================================================
 
+using System;
+using System.Linq;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
 using InputSystem;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
-using System;
-using System.Diagnostics;
-using System.Linq;
 using UISystem.Presentation;
-using UniRx;
-using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Application
@@ -59,6 +57,9 @@ namespace GameSystem.Application
 
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>入力用購読管理</summary>
+        private CompositeDisposable _inputDisposables;
 
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
@@ -153,48 +154,6 @@ namespace GameSystem.Application
             // --------------------------------------------------
             _inputManager.BindMappingStream(_onMappingChanged);
 
-            // ボタン A 押下
-            _inputManager.ButtonA.OnUp
-                .Subscribe(_ =>
-                {
-                    // 駒配置イベント発火
-                    _onDropRequested.OnNext(Unit.Default);
-                })
-                .AddTo(_disposables);
-
-            // ボタン X 押下
-            _inputManager.ButtonX.OnDown
-                .Subscribe(_ =>
-                {
-                    // 回転イベント発火（X+）
-                    _onRotateRequested.OnNext(
-                        new RotationCommand(
-                            RotationAxis.X,
-                            RotationDirection.Positive
-                        )
-                    );
-                })
-                .AddTo(_disposables);
-
-            // ボタン Y 押下
-            _inputManager.ButtonY.OnDown
-                .Subscribe(_ =>
-                {
-                    // 回転イベント発火（X-）
-                    _onRotateRequested.OnNext(
-                        new RotationCommand(
-                            RotationAxis.X,
-                            RotationDirection.Negative
-                        )
-                    );
-                })
-                .AddTo(_disposables);
-
-            // スタートボタン押下
-            _inputManager.StartButton.OnDown
-                .Subscribe(e => HandleStartButtonPressed(new StartButtonEvent(_currentPhase.Value)))
-                .AddTo(_disposables);
-
             // --------------------------------------------------
             // ボード
             // --------------------------------------------------
@@ -208,7 +167,6 @@ namespace GameSystem.Application
                 boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
                 boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
 
-                // スタートボタン押下
                 boardPresenter.OnInputReceived
                     .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                     .AddTo(_disposables);
@@ -225,11 +183,15 @@ namespace GameSystem.Application
             // --------------------------------------------------
             // カメラ
             // --------------------------------------------------
-            _cameraPresenter.BindPhaseStream(_currentPhase);
+            _cameraPresenter.BindInputLockStream(
+                _currentPhase.Select(phase => phase != PhaseType.Play)
+            );
 
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
+            _mainUIPresenter.BindPhaseStream(_currentPhase);
+
             _phaseMachine.LimitTime
                 .Subscribe(e =>
                 {
@@ -280,7 +242,9 @@ namespace GameSystem.Application
                 boardPresenter.UnbindInputStream();
             }
 
-            _cameraPresenter.UnbindPhaseStream();
+            _cameraPresenter.UnbindInputLockStream();
+
+            _mainUIPresenter.UnbindPhaseStream();
         }
 
         // ======================================================
@@ -309,18 +273,10 @@ namespace GameSystem.Application
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseChanged(in PhaseType phase)
         {
-            // Ready
-            bool isReady = phase == PhaseType.Ready;
-
-            _mainUIPresenter.SetReadyState(isReady);
-
+            // --------------------------------------------------
             // Play
-            bool isPlay = phase == PhaseType.Play;
-
-            _mainUIPresenter.SetLimitTimeVisible(isPlay);
-            _mainUIPresenter.SetPointerVisible(isPlay);
-
-            if (isPlay)
+            // --------------------------------------------------
+            if (phase == PhaseType.Play)
             {
                 foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
@@ -331,6 +287,8 @@ namespace GameSystem.Application
 
                     boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
                 }
+
+                BindPlayPhaseInputCommands();
             }
             else
             {
@@ -343,19 +301,8 @@ namespace GameSystem.Application
 
                     boardPresenter.UnbindInputStream();
                 }
-            }
 
-            // Pause
-            bool isPause = phase == PhaseType.Pause;
-            _mainUIPresenter.SetPauseState(isPause);
-
-            // Event
-
-            bool isEvent = phase == PhaseType.Event;
-
-            if (!isEvent)
-            {
-                _mainUIPresenter.SetSwitchProjection(false);
+                UnbindPlayPhaseInputCommands();
             }
         }
 
@@ -371,23 +318,72 @@ namespace GameSystem.Application
         }
 
         /// <summary>
+        /// Playフェーズ用の入力コマンド購読を登録する
+        /// </summary>
+        private void BindPlayPhaseInputCommands()
+        {
+            // 既存購読を破棄
+            _inputDisposables?.Dispose();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
+            // ボタン A 押下
+            _inputManager.ButtonA.OnUp
+                .Subscribe(_ =>
+                {
+                    // 駒配置イベント発火
+                    _onDropRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン B 押下
+            _inputManager.ButtonB.OnDown
+                .Subscribe(_ =>
+                {
+                    // 回転イベント発火（X+）
+                    _onRotateRequested.OnNext(
+                        new RotationCommand(
+                            RotationAxis.X,
+                            RotationDirection.Positive
+                        )
+                    );
+                })
+                .AddTo(_inputDisposables);
+
+            // スタートボタン押下
+            _inputManager.StartButton.OnDown
+                .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
+                .AddTo(_inputDisposables);
+        }
+
+        /// <summary>
+        /// Playフェーズ用の入力コマンド購読を解除する
+        /// </summary>
+        private void UnbindPlayPhaseInputCommands()
+        {
+            _inputDisposables?.Dispose();
+            _inputDisposables = null;
+        }
+
+        /// <summary>
         /// スタートボタン押下時の処理を行う
         /// </summary>
-        private void HandleStartButtonPressed(in StartButtonEvent e)
+        private void HandleStartButtonPressed(in PhaseType phase)
         {
             // マッピングと遷移先を決定する
             int mappingIndex;
             PhaseType nextPhase;
 
-            if (e.Phase == PhaseType.Play)
+            if (phase == PhaseType.Play)
             {
                 mappingIndex = 1;
                 nextPhase = PhaseType.Pause;
 
                 // 現在のアクティブ状態フェーズをキャッシュ
-                _cachedActivePhase = e.Phase;
+                _cachedActivePhase = phase;
             }
-            else if (e.Phase == PhaseType.Pause)
+            else if (phase == PhaseType.Pause)
             {
                 mappingIndex = 0;
 

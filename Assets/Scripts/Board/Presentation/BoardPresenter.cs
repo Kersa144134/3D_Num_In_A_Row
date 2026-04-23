@@ -127,6 +127,9 @@ namespace BoardSystem.Presentation
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
+        /// <summary>入力可能フラグ</summary>
+        private bool _canInput = false;
+
         /// <summary>落下実行中フラグ</summary>
         private bool _isDrop = false;
 
@@ -256,8 +259,8 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 落下実行中、またはプレイヤー番号が不正値なら列選択表示を非表示
-            if (_isDrop || _currentPlayer == PLAYER_NONE)
+            // 入力不可、またはプレイヤー番号が不正値なら列選択表示を非表示
+            if (!_canInput || _currentPlayer == PLAYER_NONE)
             {
                 _view.SetSelectVisible(false);
                 return;
@@ -400,6 +403,9 @@ namespace BoardSystem.Presentation
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 })
                 .AddTo(_inputDisposables);
+
+            // 入力可能
+            _canInput = true;
         }
 
         /// <summary>
@@ -409,6 +415,9 @@ namespace BoardSystem.Presentation
         {
             _inputDisposables?.Dispose();
             _inputDisposables = null;
+
+            // 入力不可
+            _canInput = false;
         }
 
         // ======================================================

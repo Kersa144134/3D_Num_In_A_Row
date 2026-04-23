@@ -98,8 +98,8 @@ namespace CameraSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>フェーズ購読保持</summary>
-        private IDisposable _phaseSubscription;
+        /// <summary>入力ロック状態購読</summary>
+        private IDisposable _inputLockSubscription;
 
         // ======================================================
         // IUpdatable イベント
@@ -162,37 +162,29 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
+        /// 入力ロック状態を購読する
         /// </summary>
-        /// <param name="stream">フェーズ種別を通知するストリーム</param>
-        public void BindPhaseStream(in IObservable<PhaseType> stream)
+        /// <param name="stream">true:ロック / false:解除</param>
+        public void BindInputLockStream(in IObservable<bool> stream)
         {
             // 多重購読防止
-            _phaseSubscription?.Dispose();
+            _inputLockSubscription?.Dispose();
 
-            _phaseSubscription = stream
-                .Subscribe(phase =>
+            _inputLockSubscription = stream
+                .Subscribe(isLock =>
                 {
-                    if (phase == PhaseType.Play)
-                    {
-                        // 入力ロック解除
-                        _isInputLock = false;
-                    }
-                    else
-                    {
-                        // 入力ロック
-                        _isInputLock = true;
-                    }
+                    // 入力ロック状態を更新
+                    _isInputLock = isLock;
                 });
         }
 
         /// <summary>
-        /// フェーズ変更ストリームの購読を解除する
+        /// 入力ロック状ストリームの購読を解除する
         /// </summary>
-        public void UnbindPhaseStream()
+        public void UnbindInputLockStream()
         {
-            _phaseSubscription?.Dispose();
-            _phaseSubscription = null;
+            _inputLockSubscription?.Dispose();
+            _inputLockSubscription = null;
         }
 
         /// <summary>

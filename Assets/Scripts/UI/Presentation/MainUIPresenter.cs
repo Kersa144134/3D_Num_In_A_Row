@@ -88,6 +88,9 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        /// <summary>フェーズ購読保持</summary>
+        private IDisposable _phaseSubscription;
+
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
@@ -132,13 +135,62 @@ namespace UISystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
+        /// <summary>
+        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
+        /// </summary>
+        /// <param name="stream">フェーズ種別を通知するストリーム</param>
+        public void BindPhaseStream(in IObservable<PhaseType> stream)
+        {
+            // 多重購読防止
+            _phaseSubscription?.Dispose();
+
+            _phaseSubscription = stream
+                .Subscribe(phase =>
+                {
+                    // Ready
+                    bool isReady = phase == PhaseType.Ready;
+
+                    SetReadyState(isReady);
+
+                    // Play
+                    bool isPlay = phase == PhaseType.Play;
+
+                    SetLimitTimeVisible(isPlay);
+                    SetPointerVisible(isPlay);
+
+                    // Pause
+                    bool isPause = phase == PhaseType.Pause;
+                    SetPauseState(isPause);
+
+                    // Event
+                    bool isEvent = phase == PhaseType.Event;
+
+                    if (!isEvent)
+                    {
+                        SetSwitchProjection(false);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// フェーズ変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPhaseStream()
+        {
+            _phaseSubscription?.Dispose();
+            _phaseSubscription = null;
+        }
+        
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         /// <summary>
         /// 制限時間テキストの表示状態を更新する
         /// </summary>
         /// <param name="isVisible">表示する場合はtrue</param>
-        public void SetLimitTimeVisible(in bool isVisible)
+        private void SetLimitTimeVisible(in bool isVisible)
         {
             _mainUIView.SetLimitTimeVisible(isVisible);
         }
@@ -159,7 +211,7 @@ namespace UISystem.Presentation
         /// ポインターの表示状態を更新する
         /// </summary>
         /// <param name="isVisible">表示する場合はtrue</param>
-        public void SetPointerVisible(in bool isVisible)
+        private void SetPointerVisible(in bool isVisible)
         {
             _mainUIView.SetPointerVisible(isVisible);
         }
@@ -171,7 +223,7 @@ namespace UISystem.Presentation
         /// Ready 状態アニメーターの状態を切り替える
         /// </summary>
         /// <param name="isReady">Ready 状態の場合はtrue</param>
-        public void SetReadyState(in bool isReady)
+        private void SetReadyState(in bool isReady)
         {
             if (_outgameCanvasAnimator == null)
             {
@@ -199,7 +251,7 @@ namespace UISystem.Presentation
         /// Pause 状態アニメーターの状態を切り替える
         /// </summary>
         /// <param name="isPause">Pause 状態の場合はtrue</param>
-        public void SetPauseState(in bool isPause)
+        private void SetPauseState(in bool isPause)
         {
             if (_outgameCanvasAnimator == null)
             {
