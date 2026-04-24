@@ -119,7 +119,7 @@ namespace BoardSystem.Application
                     continue;
                 }
 
-                _view.DestroyPiece(index);
+                _view.DestroyPieceObject(index);
                 _view.RemovePiece(index);
                 _model.ClearCell(index);
             }

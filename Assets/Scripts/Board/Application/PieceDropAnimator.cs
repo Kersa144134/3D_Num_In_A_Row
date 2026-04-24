@@ -44,46 +44,56 @@ namespace BoardSystem.Application
             Vector3 start,
             Vector3 end)
         {
+            // 現在の落下速度
             float velocity = 0f;
+
+            // 現在位置
             Vector3 position = start;
 
-            // --------------------------------------------------
-            // 落下処理
-            // --------------------------------------------------
-            while (true)
+            try
             {
-                // フレーム間の経過時間取得
-                float deltaTime = Time.deltaTime;
-
-                // 重力による加速
-                velocity += GRAVITY * deltaTime;
-
-                // 最大速度制限
-                if (velocity > MAX_FALL_SPEED)
+                // --------------------------------------------------
+                // 落下処理
+                // --------------------------------------------------
+                while (true)
                 {
-                    velocity = MAX_FALL_SPEED;
+                    // フレーム間の経過時間を取得
+                    float deltaTime = Time.deltaTime;
+
+                    // 重力加速度を加算して速度を更新
+                    velocity += GRAVITY * deltaTime;
+
+                    // 最大落下速度を超えないように制限
+                    if (velocity > MAX_FALL_SPEED)
+                    {
+                        // 上限値にクランプ
+                        velocity = MAX_FALL_SPEED;
+                    }
+
+                    // 現在位置の Y 座標を速度に応じて減少
+                    position.y -= velocity * deltaTime;
+
+                    // 目標位置を超えた、または十分近づいた場合に終了
+                    if (position.y <= end.y + ARRIVAL_THRESHOLD)
+                    {
+                        // ループを抜ける
+                        break;
+                    }
+
+                    // 計算した位置を Transform に反映
+                    pieceTransform.position = position;
+
+                    // 次のフレームまで非同期で待機
+                    await UniTask.Yield();
                 }
-
-                // Y 座標更新
-                position.y -= velocity * deltaTime;
-
-                // 目標座標に到達または超過したらループ終了
-                if (position.y <= end.y + ARRIVAL_THRESHOLD)
-                {
-                    break;
-                }
-
-                // Transform に反映
-                pieceTransform.position = position;
-
-                // 次フレームまで待機
-                await UniTask.Yield();
             }
-
-            // --------------------------------------------------
-            // 最終位置補正
-            // --------------------------------------------------
-            pieceTransform.position = end;
+            finally
+            {
+                // --------------------------------------------------
+                // 最終位置補正
+                // --------------------------------------------------
+                pieceTransform.position = end;
+            }
         }
     }
 }

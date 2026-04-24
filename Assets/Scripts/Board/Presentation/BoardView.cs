@@ -190,10 +190,13 @@ namespace BoardSystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // 駒情報
+        // --------------------------------------------------
         /// <summary>
         /// 駒インスタンス生成と初期設定を行う
         /// </summary>
-        private GameObject CreatePiece(in Vector3 startPosition, in int player)
+        private GameObject CreatePieceObject(in Vector3 startPosition, in int player)
         {
             // 指定された位置にプレハブから駒を生成
             GameObject piece =
@@ -250,7 +253,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒オブジェクト破棄
         /// </summary>
-        public void DestroyPiece(in BoardIndex index)
+        public void DestroyPieceObject(in BoardIndex index)
         {
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
@@ -261,9 +264,7 @@ namespace BoardSystem.Presentation
             }
             else
             {
-                Debug.LogWarning(
-                    $"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})"
-                );
+                Debug.LogWarning($"DestroyPiece: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
             }
         }
 
@@ -275,39 +276,9 @@ namespace BoardSystem.Presentation
             return _pieces.TryGetValue(index, out piece);
         }
 
-        /// <summary>
-        /// 指定した駒の Emission カラーを変更する
-        /// </summary>
-        public void SetPieceEmissionColor(in BoardIndex index)
-        {
-            if (_pieces.TryGetValue(index, out PieceData piece) == false)
-            {
-                Debug.LogWarning($"SetPieceEmissionColor: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
-                return;
-            }
-
-            // Renderer を取得する
-            Renderer renderer = piece.Transform.GetComponent<Renderer>();
-
-            if (renderer == null)
-            {
-                Debug.LogWarning("SetPieceEmissionColor: Rendererが見つかりません");
-                return;
-            }
-
-            // マテリアルを取得
-            Material material = renderer.material;
-
-            // 現在の Albedo カラーを取得
-            Color currentColor = material.GetColor(ALBEDO_COLOR_PROPERTY);
-
-            // Intensity を更新
-            Color hdrColor = currentColor * ALBEDO_INTENSITY;
-
-            // Albedo カラーに適用
-            material.SetColor(ALBEDO_COLOR_PROPERTY, hdrColor);
-        }
-
+        // --------------------------------------------------
+        // 座標情報
+        // --------------------------------------------------
         /// <summary>
         /// ワールド座標から列インデックスに変換
         /// </summary>
@@ -348,6 +319,9 @@ namespace BoardSystem.Presentation
             );
         }
 
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
         /// <summary>
         /// 駒生成
         /// </summary>
@@ -380,7 +354,7 @@ namespace BoardSystem.Presentation
                 new Vector3(targetX, targetY, targetZ);
 
             // 駒インスタンスを生成
-            GameObject piece = CreatePiece(startPosition, player);
+            GameObject piece = CreatePieceObject(startPosition, player);
 
             // 落下アニメーションを再生
             await _pieceAnimationView.PlayDropAsync(
@@ -489,7 +463,7 @@ namespace BoardSystem.Presentation
                             t
                         );
 
-                    // Updateタイミングで1フレーム待機
+                    // Update タイミングで1フレーム待機
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
             }
@@ -500,6 +474,39 @@ namespace BoardSystem.Presentation
                     target.rotation = endRotation;
                 }
             }
+        }
+
+        /// <summary>
+        /// 指定した駒の Emission カラーを変更する
+        /// </summary>
+        public void SetPieceEmissionColor(in BoardIndex index)
+        {
+            if (_pieces.TryGetValue(index, out PieceData piece) == false)
+            {
+                Debug.LogWarning($"SetPieceEmissionColor: 駒が存在しません ({index.X}, {index.Y}, {index.Z})");
+                return;
+            }
+
+            // Renderer を取得する
+            Renderer renderer = piece.Transform.GetComponent<Renderer>();
+
+            if (renderer == null)
+            {
+                Debug.LogWarning("SetPieceEmissionColor: Rendererが見つかりません");
+                return;
+            }
+
+            // マテリアルを取得
+            Material material = renderer.material;
+
+            // 現在の Albedo カラーを取得
+            Color currentColor = material.GetColor(ALBEDO_COLOR_PROPERTY);
+
+            // Intensity を更新
+            Color hdrColor = currentColor * ALBEDO_INTENSITY;
+
+            // Albedo カラーに適用
+            material.SetColor(ALBEDO_COLOR_PROPERTY, hdrColor);
         }
 
         /// <summary>

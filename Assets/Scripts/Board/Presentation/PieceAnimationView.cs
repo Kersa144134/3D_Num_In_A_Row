@@ -149,8 +149,7 @@ namespace BoardSystem.Presentation
                 );
 
             // ParticleSystem Žæ“¾
-            ParticleSystem ps =
-                particle.GetComponent<ParticleSystem>();
+            ParticleSystem ps = particle.GetComponent<ParticleSystem>();
 
             if (ps != null)
             {
