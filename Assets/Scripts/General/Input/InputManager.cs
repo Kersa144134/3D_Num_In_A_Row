@@ -230,12 +230,27 @@ namespace InputSystem
             }
 
             // スティック状態更新
-            _stickStateUpdateService.UpdateStickStates(
-                _deviceSwitchService.ActiveController,
-                ref _leftStick,
-                ref _rightStick,
-                ref _dPad
+            var stick = _stickStateUpdateService.GetStickStates(
+                _deviceSwitchService.ActiveController
             );
+
+            // 左スティック差分チェック
+            if (_leftStick.Value != stick.left)
+            {
+                _leftStick.Value = stick.left;
+            }
+
+            // 右スティック差分チェック
+            if (_rightStick.Value != stick.right)
+            {
+                _rightStick.Value = stick.right;
+            }
+
+            // D-Pad差分チェック
+            if (_dPad.Value != stick.dPad)
+            {
+                _dPad.Value = stick.dPad;
+            }
 
             // ポインター状態更新
             UpdatePointer();
