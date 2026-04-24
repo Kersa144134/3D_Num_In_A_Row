@@ -68,7 +68,7 @@ namespace CameraSystem.Application
         public void UpdateRotation(in Vector2 input, in float deltaTime)
         {
             // --------------------------------------------------
-            // 入力解析
+            // 入力取得
             // --------------------------------------------------
             // 入力ベクトルの長さを取得
             float inputMagnitude = input.magnitude;
@@ -118,6 +118,15 @@ namespace CameraSystem.Application
 
             //  Y回転はそのまま反映する
             _cameraModel.SetRotationY(nextY);
+        }
+
+        /// <summary>
+        /// 回転速度を即座にリセットする
+        /// </summary>
+        public void ResetRotationVelocity()
+        {
+            _velocityX = 0.0f;
+            _velocityY = 0.0f;
         }
 
         // ======================================================

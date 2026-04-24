@@ -77,7 +77,10 @@ namespace GameSystem.Application
         private readonly Subject<Unit> _onDropRequested = new Subject<Unit>();
 
         /// <summary>回転入力用 Subject</summary>
-        private readonly Subject<RotationCommand> _onRotateRequested = new Subject<RotationCommand>();
+        private readonly Subject<Unit> _onRotateRequested = new Subject<Unit>();
+
+        /// <summary>回転実行用 Subject</summary>
+        private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
 
         /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
@@ -124,6 +127,13 @@ namespace GameSystem.Application
         public void Subscribe(in PhaseMachine phaseMachine)
         {
             _phaseMachine = phaseMachine;
+
+            // --------------------------------------------------
+            // ルーター
+            // --------------------------------------------------
+            _onRotateRequested
+                .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                .AddTo(_disposables);
 
             // --------------------------------------------------
             // フェーズ
@@ -194,6 +204,9 @@ namespace GameSystem.Application
             _cameraPresenter.BindInputLockStream(
                 _currentPhase.Select(phase => phase != PhaseType.Play)
             );
+            _cameraPresenter.BindBoardRotationPreparationStream(
+                _mainUIPresenter.OnSwitchProjection.Select(_ => Unit.Default)
+            );
 
             // --------------------------------------------------
             // UI
@@ -203,9 +216,7 @@ namespace GameSystem.Application
             );
             _mainUIPresenter.BindPhaseStream(_currentPhase);
             _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
-            _mainUIPresenter.BindRotateStream(
-                _onRotateRequested.Select(_ => Unit.Default)
-            );
+            _mainUIPresenter.BindRotateStream(_onRotateRequested);
 
             _mainUIPresenter.OnSwitchProjection
                 .Subscribe(e =>
@@ -237,6 +248,7 @@ namespace GameSystem.Application
             }
 
             _cameraPresenter.UnbindInputLockStream();
+            _cameraPresenter.UnbindBoardRotationPreparationStream();
 
             _mainUIPresenter.UnbindInputLockStream();
             _mainUIPresenter.UnbindPhaseStream();
@@ -270,6 +282,9 @@ namespace GameSystem.Application
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseChanged(in PhaseType phase)
         {
+            // 入力購読解除
+            UnbindInputCommands();
+            
             // --------------------------------------------------
             // Play
             // --------------------------------------------------
@@ -284,13 +299,11 @@ namespace GameSystem.Application
                         continue;
                     }
 
-                    boardPresenter.BindInputStream(_onDropRequested, _onRotateRequested);
+                    boardPresenter.BindInputStream(_onDropRequested, _onRotateExecuted);
                 }
             }
             else
             {
-                UnbindPlayPhaseInputCommands();
-
                 foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
                     if (boardPresenter == null)
@@ -300,6 +313,14 @@ namespace GameSystem.Application
 
                     boardPresenter.UnbindInputStream();
                 }
+            }
+
+            // --------------------------------------------------
+            // Event
+            // --------------------------------------------------
+            if (phase == PhaseType.Event)
+            {
+                BindEventPhaseInputCommands();
             }
         }
 
@@ -338,8 +359,64 @@ namespace GameSystem.Application
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
-                    // 回転イベント発火（X+）
-                    _onRotateRequested.OnNext(
+                    // 回転準備イベント発火
+                    _onRotateRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_inputDisposables);
+
+            _onRotateExecuted.OnNext(
+                new RotationCommand(
+                    RotationAxis.X,
+                    RotationDirection.Positive
+                )
+            );
+        }
+
+        /// <summary>
+        /// Event フェーズ用の入力コマンド購読を登録する
+        /// </summary>
+        private void BindEventPhaseInputCommands()
+        {
+            // 既存購読を破棄
+            _inputDisposables?.Dispose();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
+            // 左スティック左押下
+            _inputManager.ButtonA.OnUp
+                .Subscribe(_ =>
+                {
+                    // Z+ 回転実行イベント発火
+                    _onRotateExecuted.OnNext(
+                        new RotationCommand(
+                            RotationAxis.Z,
+                            RotationDirection.Positive
+                        )
+                    );
+                })
+                .AddTo(_inputDisposables);
+
+            // 左スティック右押下
+            _inputManager.ButtonB.OnDown
+                .Subscribe(_ =>
+                {
+                    // Z- 回転実行イベント発火
+                    _onRotateExecuted.OnNext(
+                        new RotationCommand(
+                            RotationAxis.Z,
+                            RotationDirection.Negative
+                        )
+                    );
+                })
+                .AddTo(_inputDisposables);
+
+            // 左スティック上押下
+            _inputManager.ButtonA.OnUp
+                .Subscribe(_ =>
+                {
+                    // Z+ 回転実行イベント発火
+                    _onRotateExecuted.OnNext(
                         new RotationCommand(
                             RotationAxis.X,
                             RotationDirection.Positive
@@ -347,12 +424,26 @@ namespace GameSystem.Application
                     );
                 })
                 .AddTo(_inputDisposables);
+
+            // 左スティック下押下
+            _inputManager.ButtonB.OnDown
+                .Subscribe(_ =>
+                {
+                    // Z- 回転実行イベント発火
+                    _onRotateExecuted.OnNext(
+                        new RotationCommand(
+                            RotationAxis.X,
+                            RotationDirection.Negative
+                        )
+                    );
+                })
+                .AddTo(_inputDisposables);
         }
 
         /// <summary>
-        /// Play フェーズ用の入力コマンド購読を解除する
+        /// 入力コマンド購読を解除する
         /// </summary>
-        private void UnbindPlayPhaseInputCommands()
+        private void UnbindInputCommands()
         {
             _inputDisposables?.Dispose();
             _inputDisposables = null;

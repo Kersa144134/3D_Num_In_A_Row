@@ -64,14 +64,23 @@ namespace InputSystem
         /// </summary>
         private ButtonState[] _buttonStates;
 
-        /// <summary>左スティックの入力ベクトル</summary>
-        private Vector2 _leftStick = Vector2.zero;
+        /// <summary>
+        /// 左スティックの入力ベクトル
+        /// </summary>
+        private ReactiveProperty<Vector2> _leftStick
+            = new ReactiveProperty<Vector2>(Vector2.zero);
 
-        /// <summary>右スティックの入力ベクトル</summary>
-        private Vector2 _rightStick = Vector2.zero;
+        /// <summary>
+        /// 右スティックの入力ベクトル
+        /// </summary>
+        private ReactiveProperty<Vector2> _rightStick
+            = new ReactiveProperty<Vector2>(Vector2.zero);
 
-        /// <summary>D-Pad の入力ベクトル</summary>
-        private Vector2 _dPad = Vector2.zero;
+        /// <summary>
+        /// D-Pad の入力ベクトル
+        /// </summary>
+        private ReactiveProperty<Vector2> _dPad
+            = new ReactiveProperty<Vector2>(Vector2.zero);
 
         // ======================================================
         // プロパティ
@@ -116,15 +125,6 @@ namespace InputSystem
         /// <summary>Selectボタンの状態</summary>
         public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
-        /// <summary>左スティックの入力ベクトル</summary>
-        public Vector2 LeftStick => _leftStick;
-
-        /// <summary>右スティックの入力ベクトル</summary>
-        public Vector2 RightStick => _rightStick;
-
-        /// <summary>D-Pad の入力ベクトル</summary>
-        public Vector2 DPad => _dPad;
-
         /// <summary>ポインターの座標</summary>
         public Vector2 Pointer { get; private set; } = Vector2.zero;
 
@@ -137,7 +137,16 @@ namespace InputSystem
 
         /// <summary>マッピング変更購読</summary>
         private IDisposable _mappingSubscription;
-        
+
+        /// <summary>左スティック</summary>
+        public IReadOnlyReactiveProperty<Vector2> LeftStick => _leftStick;
+
+        /// <summary>右スティック</summary>
+        public IReadOnlyReactiveProperty<Vector2> RightStick => _rightStick;
+
+        /// <summary>D-Pad</summary>
+        public IReadOnlyReactiveProperty<Vector2> DPad => _dPad;
+
         // ======================================================
         // Unity イベント
         // ======================================================

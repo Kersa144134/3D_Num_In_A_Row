@@ -6,12 +6,13 @@
 // 概要     : カメラ入力・状態更新・描画反映を管理するプレゼンター
 // ======================================================
 
-using System;
-using UnityEngine;
-using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
 using InputSystem;
+using System;
+using System.Runtime.CompilerServices;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace CameraSystem.Presentation
@@ -100,6 +101,9 @@ namespace CameraSystem.Presentation
         /// <summary>入力ロック状態購読</summary>
         private IDisposable _inputLockSubscription;
 
+        /// <summary>ボード回転準備状態購読</summary>
+        private IDisposable _rotationPreparationSubscription;
+
         // ======================================================
         // IUpdatable イベント
         // ======================================================
@@ -146,14 +150,28 @@ namespace CameraSystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
+            // --------------------------------------------------
+            // 入力取得
+            // --------------------------------------------------
+            // 左右入力を取得する
+            float inputHorizontal = _inputManager.LeftStick.x;
+
+            // 上下入力を取得する
+            float inputVertical = _inputManager.LeftStick.y;
+
+            // 入力値を Vector2 としてまとめる
+            Vector2 input = new Vector2(inputHorizontal, inputVertical);
+
+            // --------------------------------------------------
+            // 回転処理
+            // --------------------------------------------------
             // 入力がロックされている場合は処理なし
             if (_isInputLock)
             {
                 return;
             }
 
-            // 回転処理を実行
-            UpdateRotation(unscaledDeltaTime);
+            UpdateRotation(input, unscaledDeltaTime);
         }
 
         public void OnExit()
@@ -166,7 +184,7 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力ロック状態を購読する
+        /// 入力ロック状態ストリームを購読する
         /// </summary>
         /// <param name="stream">true:ロック / false:解除</param>
         public void BindInputLockStream(in IObservable<bool> stream)
@@ -179,6 +197,12 @@ namespace CameraSystem.Presentation
                 {
                     // 入力ロック状態を更新
                     _isInputLock = isLock;
+
+                    if (_isInputLock)
+                    {
+                        // 回転速度リセット
+                        _rotationUseCase.ResetRotationVelocity();
+                    }
                 });
         }
 
@@ -189,6 +213,38 @@ namespace CameraSystem.Presentation
         {
             _inputLockSubscription?.Dispose();
             _inputLockSubscription = null;
+        }
+
+        /// <summary>
+        /// ボード回転準備状態ストリームを購読する
+        /// </summary>
+        /// <param name="stream">true:開始 / false:終了</param>
+        public void BindBoardRotationPreparationStream(in IObservable<Unit> stream)
+        {
+            // 多重購読防止
+            _rotationPreparationSubscription?.Dispose();
+
+            _rotationPreparationSubscription = stream
+                .Subscribe(_ =>
+                {
+                    // 入力ロック
+                    _isInputLock = true;
+
+                    // ボード回転準備状態
+                    _cameraModel.SetRotationX(90f);
+                    _cameraModel.SetRotationY(0f);
+
+                    _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+                });
+        }
+
+        /// <summary>
+        /// ボード回転準備状態ストリームの購読を解除する
+        /// </summary>
+        public void UnbindBoardRotationPreparationStream()
+        {
+            _rotationPreparationSubscription?.Dispose();
+            _rotationPreparationSubscription = null;
         }
 
         /// <summary>
@@ -208,20 +264,8 @@ namespace CameraSystem.Presentation
         /// カメラ回転処理
         /// </summary>
         /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
-        private void UpdateRotation(in float unscaledDeltaTime)
+        private void UpdateRotation(in Vector2 input, in float unscaledDeltaTime)
         {
-            // --------------------------------------------------
-            // 入力取得
-            // --------------------------------------------------
-            // 左右入力を取得する
-            float inputHorizontal = _inputManager.LeftStick.x;
-
-            // 上下入力を取得する
-            float inputVertical = _inputManager.LeftStick.y;
-
-            // 入力値を Vector2 としてまとめる
-            Vector2 input = new Vector2(inputHorizontal, inputVertical);
-
             // --------------------------------------------------
             // 回転更新
             // --------------------------------------------------
