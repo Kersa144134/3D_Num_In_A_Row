@@ -27,16 +27,6 @@ namespace BoardSystem.Domain
         public readonly int Z;
 
         // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>
-        /// 無効インデックス
-        /// </summary>
-        public static readonly BoardIndex Invalid =
-            new BoardIndex(-1, -1, -1);
-
-        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -48,13 +38,8 @@ namespace BoardSystem.Domain
         /// <param name="z">Z座標</param>
         public BoardIndex(in int x, in int y, in int z)
         {
-            // X座標を設定
             X = x;
-
-            // Y座標を設定
             Y = y;
-
-            // Z座標を設定
             Z = z;
         }
     }

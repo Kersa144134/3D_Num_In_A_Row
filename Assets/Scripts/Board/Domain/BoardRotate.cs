@@ -44,10 +44,14 @@ namespace BoardSystem.Domain
                 return new List<(BoardIndex, BoardIndex)>();
             }
 
+            // 盤面サイズ
             int size = state.GetSize();
+
+            // 回転後の盤面データ
             int[,,] newBoard = new int[size, size, size];
-            List<(BoardIndex from, BoardIndex to)> moves =
-                new List<(BoardIndex, BoardIndex)>(size * size * size);
+
+            // 移動情報リスト
+            List<(BoardIndex from, BoardIndex to)> moves = new List<(BoardIndex, BoardIndex)>(size * size * size);
 
             for (int x = 0; x < size; x++)
             {
@@ -58,13 +62,16 @@ namespace BoardSystem.Domain
                         BoardIndex fromIndex = new BoardIndex(x, y, z);
                         int value = state.Get(fromIndex);
 
-                        if (value == EMPTY) continue;
+                        if (value == EMPTY)
+                        {
+                            continue;
+                        }
 
                         int newX = x;
                         int newY = y;
                         int newZ = z;
 
-                        // X軸回転
+                        // X 軸回転
                         if (axis == RotationAxis.X)
                         {
                             if (direction == RotationDirection.Positive)
@@ -80,7 +87,7 @@ namespace BoardSystem.Domain
                                 newZ = y;
                             }
                         }
-                        // Z軸回転
+                        // Z 軸回転
                         else if (axis == RotationAxis.Z)
                         {
                             if (direction == RotationDirection.Positive)
@@ -115,10 +122,13 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 回転後の盤面データを反映する
         /// </summary>
+        /// <param name="state">対象盤面状態</param>
+        /// <param name="newBoard">回転後の盤面データ</param>
+        /// <param name="size">盤面サイズ</param>
         private void ApplyRotatedBoard(
             BoardState state,
-            int[,,] newBoard,
-            int size)
+            in int[,,] newBoard,
+            in int size)
         {
             for (int x = 0; x < size; x++)
             {

@@ -34,7 +34,6 @@ namespace BoardSystem.Domain
         public BoardRepositionResult(
             IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            // ˆÚ“®î•ñ‚ğ•Û
             Moves = moves;
         }
     }

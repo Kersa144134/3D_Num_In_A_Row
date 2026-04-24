@@ -64,7 +64,7 @@ namespace UISystem.Presentation
         private const string SCORE_FORMAT = "Score: {0}";
 
         /// <summary>スコア桁数</summary>
-        private static readonly int[] SCORE_DIGIT = { 4 };
+        private static readonly int[] SCORE_DIGIT = { 6 };
 
         /// <summary>制限時間表示フォーマット</summary>
         private const string LIMIT_TIME_FORMAT = "{0}:{1}";

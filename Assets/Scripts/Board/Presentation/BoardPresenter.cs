@@ -119,8 +119,11 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>カメラ</summary>
-        private Camera _camera; 
-        
+        private Camera _camera;
+
+        // RaycastHit配列
+        private readonly RaycastHit[] _raycastHits = new RaycastHit[1];
+
         /// <summary>盤面の列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
 
@@ -259,34 +262,45 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 入力不可、またはプレイヤー番号が不正値なら列選択表示を非表示
+            // 入力不可、またはプレイヤー番号が不正なら非表示
             if (!_canInput || _currentPlayer == PLAYER_NONE)
             {
-                _view.SetSelectVisible(false);
+                _view.SeteColumnSelectVisible(false);
                 return;
             }
 
-            // Ray 生成
+            // Ray生成
             Ray ray = _camera.ScreenPointToRay(_inputManager.Pointer);
 
-            bool isHit = Physics.Raycast(
-                ray,
-                out RaycastHit hit,
-                Mathf.Infinity,
-                _raycastLayerMask
-            );
+            // ヒット判定
+            int hitCount =
+                Physics.RaycastNonAlloc(
+                    ray,
+                    _raycastHits,
+                    Mathf.Infinity,
+                    _raycastLayerMask);
 
-            // ヒットしなかった場合は列選択表示を非表示
-            if (isHit == false || hit.collider != _boardCollider)
+            if (hitCount == 0)
             {
-                _view.SetSelectVisible(false);
+                _view.SeteColumnSelectVisible(false);
                 return;
             }
 
-            _view.SetSelectVisible(true);
+            // ヒット対象取得
+            RaycastHit hit = _raycastHits[0];
 
-            // 列選択表示の座標更新
-            _view.UpdateColumnSelect(hit.point);
+            // 対象外 Collider 判定
+            if (hit.collider != _boardCollider)
+            {
+                _view.SeteColumnSelectVisible(false);
+                return;
+            }
+
+            // --------------------------------------------------
+            // 表示更新
+            // --------------------------------------------------
+            _view.SeteColumnSelectVisible(true);
+            _view.UpdateColumnSelectPosition(hit.point);
         }
 
         public void OnExit()
@@ -328,7 +342,7 @@ namespace BoardSystem.Presentation
             }
 
             // 列選択表示を非表示にする
-            _view.SetSelectVisible(false);
+            _view.SeteColumnSelectVisible(false);
         }
 
         // ======================================================

@@ -93,7 +93,7 @@ namespace BoardSystem.Application
                     }
 
                     // ”­Œõ‰‰o
-                    _view.SetPieceEmissionColor(index, Color.white);
+                    _view.SetPieceEmissionColor(index);
 
                     // íœ‘ÎÛ’Ç‰Á
                     deleteSet.Add(index);

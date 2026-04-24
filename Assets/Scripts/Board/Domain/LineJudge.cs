@@ -63,7 +63,7 @@ namespace BoardSystem.Domain
             _connectCount = connectCount;
 
             // ライン生成ユーティリティ初期化
-            _lineGenerator = new LineGenerator(_boardSize, _connectCount);
+            _lineGenerator = new LineGenerator(_boardSize);
 
             // 全ライン生成
             _lines = _lineGenerator.GenerateLines();
@@ -129,15 +129,11 @@ namespace BoardSystem.Domain
             in BoardState board,
             in int[][] line)
         {
-            // --------------------------------------------------
-            // 結果格納用
-            // --------------------------------------------------
+            // 結果格納用リスト
             List<(IReadOnlyList<BoardIndex> Cells, int Player)> result =
                 new List<(IReadOnlyList<BoardIndex>, int)>();
 
-            // --------------------------------------------------
-            // 連続管理用
-            // --------------------------------------------------
+            // 連続管理用カウンター
             int lastValue = 0;
             List<BoardIndex> consecutiveCells = new List<BoardIndex>();
 
@@ -167,7 +163,7 @@ namespace BoardSystem.Domain
                 }
 
                 // --------------------------------------------------
-                // 同一プレイヤー継続
+                // 同一プレイヤー判定
                 // --------------------------------------------------
                 if (value == lastValue || lastValue == 0)
                 {
@@ -176,9 +172,7 @@ namespace BoardSystem.Domain
                 }
                 else
                 {
-                    // --------------------------------------------------
-                    // プレイヤー切替時に確定チェック
-                    // --------------------------------------------------
+                    // プレイヤー切替時にチェック
                     if (consecutiveCells.Count >= _connectCount)
                     {
                         result.Add((new List<BoardIndex>(consecutiveCells), lastValue));
@@ -191,9 +185,7 @@ namespace BoardSystem.Domain
                 }
             }
 
-            // --------------------------------------------------
-            // ループ終了後の取りこぼしチェック
-            // --------------------------------------------------
+            // ループ終了後のチェック
             if (consecutiveCells.Count >= _connectCount)
             {
                 result.Add((new List<BoardIndex>(consecutiveCells), lastValue));

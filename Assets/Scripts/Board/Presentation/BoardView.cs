@@ -264,7 +264,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 指定した駒の Emission カラーを変更する
         /// </summary>
-        public void SetPieceEmissionColor(in BoardIndex index, in Color emissionColor)
+        public void SetPieceEmissionColor(in BoardIndex index)
         {
             if (_pieces.TryGetValue(index, out PieceData piece) == false)
             {
@@ -284,11 +284,14 @@ namespace BoardSystem.Presentation
             // マテリアルを取得
             Material material = renderer.material;
 
-            // Emission を有効化
-            material.EnableKeyword("_EMISSION");
+            // 現在のAlbedoカラーを取得
+            Color currentColor = material.GetColor("_Albedo_Color");
 
-            // 指定された Emission カラーを設定
-            material.SetColor("_EmissionColor", emissionColor);
+            // Intensity = 2 を適用（2倍）
+            Color hdrColor = currentColor * 2.0f;
+
+            // 再設定
+            material.SetColor("_Albedo_Color", hdrColor);
         }
 
         /// <summary>
@@ -488,7 +491,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 列選択表示の表示状態を切り替える
         /// </summary>
-        public void SetSelectVisible(in bool isVisible)
+        public void SeteColumnSelectVisible(in bool isVisible)
         {
             _columnSelectView.SetVisible(isVisible);
         }
@@ -496,7 +499,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ヒットしたワールド座標から列位置を算出し、選択表示の位置を更新する
         /// </summary>
-        public void UpdateColumnSelect(in Vector3 hitPos)
+        public void UpdateColumnSelectPosition(in Vector3 hitPos)
         {
             _columnSelectView.UpdatePosition(hitPos);
         }

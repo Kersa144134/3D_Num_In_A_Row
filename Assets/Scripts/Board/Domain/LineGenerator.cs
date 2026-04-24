@@ -25,9 +25,6 @@ namespace BoardSystem.Domain
         /// <summary>盤面サイズ</summary>
         private readonly int _boardSize;
 
-        /// <summary>ライン成立条件の最低連続マス数</summary>
-        private readonly int _connectCount;
-
         /// <summary>生成ラインの一時プール</summary>
         private readonly List<int[][]> _linePool;
 
@@ -39,11 +36,9 @@ namespace BoardSystem.Domain
         /// LineGenerator のコンストラクタ
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
-        /// <param name="connectCount">ライン成立条件の最低連続マス数</param>
-        public LineGenerator(in int boardSize, in int connectCount)
+        public LineGenerator(in int boardSize)
         {
             _boardSize = boardSize;
-            _connectCount = connectCount;
 
             // ラインプールを初期化
             _linePool = new List<int[][]>(_boardSize * _boardSize * 6);
