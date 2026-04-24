@@ -108,6 +108,20 @@ namespace BoardSystem.Presentation
         public bool IsColumnSelectVisible => _columnSelectView.IsVisible;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>
+        /// Albedo カラーのプロパティ名
+        /// </summary>
+        private const string ALBEDO_COLOR_PROPERTY = "_Albedo_Color";
+
+        /// <summary>
+        /// HDR 強度
+        /// </summary>
+        private const float ALBEDO_INTENSITY = 3.0f;
+        
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -284,14 +298,14 @@ namespace BoardSystem.Presentation
             // マテリアルを取得
             Material material = renderer.material;
 
-            // 現在のAlbedoカラーを取得
-            Color currentColor = material.GetColor("_Albedo_Color");
+            // 現在の Albedo カラーを取得
+            Color currentColor = material.GetColor(ALBEDO_COLOR_PROPERTY);
 
-            // Intensity = 2 を適用（2倍）
-            Color hdrColor = currentColor * 2.0f;
+            // Intensity を更新
+            Color hdrColor = currentColor * ALBEDO_INTENSITY;
 
-            // 再設定
-            material.SetColor("_Albedo_Color", hdrColor);
+            // Albedo カラーに適用
+            material.SetColor(ALBEDO_COLOR_PROPERTY, hdrColor);
         }
 
         /// <summary>

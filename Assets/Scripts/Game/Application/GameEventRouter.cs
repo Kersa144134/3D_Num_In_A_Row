@@ -158,6 +158,11 @@ namespace GameSystem.Application
             // --------------------------------------------------
             _inputManager.BindMappingStream(_onMappingChanged);
 
+            // スタートボタン押下
+            _inputManager.StartButton.OnDown
+                .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // ボード
             // --------------------------------------------------
@@ -341,11 +346,6 @@ namespace GameSystem.Application
                         )
                     );
                 })
-                .AddTo(_inputDisposables);
-
-            // スタートボタン押下
-            _inputManager.StartButton.OnDown
-                .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
                 .AddTo(_inputDisposables);
         }
 
