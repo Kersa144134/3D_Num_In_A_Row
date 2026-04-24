@@ -20,12 +20,13 @@ namespace UISystem.Domain
         // ======================================================
 
         /// <summary>
-        /// 表示インデックス（0 は非表示行）
+        /// 表示インデックス
+        /// 0 は非表示行
         /// </summary>
         public int Index;
 
         /// <summary>
-        /// 目標座標（UI配置用）
+        /// 目標座標
         /// </summary>
         public Vector2 TargetPosition;
 

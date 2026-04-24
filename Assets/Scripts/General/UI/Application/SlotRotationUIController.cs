@@ -118,7 +118,7 @@ namespace UISystem.Application
         // ======================================================
 
         // --------------------------------------------------
-        // 1回転
+        // 1 回転
         // --------------------------------------------------
         /// <summary>
         /// スロットを1ステップ分回転させる
@@ -264,7 +264,7 @@ namespace UISystem.Application
 
         /// <summary>
         /// 初期目標座標パターンを生成する
-        /// 要素0は必ず座標0となる
+        /// 要素 0 は必ず座標 0 となる
         /// </summary>
         private void InitializeTargetPositions()
         {
@@ -300,7 +300,7 @@ namespace UISystem.Application
                 }
             }
 
-            // 最小／最大目標座標を初期化
+            // 最小 / 最大目標座標を初期化
             _minTargetCoord = float.MaxValue;
             _maxTargetCoord = float.MinValue;
 

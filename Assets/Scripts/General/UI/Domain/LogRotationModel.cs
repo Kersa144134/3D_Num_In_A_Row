@@ -118,7 +118,6 @@ namespace UISystem.Domain
         /// </summary>
         public void Update(in float currentTime)
         {
-            // ”roˆ—‚ğÀs
             ProcessRemoval(currentTime);
         }
 

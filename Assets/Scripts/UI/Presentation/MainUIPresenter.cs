@@ -30,6 +30,14 @@ namespace UISystem.Presentation
         [Header("メインシーン固有インスペクタ")]
 
         // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
+        [Header("スコア")]
+        /// <summary>スコアを表示するテキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI[] _scoreTexts;
+
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         [Header("タイマー")]
@@ -127,6 +135,7 @@ namespace UISystem.Presentation
             // ビュー生成
             _mainUIView =
                 new MainUIView(
+                    _scoreTexts,
                     _limitTimeText,
                     _pointerImage);
 
@@ -228,6 +237,10 @@ namespace UISystem.Presentation
                     if (!isEvent)
                     {
                         SetSwitchProjection(false);
+                    }
+                    else
+                    {
+                        _mainUIView.UpdateScore(1, 10);
                     }
                 });
         }

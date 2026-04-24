@@ -22,12 +22,18 @@ namespace UISystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>時間フォーマットサービス</summary>
+        /// <summary>スコアフォーマットクラス</summary>
+        private readonly TextFormatter[] _scoreFormatters;
+
+        /// <summary>時間フォーマットクラス</summary>
         private readonly TextFormatter _timeFormatter;
 
         // ======================================================
         // フィールド
         // ======================================================
+
+        /// <summary>スコア表示テキスト</summary>
+        private readonly TextMeshProUGUI[] _scoreTexts;
 
         /// <summary>制限時間表示テキスト</summary>
         private readonly TextMeshProUGUI _limitTimeText;
@@ -41,6 +47,9 @@ namespace UISystem.Presentation
         /// <summary>Canvas Rect</summary>
         private readonly RectTransform _canvasRect;
 
+        /// <summary>前回表示スコア</summary>
+        private int[] _previousDisplayScores;
+
         /// <summary>前回表示秒数</summary>
         private int _previousDisplayTotalSeconds;
 
@@ -51,10 +60,16 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>表示フォーマット</summary>
+        /// <summary>スコア表示フォーマット</summary>
+        private const string SCORE_FORMAT = "Score: {0}";
+
+        /// <summary>スコア桁数</summary>
+        private static readonly int[] SCORE_DIGIT = { 4 };
+
+        /// <summary>制限時間表示フォーマット</summary>
         private const string LIMIT_TIME_FORMAT = "{0}:{1}";
 
-        /// <summary>桁数</summary>
+        /// <summary>制限時間桁数</summary>
         private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
@@ -65,14 +80,37 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         public MainUIView(
+            in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI limitTimeText,
             in Image pointerImage)
         {
+            _scoreTexts = scoreTexts;
             _limitTimeText = limitTimeText;
 
             _pointerImage = pointerImage;
 
             _previousDisplayTotalSeconds = -1;
+
+            // --------------------------------------------------
+            // スコア初期化
+            // --------------------------------------------------
+            if (_scoreTexts != null)
+            {
+                int length = _scoreTexts.Length;
+
+                // scoreTexts の長さで配列生成
+                _scoreFormatters = new TextFormatter[length];
+                _previousDisplayScores = new int[length];
+
+                for (int i = 0; i < length; i++)
+                {
+                    // 各 Text ごとにフォーマッタ生成
+                    _scoreFormatters[i] =
+                        new TextFormatter(
+                            SCORE_FORMAT,
+                            SCORE_DIGIT);
+                }
+            }
 
             // --------------------------------------------------
             // タイマー初期化
@@ -105,6 +143,56 @@ namespace UISystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
+        /// <summary>
+        /// スコア表示更新
+        /// </summary>
+        /// <param name="playerId">プレイヤーID（1 ベース）</param>
+        /// <param name="score">スコア</param>
+        public void UpdateScore(in int playerId, in int score)
+        {
+            // --------------------------------------------------
+            // インデックス変換（1 ベース → 0 ベース）
+            // --------------------------------------------------
+            int index = playerId - 1;
+
+            if (_scoreTexts == null ||
+                index < 0 ||
+                index >= _scoreTexts.Length)
+            {
+                return;
+            }
+
+            TMP_Text targetText = _scoreTexts[index];
+
+            if (targetText == null)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // スコア計算
+            // --------------------------------------------------
+            // 同一値なら更新スキップ
+            if (score == _previousDisplayScores[index])
+            {
+                return;
+            }
+
+            _previousDisplayScores[index] = score;
+
+            // --------------------------------------------------
+            // 表示更新
+            // --------------------------------------------------
+            // フォーマット済みバッファ取得
+            char[] buffer = _scoreFormatters[index].Format(score);
+
+            // TextMeshPro に反映
+            targetText.SetCharArray(buffer);
+        }
 
         // --------------------------------------------------
         // タイマー
