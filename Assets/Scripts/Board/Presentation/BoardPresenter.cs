@@ -13,7 +13,7 @@ using UnityEngine;
 using UniRx;
 using BoardSystem.Application;
 using BoardSystem.Domain;
-using InputSystem;
+using InputSystem.Presentation;
 using PhaseSystem.Domain;
 using UpdateSystem.Domain;
 
@@ -129,9 +129,6 @@ namespace BoardSystem.Presentation
 
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
-
-        /// <summary>入力可能フラグ</summary>
-        private bool _canInput = false;
 
         /// <summary>落下実行中フラグ</summary>
         private bool _isDrop = false;
@@ -262,8 +259,8 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 入力不可、またはプレイヤー番号が不正なら非表示
-            if (!_canInput || _currentPlayer == PLAYER_NONE)
+            // 駒落下中、またはプレイヤー番号が不正なら非表示
+            if (_isDrop || _currentPlayer == PLAYER_NONE)
             {
                 _view.SeteColumnSelectVisible(false);
                 return;
@@ -336,13 +333,13 @@ namespace BoardSystem.Presentation
 
         public void OnPhaseExit(in PhaseType phase)
         {
-            if (!(phase == PhaseType.Play))
+            if (phase == PhaseType.Play)
             {
-                return;
-            }
+                _currentPlayer = PLAYER_NONE;
 
-            // 列選択表示を非表示にする
-            _view.SeteColumnSelectVisible(false);
+                // 列選択表示を非表示にする
+                _view.SeteColumnSelectVisible(false);
+            }
         }
 
         // ======================================================
@@ -376,8 +373,8 @@ namespace BoardSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // 入力可能フラグ更新
-            _canInput = true;
+            // 駒落下フラグ更新
+            _isDrop = false;
         }
 
         /// <summary>
@@ -396,8 +393,8 @@ namespace BoardSystem.Presentation
             rotateStream
                 .Subscribe(cmd =>
                 {
-                    // 回転中なら無効
-                    if (_isRotate)
+                    // 駒落下中、または回転中なら無効
+                    if (_isDrop || _isRotate)
                     {
                         return;
                     }
@@ -408,7 +405,7 @@ namespace BoardSystem.Presentation
                 .AddTo(_inputDisposables);
 
             // 入力可能フラグ更新
-            _canInput = true;
+            _isRotate = false;
         }
         
         /// <summary>
@@ -418,9 +415,6 @@ namespace BoardSystem.Presentation
         {
             _inputDisposables?.Dispose();
             _inputDisposables = null;
-
-            // 入力不可
-            _canInput = false;
         }
 
         /// <summary>
@@ -492,18 +486,11 @@ namespace BoardSystem.Presentation
 
             _isDrop = true;
 
-            try
-            {
-                // ユースケース実行
-                await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
+            // ユースケース実行
+            await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
 
-                // ライン成立チェック
-                await CheckLine(_model.CheckLine());
-            }
-            finally
-            {
-                _isDrop = false;
-            }
+            // ライン成立チェック
+            await CheckLine(_model.CheckLine());
         }
 
         /// <summary>
@@ -518,39 +505,31 @@ namespace BoardSystem.Presentation
 
             _isRotate = true;
 
-            try
-            {
-                // --------------------------------------------------
-                // 回転ユースケース実行
-                // --------------------------------------------------
-                RotationResult result = await _rotationUseCase.HandleRotateAsync(axis, direction);
+            // --------------------------------------------------
+            // 回転ユースケース実行
+            // --------------------------------------------------
+            RotationResult result = await _rotationUseCase.HandleRotateAsync(axis, direction);
 
-                // ビュー辞書更新
-                ApplyViewMoves(result.RotateMoves);
+            // ビュー辞書更新
+            ApplyViewMoves(result.RotateMoves);
 
-                // --------------------------------------------------
-                // ビュー更新
-                // --------------------------------------------------
-                await _view.RotateAsync(
-                    transform,
-                    axis,
-                    direction
-                );
+            // --------------------------------------------------
+            // ビュー更新
+            // --------------------------------------------------
+            await _view.RotateAsync(
+                transform,
+                axis,
+                direction
+            );
 
-                // 再配置アニメーション
-                await _view.MovePiecesAsync(result.RepositionMoves);
+            // 再配置アニメーション
+            await _view.MovePiecesAsync(result.RepositionMoves);
 
-                // 再配置後の位置をViewに確定反映
-                ApplyViewMoves(result.RepositionMoves);
+            // 再配置後の位置をViewに確定反映
+            ApplyViewMoves(result.RepositionMoves);
 
-                // ライン成立チェック
-                await CheckLine(_model.CheckLine());
-            }
-            finally
-            {
-                // 回転終了
-                _isRotate = false;
-            }
+            // ライン成立チェック
+            await CheckLine(_model.CheckLine());
         }
 
         /// <summary>

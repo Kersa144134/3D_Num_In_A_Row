@@ -6,13 +6,12 @@
 // 概要     : カメラ入力・状態更新・描画反映を管理するプレゼンター
 // ======================================================
 
+using System;
+using UnityEngine;
+using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
-using InputSystem;
-using System;
-using System.Runtime.CompilerServices;
-using UniRx;
-using UnityEngine;
+using InputSystem.Presentation;
 using UpdateSystem.Domain;
 
 namespace CameraSystem.Presentation

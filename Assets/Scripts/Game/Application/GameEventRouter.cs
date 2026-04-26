@@ -7,17 +7,18 @@
 // ======================================================
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
-using InputSystem;
+using InputSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
+using ScoreSystem.Domain;
 using UISystem.Presentation;
 using UpdateSystem.Domain;
-using System.Diagnostics;
 
 namespace GameSystem.Application
 {
@@ -68,6 +69,8 @@ namespace GameSystem.Application
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
+        private readonly Subject<ScoreEvent> _onScoreUpdated = new Subject<ScoreEvent>();
+
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
 
@@ -82,9 +85,6 @@ namespace GameSystem.Application
 
         /// <summary>回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
-
-        /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete = new Subject<LineCompleteEvent>();
 
         /// <summary>現在フェーズストリーム参照</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
@@ -144,7 +144,7 @@ namespace GameSystem.Application
                 .Skip(1)
                 .Subscribe(phase =>
                 {
-                    HandlePhaseChanged(phase);
+                    HandlePhaseInputSwitch(phase);
                 })
                 .AddTo(_disposables);
 
@@ -154,13 +154,6 @@ namespace GameSystem.Application
                 .Subscribe(player =>
                 {
                     _onPlayerChanged.OnNext(player);
-                })
-                .AddTo(_disposables);
-
-            _phaseMachine.LimitTime
-                .Subscribe(e =>
-                {
-                    _mainUIPresenter.UpdateLimitTimeDisplay(e);
                 })
                 .AddTo(_disposables);
 
@@ -191,7 +184,7 @@ namespace GameSystem.Application
                     .AddTo(_disposables);
 
                 boardPresenter.OnLineComplete
-                    .Subscribe(e => _onLineComplete.OnNext(e))
+                    .Subscribe(e => HandleLineCompleted(e))
                     .AddTo(_disposables);
 
                 boardPresenter.OnPlayerEnd
@@ -212,10 +205,12 @@ namespace GameSystem.Application
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
+            _mainUIPresenter.BindPhaseStream(_currentPhase);
+            _mainUIPresenter.BindLineCompleteStream(_onScoreUpdated);
+            _mainUIPresenter.BindLimitTimeStream(_phaseMachine.LimitTime);
             _mainUIPresenter.BindInputLockStream(
                 _currentPhase.Select(phase => phase != PhaseType.Play)
             );
-            _mainUIPresenter.BindPhaseStream(_currentPhase);
             _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
             _mainUIPresenter.BindRotateStream(_onRotateRequested);
 
@@ -251,8 +246,10 @@ namespace GameSystem.Application
             _cameraPresenter.UnbindInputLockStream();
             _cameraPresenter.UnbindBoardRotationPreparationStream();
 
-            _mainUIPresenter.UnbindInputLockStream();
             _mainUIPresenter.UnbindPhaseStream();
+            _mainUIPresenter.UnbindLineCompleteStream();
+            _mainUIPresenter.UnbindLimitTimeStream();
+            _mainUIPresenter.UnbindInputLockStream();
             _mainUIPresenter.UnbindPlayerChangeStream();
             _mainUIPresenter.UnbindRotateStream();
         }
@@ -277,11 +274,22 @@ namespace GameSystem.Application
             );
         }
 
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
         /// <summary>
-        /// フェーズ変更時の処理
+        /// 入力マッピング変更を通知する
+        /// </summary>
+        private void NotifyMappingChanged(in int mappingIndex)
+        {
+            _onMappingChanged.OnNext(mappingIndex);
+        }
+
+        /// <summary>
+        /// フェーズ変更時の入力切替処理を行う
         /// </summary>
         /// <param name="phase">変更後のフェーズ</param>
-        private void HandlePhaseChanged(in PhaseType phase)
+        private void HandlePhaseInputSwitch(in PhaseType phase)
         {
             // 入力購読解除
             UnbindInputCommands();
@@ -292,7 +300,7 @@ namespace GameSystem.Application
             if (phase == PhaseType.Play)
             {
                 BindPlayPhaseInputCommands();
-                
+
                 foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
                     if (boardPresenter == null)
@@ -338,17 +346,6 @@ namespace GameSystem.Application
 
                 boardPresenter.UnbindInputStream();
             }
-        }
-
-        // --------------------------------------------------
-        // 入力
-        // --------------------------------------------------
-        /// <summary>
-        /// 入力マッピング変更を通知する
-        /// </summary>
-        private void NotifyMappingChanged(in int mappingIndex)
-        {
-            _onMappingChanged.OnNext(mappingIndex);
         }
 
         /// <summary>
@@ -466,7 +463,7 @@ namespace GameSystem.Application
         }
 
         /// <summary>
-        /// スタートボタン押下時の処理を行う
+        /// スタートボタン押下時のマッピング変更処理を行う
         /// </summary>
         private void HandleStartButtonPressed(in PhaseType phase)
         {
@@ -496,6 +493,34 @@ namespace GameSystem.Application
 
             NotifyMappingChanged(mappingIndex);
             NotifyPhaseChanged(nextPhase);
+        }
+
+        // --------------------------------------------------
+        // ボード
+        // --------------------------------------------------
+        /// <summary>
+        /// ライン成立時の処理を行う
+        /// </summary>
+        private void HandleLineCompleted(LineCompleteEvent e)
+        {
+            // プレイヤー ID
+            int playerId = e.Player;
+
+            // ラインリスト
+            IReadOnlyList<BoardIndex>[] lines = e.LinePositions;
+
+            // スコア
+            int score = 0;
+
+            // ラインごとのセル数を合計する
+            for (int i = 0; i < lines.Length; i++)
+            {
+                // 各ラインのセル数を加算
+                score += lines[i]?.Count ?? 0;
+            }
+
+            // スコアイベントとして発火
+            _onScoreUpdated.OnNext(new ScoreEvent(playerId, score));
         }
     }
 }

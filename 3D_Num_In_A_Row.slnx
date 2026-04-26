@@ -1,4 +1,5 @@
 ﻿<Solution>
+  <Project Path="ShaderApplication.csproj" />
   <Project Path="UniRx.csproj" />
   <Project Path="InputController.csproj" />
   <Project Path="CameraPresentation.csproj" />
@@ -7,7 +8,6 @@
   <Project Path="GeneralUpdateDomain.csproj" />
   <Project Path="UniRx.Examples.csproj" />
   <Project Path="InputData.csproj" />
-  <Project Path="ShaderController.csproj" />
   <Project Path="BoardApplication.csproj" />
   <Project Path="GeneralUpdateApplication.csproj" />
   <Project Path="GeneralPhaseDomain.csproj" />
@@ -22,6 +22,7 @@
   <Project Path="UIPresentation.csproj" />
   <Project Path="GeneralUIPresentation.csproj" />
   <Project Path="PhaseDomain.csproj" />
+  <Project Path="ScoreDomain.csproj" />
   <Project Path="GeneralUIApplication.csproj" />
   <Project Path="GeneralGamePresentation.csproj" />
   <Project Path="UpdateDomain.csproj" />

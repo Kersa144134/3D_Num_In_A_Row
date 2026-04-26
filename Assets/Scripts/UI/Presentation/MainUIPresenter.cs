@@ -11,8 +11,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UniRx;
-using InputSystem;
+using InputSystem.Presentation;
 using PhaseSystem.Domain;
+using ScoreSystem.Domain;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -112,11 +113,17 @@ namespace UISystem.Presentation
         /// <summary>投影切り替えストリーム</summary>
         public IObservable<bool> OnSwitchProjection => _onSwitchProjection;
 
-        /// <summary>入力ロック状態購読</summary>
-        private IDisposable _inputLockSubscription;
-
         /// <summary>フェーズ購読</summary>
         private IDisposable _phaseSubscription;
+
+        /// <summary>ライン成立購読</summary>
+        private IDisposable _lineCompleteSubscription;
+
+        /// <summary>制限時間状態購読</summary>
+        private IDisposable _limitTimeSubscription;
+
+        /// <summary>入力ロック状態購読</summary>
+        private IDisposable _inputLockSubscription;
 
         /// <summary>プレイヤーインデックス購読</summary>
         private IDisposable _playerIndexSubscription;
@@ -168,8 +175,10 @@ namespace UISystem.Presentation
             base.OnExitInternal();
 
             // イベント購読解除
-            UnbindInputLockStream();
             UnbindPhaseStream();
+            UnbindLineCompleteStream();
+            UnbindLimitTimeStream();
+            UnbindInputLockStream();
             UnbindPlayerChangeStream();
             UnbindRotateStream();
         }
@@ -179,15 +188,111 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
+        /// </summary>
+        /// <param name="phase">フェーズ種別を通知するストリーム</param>
+        public void BindPhaseStream(in IObservable<PhaseType> phase)
+        {
+            // 多重購読防止
+            _phaseSubscription?.Dispose();
+
+            _phaseSubscription = phase
+                .Subscribe(type =>
+                {
+                    // Ready
+                    bool isReady = type == PhaseType.Ready;
+
+                    SetReadyState(isReady);
+
+                    // Play
+                    bool isPlay = type == PhaseType.Play;
+
+                    SetLimitTimeVisible(isPlay);
+                    SetPointerVisible(isPlay);
+
+                    // Pause
+                    bool isPause = type == PhaseType.Pause;
+                    SetPauseState(isPause);
+
+                    // Event
+                    bool isEvent = type == PhaseType.Event;
+
+                    if (!isEvent)
+                    {
+                        SetSwitchProjection(false);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// フェーズ変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindPhaseStream()
+        {
+            _phaseSubscription?.Dispose();
+            _phaseSubscription = null;
+        }
+
+        /// <summary>
+        /// ライン成立イベントストリームを購読し、スコア表示を更新する
+        /// </summary>
+        /// <param name="stream">スコア更新イベントストリーム</param>
+        public void BindLineCompleteStream(in IObservable<ScoreEvent> stream)
+        {
+            // 多重購読防止
+            _lineCompleteSubscription?.Dispose();
+
+            _lineCompleteSubscription = stream
+                .Subscribe(e =>
+                {
+                    _mainUIView.UpdateScore(e.PlayerId, e.Score);
+                });
+        }
+
+        /// <summary>
+        /// ライン成立イベント購読を解除する
+        /// </summary>
+        public void UnbindLineCompleteStream()
+        {
+            _lineCompleteSubscription?.Dispose();
+            _lineCompleteSubscription = null;
+        }
+
+        /// <summary>
+        /// 制限時間ストリームを購読し、UI表示を更新する
+        /// </summary>
+        /// <param name="limitTime">制限時間を通知するストリーム</param>
+        public void BindLimitTimeStream(in IObservable<float> limitTime)
+        {
+            // 多重購読防止
+            _limitTimeSubscription?.Dispose();
+
+            _limitTimeSubscription = limitTime
+                .Subscribe(time =>
+                {
+                    UpdateLimitTimeDisplay(time);
+                });
+        }
+
+        /// <summary>
+        /// 制限時間ストリームの購読を解除する
+        /// </summary>
+        public void UnbindLimitTimeStream()
+        {
+            _limitTimeSubscription?.Dispose();
+            _limitTimeSubscription = null;
+        }
+
+        /// <summary>
         /// 入力ロック状態を購読する
         /// </summary>
-        /// <param name="stream">true:ロック / false:解除</param>
-        public void BindInputLockStream(in IObservable<bool> stream)
+        /// <param name="input">true:ロック / false:解除</param>
+        public void BindInputLockStream(in IObservable<bool> input)
         {
             // 多重購読防止
             _inputLockSubscription?.Dispose();
 
-            _inputLockSubscription = stream
+            _inputLockSubscription = input
                 .Subscribe(isLock =>
                 {
                     // 入力ロック状態を更新
@@ -202,56 +307,6 @@ namespace UISystem.Presentation
         {
             _inputLockSubscription?.Dispose();
             _inputLockSubscription = null;
-        }
-        
-        /// <summary>
-        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
-        /// </summary>
-        /// <param name="stream">フェーズ種別を通知するストリーム</param>
-        public void BindPhaseStream(in IObservable<PhaseType> stream)
-        {
-            // 多重購読防止
-            _phaseSubscription?.Dispose();
-
-            _phaseSubscription = stream
-                .Subscribe(phase =>
-                {
-                    // Ready
-                    bool isReady = phase == PhaseType.Ready;
-
-                    SetReadyState(isReady);
-
-                    // Play
-                    bool isPlay = phase == PhaseType.Play;
-
-                    SetLimitTimeVisible(isPlay);
-                    SetPointerVisible(isPlay);
-
-                    // Pause
-                    bool isPause = phase == PhaseType.Pause;
-                    SetPauseState(isPause);
-
-                    // Event
-                    bool isEvent = phase == PhaseType.Event;
-
-                    if (!isEvent)
-                    {
-                        SetSwitchProjection(false);
-                    }
-                    else
-                    {
-                        _mainUIView.UpdateScore(1, 10);
-                    }
-                });
-        }
-
-        /// <summary>
-        /// フェーズ変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPhaseStream()
-        {
-            _phaseSubscription?.Dispose();
-            _phaseSubscription = null;
         }
 
         /// <summary>
@@ -282,13 +337,13 @@ namespace UISystem.Presentation
         /// <summary>
         /// 回転入力ストリームを購読する
         /// </summary>
-        /// <param name="command">回転コマンド通知ストリーム</param>
-        public void BindRotateStream(in IObservable<Unit> stream)
+        /// <param name="rotate">回転コマンド通知ストリーム</param>
+        public void BindRotateStream(in IObservable<Unit> rotate)
         {
             // 多重購読防止
             _rotationSubscription?.Dispose();
 
-            _rotationSubscription = stream
+            _rotationSubscription = rotate
                 .Subscribe(_ =>
                 {
                     SetSwitchProjection(true);
@@ -309,6 +364,19 @@ namespace UISystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
+        /// <summary>
+        /// スコア表示更新
+        /// </summary>
+        /// <param name="playerId">プレイヤーID（1 ベース）</param>
+        /// <param name="score">スコア</param>
+        private void UpdateScore(in int playerId, in int score)
+        {
+            _mainUIView.UpdateScore(1, 10);
+        }
+        
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         /// <summary>
@@ -324,7 +392,7 @@ namespace UISystem.Presentation
         /// 制限時間を UI に表示する
         /// </summary>
         /// <param name="limitTime">残り時間（秒）</param>
-        public void UpdateLimitTimeDisplay(in float limitTime)
+        private void UpdateLimitTimeDisplay(in float limitTime)
         {
             _mainUIView.UpdateLimitTime(limitTime);
         }

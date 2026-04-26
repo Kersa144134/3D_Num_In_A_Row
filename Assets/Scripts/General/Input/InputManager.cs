@@ -12,9 +12,8 @@ using UnityEngine;
 using UniRx;
 using InputSystem.Data;
 using InputSystem.Service;
-using InputSystem.Controller;
 
-namespace InputSystem
+namespace InputSystem.Presentation
 {
     /// <summary>
     /// 入力管理マスタークラス
