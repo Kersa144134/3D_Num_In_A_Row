@@ -78,5 +78,18 @@ namespace InputSystem.Data
 
         /// <summary>D-Padの入力ベクトルを返す</summary>
         Vector2 DPad { get; }
+
+        // ======================================================
+        // ポインター入力
+        // ======================================================
+
+        /// <summary>ポインターの現在座標（絶対座標）</summary>
+        Vector2 PointerPosition { get; }
+
+        /// <summary>ポインター移動量</summary>
+        Vector2 PointerDelta { get; }
+
+        /// <summary>ポインターが絶対座標かどうか</summary>
+        bool IsPointerAbsolute { get; }
     }
 }

@@ -6,6 +6,7 @@
   <Project Path="Input.csproj" />
   <Project Path="GeneralUpdateDomain.csproj" />
   <Project Path="UniRx.Examples.csproj" />
+  <Project Path="InputData.csproj" />
   <Project Path="ShaderController.csproj" />
   <Project Path="BoardApplication.csproj" />
   <Project Path="GeneralUpdateApplication.csproj" />
@@ -16,7 +17,6 @@
   <Project Path="BoardPresentation.csproj" />
   <Project Path="GeneralUIDomain.csproj" />
   <Project Path="GeneralPhaseApplication.csproj" />
-  <Project Path="InputData.csproj" />
   <Project Path="InputService.csproj" />
   <Project Path="CameraApplication.csproj" />
   <Project Path="UIPresentation.csproj" />

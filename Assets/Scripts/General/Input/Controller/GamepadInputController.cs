@@ -94,6 +94,15 @@ namespace InputSystem.Controller
         /// <summary>十字キーの入力ベクトル</summary>
         public Vector2 DPad { get; private set; } = Vector2.zero;
 
+        /// <summary>ポインターの現在座標（絶対座標）</summary>
+        public Vector2 PointerPosition => Vector2.zero;
+
+        /// <summary>ポインター移動量（デルタ）</summary>
+        public Vector2 PointerDelta => RightStick;
+
+        /// <summary>ポインターが絶対座標かどうか</summary>
+        public bool IsPointerAbsolute => false;
+
         // ======================================================
         // パブリックメソッド
         // ======================================================

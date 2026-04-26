@@ -51,8 +51,11 @@ namespace InputSystem
         /// <summary>ボタン状態を更新するサービス</summary>
         private ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
 
-        /// <summary>スティック/D-Pad状態を管理するマネージャー</summary>
+        /// <summary>スティック / D-Pad 状態を管理するマネージャー</summary>
         private StickStateUpdateService _stickStateUpdateService = new StickStateUpdateService();
+
+        /// <summary>ポインター状態を管理するマネージャー</summary>
+        private PointerStateUpdateService _pointerStateUpdateService;
 
         // ======================================================
         // フィールド
@@ -79,12 +82,25 @@ namespace InputSystem
         /// </summary>
         private Vector2 _dPad;
 
+        /// <summary>ポインターの座標</summary>
+        private Vector2 _pointer = Vector2.zero;
+
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>入力デバイス切替を管理するマネージャー</summary>
-        public DeviceSwitchService DeviceSwitchService => _deviceSwitchService;
+        /// <summary>現在アクティブな入力デバイス種別</summary>
+        public InputDeviceType ActiveDeviceType
+        {
+            get
+            {
+                // DeviceSwitchService から現在のデバイス種別を取得して返す
+                return _deviceSwitchService.ActiveDeviceType;
+            }
+        }
+        
+        /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
+        public int CurrentMappingIndex { get; private set; } = 0;
 
         /// <summary>ボタンAの状態</summary>
         public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
@@ -132,10 +148,7 @@ namespace InputSystem
         public Vector2 DPad => _dPad;
 
         /// <summary>ポインターの座標</summary>
-        public Vector2 Pointer { get; private set; } = Vector2.zero;
-
-        /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
-        public int CurrentMappingIndex { get; private set; } = 0;
+        public Vector2 Pointer => _pointer;
 
         // ======================================================
         // UniRx 変数
@@ -185,6 +198,7 @@ namespace InputSystem
             // クラス初期化
             // --------------------------------------------------
             _deviceSwitchService = new DeviceSwitchService(_inputMappingConfigs);
+            _pointerStateUpdateService = new PointerStateUpdateService(_pointerSpeed);
 
             // --------------------------------------------------
             // 入力状態初期化
@@ -201,7 +215,7 @@ namespace InputSystem
             }
 
             // ポインター初期位置設定
-            Pointer = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            _pointer = new Vector2(Screen.width / 2f, Screen.height / 2f);
         }
 
         private void Update()
@@ -238,7 +252,7 @@ namespace InputSystem
             );
 
             // ポインター状態更新
-            UpdatePointer();
+            _pointerStateUpdateService.UpdatePointer(controller, ref _pointer);
         }
 
         private void OnDestroy()
@@ -277,35 +291,6 @@ namespace InputSystem
         // ======================================================
         // プライベートメソッド
         // ======================================================
-
-        /// <summary>
-        /// デバイスに応じてポインター座標を更新
-        /// </summary>
-        private void UpdatePointer()
-        {
-            if (_deviceSwitchService.ActiveController == null)
-            {
-                return;
-            }
-
-            // 仮想ゲームパッドなら絶対座標をそのまま適用
-            if (_deviceSwitchService.ActiveController is VirtualGamepadInputController virtualController)
-            {
-                Pointer = virtualController.MousePosition;
-            }
-            // ゲームパッドなら右スティック入力を加算適用
-            else if (_deviceSwitchService.ActiveController is GamepadInputController gamepadController)
-            {
-                Vector2 delta = gamepadController.RightStick * _pointerSpeed * Time.deltaTime;
-
-                Pointer += delta;
-            }
-
-            // 画面外制限
-            Pointer = new Vector2(
-                Mathf.Clamp(Pointer.x, 0f, Screen.width),
-                Mathf.Clamp(Pointer.y, 0f, Screen.height));
-        }
 
         /// <summary>
         /// 入力マッピングを適用する

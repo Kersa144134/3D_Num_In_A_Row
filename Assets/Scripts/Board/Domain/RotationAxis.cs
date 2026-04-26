@@ -18,12 +18,12 @@ namespace BoardSystem.Domain
     public enum RotationAxis
     {
         /// <summary>
-        /// XŽ²‰ñ“]
+        /// X Ž²‰ñ“]
         /// </summary>
         X,
 
         /// <summary>
-        /// ZŽ²‰ñ“]
+        /// Z Ž²‰ñ“]
         /// </summary>
         Z
     }

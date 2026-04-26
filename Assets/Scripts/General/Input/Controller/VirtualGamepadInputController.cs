@@ -36,6 +36,9 @@ namespace InputSystem.Controller
         /// <summary>このフレームで入力があったか</summary>
         private bool _hasAnyInputThisFrame = false;
 
+        /// <summary>前フレームのマウス座標</summary>
+        private Vector2 _previousMousePosition = Vector2.zero;
+
         // ======================================================
         // プロパティ
         // ======================================================
@@ -90,6 +93,15 @@ namespace InputSystem.Controller
 
         /// <summary>マウスの座標</summary>
         public Vector2 MousePosition { get; private set; } = Vector2.zero;
+
+        /// <summary>ポインターの現在座標（絶対座標）</summary>
+        public Vector2 PointerPosition => MousePosition;
+
+        /// <summary>ポインター移動量（デルタ）</summary>
+        public Vector2 PointerDelta => Vector2.zero;
+
+        /// <summary>ポインターが絶対座標かどうか</summary>
+        public bool IsPointerAbsolute => true;
 
         // ======================================================
         // コンストラクタ
@@ -190,7 +202,16 @@ namespace InputSystem.Controller
             // --------------------------------------------------
             // マウス座標更新
             // --------------------------------------------------
-            MousePosition = _mouse.GetMousePosition();
+            Vector2 currentMousePosition = _mouse.GetMousePosition();
+
+            // 前フレームとの差分がある場合は入力ありとする
+            if (currentMousePosition != _previousMousePosition)
+            {
+                _hasAnyInputThisFrame = true;
+            }
+
+            MousePosition = currentMousePosition;
+            _previousMousePosition = currentMousePosition;
         }
 
         // ======================================================

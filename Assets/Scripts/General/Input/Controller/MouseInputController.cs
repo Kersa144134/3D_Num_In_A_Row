@@ -127,16 +127,34 @@ namespace InputSystem.Controller
             Vector2 move = current - _prevMousePosition;
             _prevMousePosition = current;
 
-            if (move.x > 0f) delta.MoveRight = move.x;
-            else if (move.x < 0f) delta.MoveLeft = -move.x;
+            if (move.x > 0f)
+            {
+                delta.MoveRight = move.x;
+            }
+            else if (move.x < 0f)
+            {
+                delta.MoveLeft = -move.x;
+            }
 
-            if (move.y > 0f) delta.MoveUp = move.y;
-            else if (move.y < 0f) delta.MoveDown = -move.y;
+            if (move.y > 0f)
+            {
+                delta.MoveUp = move.y;
+            }
+            else if (move.y < 0f)
+            {
+                delta.MoveDown = -move.y;
+            }
 
             // ƒzƒC[ƒ‹‰ñ“]—Ê
             float wheel = Input.mouseScrollDelta.y;
-            if (wheel > 0f) delta.WheelUp = wheel;
-            else if (wheel < 0f) delta.WheelDown = -wheel;
+            if (wheel > 0f)
+            {
+                delta.WheelUp = wheel;
+            }
+            else if (wheel < 0f)
+            {
+                delta.WheelDown = -wheel;
+            }
 
             return delta;
         }
