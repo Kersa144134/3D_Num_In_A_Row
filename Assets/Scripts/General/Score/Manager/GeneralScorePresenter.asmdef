@@ -1,0 +1,17 @@
+{
+    "name": "GeneralScorePresenter",
+    "rootNamespace": "",
+    "references": [
+        "GUID:0570b21b323a88049b0192eb4b40c45f",
+        "GUID:d2f11f5d0fee59744be1b82a7970e335"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
