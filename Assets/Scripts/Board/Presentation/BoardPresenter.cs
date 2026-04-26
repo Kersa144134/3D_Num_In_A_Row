@@ -350,53 +350,67 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力ストリームを購読し、駒配置および回転入力を処理する
+        /// 駒配置入力ストリームを購読する
         /// </summary>
-        /// <param name="dropStream">駒配置入力を通知するストリーム</param>
-        /// <param name="rotateStream">回転入力を通知するストリーム</param>
-        public void BindInputStream(
-            in IObservable<Unit> dropStream,
-            in IObservable<RotationCommand> rotateStream)
+        /// <param name="dropStream">駒配置入力ストリーム</param>
+        public void BindDropInputStream(in IObservable<Unit> dropStream)
         {
-            // 多重購読防止
+            // 既存購読があれば破棄
             _inputDisposables?.Dispose();
 
+            // CompositeDisposable 初期化
             _inputDisposables = new CompositeDisposable();
 
-            // --------------------------------------------------
-            // 駒配置
-            // --------------------------------------------------
+            // 駒配置入力購読
             dropStream
                 .Subscribe(_ =>
                 {
+                    // ドロップ中、またはプレイヤー未設定なら無効
                     if (_isDrop || _currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
 
+                    // 駒配置処理
                     HandleDropColumn();
                 })
                 .AddTo(_inputDisposables);
 
-            // --------------------------------------------------
-            // 回転
-            // --------------------------------------------------
+            // 入力可能フラグ更新
+            _canInput = true;
+        }
+
+        /// <summary>
+        /// 回転入力ストリームを購読する
+        /// </summary>
+        /// <param name="rotateStream">回転入力ストリーム</param>
+        public void BindRotateInputStream(in IObservable<RotationCommand> rotateStream)
+        {
+            // 既存購読があれば破棄
+            _inputDisposables?.Dispose();
+
+            // CompositeDisposable 初期化
+            _inputDisposables = new CompositeDisposable();
+
+            // 回転入力購読
             rotateStream
                 .Subscribe(cmd =>
                 {
+                    // 回転中なら無効
                     if (_isRotate)
                     {
                         return;
                     }
 
+                    // 非同期回転処理実行
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 })
                 .AddTo(_inputDisposables);
 
-            // 入力可能
+            // 入力可能フラグ更新
             _canInput = true;
         }
-
+        
         /// <summary>
         /// 入力ストリームの購読を解除する
         /// </summary>

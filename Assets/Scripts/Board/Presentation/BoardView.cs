@@ -388,8 +388,11 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 指定オブジェクトを軸と方向に応じて回転させる
+        /// 指定オブジェクトをワールド軸基準で回転させる
         /// </summary>
+        /// <param name="target">回転対象</param>
+        /// <param name="axis">ワールド回転軸</param>
+        /// <param name="direction">回転方向</param>
         public async UniTask RotateAsync(
             Transform target,
             RotationAxis axis,
@@ -401,45 +404,35 @@ namespace BoardSystem.Presentation
             }
 
             // --------------------------------------------------
-            // 回転パラメータ初期化
+            // ワールド基準回転パラメータ生成
             // --------------------------------------------------
-            // 回転角度（±90度）
             float angle =
                 direction == RotationDirection.Positive
-                ? -90f
-                : 90f;
+                ? 90f
+                : -90f;
 
-            // 経過時間
+            Vector3 worldAxis = ConvertAxis(axis);
+
+            // Unityの回転仕様に合わせて角度を反転
+            Quaternion deltaRotation = Quaternion.AngleAxis(-angle, worldAxis);
+
+            // --------------------------------------------------
+            // 補間準備
+            // --------------------------------------------------
+
             float elapsed = 0f;
 
-            // 開始回転
             Quaternion startRotation =
                 target.rotation;
 
-            // 終了回転
+            // ワールド回転として適用
             Quaternion endRotation =
-                startRotation;
-
-            // --------------------------------------------------
-            // 終了回転算出
-            // --------------------------------------------------
-            // X軸回転
-            if (axis == RotationAxis.X)
-            {
-                endRotation =
-                    startRotation * Quaternion.Euler(angle, 0f, 0f);
-            }
-            // Z軸回転
-            else if (axis == RotationAxis.Z)
-            {
-                endRotation =
-                    startRotation * Quaternion.Euler(0f, 0f, angle);
-            }
+                deltaRotation * startRotation;
 
             try
             {
                 // --------------------------------------------------
-                // 補間ループ
+                // 補間処理
                 // --------------------------------------------------
                 while (elapsed < _rotationDuration)
                 {
@@ -448,14 +441,10 @@ namespace BoardSystem.Presentation
                         return;
                     }
 
-                    // 経過時間加算
                     elapsed += Time.deltaTime;
 
-                    // 補間係数
-                    float t =
-                        Mathf.Clamp01(elapsed / _rotationDuration);
+                    float t = Mathf.Clamp01(elapsed / _rotationDuration);
 
-                    // 回転補間適用
                     target.rotation =
                         Quaternion.Lerp(
                             startRotation,
@@ -463,7 +452,6 @@ namespace BoardSystem.Presentation
                             t
                         );
 
-                    // Update タイミングで1フレーム待機
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
             }
@@ -619,6 +607,24 @@ namespace BoardSystem.Presentation
 
             // アニメーション実行
             await _pieceAnimationView.PlayMovesAsync(viewPlans);
+        }
+
+        /// <summary>
+        /// ワールド軸 enum → Vector3変換
+        /// </summary>
+        private Vector3 ConvertAxis(RotationAxis axis)
+        {
+            switch (axis)
+            {
+                case RotationAxis.X:
+                    return Vector3.right;
+
+                case RotationAxis.Z:
+                    return Vector3.forward;
+
+                default:
+                    return Vector3.zero;
+            }
         }
     }
 }

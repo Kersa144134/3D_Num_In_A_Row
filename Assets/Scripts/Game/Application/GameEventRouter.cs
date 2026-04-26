@@ -17,6 +17,7 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using UISystem.Presentation;
 using UpdateSystem.Domain;
+using System.Diagnostics;
 
 namespace GameSystem.Application
 {
@@ -284,7 +285,7 @@ namespace GameSystem.Application
         {
             // 入力購読解除
             UnbindInputCommands();
-            
+
             // --------------------------------------------------
             // Play
             // --------------------------------------------------
@@ -299,20 +300,10 @@ namespace GameSystem.Application
                         continue;
                     }
 
-                    boardPresenter.BindInputStream(_onDropRequested, _onRotateExecuted);
+                    boardPresenter.BindDropInputStream(_onDropRequested);
                 }
-            }
-            else
-            {
-                foreach (BoardPresenter boardPresenter in _boardPresenters)
-                {
-                    if (boardPresenter == null)
-                    {
-                        continue;
-                    }
 
-                    boardPresenter.UnbindInputStream();
-                }
+                return;
             }
 
             // --------------------------------------------------
@@ -321,6 +312,31 @@ namespace GameSystem.Application
             if (phase == PhaseType.Event)
             {
                 BindEventPhaseInputCommands();
+
+                foreach (BoardPresenter boardPresenter in _boardPresenters)
+                {
+                    if (boardPresenter == null)
+                    {
+                        continue;
+                    }
+
+                    boardPresenter.BindRotateInputStream(_onRotateExecuted);
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // その他
+            // --------------------------------------------------
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            {
+                if (boardPresenter == null)
+                {
+                    continue;
+                }
+
+                boardPresenter.UnbindInputStream();
             }
         }
 
@@ -384,14 +400,14 @@ namespace GameSystem.Application
             _inputDisposables = new CompositeDisposable();
 
             // 左スティック左押下
-            _inputManager.ButtonA.OnUp
+            _inputManager.ButtonX.OnDown
                 .Subscribe(_ =>
                 {
-                    // Z+ 回転実行イベント発火
+                    // Z- 回転実行イベント発火
                     _onRotateExecuted.OnNext(
                         new RotationCommand(
                             RotationAxis.Z,
-                            RotationDirection.Positive
+                            RotationDirection.Negative
                         )
                     );
                 })
@@ -401,18 +417,32 @@ namespace GameSystem.Application
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
-                    // Z- 回転実行イベント発火
+                    // Z+ 回転実行イベント発火
                     _onRotateExecuted.OnNext(
                         new RotationCommand(
                             RotationAxis.Z,
-                            RotationDirection.Negative
+                            RotationDirection.Positive
                         )
                     );
                 })
                 .AddTo(_inputDisposables);
 
             // 左スティック上押下
-            _inputManager.ButtonA.OnUp
+            _inputManager.ButtonY.OnDown
+                .Subscribe(_ =>
+                {
+                    // Z- 回転実行イベント発火
+                    _onRotateExecuted.OnNext(
+                        new RotationCommand(
+                            RotationAxis.X,
+                            RotationDirection.Negative
+                        )
+                    );
+                })
+                .AddTo(_inputDisposables);
+
+            // 左スティック下押下
+            _inputManager.ButtonA.OnDown
                 .Subscribe(_ =>
                 {
                     // Z+ 回転実行イベント発火
@@ -420,20 +450,6 @@ namespace GameSystem.Application
                         new RotationCommand(
                             RotationAxis.X,
                             RotationDirection.Positive
-                        )
-                    );
-                })
-                .AddTo(_inputDisposables);
-
-            // 左スティック下押下
-            _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
-                {
-                    // Z- 回転実行イベント発火
-                    _onRotateExecuted.OnNext(
-                        new RotationCommand(
-                            RotationAxis.X,
-                            RotationDirection.Negative
                         )
                     );
                 })
