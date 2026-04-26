@@ -6,9 +6,9 @@
 // 概要     : ボタン入力状態を更新するサービス
 // ======================================================
 
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Service
+namespace InputSystem.Application
 {
     /// <summary>
     /// ボタン入力状態を更新するサービス

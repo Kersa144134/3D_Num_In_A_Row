@@ -7,9 +7,9 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Service
+namespace InputSystem.Application
 {
     /// <summary>
     /// スティック・D-Pad入力状態を取得するサービス

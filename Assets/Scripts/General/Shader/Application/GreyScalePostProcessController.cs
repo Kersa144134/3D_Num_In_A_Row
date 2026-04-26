@@ -10,7 +10,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-namespace ShaderSystem.Controller
+namespace ShaderSystem.Application
 {
     public sealed class GreyScalePostProcessController : BasePostProcessController
     {

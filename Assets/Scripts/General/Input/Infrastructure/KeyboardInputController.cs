@@ -8,9 +8,9 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Controller
+namespace InputSystem.Infrastructure
 {
     /// <summary>
     /// キーボード入力を処理し、ゲームパッド互換の抽象入力種別に対応した押下状態を返すクラス

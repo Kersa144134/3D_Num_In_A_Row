@@ -8,9 +8,9 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Controller
+namespace InputSystem.Infrastructure
 {
     /// <summary>
     /// マウス入力を処理し、ゲームパッド互換の抽象入力値を取得するクラス

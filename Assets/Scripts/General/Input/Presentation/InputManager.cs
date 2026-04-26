@@ -10,8 +10,8 @@
 using System;
 using UnityEngine;
 using UniRx;
-using InputSystem.Data;
-using InputSystem.Service;
+using InputSystem.Application;
+using InputSystem.Domain;
 
 namespace InputSystem.Presentation
 {

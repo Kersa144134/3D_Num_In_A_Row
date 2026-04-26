@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-namespace ShaderSystem.Controller
+namespace ShaderSystem.Application
 {
     /// <summary>
     /// Full Screen Pass Render Feature §ŒäŠî’êƒNƒ‰ƒX

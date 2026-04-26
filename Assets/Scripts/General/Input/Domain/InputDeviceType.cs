@@ -6,7 +6,7 @@
 // 概要     : 入力デバイス種別を定義する列挙体
 // ======================================================
 
-namespace InputSystem.Data
+namespace InputSystem.Domain
 {
     /// <summary>
     /// 入力デバイス種別

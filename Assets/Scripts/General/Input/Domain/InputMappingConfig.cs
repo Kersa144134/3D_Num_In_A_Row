@@ -10,7 +10,7 @@
 using System;
 using UnityEngine;
 
-namespace InputSystem.Data
+namespace InputSystem.Domain
 {
     // ======================================================
     // —ñ‹“‘Ì

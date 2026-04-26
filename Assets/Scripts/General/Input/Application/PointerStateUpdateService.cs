@@ -7,10 +7,9 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Controller;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Service
+namespace InputSystem.Application
 {
     /// <summary>
     /// ポインター状態更新サービス

@@ -8,7 +8,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using ShaderSystem.Controller;
+using ShaderSystem.Application;
 
 namespace UISystem.Presentation
 {

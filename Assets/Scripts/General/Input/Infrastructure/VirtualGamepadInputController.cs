@@ -7,9 +7,9 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Controller
+namespace InputSystem.Infrastructure
 {
     /// <summary>
     /// キーボード・マウス入力を統合して仮想ゲームパッド入力を生成するクラス

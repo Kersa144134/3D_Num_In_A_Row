@@ -9,9 +9,9 @@
 
 using UnityEngine;
 using UnityEngine.InputSystem;
-using InputSystem.Data;
+using InputSystem.Domain;
 
-namespace InputSystem.Controller
+namespace InputSystem.Infrastructure
 {
     /// <summary>
     /// ゲームパッド入力を取得するクラス

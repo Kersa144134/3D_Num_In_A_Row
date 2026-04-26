@@ -9,7 +9,7 @@
 
 using UnityEngine;
 
-namespace InputSystem.Data
+namespace InputSystem.Domain
 {
     /// <summary>
     /// ゲームパッド入力ソースの共通インターフェース

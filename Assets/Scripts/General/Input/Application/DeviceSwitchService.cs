@@ -7,10 +7,10 @@
 // ======================================================
 
 using UnityEngine;
-using InputSystem.Controller;
-using InputSystem.Data;
+using InputSystem.Infrastructure;
+using InputSystem.Domain;
 
-namespace InputSystem.Service
+namespace InputSystem.Application
 {
     /// <summary>
     /// 入力デバイスの更新・切替を管理するサービス

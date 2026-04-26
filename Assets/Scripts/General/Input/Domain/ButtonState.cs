@@ -9,7 +9,7 @@
 using System;
 using UniRx;
 
-namespace InputSystem.Data
+namespace InputSystem.Domain
 {
     /// <summary>
     /// ボタン状態管理用クラス
