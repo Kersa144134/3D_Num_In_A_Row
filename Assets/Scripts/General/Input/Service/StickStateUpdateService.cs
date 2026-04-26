@@ -2,7 +2,7 @@
 // StickStateUpdateService.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-11-11
-// 更新日時 : 2026-04-24
+// 更新日時 : 2026-04-26
 // 概要     : スティックおよび D-Pad 入力状態を取得するサービス
 // ======================================================
 
@@ -21,17 +21,21 @@ namespace InputSystem.Service
         // ======================================================
 
         /// <summary>
-        /// スティック・D-Pad 入力を取得する
+        /// スティック・D-Pad入力を一括取得する
         /// </summary>
-        /// <param name="controller">入力取得元コントローラー</param>
-        /// <returns>スティックとD-Padの入力値</returns>
-        public (Vector2 left, Vector2 right, Vector2 dPad) GetStickStates(in IGamepadInputSource controller)
+        /// <param name="controller">入力取得元</param>
+        /// <param name="left">左スティック出力</param>
+        /// <param name="right">右スティック出力</param>
+        /// <param name="dPad">D-Pad 出力</param>
+        public void GetStickStates(
+            in IGamepadInputSource controller,
+            out Vector2 left,
+            out Vector2 right,
+            out Vector2 dPad)
         {
-            Vector2 left = controller.LeftStick;
-            Vector2 right = controller.RightStick;
-            Vector2 dPad = controller.DPad;
-
-            return (left, right, dPad);
+            left = controller.LeftStick;
+            right = controller.RightStick;
+            dPad = controller.DPad;
         }
     }
 }

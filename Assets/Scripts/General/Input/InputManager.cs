@@ -67,20 +67,17 @@ namespace InputSystem
         /// <summary>
         /// 左スティックの入力ベクトル
         /// </summary>
-        private ReactiveProperty<Vector2> _leftStick
-            = new ReactiveProperty<Vector2>(Vector2.zero);
+        private Vector2 _leftStick;
 
         /// <summary>
         /// 右スティックの入力ベクトル
         /// </summary>
-        private ReactiveProperty<Vector2> _rightStick
-            = new ReactiveProperty<Vector2>(Vector2.zero);
+        private Vector2 _rightStick;
 
         /// <summary>
         /// D-Pad の入力ベクトル
         /// </summary>
-        private ReactiveProperty<Vector2> _dPad
-            = new ReactiveProperty<Vector2>(Vector2.zero);
+        private Vector2 _dPad;
 
         // ======================================================
         // プロパティ
@@ -125,6 +122,15 @@ namespace InputSystem
         /// <summary>Selectボタンの状態</summary>
         public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
+        /// <summary>左スティック</summary>
+        public Vector2 LeftStick => _leftStick;
+
+        /// <summary>右スティック</summary>
+        public Vector2 RightStick => _rightStick;
+
+        /// <summary>D-Pad</summary>
+        public Vector2 DPad => _dPad;
+
         /// <summary>ポインターの座標</summary>
         public Vector2 Pointer { get; private set; } = Vector2.zero;
 
@@ -137,15 +143,6 @@ namespace InputSystem
 
         /// <summary>マッピング変更購読</summary>
         private IDisposable _mappingSubscription;
-
-        /// <summary>左スティック</summary>
-        public IReadOnlyReactiveProperty<Vector2> LeftStick => _leftStick;
-
-        /// <summary>右スティック</summary>
-        public IReadOnlyReactiveProperty<Vector2> RightStick => _rightStick;
-
-        /// <summary>D-Pad</summary>
-        public IReadOnlyReactiveProperty<Vector2> DPad => _dPad;
 
         // ======================================================
         // Unity イベント
@@ -217,40 +214,28 @@ namespace InputSystem
             // デバイス入力更新
             _deviceSwitchService.UpdateDevices();
 
+            // 現在のアクティブコントローラー
+            IGamepadInputSource controller = _deviceSwitchService.ActiveController;
+
             // ボタン状態更新
             for (int i = 0; i < _buttonStates.Length; i++)
             {
                 GamepadInputType type = (GamepadInputType)i;
 
                 _buttonStateUpdateService.UpdateButtonState(
-                    _deviceSwitchService.ActiveController,
+                    controller,
                     type,
                     _buttonStates[i]
                 );
             }
 
             // スティック状態更新
-            var stick = _stickStateUpdateService.GetStickStates(
-                _deviceSwitchService.ActiveController
+            _stickStateUpdateService.GetStickStates(
+                controller,
+                out _leftStick,
+                out _rightStick,
+                out _dPad
             );
-
-            // 左スティック差分チェック
-            if (_leftStick.Value != stick.left)
-            {
-                _leftStick.Value = stick.left;
-            }
-
-            // 右スティック差分チェック
-            if (_rightStick.Value != stick.right)
-            {
-                _rightStick.Value = stick.right;
-            }
-
-            // D-Pad差分チェック
-            if (_dPad.Value != stick.dPad)
-            {
-                _dPad.Value = stick.dPad;
-            }
 
             // ポインター状態更新
             UpdatePointer();
