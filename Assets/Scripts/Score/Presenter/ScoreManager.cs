@@ -19,7 +19,7 @@ namespace ScoreSystem.Presentation
     public sealed class ScoreManager : MonoBehaviour
     {
         // ======================================================
-        // シングルトン
+        // シングルトンインスタンス
         // ======================================================
 
         /// <summary>シングルトンインスタンス</summary>

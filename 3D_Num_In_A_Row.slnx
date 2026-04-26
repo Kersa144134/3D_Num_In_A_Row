@@ -22,11 +22,11 @@
   <Project Path="UIPresentation.csproj" />
   <Project Path="GeneralUIPresentation.csproj" />
   <Project Path="PhaseDomain.csproj" />
+  <Project Path="ScorePresenter.csproj" />
   <Project Path="ScoreDomain.csproj" />
   <Project Path="GeneralScoreApplication.csproj" />
   <Project Path="GeneralUIApplication.csproj" />
   <Project Path="GeneralGamePresentation.csproj" />
-  <Project Path="GeneralScorePresenter.csproj" />
   <Project Path="UpdateDomain.csproj" />
   <Project Path="GameApplication.csproj" />
   <Project Path="GeneralScoreDomain.csproj" />

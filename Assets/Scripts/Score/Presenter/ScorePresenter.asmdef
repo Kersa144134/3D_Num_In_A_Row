@@ -1,5 +1,5 @@
 {
-    "name": "GeneralScorePresenter",
+    "name": "ScorePresenter",
     "rootNamespace": "",
     "references": [
         "GUID:0570b21b323a88049b0192eb4b40c45f",
