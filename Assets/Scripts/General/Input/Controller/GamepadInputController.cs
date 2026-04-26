@@ -36,8 +36,18 @@ namespace InputSystem.Controller
         private const float RIGHT_STICK_DEAD_ZONE = 0.1f;
 
         // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>このフレームで入力があったか</summary>
+        private bool _hasAnyInputThisFrame = false;
+
+        // ======================================================
         // プロパティ
         // ======================================================
+
+        /// <summary>このフレームで入力があったか</summary>
+        public bool HasAnyInputThisFrame => _hasAnyInputThisFrame;
 
         /// <summary>ボタンAが押されているか</summary>
         public bool ButtonA { get; private set; }
@@ -93,6 +103,9 @@ namespace InputSystem.Controller
         /// </summary>
         public void UpdateInputs()
         {
+            // 入力フラグをリセット
+            _hasAnyInputThisFrame = false;
+            
             // 現在接続されているゲームパッドを取得
             Gamepad pad = Gamepad.current;
 
@@ -124,6 +137,12 @@ namespace InputSystem.Controller
             LeftStick = ApplyDeadZone(pad.leftStick.ReadValue(), LEFT_STICK_DEAD_ZONE);
             RightStick = ApplyDeadZone(pad.rightStick.ReadValue(), RIGHT_STICK_DEAD_ZONE);
             DPad = pad.dpad.ReadValue();
+
+            // 入力検知
+            if (CheckAnyInput())
+            {
+                _hasAnyInputThisFrame = true;
+            }
         }
 
         // ======================================================
@@ -140,6 +159,30 @@ namespace InputSystem.Controller
         {
             // ベクトルの長さがデッドゾーン未満ならゼロにする
             return input.magnitude < deadZone ? Vector2.zero : input;
+        }
+
+        /// <summary>
+        /// 現在の入力状態から、何らかの入力が存在するかを判定する
+        /// </summary>
+        /// <returns>いずれかの入力があれば true</returns>
+        private bool CheckAnyInput()
+        {
+            return
+                ButtonA ||
+                ButtonB ||
+                ButtonX ||
+                ButtonY ||
+                LeftShoulder ||
+                RightShoulder ||
+                LeftTrigger ||
+                RightTrigger ||
+                LeftStickButton ||
+                RightStickButton ||
+                StartButton ||
+                SelectButton ||
+                LeftStick != Vector2.zero ||
+                RightStick != Vector2.zero ||
+                DPad != Vector2.zero;
         }
     }
 }

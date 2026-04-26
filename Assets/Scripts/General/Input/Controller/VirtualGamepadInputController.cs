@@ -28,10 +28,20 @@ namespace InputSystem.Controller
 
         /// <summary>入力マッピング情報</summary>
         private readonly InputMapping[] _mappings;
-        
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>このフレームで入力があったか</summary>
+        private bool _hasAnyInputThisFrame = false;
+
         // ======================================================
         // プロパティ
         // ======================================================
+
+        /// <summary>このフレームで入力があったか</summary>
+        public bool HasAnyInputThisFrame => _hasAnyInputThisFrame;
 
         /// <summary>A ボタンの仮想入力状態</summary>
         public bool ButtonA { get; private set; }
@@ -110,6 +120,9 @@ namespace InputSystem.Controller
         /// </summary>
         public void UpdateInputs()
         {
+            // 入力フラグをリセット
+            _hasAnyInputThisFrame = false;
+            
             bool buttonA = false;
             bool buttonB = false;
             bool buttonX = false;
@@ -356,11 +369,14 @@ namespace InputSystem.Controller
             ref Vector2 leftStick, ref Vector2 rightStick, ref Vector2 dpad,
             in GamepadInputType type, in float value)
         {
-            // 値が 0 以下なら何も反映せずに終了
+            // 値が 0 以下なら処理なし
             if (value <= 0f)
             {
                 return;
             }
+
+            // 入力検知フラグを立てる
+            _hasAnyInputThisFrame = true;
 
             // ボタン系入力を反映
             switch (type)

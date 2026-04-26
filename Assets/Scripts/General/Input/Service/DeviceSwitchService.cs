@@ -6,9 +6,10 @@
 // 概要     : 入力デバイスの更新・切替を管理するサービス
 // ======================================================
 
-using UnityEngine.InputSystem;
 using InputSystem.Controller;
 using InputSystem.Data;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace InputSystem.Service
 {
@@ -42,6 +43,12 @@ namespace InputSystem.Service
 
         /// <summary>現在使用中のコントローラセット</summary>
         private ControllerSet _currentSet;
+
+        /// <summary>ゲームパッドの最終入力時間</summary>
+        private float _lastGamepadInputTime;
+
+        /// <summary>仮想パッドの最終入力時間</summary>
+        private float _lastVirtualInputTime;
 
         // ======================================================
         // プロパティ
@@ -114,19 +121,46 @@ namespace InputSystem.Service
         /// </summary>
         public void UpdateDevices()
         {
-            // 物理ゲームパッド接続確認
-            if (Gamepad.current != null)
+            // --------------------------------------------------
+            // 両方の入力を更新
+            // --------------------------------------------------
+            _currentSet.Gamepad.UpdateInputs();
+            _currentSet.Virtual.UpdateInputs();
+
+            // --------------------------------------------------
+            // 入力検知 → 時間更新
+            // --------------------------------------------------
+            // ゲームパッド
+            if (_currentSet.Gamepad.HasAnyInputThisFrame)
             {
-                // 物理コントローラを使用
+                _lastGamepadInputTime = Time.unscaledTime;
+            }
+
+            // 仮想パッド
+            if (_currentSet.Virtual.HasAnyInputThisFrame)
+            {
+                _lastVirtualInputTime = Time.unscaledTime;
+            }
+
+            // --------------------------------------------------
+            // アクティブコントローラ決定
+            // --------------------------------------------------
+            // ゲームパッド
+            if (_lastGamepadInputTime > _lastVirtualInputTime)
+            {
                 ActiveController = _currentSet.Gamepad;
-                _currentSet.Gamepad.UpdateInputs();
+                return;
             }
-            else
+
+            // 仮想パッド
+            if (_lastVirtualInputTime > _lastGamepadInputTime)
             {
-                // 仮想コントローラを使用
                 ActiveController = _currentSet.Virtual;
-                _currentSet.Virtual.UpdateInputs();
+                return;
             }
+
+            // 初期状態または同時の場合、ゲームパッドを優先
+            ActiveController = _currentSet.Gamepad;
         }
     }
 }
