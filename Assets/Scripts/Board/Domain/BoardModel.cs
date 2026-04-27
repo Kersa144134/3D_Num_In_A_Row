@@ -59,17 +59,17 @@ namespace BoardSystem.Domain
             in int boardSize,
             in int connectCount)
         {
-            int safeConnect = connectCount;
+            int safeConnectCount = connectCount;
 
-            if (safeConnect > boardSize)
+            if (safeConnectCount > boardSize)
             {
-                safeConnect = boardSize;
+                safeConnectCount = boardSize;
             }
 
             _boardState = new BoardState(boardSize);
             _lineJudge = new LineJudge(
                 boardSize,
-                safeConnect
+                safeConnectCount
             );
         }
 

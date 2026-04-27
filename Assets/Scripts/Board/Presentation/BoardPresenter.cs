@@ -199,6 +199,27 @@ namespace BoardSystem.Presentation
 
         public void OnEnter()
         {
+            // インスタンスからコンポーネント取得
+            _inputManager = InputManager.Instance;
+
+            // シーン内のメインカメラを取得
+            _camera = Camera.main;
+
+            if (_inputManager == null || _camera ||
+                _piecePrefab == null || _deleteParticle == null ||
+                _boardCollider == null || _columnSelectRoot == null)
+            {
+                Debug.LogError("[BoardPresenter] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
             _model = new BoardModel(_boardSize, _connectCount);
             _view = new BoardView(
                 transform,
@@ -216,25 +237,6 @@ namespace BoardSystem.Presentation
             _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
             _repositionUseCase = new BoardRepositionUseCase(_model);
             _viewMoveHandler = new BoardViewMoveHandler(_view);
-
-            // シーン内のメインカメラを取得
-            _camera = Camera.main;
-
-            // インスタンスからコンポーネント取得
-            _inputManager = InputManager.Instance;
-
-            if (_camera == null || _boardCollider == null || _columnSelectRoot == null)
-            {
-                Debug.LogError("[BoardPresenter] クラスの初期化に失敗しました。");
-
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-    UnityEngine.Application.Quit();
-#endif
-
-                return;
-            }
 
             // 回転対象外のため親から分離
             _boardCollider.transform.SetParent(null);

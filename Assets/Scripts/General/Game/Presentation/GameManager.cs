@@ -27,7 +27,8 @@ namespace GameSystem.Presentation
 
         [Header("ゲーム設定")]
         /// <summary>プレイヤー人数</summary>
-        [SerializeField] private int _playerCount;
+        [SerializeField, Range(DEFAULT_MIN_PLAYER, DEFAULT_MAX_PLAYER)]
+        private int _playerCount;
 
         /// <summary>1 プレイヤーあたりの制限時間</summary>
         [SerializeField, Min(0f)]
@@ -109,6 +110,12 @@ namespace GameSystem.Presentation
 
         /// <summary>アプリケーション全体で固定する目標 FPS</summary>
         private const int TARGET_FRAME_RATE = 120;
+
+        /// <summary>プレイヤー下限人数のデフォルト値</summary>
+        private const int DEFAULT_MIN_PLAYER = 2;
+
+        /// <summary>プレイヤー上限人数のデフォルト値</summary>
+        private const int DEFAULT_MAX_PLAYER = 4;
 
         // ======================================================
         // UniRx 変数

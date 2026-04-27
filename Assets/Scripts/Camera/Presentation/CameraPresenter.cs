@@ -27,13 +27,9 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         [Header("回転補間設定")]
-        /// <summary>回転の最大速度（度 / 秒）補間時の上限速度として使用される</summary>
+        /// <summary>回転の最大速度（度 / 秒）</summary>
         [SerializeField]
         private float _maxRotationSpeed = 360.0f;
-
-        /// <summary>回転の加速度（度 / 秒の2乗）</summary>
-        [SerializeField]
-        private float _rotationAcceleration = 720.0f;
 
         [Header("回転制限設定")]
         /// <summary>X 回転の最小値</summary>
@@ -93,6 +89,18 @@ namespace CameraSystem.Presentation
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
 
+        /// <summary>回転の加速度（度 / 秒の2乗）</summary>
+        private float _rotationAcceleration;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>
+        /// 回転加速度の倍率
+        /// </summary>
+        private const float ROTATION_ACCELERATION_MULTIPLIER = 2f;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -109,9 +117,28 @@ namespace CameraSystem.Presentation
 
         public void OnEnter()
         {
+            // インスタンスからコンポーネント取得
+            _inputManager = InputManager.Instance;
+
             // カメラ取得
             _camera = Camera.main;
-            
+
+            if (_inputManager == null || _camera == null)
+            {
+                Debug.LogError("[CameraPresenter] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
+            // 回転の加速度を初期化
+            _rotationAcceleration = _maxRotationSpeed * ROTATION_ACCELERATION_MULTIPLIER;
+
             // 現在の Transform の回転を取得する
             Vector3 euler = transform.rotation.eulerAngles;
 
@@ -142,9 +169,6 @@ namespace CameraSystem.Presentation
                 _maxRotationSpeed,
                 _rotationAcceleration
             );
-
-            // InputManager のインスタンスを取得
-            _inputManager = InputManager.Instance;
         }
 
         public void OnLateUpdate(in float unscaledDeltaTime)

@@ -139,15 +139,28 @@ namespace UISystem.Presentation
         {
             base.OnEnterInternal();
 
+            // インスタンスからコンポーネント取得
+            _inputManager = InputManager.Instance;
+
+            if (_inputManager == null)
+            {
+                Debug.LogError("[MainUIPresenter] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
             // ビュー生成
             _mainUIView =
                 new MainUIView(
                     _scoreTexts,
                     _limitTimeText,
                     _pointerImage);
-
-            // InputManager のインスタンスを取得
-            _inputManager = InputManager.Instance;
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
