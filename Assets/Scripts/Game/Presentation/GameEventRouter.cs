@@ -2,8 +2,8 @@
 // GameEventRouter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2025-12-17
-// 更新日時 : 2026-03-06
-// 概要     : シーン内イベントの仲介を行う
+// 更新日時 : 2026-04-27
+// 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
 using System;
@@ -21,7 +21,7 @@ using ScoreSystem.Presentation;
 using UISystem.Presentation;
 using UpdateSystem.Domain;
 
-namespace GameSystem.Application
+namespace GameSystem.Presentation
 {
     /// <summary>
     /// シーン内イベントを仲介するクラス

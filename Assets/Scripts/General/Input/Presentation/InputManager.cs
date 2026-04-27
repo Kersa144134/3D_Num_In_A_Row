@@ -12,6 +12,7 @@ using UnityEngine;
 using UniRx;
 using InputSystem.Application;
 using InputSystem.Domain;
+using OptionSystem.Application;
 
 namespace InputSystem.Presentation
 {
@@ -34,11 +35,8 @@ namespace InputSystem.Presentation
 
         [Header("入力マッピング設定")]
         /// <summary>入力マッピング配列</summary>
-        [SerializeField] private InputMappingConfig[] _inputMappingConfigs;
-
-        [Header("ポインター")]
-        /// <summary>ポインター移動速度</summary>
-        [SerializeField, Range(1000f, 5000f)] private float _pointerSpeed = 1000f;
+        [SerializeField]
+        private InputMappingConfig[] _inputMappingConfigs;
 
         // ======================================================
         // コンポーネント参照
@@ -55,6 +53,9 @@ namespace InputSystem.Presentation
 
         /// <summary>ポインター状態を管理するマネージャー</summary>
         private PointerStateUpdateService _pointerStateUpdateService;
+
+        /// <summary>GameOptionService キャッシュ</summary>
+        private GameOptionService _gameOptionService;
 
         // ======================================================
         // フィールド
@@ -83,6 +84,9 @@ namespace InputSystem.Presentation
 
         /// <summary>ポインターの座標</summary>
         private Vector2 _pointer = Vector2.zero;
+
+        /// <summary>ポインター移動速度</summary>
+        private float _pointerSpeed;
 
         // ======================================================
         // プロパティ
@@ -215,6 +219,27 @@ namespace InputSystem.Presentation
 
             // ポインター初期位置設定
             _pointer = new Vector2(Screen.width / 2f, Screen.height / 2f);
+        }
+
+        private void Start()
+        {
+            // インスタンスからコンポーネント取得
+            _gameOptionService = GameOptionService.Instance;
+
+            if (_gameOptionService == null)
+            {
+                Debug.LogError("[InputManager] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
+            _pointerSpeed = _gameOptionService.PointerSpeed;
         }
 
         private void Update()

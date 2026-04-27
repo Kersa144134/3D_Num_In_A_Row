@@ -11,6 +11,7 @@ using UnityEngine;
 using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
+using OptionSystem.Application;
 using InputSystem.Presentation;
 using UpdateSystem.Domain;
 
@@ -25,11 +26,6 @@ namespace CameraSystem.Presentation
         // ======================================================
         // インスペクタ設定
         // ======================================================
-
-        [Header("回転補間設定")]
-        /// <summary>回転の最大速度（度 / 秒）</summary>
-        [SerializeField]
-        private float _maxRotationSpeed = 360.0f;
 
         [Header("回転制限設定")]
         /// <summary>X 回転の最小値</summary>
@@ -76,6 +72,9 @@ namespace CameraSystem.Presentation
         /// <summary>回転ユースケース</summary>
         private CameraRotationUseCase _rotationUseCase;
 
+        /// <summary>GameOptionService キャッシュ</summary>
+        private GameOptionService _gameOptionService;
+
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -88,6 +87,9 @@ namespace CameraSystem.Presentation
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
+        
+        /// <summary>回転の最大速度（度 / 秒）</summary>
+        private float _maxRotationSpeed;
 
         /// <summary>回転の加速度（度 / 秒の2乗）</summary>
         private float _rotationAcceleration;
@@ -118,12 +120,13 @@ namespace CameraSystem.Presentation
         public void OnEnter()
         {
             // インスタンスからコンポーネント取得
+            _gameOptionService = GameOptionService.Instance;
             _inputManager = InputManager.Instance;
 
             // カメラ取得
             _camera = Camera.main;
 
-            if (_inputManager == null || _camera == null)
+            if (_gameOptionService == null || _inputManager == null || _camera == null)
             {
                 Debug.LogError("[CameraPresenter] クラスの初期化に失敗しました。");
 
@@ -136,7 +139,8 @@ namespace CameraSystem.Presentation
                 return;
             }
 
-            // 回転の加速度を初期化
+            // オプションを取得
+            _maxRotationSpeed = _gameOptionService.CameraRotationSpeed;
             _rotationAcceleration = _maxRotationSpeed * ROTATION_ACCELERATION_MULTIPLIER;
 
             // 現在の Transform の回転を取得する

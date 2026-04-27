@@ -8,7 +8,7 @@
 
 using UnityEngine;
 using UniRx;
-using GameSystem.Application;
+using OptionSystem.Application;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using UpdateSystem.Application;
@@ -24,15 +24,6 @@ namespace GameSystem.Presentation
         // ======================================================
         // インスペクタ設定
         // ======================================================
-
-        [Header("ゲーム設定")]
-        /// <summary>プレイヤー人数</summary>
-        [SerializeField, Range(DEFAULT_MIN_PLAYER, DEFAULT_MAX_PLAYER)]
-        private int _playerCount;
-
-        /// <summary>1 プレイヤーあたりの制限時間</summary>
-        [SerializeField, Min(0f)]
-        private float _perPlayerLimitTime = 15.0f;
 
         [Header("初期フェーズ")]
         /// <summary>シーン読み込み時の初期フェーズ</summary>
@@ -73,9 +64,21 @@ namespace GameSystem.Presentation
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private GameEventRouter _eventRouter;
 
+        /// <summary>GameOptionService キャッシュ</summary>
+        private GameOptionService _gameOptionService;
+
         // ======================================================
         // フィールド
         // ======================================================
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>プレイヤー人数</summary>
+        private int _playerCount;
+
+        /// <summary>1 プレイヤーあたりの制限時間</summary>
+        private float _perPlayerLimitTime;
 
         // --------------------------------------------------
         // シーン
@@ -111,19 +114,12 @@ namespace GameSystem.Presentation
         /// <summary>アプリケーション全体で固定する目標 FPS</summary>
         private const int TARGET_FRAME_RATE = 120;
 
-        /// <summary>プレイヤー下限人数のデフォルト値</summary>
-        private const int DEFAULT_MIN_PLAYER = 2;
-
-        /// <summary>プレイヤー上限人数のデフォルト値</summary>
-        private const int DEFAULT_MAX_PLAYER = 4;
-
         // ======================================================
         // UniRx 変数
         // ======================================================
 
         /// <summary>購読管理</summary>
-        private readonly CompositeDisposable _disposables =
-            new CompositeDisposable();
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
         /// <summary>現在のフェーズストリーム</summary>
         public IReadOnlyReactiveProperty<PhaseType> CurrentPhase => _phaseMachine.CurrentPhaseType;
@@ -135,7 +131,7 @@ namespace GameSystem.Presentation
         private void Awake()
         {
             // フレームレート設定
-            UnityEngine.Application.targetFrameRate = TARGET_FRAME_RATE;
+            Application.targetFrameRate = TARGET_FRAME_RATE;
 
             // コンポーネント配列初期化
             _components = new GameObject[transform.childCount];
@@ -158,6 +154,28 @@ namespace GameSystem.Presentation
 
         private void Start()
         {
+            // --------------------------------------------------
+            // オプション読み込み
+            // --------------------------------------------------
+            // インスタンスからコンポーネント取得
+            _gameOptionService = GameOptionService.Instance;
+
+            if (_gameOptionService == null)
+            {
+                Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
+            _playerCount = _gameOptionService.PlayerCount;
+            _perPlayerLimitTime = _gameOptionService.LimitTime;
+            
             // --------------------------------------------------
             // Updatable 初期化
             // --------------------------------------------------

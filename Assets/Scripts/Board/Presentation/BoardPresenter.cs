@@ -14,6 +14,7 @@ using UniRx;
 using BoardSystem.Application;
 using BoardSystem.Domain;
 using InputSystem.Presentation;
+using OptionSystem.Application;
 using PhaseSystem.Domain;
 using UpdateSystem.Domain;
 
@@ -28,19 +29,6 @@ namespace BoardSystem.Presentation
         // ======================================================
         // インスペクタ設定
         // ======================================================
-
-        [Header("盤面")]
-        /// <summary>
-        /// 盤面サイズ
-        /// </summary>
-        [SerializeField, Min(3)]
-        private int _boardSize;
-
-        /// <summary>
-        /// 勝利条件の連続駒数
-        /// </summary>
-        [SerializeField, Min(3)]
-        private int _connectCount;
 
         /// <summary>
         /// 盤面の列選択表示ルート
@@ -111,6 +99,9 @@ namespace BoardSystem.Presentation
         /// <summary>駒ビュー更新ハンドラ</summary>
         private BoardViewMoveHandler _viewMoveHandler;
 
+        /// <summary>GameOptionService キャッシュ</summary>
+        private GameOptionService _gameOptionService;
+
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -127,14 +118,26 @@ namespace BoardSystem.Presentation
         /// <summary>盤面の列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
 
+        /// <summary>盤面サイズ</summary>
+        private int _boardSize;
+
+        /// <summary>ライン成立条件</summary>
+        private int _connectCount;
+
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
-        /// <summary>落下実行中フラグ</summary>
-        private bool _isDrop = false;
+        /// <summary>
+        /// 落下実行中フラグ
+        /// 入力制限状態で初期化時
+        /// </summary>
+        private bool _canDrop = false;
 
-        /// <summary>回転実行中フラグ</summary>
-        private bool _isRotate = false;
+        /// <summary>
+        /// 回転実行中フラグ
+        /// 入力制限状態で初期化時
+        /// </summary>
+        private bool _canRotate = false;
 
         // ======================================================
         // 定数
@@ -200,12 +203,13 @@ namespace BoardSystem.Presentation
         public void OnEnter()
         {
             // インスタンスからコンポーネント取得
+            _gameOptionService = GameOptionService.Instance;
             _inputManager = InputManager.Instance;
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
 
-            if (_inputManager == null || _camera ||
+            if (_gameOptionService == null || _inputManager == null || _camera == null ||
                 _piecePrefab == null || _deleteParticle == null ||
                 _boardCollider == null || _columnSelectRoot == null)
             {
@@ -220,6 +224,11 @@ namespace BoardSystem.Presentation
                 return;
             }
 
+            // オプションを取得
+            _boardSize = _gameOptionService.BoardSize;
+            _connectCount = _gameOptionService.ConnectCount;
+
+            // モデル、ビュー初期化
             _model = new BoardModel(_boardSize, _connectCount);
             _view = new BoardView(
                 transform,
@@ -232,6 +241,7 @@ namespace BoardSystem.Presentation
                 ROTATION_DURATION
             );
 
+            // 下位クラス初期化
             _deleteHandler = new BoardDeleteHandler(_model, _view);
             _dropHandler = new BoardDropHandler(_model, _view);
             _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
@@ -262,7 +272,7 @@ namespace BoardSystem.Presentation
         public void OnUpdate(in float unscaledDeltaTime)
         {
             // 駒落下中、またはプレイヤー番号が不正なら非表示
-            if (_isDrop || _currentPlayer == PLAYER_NONE)
+            if (!_canDrop || _currentPlayer == PLAYER_NONE)
             {
                 _view.SeteColumnSelectVisible(false);
                 return;
@@ -354,7 +364,7 @@ namespace BoardSystem.Presentation
                 .Subscribe(_ =>
                 {
                     // ドロップ中、またはプレイヤー未設定なら無効
-                    if (_isDrop || _currentPlayer == PLAYER_NONE)
+                    if (!_canDrop || _currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
@@ -365,7 +375,7 @@ namespace BoardSystem.Presentation
                 .AddTo(_inputDisposables);
 
             // 駒落下フラグ更新
-            _isDrop = false;
+            _canDrop = true;
         }
 
         /// <summary>
@@ -385,7 +395,7 @@ namespace BoardSystem.Presentation
                 .Subscribe(cmd =>
                 {
                     // 駒落下中、または回転中なら無効
-                    if (_isDrop || _isRotate)
+                    if (!_canDrop || !_canRotate)
                     {
                         return;
                     }
@@ -396,7 +406,7 @@ namespace BoardSystem.Presentation
                 .AddTo(_inputDisposables);
 
             // 入力可能フラグ更新
-            _isRotate = false;
+            _canRotate = true;
         }
         
         /// <summary>
@@ -480,7 +490,7 @@ namespace BoardSystem.Presentation
             // 入力通知
             _onInputReceived.OnNext(Unit.Default);
 
-            _isDrop = true;
+            _canDrop = false;
 
             // ユースケース実行
             await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
@@ -499,7 +509,7 @@ namespace BoardSystem.Presentation
             // 入力通知
             _onInputReceived.OnNext(Unit.Default);
 
-            _isRotate = true;
+            _canRotate = false;
 
             // --------------------------------------------------
             // 回転ユースケース実行

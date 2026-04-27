@@ -1,0 +1,116 @@
+// ======================================================
+// PlayerPrefsGameOptionRepository.cs
+// 作成者   : 高橋一翔
+// 作成日時 : 2025-09-24
+// 更新日時 : 2026-04-27
+// 概要     : PlayerPrefs によるゲーム設定実装
+// ======================================================
+
+using UnityEngine;
+using OptionSystem.Domain;
+
+namespace OptionSystem.Infrastructure
+{
+    /// <summary>
+    /// PlayerPrefs を用いたゲーム設定の永続化実装
+    /// </summary>
+    public class PlayerPrefsGameOptionRepository : IGameOptionRepository
+    {
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        // --------------------------------------------------
+        // キー
+        // --------------------------------------------------
+        /// <summary>プレイヤー人数の保存キー</summary>
+        private const string KEY_PLAYER_COUNT = "GAME_OPTION_PLAYER_COUNT";
+
+        /// <summary>制限時間の保存キー</summary>
+        private const string KEY_LIMIT_TIME = "GAME_OPTION_LIMIT_TIME";
+
+        /// <summary>盤面サイズの保存キー</summary>
+        private const string KEY_BOARD_SIZE = "GAME_OPTION_BOARD_SIZE";
+
+        /// <summary>勝利条件の保存キー</summary>
+        private const string KEY_CONNECT_COUNT = "GAME_OPTION_CONNECT_COUNT";
+
+        /// <summary>カメラ回転速度の保存キー</summary>
+        private const string KEY_CAMERA_ROTATION_SPEED = "GAME_OPTION_CAMERA_ROTATION_SPEED";
+
+        /// <summary>ポインター速度の保存キー</summary>
+        private const string KEY_POINTER_SPEED = "GAME_OPTION_POINTER_SPEED";
+
+        // --------------------------------------------------
+        // 初期値
+        // --------------------------------------------------
+        /// <summary>プレイヤー人数 デフォルト値</summary>
+        private const int DEFAULT_PLAYER_COUNT = 2;
+
+        /// <summary>制限時間 デフォルト値</summary>
+        private const float DEFAULT_LIMIT_TIME = 15f;
+
+        /// <summary>盤面サイズ デフォルト値</summary>
+        private const GameRules.BoardSizeType DEFAULT_BOARD_SIZE = GameRules.BoardSizeType.Size3;
+
+        /// <summary>ライン成立条件 デフォルト値</summary>
+        private const int DEFAULT_CONNECT_COUNT = 3;
+
+        /// <summary>カメラ回転速度 デフォルト値</summary>
+        private const float DEFAULT_CAMERA_ROTATION_SPEED = 360f;
+
+        /// <summary>ポインター速度 デフォルト値</summary>
+        private const float DEFAULT_POINTER_SPEED = 1000f;
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>
+        /// セーブデータが存在するか判定
+        /// </summary>
+        public bool Exists()
+        {
+            // プレイヤー人数キーを基準に存在判定
+            return PlayerPrefs.HasKey(KEY_PLAYER_COUNT);
+        }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// ゲームルールを PlayerPrefs へ保存する
+        /// </summary>
+        public void Save(GameRules rules)
+        {
+            PlayerPrefs.SetInt(KEY_PLAYER_COUNT, rules.PlayerCount);
+            PlayerPrefs.SetFloat(KEY_LIMIT_TIME, rules.PerPlayerLimitTime);
+            PlayerPrefs.SetInt(KEY_BOARD_SIZE, (int)rules.BoardSize);
+            PlayerPrefs.SetInt(KEY_CONNECT_COUNT, rules.ConnectCount);
+            PlayerPrefs.SetFloat(KEY_CAMERA_ROTATION_SPEED, rules.CameraRotationSpeed);
+            PlayerPrefs.SetFloat(KEY_POINTER_SPEED, rules.PointerSpeed);
+
+            // 書き込み
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// PlayerPrefs からゲームルールを復元する
+        /// </summary>
+        public GameRules Load()
+        {
+            GameRules rules = new GameRules();
+
+            // 保存値を取得
+            rules.PlayerCount = PlayerPrefs.GetInt(KEY_PLAYER_COUNT, DEFAULT_PLAYER_COUNT);
+            rules.PerPlayerLimitTime = PlayerPrefs.GetFloat(KEY_LIMIT_TIME, DEFAULT_LIMIT_TIME);
+            rules.BoardSize = (GameRules.BoardSizeType)PlayerPrefs.GetInt(KEY_BOARD_SIZE, (int)DEFAULT_BOARD_SIZE);
+            rules.ConnectCount = PlayerPrefs.GetInt(KEY_CONNECT_COUNT, DEFAULT_CONNECT_COUNT);
+            rules.CameraRotationSpeed = PlayerPrefs.GetFloat(KEY_CAMERA_ROTATION_SPEED, DEFAULT_CAMERA_ROTATION_SPEED);
+            rules.PointerSpeed = PlayerPrefs.GetFloat(KEY_POINTER_SPEED, DEFAULT_POINTER_SPEED);
+
+            return rules;
+        }
+    }
+}
