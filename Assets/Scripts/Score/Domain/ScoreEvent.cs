@@ -20,8 +20,8 @@ namespace ScoreSystem.Domain
         /// <summary>プレイヤーID</summary>
         public readonly int PlayerId;
 
-        /// <summary>スコア</summary>
-        public readonly int Score;
+        /// <summary>ラインの長さ</summary>
+        public readonly int LineLength;
 
         // ======================================================
         // コンストラクタ
@@ -31,11 +31,11 @@ namespace ScoreSystem.Domain
         /// コンストラクタ
         /// </summary>
         /// <param name="playerId">プレイヤーID</param>
-        /// <param name="score">スコア</param>
-        public ScoreEvent(in int playerId, in int score)
+        /// <param name="lineLength">ラインの長さ</param>
+        public ScoreEvent(in int playerId, in int lineLength)
         {
             PlayerId = playerId;
-            Score = score;
+            LineLength = lineLength;
         }
     }
 }

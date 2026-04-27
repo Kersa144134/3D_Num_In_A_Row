@@ -266,7 +266,7 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // Ray生成
+            // Ray 生成
             Ray ray = _camera.ScreenPointToRay(_inputManager.Pointer);
 
             // ヒット判定
@@ -329,17 +329,6 @@ namespace BoardSystem.Presentation
                     await HandleLineDeleteAsync(lineEvent);
                 })
                 .AddTo(_disposables);
-        }
-
-        public void OnPhaseExit(in PhaseType phase)
-        {
-            if (phase == PhaseType.Play)
-            {
-                _currentPlayer = PLAYER_NONE;
-
-                // 列選択表示を非表示にする
-                _view.SeteColumnSelectVisible(false);
-            }
         }
 
         // ======================================================
@@ -415,6 +404,11 @@ namespace BoardSystem.Presentation
         {
             _inputDisposables?.Dispose();
             _inputDisposables = null;
+            
+            _currentPlayer = PLAYER_NONE;
+
+            // 列選択表示を非表示にする
+            _view.SeteColumnSelectVisible(false);
         }
 
         /// <summary>

@@ -17,6 +17,7 @@ using InputSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using ScoreSystem.Presentation;
 using UISystem.Presentation;
 using UpdateSystem.Domain;
 
@@ -36,6 +37,9 @@ namespace GameSystem.Application
 
         /// <summary>InputManager キャッシュ</summary>
         private readonly InputManager _inputManager;
+
+        /// <summary>ScoreManager キャッシュ</summary>
+        private readonly ScoreManager _scoreManager;
 
         /// <summary>SceneObjectContainer キャッシュ配列</summary>
         private readonly BoardPresenter[] _boardPresenters;
@@ -116,6 +120,7 @@ namespace GameSystem.Application
 
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
+            _scoreManager = ScoreManager.Instance;
         }
 
         // ======================================================
@@ -509,18 +514,18 @@ namespace GameSystem.Application
             // ラインリスト
             IReadOnlyList<BoardIndex>[] lines = e.LinePositions;
 
-            // スコア
-            int score = 0;
+            // ラインの長さ
+            int lineLength = 0;
 
             // ラインごとのセル数を合計する
             for (int i = 0; i < lines.Length; i++)
             {
                 // 各ラインのセル数を加算
-                score += lines[i]?.Count ?? 0;
+                lineLength += lines[i]?.Count ?? 0;
             }
 
             // スコアイベントとして発火
-            _onScoreUpdated.OnNext(new ScoreEvent(playerId, score));
+            _onScoreUpdated.OnNext(new ScoreEvent(playerId, lineLength));
         }
     }
 }

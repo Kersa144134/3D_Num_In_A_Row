@@ -6,8 +6,8 @@
 // 概要     : スコア管理クラス
 // ======================================================
 
-using System;
 using UnityEngine;
+using UniRx;
 using ScoreSystem.Application;
 using ScoreSystem.Domain;
 
@@ -26,57 +26,62 @@ namespace ScoreSystem.Presentation
         public static ScoreManager Instance { get; private set; }
 
         // ======================================================
+        // インスペクタ設定
+        // ======================================================
+
+        [Header("スコア設定")]
+        /// <summary>最大スコア</summary>
+        [SerializeField, Range(1, DEFAULT_MAX_SCORE)]
+        private int _maxScore = 999999;
+
+        /// <summary>駒 1 つあたりの基準スコア</summary>
+        [SerializeField, Range(1, DEFAULT_MAX_SCORE)]
+        private int _baseScore = 10;
+
+        /// <summary>連続ライン成立時のボーナス倍率</summary>
+        [SerializeField, Range(0f, 1f)]
+        private float _lineComleteChainBonus = 0.1f;
+
+        // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>スコア計算サービス</summary>
         private ScoreCalculateService _calculateService;
 
-        /// <summary>アイテム取得スコア</summary>
-        private ScoreData _itemScore = new ScoreData();
-
-        /// <summary>戦車撃破スコア</summary>
-        private ScoreData _tankScore = new ScoreData();
-
-        // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>累計スコア</summary>
-        private int _totalScore;
-
-        // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>累計スコア</summary>
-        public int TotalScore => _totalScore;
+        /// <summary>プレイヤースコア</summary>
+        private ScoreData[] _playerScores;
 
         // ======================================================
         // 定数
         // ======================================================
 
-        /// <summary>スコア最大値</summary>
-        public const int SCORE_MAX = 99999999;
-
-        /// <summary>アイテム取得時のスコア加算量</summary>
-        private const int ITEM_SCORE = 10;
-
-        /// <summary>戦車撃破時のスコア加算量</summary>
-        private const int TANK_SCORE = 1000;
-
-        /// <summary>アイテムボーナス指数係数</summary>
-        private const double ITEM_BONUS_EXPONENT = 1.5;
-
+        /// <summary>スコア上限のデフォルト値</summary>
+        private const int DEFAULT_MAX_SCORE = 999999;
+        
         // ======================================================
-        // イベント
+        // UniRx 変数
         // ======================================================
 
         /// <summary>
-        /// スコア変動通知イベント
-        /// 引数は加算されたスコア量
+        /// プレイヤー別累計スコア
         /// </summary>
-        public event Action<int> OnScoreChanged;
+        private ReactiveProperty<int>[] _totalScores;
+
+        /// <summary>
+        /// プレイヤー別累計スコア
+        /// </summary>
+        public IReadOnlyReactiveProperty<int> GetTotalScore(int index)
+        {
+            if (_totalScores == null ||
+                index < 0 ||
+                index >= _totalScores.Length)
+            {
+                return null;
+            }
+            
+            return _totalScores[index];
+        }
 
         // ======================================================
         // Unity イベント
@@ -92,11 +97,16 @@ namespace ScoreSystem.Presentation
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+        }
 
-            _calculateService = new ScoreCalculateService(SCORE_MAX);
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
 
-            // 初期化
-            _totalScore = 0;
+            Dispose();
         }
 
         // ======================================================
@@ -104,80 +114,122 @@ namespace ScoreSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// アイテム取得スコア加算
+        /// スコアマネージャーの初期化
         /// </summary>
-        public void AddItemScore()
+        public void Initialize(int playerCount)
         {
-            // サービスでスコア加算量を計算する
-            int delta = _calculateService.AddFixedScore(ref _itemScore, ITEM_SCORE);
+            // 未生成
+            if (_totalScores == null || _playerScores == null)
+            {
+                CreateScoresInternal(playerCount);
+                return;
+            }
 
-            // 総スコアへ反映し通知する
-            ApplyScore(delta);
+            // プレイヤー数変更
+            if (_totalScores.Length != playerCount)
+            {
+                Dispose();
+                CreateScoresInternal(playerCount);
+                return;
+            }
+
+            ResetScoresInternal();
         }
 
         /// <summary>
-        /// アイテム取得ボーナススコア加算
-        /// アイテム取得回数に応じたボーナススコアを加算する
+        /// ライン成立スコア加算
         /// </summary>
-        public void AddItemBonusScore()
+        public void AddLineScore(int playerId, int lineLength)
         {
-            int count = _itemScore.AddCount;
-
-            if (count <= 0)
+            if (_totalScores == null)
             {
                 return;
             }
 
-            // 加算前のスコア保存
-            int previousScore = _totalScore;
-
-            // ボーナス係数計算
-            int multiplier = (int)Math.Pow(count, ITEM_BONUS_EXPONENT);
-
-            // ボーナススコア算出
-            int bonusScore = ITEM_SCORE * multiplier;
-
-            // 総スコアへ加算
-            _totalScore += bonusScore;
-
-            // スコア上限補正
-            if (_totalScore > SCORE_MAX)
+            if (playerId < 0 || playerId >= _playerScores.Length)
             {
-                _totalScore = SCORE_MAX;
+                return;
             }
 
-            // 実際の増加量算出
-            int delta = _totalScore - previousScore;
+            // サービスで累積スコア加算量を計算する
+            int delta = _calculateService.AddCumulativeScore(
+                ref _playerScores[playerId],
+                _baseScore * lineLength,
+                _lineComleteChainBonus
+            );
 
-            // スコア変動通知
-            OnScoreChanged?.Invoke(delta);
+            // 対象プレイヤーのスコアへ反映し通知する
+            ApplyScore(playerId, delta);
         }
 
         /// <summary>
-        /// 敵戦車撃破スコア加算
+        /// 全プレイヤーの累積カウンターを加算する
         /// </summary>
-        public void AddTankScore()
+        public void AddAllCumulativeCount()
         {
-            // サービスで累積スコア加算量を計算する
-            int delta = _calculateService.AddCumulativeScore(ref _tankScore, TANK_SCORE);
+            if (_playerScores == null)
+            {
+                return;
+            }
 
-            // 総スコアへ反映し通知する
-            ApplyScore(delta);
+            // 全プレイヤーのカウントを進める
+            for (int i = 0; i < _playerScores.Length; i++)
+            {
+                _calculateService.AddCumulativeCount(ref _playerScores[i]);
+            }
+        }
+
+        /// <summary>
+        /// 全プレイヤーの累積カウンターをリセットする
+        /// </summary>
+        public void ResetAllCumulativeCount()
+        {
+            if (_playerScores == null)
+            {
+                return;
+            }
+
+            // 全プレイヤーの累積カウントを初期化
+            for (int i = 0; i < _playerScores.Length; i++)
+            {
+                _calculateService.ResetAddCounter(ref _playerScores[i]);
+            }
         }
 
         /// <summary>
         /// スコアをリセットする
-        /// シーン開始時などに呼び出す
         /// </summary>
-        public void ResetScore()
+        public void ResetTotalScore()
         {
-            // スコア初期化
-            _totalScore = 0;
-            _calculateService.ResetScore(ref _itemScore);
-            _calculateService.ResetScore(ref _tankScore);
+            if (_totalScores == null)
+            {
+                return;
+            }
 
-            // スコアリセット通知
-            OnScoreChanged?.Invoke(0);
+            // 全プレイヤーのスコア初期化
+            for (int i = 0; i < _totalScores.Length; i++)
+            {
+                _totalScores[i].Value = 0;
+
+                _calculateService.ResetScore(ref _playerScores[i]);
+            }
+        }
+
+        /// <summary>
+        /// スコア関連リソースを破棄する
+        /// </summary>
+        private void Dispose()
+        {
+            if (_totalScores != null)
+            {
+                for (int i = 0; i < _totalScores.Length; i++)
+                {
+                    _totalScores[i]?.Dispose();
+                }
+            }
+
+            _totalScores = null;
+            _playerScores = null;
         }
 
         // ======================================================
@@ -185,33 +237,67 @@ namespace ScoreSystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// 初回スコア生成
+        /// </summary>
+        private void CreateScoresInternal(int playerCount)
+        {
+            // プレイヤー数分のスコアを確保
+            _totalScores = new ReactiveProperty<int>[playerCount];
+            _playerScores = new ScoreData[playerCount];
+
+            // スコア計算サービスを生成
+            _calculateService = new ScoreCalculateService(_maxScore);
+
+            for (int i = 0; i < playerCount; i++)
+            {
+                _totalScores[i] = new ReactiveProperty<int>(0);
+                _playerScores[i] = new ScoreData();
+            }
+        }
+
+        /// <summary>
+        /// スコア再初期化
+        /// </summary>
+        private void ResetScoresInternal()
+        {
+            ResetTotalScore();
+            ResetAllCumulativeCount();
+        }
+
+        /// <summary>
         /// スコア加算を総スコアへ反映し通知する
         /// </summary>
-        /// <param name="delta">加算スコア量</param>
-        private void ApplyScore(int delta)
+        private void ApplyScore(int playerIndex, int delta)
         {
+            if (_totalScores == null)
+            {
+                return;
+            }
+
+            if (playerIndex < 0 || playerIndex >= _totalScores.Length)
+            {
+                return;
+            }
+            
             if (delta == 0)
             {
                 return;
             }
 
             // 加算前スコアを保持
-            int previousScore = _totalScore;
+            int previousScore = _totalScores[playerIndex].Value;
 
-            // 総スコアへ加算
-            _totalScore += delta;
+            // 新しいスコアを計算
+            int nextScore = previousScore + delta;
 
-            // 上限補正
-            if (_totalScore > SCORE_MAX)
+            // 上限制御
+            if (nextScore > _maxScore)
             {
-                _totalScore = SCORE_MAX;
+                nextScore = _maxScore;
             }
 
-            // 増加量を算出
-            int appliedDelta = _totalScore - previousScore;
-
-            // スコア変動通知
-            OnScoreChanged?.Invoke(appliedDelta);
+            // 確定値を代入
+            _totalScores[playerIndex].Value = nextScore;
         }
     }
 }

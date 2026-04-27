@@ -2,8 +2,10 @@
     "name": "ScorePresenter",
     "rootNamespace": "",
     "references": [
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
         "GUID:0570b21b323a88049b0192eb4b40c45f",
-        "GUID:d2f11f5d0fee59744be1b82a7970e335"
+        "GUID:d2f11f5d0fee59744be1b82a7970e335",
+        "GUID:d7491a06d43ad2f42816d0b510fc8920"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

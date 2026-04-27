@@ -245,7 +245,7 @@ namespace UISystem.Presentation
             _lineCompleteSubscription = stream
                 .Subscribe(e =>
                 {
-                    _mainUIView.UpdateScore(e.PlayerId, e.Score);
+                    _mainUIView.UpdateScore(e.PlayerId, e.LineLength);
                 });
         }
 
