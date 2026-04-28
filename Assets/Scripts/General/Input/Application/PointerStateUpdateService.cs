@@ -17,26 +17,6 @@ namespace InputSystem.Application
     public class PointerStateUpdateService
     {
         // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>ポインター移動速度</summary>
-        private readonly float _pointerSpeed;
-
-        // ======================================================
-        // コンストラクタ
-        // ======================================================
-
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        /// <param name="pointerSpeed">ポインター移動速度</param>
-        public PointerStateUpdateService(in float pointerSpeed)
-        {
-            _pointerSpeed = pointerSpeed;
-        }
-
-        // ======================================================
         // パブリックメソッド
         // ======================================================
 
@@ -45,9 +25,11 @@ namespace InputSystem.Application
         /// </summary>
         /// <param name="controller">入力コントローラー</param>
         /// <param name="pointer">現在のポインター座標</param>
+        /// <param name="pointerSpeed">ポインター移動速度</param>
         public void UpdatePointer(
             in IGamepadInputSource controller,
-            ref Vector2 pointer)
+            ref Vector2 pointer,
+            in float pointerSpeed)
         {
             if (controller == null)
             {
@@ -68,7 +50,7 @@ namespace InputSystem.Application
             {
                 Vector2 delta =
                     controller.PointerDelta *
-                    _pointerSpeed *
+                    pointerSpeed *
                     Time.deltaTime;
 
                 pointer += delta;

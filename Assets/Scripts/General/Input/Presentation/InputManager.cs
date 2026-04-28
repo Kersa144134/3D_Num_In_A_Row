@@ -46,13 +46,13 @@ namespace InputSystem.Presentation
         private DeviceSwitchService _deviceSwitchService;
 
         /// <summary>ボタン状態を更新するサービス</summary>
-        private ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
+        private readonly ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
 
         /// <summary>スティック / D-Pad 状態を管理するサービス</summary>
-        private StickStateUpdateService _stickStateUpdateService = new StickStateUpdateService();
+        private readonly StickStateUpdateService _stickStateUpdateService = new StickStateUpdateService();
 
         /// <summary>ポインター状態を管理するサービス</summary>
-        private PointerStateUpdateService _pointerStateUpdateService;
+        private readonly PointerStateUpdateService _pointerStateUpdateService = new PointerStateUpdateService();
 
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
@@ -201,7 +201,6 @@ namespace InputSystem.Presentation
             // クラス初期化
             // --------------------------------------------------
             _deviceSwitchService = new DeviceSwitchService(_inputMappingConfigs);
-            _pointerStateUpdateService = new PointerStateUpdateService(_pointerSpeed);
 
             // --------------------------------------------------
             // 入力状態初期化
@@ -276,7 +275,7 @@ namespace InputSystem.Presentation
             );
 
             // ポインター状態更新
-            _pointerStateUpdateService.UpdatePointer(controller, ref _pointer);
+            _pointerStateUpdateService.UpdatePointer(controller, ref _pointer, _pointerSpeed);
         }
 
         private void OnDestroy()

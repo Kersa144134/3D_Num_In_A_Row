@@ -157,6 +157,8 @@ namespace OptionSystem.Presentation
             {
                 Save();
             }
+
+            Debug.Log(ConnectCount);
         }
 
         // ======================================================

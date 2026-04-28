@@ -175,56 +175,65 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ボード
             // --------------------------------------------------
-            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            if (_boardPresenters != null)
             {
-                if (boardPresenter == null)
+                foreach (BoardPresenter boardPresenter in _boardPresenters)
                 {
-                    continue;
+                    if (boardPresenter == null)
+                    {
+                        continue;
+                    }
+
+                    boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
+
+                    boardPresenter.OnInputReceived
+                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                        .AddTo(_disposables);
+
+                    boardPresenter.OnLineComplete
+                        .Subscribe(e => HandleLineCompleted(e))
+                        .AddTo(_disposables);
+
+                    boardPresenter.OnPlayerEnd
+                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
+                        .AddTo(_disposables);
                 }
-
-                boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
-
-                boardPresenter.OnInputReceived
-                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
-                    .AddTo(_disposables);
-
-                boardPresenter.OnLineComplete
-                    .Subscribe(e => HandleLineCompleted(e))
-                    .AddTo(_disposables);
-
-                boardPresenter.OnPlayerEnd
-                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
-                    .AddTo(_disposables);
             }
 
             // --------------------------------------------------
             // カメラ
             // --------------------------------------------------
-            _cameraPresenter.BindInputLockStream(
-                _currentPhase.Select(phase => phase != PhaseType.Play)
-            );
-            _cameraPresenter.BindBoardRotationPreparationStream(
-                _mainUIPresenter.OnSwitchProjection.Select(_ => Unit.Default)
-            );
+            if (_cameraPresenter != null)
+            {
+                _cameraPresenter.BindInputLockStream(
+                    _currentPhase.Select(phase => phase != PhaseType.Play)
+                );
+                _cameraPresenter.BindBoardRotationPreparationStream(
+                    _mainUIPresenter.OnSwitchProjection.Select(_ => Unit.Default)
+                );
+            }
 
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
-            _mainUIPresenter.BindPhaseStream(_currentPhase);
-            _mainUIPresenter.BindLineCompleteStream(_onScoreUpdated);
-            _mainUIPresenter.BindLimitTimeStream(_phaseMachine.LimitTime);
-            _mainUIPresenter.BindInputLockStream(
-                _currentPhase.Select(phase => phase != PhaseType.Play)
-            );
-            _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
-            _mainUIPresenter.BindRotateStream(_onRotateRequested);
+            if (_mainUIPresenter != null)
+            {
+                _mainUIPresenter.BindPhaseStream(_currentPhase);
+                _mainUIPresenter.BindLineCompleteStream(_onScoreUpdated);
+                _mainUIPresenter.BindLimitTimeStream(_phaseMachine.LimitTime);
+                _mainUIPresenter.BindInputLockStream(
+                    _currentPhase.Select(phase => phase != PhaseType.Play)
+                );
+                _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
+                _mainUIPresenter.BindRotateStream(_onRotateRequested);
 
-            _mainUIPresenter.OnSwitchProjection
-                .Subscribe(e =>
-                {
-                    _cameraPresenter.SwitchProjection(e);
-                })
-                .AddTo(_disposables);
+                _mainUIPresenter.OnSwitchProjection
+                    .Subscribe(e =>
+                    {
+                        _cameraPresenter.SwitchProjection(e);
+                    })
+                    .AddTo(_disposables);
+            }
         }
 
         /// <summary>
@@ -248,15 +257,21 @@ namespace GameSystem.Presentation
                 boardPresenter.UnbindInputStream();
             }
 
-            _cameraPresenter.UnbindInputLockStream();
-            _cameraPresenter.UnbindBoardRotationPreparationStream();
+            if (_cameraPresenter != null)
+            {
+                _cameraPresenter.UnbindInputLockStream();
+                _cameraPresenter.UnbindBoardRotationPreparationStream();
+            }
 
-            _mainUIPresenter.UnbindPhaseStream();
-            _mainUIPresenter.UnbindLineCompleteStream();
-            _mainUIPresenter.UnbindLimitTimeStream();
-            _mainUIPresenter.UnbindInputLockStream();
-            _mainUIPresenter.UnbindPlayerChangeStream();
-            _mainUIPresenter.UnbindRotateStream();
+            if (_mainUIPresenter != null)
+            {
+                _mainUIPresenter.UnbindPhaseStream();
+                _mainUIPresenter.UnbindLineCompleteStream();
+                _mainUIPresenter.UnbindLimitTimeStream();
+                _mainUIPresenter.UnbindInputLockStream();
+                _mainUIPresenter.UnbindPlayerChangeStream();
+                _mainUIPresenter.UnbindRotateStream();
+            }
         }
 
         // ======================================================

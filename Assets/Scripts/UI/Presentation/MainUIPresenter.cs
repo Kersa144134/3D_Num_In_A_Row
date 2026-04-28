@@ -258,7 +258,7 @@ namespace UISystem.Presentation
             _lineCompleteSubscription = stream
                 .Subscribe(e =>
                 {
-                    _mainUIView.UpdateScore(e.PlayerId, e.LineLength);
+                    UpdateScore(e.PlayerId, e.LineLength);
                 });
         }
 
@@ -383,10 +383,10 @@ namespace UISystem.Presentation
         /// スコア表示更新
         /// </summary>
         /// <param name="playerId">プレイヤーID（1 ベース）</param>
-        /// <param name="score">スコア</param>
-        private void UpdateScore(in int playerId, in int score)
+        /// <param name="lineLength">ラインの長さ</param>
+        private void UpdateScore(in int playerId, in int lineLength)
         {
-            _mainUIView.UpdateScore(1, 10);
+            _mainUIView.UpdateScore(playerId, lineLength);
         }
         
         // --------------------------------------------------

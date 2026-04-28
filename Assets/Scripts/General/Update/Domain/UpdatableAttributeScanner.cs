@@ -61,7 +61,8 @@ namespace UpdateSystem.Domain
                 if (attribute == null)
                 {
                     throw new InvalidOperationException(
-                        $"[Updatable登録エラー] UpdatableBindAttribute が定義されていません。対象クラス: {type.FullName}");
+                        $"[Updatable登録エラー] UpdatableBindAttribute が定義されていません。" +
+                        $"対象クラス: {type.FullName}");
                 }
 
                 // --------------------------------------------------

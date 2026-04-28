@@ -99,19 +99,37 @@ namespace UpdateSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// 全Updatable取得
+        /// 全 Updatable 取得
         /// </summary>
         IUpdatable[] IUpdatableEnumerable.GetAllUpdatables()
         {
-            // 全リストを結合する
-            List<IUpdatable> result = new List<IUpdatable>();
+            // 合計要素数をカウント
+            int totalCount = 0;
 
-            foreach (var pair in _map)
+            // 各リストの要素数を加算する
+            foreach (KeyValuePair<UpdatableType, List<IUpdatable>> pair in _map)
             {
-                result.AddRange(pair.Value);
+                totalCount += pair.Value.Count;
             }
 
-            return result.ToArray();
+            // 配列を確保
+            IUpdatable[] result = new IUpdatable[totalCount];
+
+            int index = 0;
+
+            // 配列へ直接コピーする
+            foreach (KeyValuePair<UpdatableType, List<IUpdatable>> pair in _map)
+            {
+                List<IUpdatable> list = pair.Value;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    result[index] = list[i];
+                    index++;
+                }
+            }
+
+            return result;
         }
     }
 }

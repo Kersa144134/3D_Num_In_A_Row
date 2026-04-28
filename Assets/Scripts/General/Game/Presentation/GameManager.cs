@@ -74,15 +74,6 @@ namespace GameSystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
-        // オプション
-        // --------------------------------------------------
-        /// <summary>プレイヤー人数</summary>
-        private int _playerCount;
-
-        /// <summary>1 プレイヤーあたりの制限時間</summary>
-        private float _perPlayerLimitTime;
-
-        // --------------------------------------------------
         // シーン
         // --------------------------------------------------
         /// <summary>現在のシーン名</summary>
@@ -178,9 +169,6 @@ namespace GameSystem.Presentation
                 return;
             }
 
-            _playerCount = _gameOptionManager.PlayerCount;
-            _perPlayerLimitTime = _gameOptionManager.LimitTime;
-            
             // --------------------------------------------------
             // Updatable 初期化
             // --------------------------------------------------
@@ -188,7 +176,7 @@ namespace GameSystem.Presentation
             IUpdatable[] updatables = _updatableCollector.Collect(_components);
 
             // コンテキスト作成
-            _updatableContexts = _updatableContextFactory.Create(updatables);
+            _updatableContexts = new UpdatableContexts();
 
             // 書き込み専用として扱う
             IUpdatableWriter updatableWriter = _updatableContexts;
@@ -210,8 +198,8 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // フェーズ遷移設定
             _phaseTransitionConfig = new PhaseTransitionConfig(
-                _playerCount,
-                _perPlayerLimitTime,
+                _gameOptionManager.PlayerCount,
+                _gameOptionManager.LimitTime,
                 _readyToChangePlayerWaitTime,
                 _playToFinishWaitTime,
                 _changePlayerToPlayWaitTime
