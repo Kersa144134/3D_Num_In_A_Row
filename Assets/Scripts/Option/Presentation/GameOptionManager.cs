@@ -1,21 +1,21 @@
 // ======================================================
-// GameOptionService.cs
+// GameOptionManager.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-27
 // 更新日時 : 2026-04-27
-// 概要     : ゲームオプション制御・適用サービス
+// 概要     : ゲームオプション制御・適用クラス
 // ======================================================
 
 using UnityEngine;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 
-namespace OptionSystem.Application
+namespace OptionSystem.Presentation
 {
     /// <summary>
     /// ゲーム設定の制御クラス
     /// </summary>
-    public sealed class GameOptionService : MonoBehaviour
+    public sealed class GameOptionManager : MonoBehaviour
     {
         // ======================================================
         // シングルトンインスタンス
@@ -24,7 +24,7 @@ namespace OptionSystem.Application
         /// <summary>
         /// インスタンス
         /// </summary>
-        public static GameOptionService Instance { get; private set; }
+        public static GameOptionManager Instance { get; private set; }
 
         // ======================================================
         // インスペクタ設定
@@ -96,7 +96,7 @@ namespace OptionSystem.Application
 
         /// <summary>
         /// 盤面サイズ
-        /// int に変換
+        /// 公開時に int へ変換する
         /// </summary>
         public int BoardSize => (int)_currentRules.BoardSize;
 
@@ -148,14 +148,14 @@ namespace OptionSystem.Application
                 PointerSpeed = _pointerSpeed
             };
 
-            // セーブデータがあるか
+            // オプションセーブデータがあるか
             if (_repository.Exists())
             {
-                _currentRules = _repository.Load();
+                Load();
             }
             else
             {
-                _repository.Save(_currentRules);
+                Save();
             }
         }
 

@@ -1,9 +1,8 @@
 {
-    "name": "OptionApplication",
+    "name": "GeneralGameApplication",
     "rootNamespace": "",
     "references": [
-        "GUID:c10cae77fa46ffe4fb4f66d4c9f86441",
-        "GUID:dde19a067369b844ca1e8065869cffa2"
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

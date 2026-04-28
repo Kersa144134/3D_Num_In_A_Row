@@ -1,0 +1,17 @@
+{
+    "name": "OptionPresentation",
+    "rootNamespace": "",
+    "references": [
+        "GUID:c10cae77fa46ffe4fb4f66d4c9f86441",
+        "GUID:dde19a067369b844ca1e8065869cffa2"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

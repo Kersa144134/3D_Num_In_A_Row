@@ -7,8 +7,10 @@
 // ======================================================
 
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 using UniRx;
-using OptionSystem.Application;
+using GameSystem.Application;
+using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using UpdateSystem.Application;
@@ -30,7 +32,7 @@ namespace GameSystem.Presentation
         [SerializeField] private PhaseType _startPhase;
 
         [Header("フェーズ遷移設定")]
-        /// <summary>Ready フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
+        /// <summary>Ready フェーズから ChangePlayer フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _readyToChangePlayerWaitTime = 3.0f;
 
         /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
@@ -64,8 +66,8 @@ namespace GameSystem.Presentation
         /// <summary>シーン内イベントを仲介するクラス</summary>
         private GameEventRouter _eventRouter;
 
-        /// <summary>GameOptionService キャッシュ</summary>
-        private GameOptionService _gameOptionService;
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
 
         // ======================================================
         // フィールド
@@ -90,7 +92,10 @@ namespace GameSystem.Presentation
         private string _targetScene = string.Empty;
 
         /// <summary>シーン切り替え直後かどうかを示すフラグ</summary>
-        private bool _isSceneChanged = true;
+        private bool _isAfterSceneChange = true;
+
+        /// <summary>シーン遷移中かどうかを示すフラグ</summary>
+        private bool _isSceneTransitioning = false;
 
         // --------------------------------------------------
         // フェーズ
@@ -131,7 +136,7 @@ namespace GameSystem.Presentation
         private void Awake()
         {
             // フレームレート設定
-            Application.targetFrameRate = TARGET_FRAME_RATE;
+            UnityEngine.Application.targetFrameRate = TARGET_FRAME_RATE;
 
             // コンポーネント配列初期化
             _components = new GameObject[transform.childCount];
@@ -148,7 +153,7 @@ namespace GameSystem.Presentation
             // シーン、フェーズ初期設定
             _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
-            _isSceneChanged = true;
+            _isAfterSceneChange = true;
             _targetPhase = _startPhase;
         }
 
@@ -158,9 +163,9 @@ namespace GameSystem.Presentation
             // オプション読み込み
             // --------------------------------------------------
             // インスタンスからコンポーネント取得
-            _gameOptionService = GameOptionService.Instance;
+            _gameOptionManager = GameOptionManager.Instance;
 
-            if (_gameOptionService == null)
+            if (_gameOptionManager == null)
             {
                 Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
 
@@ -173,8 +178,8 @@ namespace GameSystem.Presentation
                 return;
             }
 
-            _playerCount = _gameOptionService.PlayerCount;
-            _perPlayerLimitTime = _gameOptionService.LimitTime;
+            _playerCount = _gameOptionManager.PlayerCount;
+            _perPlayerLimitTime = _gameOptionManager.LimitTime;
             
             // --------------------------------------------------
             // Updatable 初期化
@@ -248,14 +253,20 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // シーン遷移判定
             // --------------------------------------------------
-            if (_currentScene != _targetScene)
+            // シーン遷移が必要かつ未実行の場合のみ実行
+            if (_currentScene != _targetScene && !_isSceneTransitioning)
             {
-                ChangeScene(_targetScene);
+                // 非同期シーン遷移を開始する
+                ChangeScene(_targetScene).Forget();
+
+                // 二重実行防止フラグを有効化する
+                _isSceneTransitioning = true;
+
                 return;
             }
 
             // シーン切替直後は 1 フレーム停止
-            if (_isSceneChanged)
+            if (_isAfterSceneChange)
             {
                 return;
             }
@@ -271,9 +282,9 @@ namespace GameSystem.Presentation
         private void LateUpdate()
         {
             // シーン切替直後は 1 フレーム停止
-            if (_isSceneChanged)
+            if (_isAfterSceneChange)
             {
-                _isSceneChanged = false;
+                _isAfterSceneChange = false;
                 return;
             }
 
@@ -307,21 +318,26 @@ namespace GameSystem.Presentation
         /// <summary>
         /// シーン遷移を行う
         /// </summary>
-        private void ChangeScene(in string sceneName)
+        private async UniTask ChangeScene(string sceneName)
         {
+            // シーン名が無効な場合は処理を中断する
             if (string.IsNullOrEmpty(sceneName))
             {
+                _isSceneTransitioning = false;
                 return;
             }
 
             // 列挙専用として扱う
             IUpdatableEnumerable updatableEnumerable = _updatableContexts;
 
-            // Updatable の終了時処理
+            // Updatable の終了時処理を実行する
             _updatableLifecycleRunner.RunExit(updatableEnumerable);
 
-            // シーンロード
-            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+            // SceneLoader を生成
+            SceneLoader sceneLoader = new SceneLoader();
+
+            // 非同期シーン遷移を実行する
+            await sceneLoader.ChangeSceneAsync(sceneName);
         }
 
         /// <summary>

@@ -12,7 +12,7 @@ using UnityEngine;
 using UniRx;
 using InputSystem.Application;
 using InputSystem.Domain;
-using OptionSystem.Application;
+using OptionSystem.Presentation;
 
 namespace InputSystem.Presentation
 {
@@ -42,20 +42,20 @@ namespace InputSystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>入力デバイス切替を管理するマネージャー</summary>
+        /// <summary>入力デバイス切替を管理するサービス</summary>
         private DeviceSwitchService _deviceSwitchService;
 
         /// <summary>ボタン状態を更新するサービス</summary>
         private ButtonStateUpdateService _buttonStateUpdateService = new ButtonStateUpdateService();
 
-        /// <summary>スティック / D-Pad 状態を管理するマネージャー</summary>
+        /// <summary>スティック / D-Pad 状態を管理するサービス</summary>
         private StickStateUpdateService _stickStateUpdateService = new StickStateUpdateService();
 
-        /// <summary>ポインター状態を管理するマネージャー</summary>
+        /// <summary>ポインター状態を管理するサービス</summary>
         private PointerStateUpdateService _pointerStateUpdateService;
 
-        /// <summary>GameOptionService キャッシュ</summary>
-        private GameOptionService _gameOptionService;
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
 
         // ======================================================
         // フィールド
@@ -224,9 +224,9 @@ namespace InputSystem.Presentation
         private void Start()
         {
             // インスタンスからコンポーネント取得
-            _gameOptionService = GameOptionService.Instance;
+            _gameOptionManager = GameOptionManager.Instance;
 
-            if (_gameOptionService == null)
+            if (_gameOptionManager == null)
             {
                 Debug.LogError("[InputManager] クラスの初期化に失敗しました。");
 
@@ -239,7 +239,7 @@ namespace InputSystem.Presentation
                 return;
             }
 
-            _pointerSpeed = _gameOptionService.PointerSpeed;
+            _pointerSpeed = _gameOptionManager.PointerSpeed;
         }
 
         private void Update()

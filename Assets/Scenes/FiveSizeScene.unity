@@ -798,7 +798,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278255615
+    rgba: 4286611584
   m_fontColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -2403,7 +2403,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278255615
+    rgba: 4286611584
   m_fontColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -3773,7 +3773,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5702725208033566626, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_Name
-      value: GameOptionService
+      value: GameOptionManager
       objectReference: {fileID: 0}
     - target: {fileID: 7056775974992423439, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3958,6 +3958,6 @@ SceneRoots:
   - {fileID: 1349623001}
   - {fileID: 1228962766}
   - {fileID: 1594460769}
+  - {fileID: 3693726949371503212}
   - {fileID: 5281146724075930659}
   - {fileID: 6354334956973414696}
-  - {fileID: 3693726949371503212}

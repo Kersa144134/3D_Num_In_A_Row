@@ -50,13 +50,6 @@ namespace PhaseSystem.Application
         private readonly int _playerCount;
 
         // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>プレイヤー最低人数</summary>
-        private const int MIN_PLAYER_COUNT = 2;
-
-        // ======================================================
         // UniRx 変数
         // ======================================================
 
@@ -111,22 +104,9 @@ namespace PhaseSystem.Application
             // --------------------------------------------------
             // 初期プレイヤー設定
             // --------------------------------------------------
-            // プレイヤー人数が MIN_PLAYER_COUNT 未満の場合は不正
-            if (_transitionConfig.PlayerCount < MIN_PLAYER_COUNT)
-            {
-                UnityEngine.Debug.LogError("PlayPhaseState: PlayerCount が MIN_PLAYER_COUNT 未満です。");
+            _playerCount = _transitionConfig.PlayerCount;
 
-                // 最低人数に補正
-                _playerCount = 2;
-            }
-            else
-            {
-                _playerCount = _transitionConfig.PlayerCount;
-            }
-
-            // --------------------------------------------------
             // 初期プレイヤーをランダムに設定
-            // --------------------------------------------------
             int initialPlayerIndex = UnityEngine.Random.Range(1, _playerCount + 1);
             _currentPlayerIndex = new ReactiveProperty<int>(initialPlayerIndex);
         }
@@ -243,8 +223,7 @@ namespace PhaseSystem.Application
 
                 if (updatable == null)
                 {
-                    throw new InvalidOperationException(
-                        $"Updatableが見つかりません。Type: {type}");
+                    throw new InvalidOperationException($"Updatableが見つかりません。Type: {type}");
                 }
 
                 result.Add(updatable);

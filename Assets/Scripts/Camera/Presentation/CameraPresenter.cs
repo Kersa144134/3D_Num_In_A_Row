@@ -11,7 +11,7 @@ using UnityEngine;
 using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
-using OptionSystem.Application;
+using OptionSystem.Presentation;
 using InputSystem.Presentation;
 using UpdateSystem.Domain;
 
@@ -72,8 +72,8 @@ namespace CameraSystem.Presentation
         /// <summary>回転ユースケース</summary>
         private CameraRotationUseCase _rotationUseCase;
 
-        /// <summary>GameOptionService キャッシュ</summary>
-        private GameOptionService _gameOptionService;
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
@@ -120,13 +120,13 @@ namespace CameraSystem.Presentation
         public void OnEnter()
         {
             // インスタンスからコンポーネント取得
-            _gameOptionService = GameOptionService.Instance;
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
 
             // カメラ取得
             _camera = Camera.main;
 
-            if (_gameOptionService == null || _inputManager == null || _camera == null)
+            if (_gameOptionManager == null || _inputManager == null || _camera == null)
             {
                 Debug.LogError("[CameraPresenter] クラスの初期化に失敗しました。");
 
@@ -140,7 +140,7 @@ namespace CameraSystem.Presentation
             }
 
             // オプションを取得
-            _maxRotationSpeed = _gameOptionService.CameraRotationSpeed;
+            _maxRotationSpeed = _gameOptionManager.CameraRotationSpeed;
             _rotationAcceleration = _maxRotationSpeed * ROTATION_ACCELERATION_MULTIPLIER;
 
             // 現在の Transform の回転を取得する

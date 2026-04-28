@@ -14,7 +14,7 @@ using UniRx;
 using BoardSystem.Application;
 using BoardSystem.Domain;
 using InputSystem.Presentation;
-using OptionSystem.Application;
+using OptionSystem.Presentation;
 using PhaseSystem.Domain;
 using UpdateSystem.Domain;
 
@@ -99,8 +99,8 @@ namespace BoardSystem.Presentation
         /// <summary>駒ビュー更新ハンドラ</summary>
         private BoardViewMoveHandler _viewMoveHandler;
 
-        /// <summary>GameOptionService キャッシュ</summary>
-        private GameOptionService _gameOptionService;
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
@@ -203,13 +203,13 @@ namespace BoardSystem.Presentation
         public void OnEnter()
         {
             // インスタンスからコンポーネント取得
-            _gameOptionService = GameOptionService.Instance;
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
 
-            if (_gameOptionService == null || _inputManager == null || _camera == null ||
+            if (_gameOptionManager == null || _inputManager == null || _camera == null ||
                 _piecePrefab == null || _deleteParticle == null ||
                 _boardCollider == null || _columnSelectRoot == null)
             {
@@ -225,8 +225,8 @@ namespace BoardSystem.Presentation
             }
 
             // オプションを取得
-            _boardSize = _gameOptionService.BoardSize;
-            _connectCount = _gameOptionService.ConnectCount;
+            _boardSize = _gameOptionManager.BoardSize;
+            _connectCount = _gameOptionManager.ConnectCount;
 
             // モデル、ビュー初期化
             _model = new BoardModel(_boardSize, _connectCount);
