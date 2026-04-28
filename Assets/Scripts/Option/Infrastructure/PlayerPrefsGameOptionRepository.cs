@@ -23,6 +23,9 @@ namespace OptionSystem.Infrastructure
         // --------------------------------------------------
         // キー
         // --------------------------------------------------
+        /// <summary>セーブデータ存在フラグキー</summary>
+        private const string KEY_EXISTS = "GAME_OPTION_EXISTS";
+
         /// <summary>プレイヤー人数の保存キー</summary>
         private const string KEY_PLAYER_COUNT = "GAME_OPTION_PLAYER_COUNT";
 
@@ -71,8 +74,9 @@ namespace OptionSystem.Infrastructure
         /// </summary>
         public bool Exists()
         {
-            // プレイヤー人数キーを基準に存在判定
-            return PlayerPrefs.HasKey(KEY_PLAYER_COUNT);
+            // セーブ済みフラグを参照する
+            // 未設定時は 0
+            return PlayerPrefs.GetInt(KEY_EXISTS, 0) == 1;
         }
 
         // ======================================================
@@ -90,6 +94,9 @@ namespace OptionSystem.Infrastructure
             PlayerPrefs.SetInt(KEY_CONNECT_COUNT, rules.ConnectCount);
             PlayerPrefs.SetFloat(KEY_CAMERA_ROTATION_SPEED, rules.CameraRotationSpeed);
             PlayerPrefs.SetFloat(KEY_POINTER_SPEED, rules.PointerSpeed);
+
+            // セーブ済みフラグを立てる
+            PlayerPrefs.SetInt(KEY_EXISTS, 1);
 
             // 書き込み
             PlayerPrefs.Save();
@@ -111,6 +118,24 @@ namespace OptionSystem.Infrastructure
             rules.PointerSpeed = PlayerPrefs.GetFloat(KEY_POINTER_SPEED, DEFAULT_POINTER_SPEED);
 
             return rules;
+        }
+
+        /// <summary>
+        /// PlayerPrefs をリセットする
+        /// </summary>
+        public void Delete()
+        {
+            PlayerPrefs.DeleteKey(KEY_PLAYER_COUNT);
+            PlayerPrefs.DeleteKey(KEY_LIMIT_TIME);
+            PlayerPrefs.DeleteKey(KEY_BOARD_SIZE);
+            PlayerPrefs.DeleteKey(KEY_CONNECT_COUNT);
+            PlayerPrefs.DeleteKey(KEY_CAMERA_ROTATION_SPEED);
+            PlayerPrefs.DeleteKey(KEY_POINTER_SPEED);
+
+            // セーブ存在フラグも削除
+            PlayerPrefs.DeleteKey(KEY_EXISTS);
+
+            PlayerPrefs.Save();
         }
     }
 }

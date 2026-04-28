@@ -26,8 +26,15 @@ namespace OptionSystem.Infrastructure
         GameRules Load();
 
         /// <summary>
-        /// セーブデータが存在するか
+        /// 設定が存在するか
         /// </summary>
         bool Exists();
+
+        /// <summary>
+        /// 設定を削除する
+        /// </summary>
+        void Delete();
+
+
     }
 }

@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-09
 // 更新日時 : 2026-04-09
-// 概要     : メインUIの描画処理を担当するビュー
+// 概要     : メイン UI の描画処理を担当するビュー
 // ======================================================
 
 using UnityEngine;
@@ -14,7 +14,7 @@ using UISystem.Application;
 namespace UISystem.Presentation
 {
     /// <summary>
-    /// メインUI描画ビュー
+    /// メイン UI ビュー
     /// </summary>
     public sealed class MainUIView
     {
@@ -41,7 +41,7 @@ namespace UISystem.Presentation
         /// <summary>ポインターImage</summary>
         private readonly Image _pointerImage;
 
-        /// <summary>ポインターRect</summary>
+        /// <summary>ポインター Rect</summary>
         private readonly RectTransform _pointerRect;
 
         /// <summary>Canvas Rect</summary>

@@ -9,6 +9,7 @@
 using PhaseSystem.Domain;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UniRx;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
@@ -78,7 +79,6 @@ namespace PhaseSystem.Application
         // ======================================================
 
         public PhaseMachine(
-            in PhaseType initialPhase,
             in PhaseTransitionConfig transitionConfig,
             in UpdatableContexts updatableContexts)
         {
@@ -88,8 +88,7 @@ namespace PhaseSystem.Application
             // --------------------------------------------------
             // 初期フェーズ設定
             // --------------------------------------------------
-            _currentPhaseType.Value = initialPhase;
-            _currentState = _stateRepository.GetPhaseState(initialPhase);
+            _currentState = _stateRepository.GetPhaseState(PhaseType.None);
 
             // 開始処理
             _currentState.OnEnterState();

@@ -83,15 +83,14 @@ namespace UpdateSystem.Application
         }
 
         /// <summary>
-        /// Updatable の登録内容を外部指定で再構築する
+        /// Updatable の登録内容を再構築する
         /// </summary>
         /// <param name="updatables">登録対象の Updatable 配列</param>
         public void RebuildUpdatables(in IUpdatable[] updatables)
         {
-            // null安全化
+            // null の場合は空配列として扱う
             IUpdatable[] safeArray = updatables ?? Array.Empty<IUpdatable>();
 
-            // null除去＋最小コピーで新配列を作る
             IUpdatable[] buffer = new IUpdatable[safeArray.Length];
 
             int index = 0;
@@ -105,11 +104,13 @@ namespace UpdateSystem.Application
                     continue;
                 }
 
+                // バッファへ格納
                 buffer[index] = updatable;
+
                 index++;
             }
 
-            // 実サイズに合わせて再生成
+            // 有効要素数に合わせた配列を生成
             IUpdatable[] result = new IUpdatable[index];
 
             for (int i = 0; i < index; i++)

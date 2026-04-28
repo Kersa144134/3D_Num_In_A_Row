@@ -16,6 +16,7 @@ namespace UpdateSystem.Domain
     {
         BoardPresenter,
         CameraPresenter,
+        TitleUIPresenter,
         MainUIPresenter
     }
 }

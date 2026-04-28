@@ -7,6 +7,7 @@
 // ======================================================
 
 using UnityEngine;
+using UniRx;
 using InputSystem.Infrastructure;
 using InputSystem.Domain;
 
@@ -56,8 +57,16 @@ namespace InputSystem.Application
         /// <summary>現在アクティブな入力コントローラー</summary>
         public IGamepadInputSource ActiveController { get; private set; }
 
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
         /// <summary>現在アクティブなデバイス種別</summary>
-        public InputDeviceType ActiveDeviceType { get; private set; } = InputDeviceType.Gamepad;
+        private readonly ReactiveProperty<InputDeviceType> _activeDeviceType
+            = new ReactiveProperty<InputDeviceType>(InputDeviceType.Gamepad);
+
+        /// <summary>現在アクティブなデバイス種別</summary>
+        public IReadOnlyReactiveProperty<InputDeviceType> ActiveDeviceType => _activeDeviceType;
 
         // ======================================================
         // コンストラクタ
@@ -155,13 +164,13 @@ namespace InputSystem.Application
             if (useGamepad)
             {
                 ActiveController = _currentSet.Gamepad;
-                ActiveDeviceType = InputDeviceType.Gamepad;
+                _activeDeviceType.Value = InputDeviceType.Gamepad;
             }
             // 仮想パッド
             else
             {
                 ActiveController = _currentSet.Virtualpad;
-                ActiveDeviceType = InputDeviceType.Virtualpad;
+                _activeDeviceType.Value = InputDeviceType.Virtualpad;
             }
         }
     }

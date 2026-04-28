@@ -25,7 +25,10 @@ namespace PhaseSystem.Domain
         /// </summary>
         public override UpdatableType[] GetUpdatableTypes()
         {
-            return Array.Empty<UpdatableType>();
+            return new UpdatableType[]
+            {
+                UpdatableType.TitleUIPresenter
+            };
         }
 
         // ======================================================

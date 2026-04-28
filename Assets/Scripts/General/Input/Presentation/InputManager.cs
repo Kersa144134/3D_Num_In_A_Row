@@ -92,16 +92,6 @@ namespace InputSystem.Presentation
         // プロパティ
         // ======================================================
 
-        /// <summary>現在アクティブな入力デバイス種別</summary>
-        public InputDeviceType ActiveDeviceType
-        {
-            get
-            {
-                // DeviceSwitchService から現在のデバイス種別を取得して返す
-                return _deviceSwitchService.ActiveDeviceType;
-            }
-        }
-        
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
         public int CurrentMappingIndex { get; private set; } = 0;
 
@@ -159,6 +149,10 @@ namespace InputSystem.Presentation
 
         /// <summary>マッピング変更購読</summary>
         private IDisposable _mappingSubscription;
+
+        /// <summary>現在アクティブな入力デバイス種別</summary>
+        public IReadOnlyReactiveProperty<InputDeviceType> ActiveDeviceType =>
+            _deviceSwitchService.ActiveDeviceType;
 
         // ======================================================
         // Unity イベント

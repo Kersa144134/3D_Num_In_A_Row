@@ -6,19 +6,20 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
+using InputSystem.Domain;
 using InputSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UISystem.Presentation;
+using UniRx;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -46,6 +47,9 @@ namespace GameSystem.Presentation
 
         /// <summary>CameraPresenter キャッシュ</summary>
         private readonly CameraPresenter _cameraPresenter;
+
+        /// <summary>TitleUIPresenter キャッシュ</summary>
+        private readonly TitleUIPresenter _titleUIPresenter;
 
         /// <summary>MainUIPresenter キャッシュ</summary>
         private readonly MainUIPresenter _mainUIPresenter;
@@ -77,6 +81,9 @@ namespace GameSystem.Presentation
 
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
+
+        /// <summary>ゲームパッド検知用 Subject</summary>
+        private readonly Subject<bool> _onGamepadUsed = new Subject<bool>();
 
         /// <summary>プレイヤー変更用 Subject</summary>
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();
@@ -114,6 +121,9 @@ namespace GameSystem.Presentation
 
             _cameraPresenter = (CameraPresenter)
                 updatableReader.Get(UpdatableType.CameraPresenter);
+
+            _titleUIPresenter = (TitleUIPresenter)
+                updatableReader.Get(UpdatableType.TitleUIPresenter);
 
             _mainUIPresenter = (MainUIPresenter)
                 updatableReader.Get(UpdatableType.MainUIPresenter);
@@ -172,6 +182,11 @@ namespace GameSystem.Presentation
                 .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
                 .AddTo(_disposables);
 
+            // アクティブコントローラー変更
+            _inputManager.ActiveDeviceType
+                .Subscribe(e => HandleActiveControllerChanged(e))
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // ボード
             // --------------------------------------------------
@@ -216,6 +231,17 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // UI
             // --------------------------------------------------
+            if (_titleUIPresenter != null)
+            {
+                _titleUIPresenter.BindPhaseStream(_currentPhase);
+                _titleUIPresenter.BindInputLockStream(
+                    _currentPhase.Select(phase => phase != PhaseType.Title)
+                );
+                // ポインター表示条件に合わせて反転して渡す
+                _titleUIPresenter.BindPointerVisibleStream(
+                    _onGamepadUsed.Select(x => !x)
+                );
+            }
             if (_mainUIPresenter != null)
             {
                 _mainUIPresenter.BindPhaseStream(_currentPhase);
@@ -263,6 +289,12 @@ namespace GameSystem.Presentation
                 _cameraPresenter.UnbindBoardRotationPreparationStream();
             }
 
+            if (_titleUIPresenter != null)
+            {
+                _titleUIPresenter.UnbindPhaseStream();
+                _titleUIPresenter.UnbindInputLockStream();
+                _titleUIPresenter.UnbindPointerVisibleStream();
+            }
             if (_mainUIPresenter != null)
             {
                 _mainUIPresenter.UnbindPhaseStream();
@@ -303,6 +335,21 @@ namespace GameSystem.Presentation
         private void NotifyMappingChanged(in int mappingIndex)
         {
             _onMappingChanged.OnNext(mappingIndex);
+        }
+
+        /// <summary>
+        /// デバイス切替処理を行う
+        /// </summary>
+        private void HandleActiveControllerChanged(in InputDeviceType device)
+        {
+            if (device == InputDeviceType.Gamepad)
+            {
+                _onGamepadUsed.OnNext( true );
+            }
+            else
+            {
+                _onGamepadUsed.OnNext(false);
+            }
         }
 
         /// <summary>

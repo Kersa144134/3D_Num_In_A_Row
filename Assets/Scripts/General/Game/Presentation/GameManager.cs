@@ -57,9 +57,6 @@ namespace GameSystem.Presentation
         /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
         private readonly UpdatableCollector _updatableCollector = new UpdatableCollector();
 
-        /// <summary>IUpdatable を実装しているコンポーネントを取得するクラス</summary>
-        private readonly UpdatableContextFactory _updatableContextFactory = new UpdatableContextFactory();
-
         /// <summary>IUpdatable のライフサイクル実行クラス</summary>
         private readonly UpdatableLifecycleRunner _updatableLifecycleRunner = new UpdatableLifecycleRunner();
 
@@ -117,7 +114,7 @@ namespace GameSystem.Presentation
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>現在のフェーズストリーム</summary>
+        /// <summary>現在のフェーズ</summary>
         public IReadOnlyReactiveProperty<PhaseType> CurrentPhase => _phaseMachine.CurrentPhaseType;
 
         // ======================================================
@@ -207,7 +204,6 @@ namespace GameSystem.Presentation
 
             // フェーズ管理マシン初期化
             _phaseMachine = new PhaseMachine(
-                _startPhase,
                 _phaseTransitionConfig,
                 _updatableContexts
             );
@@ -282,7 +278,7 @@ namespace GameSystem.Presentation
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
             _phaseMachine.OnLateUpdate(unscaledDeltaTime);
-
+            
             // --------------------------------------------------
             // フェーズ遷移判定
             // --------------------------------------------------
