@@ -6,8 +6,14 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/TitleScene.unity
+    guid: 2475e7de94e43ef45a4d65142f8a67bb
+  - enabled: 1
+    path: Assets/Scenes/ThreeSizeScene.unity
+    guid: 472eb5940acfa474d99095c0a86a20b1
+  - enabled: 1
     path: Assets/Scenes/FiveSizeScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    guid: 4ec4ff29de845b3468229ddd6399f74e
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

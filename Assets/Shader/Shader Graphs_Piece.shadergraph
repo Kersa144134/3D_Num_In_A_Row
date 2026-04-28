@@ -1691,7 +1691,7 @@
     "m_Title": "Setting Distance from Camera",
     "m_Position": {
         "x": -2986.0,
-        "y": 409.0
+        "y": 408.9999694824219
     }
 }
 
@@ -2801,8 +2801,8 @@
     "m_ObjectId": "bd69cbdcd1814161a00b5790f2ca5971",
     "m_Title": "Setting Albedo Color and Texture ",
     "m_Position": {
-        "x": -937.0000610351563,
-        "y": -202.00001525878907
+        "x": -937.000244140625,
+        "y": -202.0
     }
 }
 
