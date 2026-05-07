@@ -81,18 +81,26 @@ namespace UISystem.Presentation
         // ボタンカラー
         // --------------------------------------------------
         [Header("ボタンカラー")]
-
         /// <summary>選択時カラー</summary>
         [SerializeField]
-        private Color _selectColor = Color.white;
+        private Color _selectOnColor = Color.white;
 
         /// <summary>非選択時カラー</summary>
         [SerializeField]
-        private Color _deselectColor = Color.gray;
+        private Color _selectOffColor = Color.gray;
+
+        /// <summary>フォーカス時カラー</summary>
+        [SerializeField]
+        private Color _focusOnColor = Color.white;
+
+        /// <summary>非フォーカス時カラー</summary>
+        [SerializeField]
+        private Color _focusOffColor = Color.gray;
 
         // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
+        [Header("アニメーター")]
         /// <summary>ボードの GameObject ルート</summary>
         [SerializeField]
         private Animator _boardAnimator;
@@ -128,13 +136,6 @@ namespace UISystem.Presentation
 
         /// <summary>ポインター速度ボタン選択制御</summary>
         private ButtonSelectionController _pointerSpeedSelectionController;
-
-        private OptionButton[] _playerCountOptionButtons;
-        private OptionButton[] _limitTimeOptionButtons;
-        private OptionButton[] _boardSizeOptionButtons;
-        private OptionButton[] _connectCountOptionButtons;
-        private OptionButton[] _cameraRotationSpeedOptionButtons;
-        private OptionButton[] _pointerSpeedOptionButtons;
 
         // ======================================================
         // フィールド
@@ -221,11 +222,12 @@ namespace UISystem.Presentation
             }
 
             // ビュー生成
-            _titleUIView =
-                new TitleUIView(
-                    _pointerImage,
-                    _selectColor,
-                    _deselectColor
+            _titleUIView = new TitleUIView(
+                _pointerImage,
+                _selectOnColor,
+                _selectOffColor,
+                _focusOnColor,
+                _focusOffColor
             );
 
             // ボタン初期化
@@ -399,16 +401,34 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // SelectionController 生成
             // --------------------------------------------------
-            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray);
-            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray);
-            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray);
-            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray);
-            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray);
-            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray);
+            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray, 0);
+            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray, 1);
+            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray, 0);
+            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray, 0);
+            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray, 1);
+            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray, 1);
 
             // --------------------------------------------------
-            // 初期表示更新
+            // ビュー更新
             // --------------------------------------------------
+            _titleUIView.ApplyButtonSelectionState(
+                _playerCountSelectionController.ButtonArray,
+                _playerCountSelectionController.SelectStateArray);
+            _titleUIView.ApplyButtonSelectionState(
+                _limitTimeSelectionController.ButtonArray,
+                _limitTimeSelectionController.SelectStateArray);
+            _titleUIView.ApplyButtonSelectionState(
+                _boardSizeSelectionController.ButtonArray,
+                _boardSizeSelectionController.SelectStateArray);
+            _titleUIView.ApplyButtonSelectionState(
+                _connectCountSelectionController.ButtonArray,
+                _connectCountSelectionController.SelectStateArray);
+            _titleUIView.ApplyButtonSelectionState(
+                _cameraRotationSpeedSelectionController.ButtonArray,
+                _cameraRotationSpeedSelectionController.SelectStateArray);
+            _titleUIView.ApplyButtonSelectionState(
+                _pointerSpeedSelectionController.ButtonArray,
+                _pointerSpeedSelectionController.SelectStateArray);
 
             // --------------------------------------------------
             // イベント購読
@@ -423,15 +443,12 @@ namespace UISystem.Presentation
 
         /// <summary>
         /// OptionButton の入力イベントを購読する
-        /// ・Click：選択状態更新
-        /// ・Enter：ホバー開始
-        /// ・Exit：ホバー解除
         /// </summary>
         /// <param name="optionButtons">入力対象ボタン配列</param>
         /// <param name="controller">選択状態制御</param>
         private void BindOptionButtons(
-    OptionButton[] optionButtons,
-    ButtonSelectionController controller)
+            OptionButton[] optionButtons,
+            ButtonSelectionController controller)
         {
             if (optionButtons == null)
             {
@@ -457,33 +474,32 @@ namespace UISystem.Presentation
                     continue;
                 }
 
-                // ==================================================
-                // Click
-                // ==================================================
+                // クリック時
                 optionButton.OnClickAsObservable
                     .Subscribe(_ =>
                     {
                         controller.Select(button);
+
+                        // ビュー反映
+                        _titleUIView.ApplyButtonSelectionState(
+                            controller.ButtonArray,
+                            controller.SelectStateArray);
                     })
                     .AddTo(optionButton);
 
-                // ==================================================
-                // Enter
-                // ==================================================
-                optionButton.OnEnterAsObservable
+                // フォーカス開始時
+                optionButton.OnFocusEnterAsObservable
                     .Subscribe(_ =>
                     {
-                        _titleUIView.SetHover(captureIndex, true);
+                        _titleUIView.SetFocus(button, true);
                     })
                     .AddTo(optionButton);
 
-                // ==================================================
-                // Exit
-                // ==================================================
-                optionButton.OnExitAsObservable
+                // フォーカス終了
+                optionButton.OnFocusExitAsObservable
                     .Subscribe(_ =>
                     {
-                        _titleUIView.SetHover(captureIndex, false);
+                        _titleUIView.SetFocus(button, false);
                     })
                     .AddTo(optionButton);
             }
@@ -510,8 +526,6 @@ namespace UISystem.Presentation
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
         }
-
-        
 
         // ======================================================
         // アニメーションイベント

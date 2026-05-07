@@ -36,8 +36,17 @@ namespace UISystem.Presentation
         /// <summary>CanvasRect</summary>
         private readonly RectTransform _canvasRect;
 
-        /// <summary>ホバー状態Image配列</summary>
-        private readonly Image[] _hoverImages;
+        /// <summary>選択 ON 時カラー</summary>
+        private readonly Color _selectOnColor;
+
+        /// <summary>選択 OFF 時カラー</summary>
+        private readonly Color _selectOffColor;
+
+        /// <summary>フォーカス ON 時カラー</summary>
+        private readonly Color _focusOnColor;
+
+        /// <summary>フォーカス OFF 時カラー</summary>
+        private readonly Color _focusOffColor;
 
         // ======================================================
         // コンストラクタ
@@ -48,10 +57,16 @@ namespace UISystem.Presentation
         /// </summary>
         public TitleUIView(
             in Image pointerImage,
-            in Color selectColor,
-            in Color deselectColor)
+            in Color selectOnColor,
+            in Color selectOffColor,
+            in Color focusOnColor,
+            in Color focusOffColor)
         {
             _pointerImage = pointerImage;
+            _selectOnColor = selectOnColor;
+            _selectOffColor = selectOffColor;
+            _focusOnColor = focusOnColor;
+            _focusOffColor = focusOffColor;
 
             // --------------------------------------------------
             // ポインター初期化
@@ -101,7 +116,7 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // Canvas中心基準へ変換
+            // Canvas 中心基準へ変換
             Vector2 anchoredPos = screenPosition - (_canvasRect.sizeDelta * 0.5f);
 
             // 位置反映
@@ -112,18 +127,77 @@ namespace UISystem.Presentation
         // ボタン
         // --------------------------------------------------
         /// <summary>
-        /// ホバー状態更新
+        /// ボタン選択状態を全体反映する
         /// </summary>
-        public void SetHover(in int index, in bool isHover)
+        /// <param name="buttonArray">対象ボタン配列</param>
+        /// <param name="selectStateArray">選択状態配列</param>
+        public void ApplyButtonSelectionState(
+            in Button[] buttonArray,
+            in bool[] selectStateArray)
         {
-            if (_hoverImages[index] == null)
+            if (buttonArray == null || selectStateArray == null)
             {
                 return;
             }
 
-            // ホバー時は白 / 非ホバー時は黒
-            _hoverImages[index].color =
-                isHover ? Color.white : Color.black;
+            // 要素数チェック
+            int count = Mathf.Min(buttonArray.Length, selectStateArray.Length);
+
+            // --------------------------------------------------
+            // ボタン状態反映
+            // --------------------------------------------------
+            for (int index = 0; index < count; index++)
+            {
+                Button button =
+                    buttonArray[index];
+
+                if (button == null)
+                {
+                    continue;
+                }
+
+                // Selectable 取得
+                Transform target = FindSelectableTransform(button.transform);
+
+                if (target == null)
+                {
+                    continue;
+                }
+
+                // Image 取得
+                Image image = target.GetComponent<Image>();
+
+                if (image == null)
+                {
+                    continue;
+                }
+
+                // 選択状態に応じて色反映
+                image.color = selectStateArray[index] ? _selectOnColor : _selectOffColor;
+            }
+        }
+
+        /// <summary>
+        /// フォーカス状態更新
+        /// </summary>
+        public void SetFocus(in Button button, in bool isHover)
+        {
+            // null安全チェック
+            if (button == null)
+            {
+                return;
+            }
+
+            // Button 本体の Image を使用
+            Image image = button.image;
+
+            if (image == null)
+            {
+                return;
+            }
+
+            // フォーカス状態に応じて色反映
+            image.color = isHover ? _focusOnColor : _focusOffColor;
         }
 
         // ======================================================
@@ -148,8 +222,7 @@ namespace UISystem.Presentation
                 }
 
                 // 再帰検索
-                Transform result =
-                    FindSelectableTransform(child);
+                Transform result = FindSelectableTransform(child);
 
                 if (result != null)
                 {

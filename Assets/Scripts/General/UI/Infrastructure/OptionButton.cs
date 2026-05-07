@@ -3,14 +3,14 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-07
 // 更新日時 : 2026-05-07
-// 概要     : オプションボタンの入力通知を担当するクラス
+// 概要     : オプションボタンのクリック・フォーカス入力通知を担当するクラス
 // ======================================================
 
 using System;
-using UniRx;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UniRx;
 using OptionSystem.Domain;
 
 namespace UISystem.Infrastructure
@@ -22,7 +22,10 @@ namespace UISystem.Infrastructure
         MonoBehaviour,
         IPointerClickHandler,
         IPointerEnterHandler,
-        IPointerExitHandler
+        IPointerExitHandler,
+        ISelectHandler,
+        IDeselectHandler,
+        ISubmitHandler
     {
         // ======================================================
         // インスペクタ設定
@@ -30,6 +33,7 @@ namespace UISystem.Infrastructure
 
         /// <summary>
         /// インスペクタ設定用データ
+        /// ・ボタン識別情報などを保持
         /// </summary>
         [SerializeField]
         private OptionButtonConfig _config;
@@ -43,81 +47,108 @@ namespace UISystem.Infrastructure
         /// </summary>
         private OptionButtonData _data;
 
+        /// <summary>
+        /// Buttonキャッシュ
+        /// </summary>
+        private Button _cachedButton;
+
         // ======================================================
-        // UniRx 変数
+        // UniRx 変数（クリック）
         // ======================================================
 
-        /// <summary>クリック通知用 Subject</summary>
+        /// <summary>クリック通知用Subject</summary>
         private readonly Subject<OptionButtonData> _onClick = new Subject<OptionButtonData>();
 
-        /// <summary>クリックイベント用ストリーム</summary>
+        /// <summary>クリックイベントストリーム</summary>
         public IObservable<OptionButtonData> OnClickAsObservable => _onClick;
 
-        /// <summary>ホバー開始通知用 Subject</summary>
-        private readonly Subject<OptionButtonData> _onEnter = new Subject<OptionButtonData>();
-
-        /// <summary>ホバー開始イベント用ストリーム</summary>
-        public IObservable<OptionButtonData> OnEnterAsObservable => _onEnter;
-
-        /// <summary>ホバー終了通知用 Subject</summary>
-        private readonly Subject<OptionButtonData> _onExit = new Subject<OptionButtonData>();
-
-        /// <summary>ホバー終了イベント用ストリーム</summary>
-        public IObservable<OptionButtonData> OnExitAsObservable => _onExit;
-
         // ======================================================
-        // Unity イベント
+        // UniRx 変数（フォーカス）
         // ======================================================
 
-        /// <summary>
-        /// オブジェクト破棄時の後始末
-        /// ・Subjectの解放
-        /// </summary>
-        private void OnDestroy()
+        /// <summary>フォーカス開始通知用Subject</summary>
+        private readonly Subject<OptionButtonData> _onFocusEnter = new Subject<OptionButtonData>();
+
+        /// <summary>フォーカス開始ストリーム</summary>
+        public IObservable<OptionButtonData> OnFocusEnterAsObservable => _onFocusEnter;
+
+        /// <summary>フォーカス終了通知用Subject</summary>
+        private readonly Subject<OptionButtonData> _onFocusExit = new Subject<OptionButtonData>();
+
+        /// <summary>フォーカス終了ストリーム</summary>
+        public IObservable<OptionButtonData> OnFocusExitAsObservable => _onFocusExit;
+
+        // ======================================================
+        // Unityイベント
+        // ======================================================
+
+        private void Awake()
         {
-            _onClick.Dispose();
-            _onEnter.Dispose();
-            _onExit.Dispose();
+            // ボタンコンポーネントをキャッシュ
+            _cachedButton = GetComponent<Button>();
+
+            // Runtime データ生成
+            _data = _config.ToRuntimeData(_cachedButton);
         }
 
+        private void OnDestroy()
+        {
+            // Subject 解放
+            _onClick.Dispose();
+            _onFocusEnter.Dispose();
+            _onFocusExit.Dispose();
+        }
+
+        // ======================================================
+        // EventSystem 入力イベント
+        // ======================================================
+
         /// <summary>
-        /// クリック時処理
+        /// クリック入力
         /// </summary>
-        /// <param name="eventData">イベント情報</param>
         public void OnPointerClick(PointerEventData eventData)
         {
             _onClick.OnNext(_data);
         }
 
         /// <summary>
-        /// ホバー開始時処理
+        /// マウスフォーカス開始
         /// </summary>
-        /// <param name="eventData">イベント情報</param>
         public void OnPointerEnter(PointerEventData eventData)
         {
-            _onEnter.OnNext(_data);
+            _onFocusEnter.OnNext(_data);
         }
 
         /// <summary>
-        /// ホバー終了時処理
+        /// マウスフォーカス終了
         /// </summary>
-        /// <param name="eventData">イベント情報</param>
         public void OnPointerExit(PointerEventData eventData)
         {
-            _onExit.OnNext(_data);
+            _onFocusExit.OnNext(_data);
         }
 
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
+        /// <summary>
+        /// 決定入力
+        /// </summary>
+        public void OnSubmit(BaseEventData eventData)
+        {
+            _onClick.OnNext(_data);
+        }
 
         /// <summary>
-        /// ボタンデータを設定する
+        /// フォーカス開始
         /// </summary>
-        public void Initialize()
+        public void OnSelect(BaseEventData eventData)
         {
-            // 自分自身を紐づけて実行データ化
-            _data = _config.ToRuntimeData(GetComponent<Button>());
+            _onFocusEnter.OnNext(_data);
+        }
+
+        /// <summary>
+        /// フォーカス終了
+        /// </summary>
+        public void OnDeselect(BaseEventData eventData)
+        {
+            _onFocusExit.OnNext(_data);
         }
     }
 }

@@ -42,14 +42,16 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         /// <param name="buttonArray">Button 配列</param>
-        public ButtonSelectionController(in Button[] buttonArray)
+        /// <param name="initialIndex">初期選択インデックス</param>
+        public ButtonSelectionController(in Button[] buttonArray, in int initialIndex)
         {
             _buttonArray = buttonArray;
 
             _selectStateArray =
                 new bool[_buttonArray.Length];
 
-            Initialize();
+            // 指定インデックスで初期選択
+            SetInitialSelect(initialIndex);
         }
 
         // ======================================================
@@ -75,17 +77,24 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 初期化
+        /// 初期選択インデックスを指定して初期化する
         /// </summary>
-        private void Initialize()
+        /// <param name="index">初期選択インデックス</param>
+        public void SetInitialSelect(in int index)
         {
-            if (_selectStateArray.Length == 0)
+            if (index < 0 || index >= _selectStateArray.Length)
             {
                 return;
             }
 
-            // index0 を初期選択
-            _selectStateArray[0] = true;
+            // すべて非選択にリセット
+            for (int i = 0; i < _selectStateArray.Length; i++)
+            {
+                _selectStateArray[i] = false;
+            }
+
+            // 指定インデックスのみ選択状態にする
+            _selectStateArray[index] = true;
         }
     }
 }
