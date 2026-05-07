@@ -34,7 +34,5 @@ namespace OptionSystem.Infrastructure
         /// İ’è‚ğíœ‚·‚é
         /// </summary>
         void Delete();
-
-
     }
 }

@@ -166,14 +166,9 @@ namespace OptionSystem.Presentation
         // パブリックメソッド
         // ======================================================
 
-        /// <summary>
-        /// ゲームルールを更新する
-        /// </summary>
-        public void UpdateRules(GameRules rules)
-        {
-            _currentRules = rules;
-        }
-
+        // --------------------------------------------------
+        // セーブ・ロード
+        // --------------------------------------------------
         /// <summary>
         /// 現在のゲームルールを保存する
         /// </summary>
@@ -188,6 +183,64 @@ namespace OptionSystem.Presentation
         public void Load()
         {
             _currentRules = _repository.Load();
+        }
+
+        // --------------------------------------------------
+        // 更新
+        // --------------------------------------------------
+        /// <summary>
+        /// プレイヤー人数を更新する
+        /// </summary>
+        /// <param name="playerCount">プレイヤー人数</param>
+        public void SetPlayerCount(in int playerCount)
+        {
+            _currentRules.PlayerCount = playerCount;
+        }
+
+        /// <summary>
+        /// 制限時間を更新する
+        /// </summary>
+        /// <param name="limitTime">制限時間</param>
+        public void SetLimitTime(in float limitTime)
+        {
+            _currentRules.PerPlayerLimitTime = limitTime;
+        }
+
+        /// <summary>
+        /// 盤面サイズを更新する
+        /// </summary>
+        /// <param name="boardSize">盤面サイズ</param>
+        public void SetBoardSize(
+            in GameRules.BoardSizeType boardSize)
+        {
+            _currentRules.BoardSize = boardSize;
+        }
+
+        /// <summary>
+        /// ライン成立条件を更新する
+        /// </summary>
+        /// <param name="connectCount">ライン成立条件</param>
+        public void SetConnectCount(in int connectCount)
+        {
+            _currentRules.ConnectCount = connectCount;
+        }
+
+        /// <summary>
+        /// カメラ回転速度を更新する
+        /// </summary>
+        /// <param name="speed">回転速度</param>
+        public void SetCameraRotationSpeed(in float speed)
+        {
+            _currentRules.CameraRotationSpeed = speed;
+        }
+
+        /// <summary>
+        /// ポインター速度を更新する
+        /// </summary>
+        /// <param name="speed">ポインター速度</param>
+        public void SetPointerSpeed(in float speed)
+        {
+            _currentRules.PointerSpeed = speed;
         }
     }
 }

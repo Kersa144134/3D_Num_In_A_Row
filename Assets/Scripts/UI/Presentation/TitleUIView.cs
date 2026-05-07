@@ -2,14 +2,12 @@
 // TitleUIView.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-09
-// 更新日時 : 2026-04-09
+// 更新日時 : 2026-05-07
 // 概要     : タイトル UI の描画処理を担当するビュー
 // ======================================================
 
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using UISystem.Application;
 
 namespace UISystem.Presentation
 {
@@ -19,17 +17,27 @@ namespace UISystem.Presentation
     public sealed class TitleUIView
     {
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>SelectImage タグ</summary>
+        private const string SELECTABLE_TAG = "Selectable";
+
+        // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>ポインターImage</summary>
+        /// <summary>ポインター画像</summary>
         private readonly Image _pointerImage;
 
-        /// <summary>ポインター Rect</summary>
+        /// <summary>ポインターRect</summary>
         private readonly RectTransform _pointerRect;
 
-        /// <summary>Canvas Rect</summary>
+        /// <summary>CanvasRect</summary>
         private readonly RectTransform _canvasRect;
+
+        /// <summary>ホバー状態Image配列</summary>
+        private readonly Image[] _hoverImages;
 
         // ======================================================
         // コンストラクタ
@@ -38,7 +46,10 @@ namespace UISystem.Presentation
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public TitleUIView(in Image pointerImage)
+        public TitleUIView(
+            in Image pointerImage,
+            in Color selectColor,
+            in Color deselectColor)
         {
             _pointerImage = pointerImage;
 
@@ -95,6 +106,58 @@ namespace UISystem.Presentation
 
             // 位置反映
             _pointerRect.anchoredPosition = anchoredPos;
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// ホバー状態更新
+        /// </summary>
+        public void SetHover(in int index, in bool isHover)
+        {
+            if (_hoverImages[index] == null)
+            {
+                return;
+            }
+
+            // ホバー時は白 / 非ホバー時は黒
+            _hoverImages[index].color =
+                isHover ? Color.white : Color.black;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// Selectable対象Transform検索
+        /// </summary>
+        private Transform FindSelectableTransform(in Transform root)
+        {
+            int childCount = root.childCount;
+
+            for (int index = 0; index < childCount; index++)
+            {
+                Transform child = root.GetChild(index);
+
+                // タグ一致なら返却
+                if (child.CompareTag(SELECTABLE_TAG))
+                {
+                    return child;
+                }
+
+                // 再帰検索
+                Transform result =
+                    FindSelectableTransform(child);
+
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
         }
     }
 }

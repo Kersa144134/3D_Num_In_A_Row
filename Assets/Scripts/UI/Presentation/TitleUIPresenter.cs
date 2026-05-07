@@ -12,6 +12,7 @@ using UnityEngine.UI;
 using UniRx;
 using InputSystem.Presentation;
 using PhaseSystem.Domain;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -49,13 +50,49 @@ namespace UISystem.Presentation
         private Image _pointerImage;
 
         // --------------------------------------------------
+        // GridLayoutGroup
+        // --------------------------------------------------
+        [Header("ボタングループ")]
+        /// <summary>プレイヤー人数</summary>
+        [SerializeField]
+        private GridLayoutGroup _playerCountButtons;
+
+        /// <summary>制限時間</summary>
+        [SerializeField]
+        private GridLayoutGroup _limitTimeButtons;
+
+        /// <summary>盤面サイズ</summary>
+        [SerializeField]
+        private GridLayoutGroup _boardSizeButtons;
+
+        /// <summary>ライン成立条件</summary>
+        [SerializeField]
+        private GridLayoutGroup _connectCountButtons;
+
+        /// <summary>カメラ回転速度</summary>
+        [SerializeField]
+        private GridLayoutGroup _cameraRotationSpeedButtons;
+
+        /// <summary>ポインター速度</summary>
+        [SerializeField]
+        private GridLayoutGroup _pointerSpeedButtons;
+
+        // --------------------------------------------------
+        // ボタンカラー
+        // --------------------------------------------------
+        [Header("ボタンカラー")]
+
+        /// <summary>選択時カラー</summary>
+        [SerializeField]
+        private Color _selectColor = Color.white;
+
+        /// <summary>非選択時カラー</summary>
+        [SerializeField]
+        private Color _deselectColor = Color.gray;
+
+        // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
-        [Header("アニメーター")]
-        /// <summary>連続更新対象のキャンバス</summary>
-        [SerializeField]
-        private Animator _continuousCanvasAnimator;
-
         /// <summary>ボードの GameObject ルート</summary>
         [SerializeField]
         private Animator _boardAnimator;
@@ -70,9 +107,56 @@ namespace UISystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>GridLayoutGroup 内の Button を収集するクラス</summary>
+        private readonly GridLayoutGroupButtonCollector _gridLayoutGroupButtonCollector =
+            new GridLayoutGroupButtonCollector();
+
+        /// <summary>プレイヤー人数ボタン選択制御</summary>
+        private ButtonSelectionController _playerCountSelectionController;
+
+        /// <summary>制限時間ボタン選択制御</summary>
+        private ButtonSelectionController _limitTimeSelectionController;
+
+        /// <summary>盤面サイズボタン選択制御</summary>
+        private ButtonSelectionController _boardSizeSelectionController;
+
+        /// <summary>ライン成立条件ボタン選択制御</summary>
+        private ButtonSelectionController _connectCountSelectionController;
+
+        /// <summary>カメラ回転速度ボタン選択制御</summary>
+        private ButtonSelectionController _cameraRotationSpeedSelectionController;
+
+        /// <summary>ポインター速度ボタン選択制御</summary>
+        private ButtonSelectionController _pointerSpeedSelectionController;
+
+        private OptionButton[] _playerCountOptionButtons;
+        private OptionButton[] _limitTimeOptionButtons;
+        private OptionButton[] _boardSizeOptionButtons;
+        private OptionButton[] _connectCountOptionButtons;
+        private OptionButton[] _cameraRotationSpeedOptionButtons;
+        private OptionButton[] _pointerSpeedOptionButtons;
+
         // ======================================================
         // フィールド
         // ======================================================
+
+        /// <summary>プレイヤー人数ボタン配列</summary>
+        private Button[] _playerCountButtonArray;
+
+        /// <summary>制限時間ボタン配列</summary>
+        private Button[] _limitTimeButtonArray;
+
+        /// <summary>盤面サイズボタン配列</summary>
+        private Button[] _boardSizeButtonArray;
+
+        /// <summary>ライン成立条件ボタン配列</summary>
+        private Button[] _connectCountButtonArray;
+
+        /// <summary>カメラ回転速度ボタン配列</summary>
+        private Button[] _cameraRotationSpeedButtonArray;
+
+        /// <summary>ポインター速度ボタン配列</summary>
+        private Button[] _pointerSpeedButtonArray;
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
@@ -81,8 +165,8 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>Ready パラメータ名</summary>
-        private static readonly int IS_READY_HASH = Animator.StringToHash("IsReady");
+        /// <summary>BoardSize パラメータ名</summary>
+        private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
 
         /// <summary>PlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
@@ -138,7 +222,14 @@ namespace UISystem.Presentation
 
             // ビュー生成
             _titleUIView =
-                new TitleUIView(_pointerImage);
+                new TitleUIView(
+                    _pointerImage,
+                    _selectColor,
+                    _deselectColor
+            );
+
+            // ボタン初期化
+            InitializeButtons();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -174,6 +265,9 @@ namespace UISystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
         /// <summary>
         /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
         /// </summary>
@@ -231,7 +325,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// ポインター表示状態を購読する
         /// </summary>
-        /// <param name="input">true:表示 / false:非表示</param>
+        /// <param name="visible">true:表示 / false:非表示</param>
         public void BindPointerVisibleStream(in IObservable<bool> visible)
         {
             // 多重購読防止
@@ -270,13 +364,157 @@ namespace UISystem.Presentation
             _titleUIView.SetPointerVisible(isVisible);
         }
 
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
         // --------------------------------------------------
-        // アニメーター
+        // ボタン
         // --------------------------------------------------
+        /// <summary>
+        /// Grid Layout Group 配下の Button を初期化する
+        /// </summary>
+        private void InitializeButtons()
+        {
+            // --------------------------------------------------
+            // Button 配列取得
+            // --------------------------------------------------
+            _playerCountButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_playerCountButtons);
+            _limitTimeButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_limitTimeButtons);
+            _boardSizeButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_boardSizeButtons);
+            _connectCountButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_connectCountButtons);
+            _cameraRotationSpeedButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_cameraRotationSpeedButtons);
+            _pointerSpeedButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_pointerSpeedButtons);
+
+            // --------------------------------------------------
+            // OptionButton 配列取得
+            // --------------------------------------------------
+            OptionButton[] playerCountButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_playerCountButtons);
+            OptionButton[] limitTimeButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_limitTimeButtons);
+            OptionButton[] boardSizeButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_boardSizeButtons);
+            OptionButton[] connectCountButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_connectCountButtons);
+            OptionButton[] cameraRotationSpeedButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_cameraRotationSpeedButtons);
+            OptionButton[] pointerSpeedButtons = _gridLayoutGroupButtonCollector.GetOptionButtons(_pointerSpeedButtons);
+
+            // --------------------------------------------------
+            // SelectionController 生成
+            // --------------------------------------------------
+            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray);
+            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray);
+            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray);
+            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray);
+            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray);
+            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray);
+
+            // --------------------------------------------------
+            // 初期表示更新
+            // --------------------------------------------------
+
+            // --------------------------------------------------
+            // イベント購読
+            // --------------------------------------------------
+            BindOptionButtons(playerCountButtons, _playerCountSelectionController);
+            BindOptionButtons(limitTimeButtons, _limitTimeSelectionController);
+            BindOptionButtons(boardSizeButtons, _boardSizeSelectionController);
+            BindOptionButtons(connectCountButtons, _connectCountSelectionController);
+            BindOptionButtons(cameraRotationSpeedButtons, _cameraRotationSpeedSelectionController);
+            BindOptionButtons(pointerSpeedButtons, _pointerSpeedSelectionController);
+        }
+
+        /// <summary>
+        /// OptionButton の入力イベントを購読する
+        /// ・Click：選択状態更新
+        /// ・Enter：ホバー開始
+        /// ・Exit：ホバー解除
+        /// </summary>
+        /// <param name="optionButtons">入力対象ボタン配列</param>
+        /// <param name="controller">選択状態制御</param>
+        private void BindOptionButtons(
+    OptionButton[] optionButtons,
+    ButtonSelectionController controller)
+        {
+            if (optionButtons == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < optionButtons.Length; index++)
+            {
+                OptionButton optionButton =
+                    optionButtons[index];
+
+                if (optionButton == null)
+                {
+                    continue;
+                }
+
+                Button button = optionButton.GetComponent<Button>();
+
+                int captureIndex = index;
+
+                if (button == null)
+                {
+                    continue;
+                }
+
+                // ==================================================
+                // Click
+                // ==================================================
+                optionButton.OnClickAsObservable
+                    .Subscribe(_ =>
+                    {
+                        controller.Select(button);
+                    })
+                    .AddTo(optionButton);
+
+                // ==================================================
+                // Enter
+                // ==================================================
+                optionButton.OnEnterAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _titleUIView.SetHover(captureIndex, true);
+                    })
+                    .AddTo(optionButton);
+
+                // ==================================================
+                // Exit
+                // ==================================================
+                optionButton.OnExitAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _titleUIView.SetHover(captureIndex, false);
+                    })
+                    .AddTo(optionButton);
+            }
+        }
+
+        // ======================================================
+        // ボタンイベント
+        // ======================================================
+
+        /// <summary>
+        /// スタートキャンバスを表示する
+        /// </summary>
+        public void ShowStartCanvas()
+        {
+            _startCanvas.SetActive(true);
+            _optionCanvas.SetActive(false);
+        }
+
+        /// <summary>
+        /// オプションキャンバスを表示する
+        /// </summary>
+        public void ShowOptionCanvas()
+        {
+            _startCanvas.SetActive(false);
+            _optionCanvas.SetActive(true);
+        }
+
         
 
         // ======================================================
-        // アニメーションイベントメソッド
+        // アニメーションイベント
         // ======================================================
 
         /// <summary>

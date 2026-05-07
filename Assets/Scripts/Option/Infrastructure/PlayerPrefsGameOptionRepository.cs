@@ -35,7 +35,7 @@ namespace OptionSystem.Infrastructure
         /// <summary>盤面サイズの保存キー</summary>
         private const string KEY_BOARD_SIZE = "GAME_OPTION_BOARD_SIZE";
 
-        /// <summary>勝利条件の保存キー</summary>
+        /// <summary>ライン成立条件の保存キー</summary>
         private const string KEY_CONNECT_COUNT = "GAME_OPTION_CONNECT_COUNT";
 
         /// <summary>カメラ回転速度の保存キー</summary>
