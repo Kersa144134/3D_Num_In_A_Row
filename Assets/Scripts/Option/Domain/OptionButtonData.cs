@@ -2,6 +2,7 @@
 // OptionButtonData.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-07
+// 更新日時 : 2026-05-08
 // 概要     : オプションボタン情報保持クラス
 // ======================================================
 
@@ -14,23 +15,6 @@ namespace OptionSystem.Domain
     /// </summary>
     public sealed class OptionButtonData
     {
-        // ======================================================
-        // 列挙型
-        // ======================================================
-
-        /// <summary>
-        /// オプション種別
-        /// </summary>
-        public enum OptionType
-        {
-            PlayerCount,
-            LimitTime,
-            BoardSize,
-            ConnectCount,
-            CameraRotationSpeed,
-            PointerSpeed
-        }
-
         // ======================================================
         // プロパティ
         // ======================================================

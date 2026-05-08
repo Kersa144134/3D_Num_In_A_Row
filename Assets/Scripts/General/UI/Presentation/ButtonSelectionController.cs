@@ -42,16 +42,13 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         /// <param name="buttonArray">Button 配列</param>
-        /// <param name="initialIndex">初期選択インデックス</param>
-        public ButtonSelectionController(in Button[] buttonArray, in int initialIndex)
+        public ButtonSelectionController(in Button[] buttonArray)
         {
+            // Button 配列を保持
             _buttonArray = buttonArray;
 
-            _selectStateArray =
-                new bool[_buttonArray.Length];
-
-            // 指定インデックスで初期選択
-            SetInitialSelect(initialIndex);
+            // 配列数に応じて選択状態配列を生成
+            _selectStateArray = new bool[_buttonArray.Length];
         }
 
         // ======================================================
@@ -64,7 +61,6 @@ namespace UISystem.Presentation
         /// <param name="selectedButton">選択 Button</param>
         public void Select(in Button selectedButton)
         {
-            // 配列数分ループ
             for (int index = 0; index < _buttonArray.Length; index++)
             {
                 // 選択状態更新
@@ -72,29 +68,23 @@ namespace UISystem.Presentation
             }
         }
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
         /// <summary>
-        /// 初期選択インデックスを指定して初期化する
+        /// 指定インデックスを選択状態へ変更する
         /// </summary>
-        /// <param name="index">初期選択インデックス</param>
-        public void SetInitialSelect(in int index)
+        /// <param name="index">選択対象インデックス</param>
+        public void SelectByIndex(in int index)
         {
-            if (index < 0 || index >= _selectStateArray.Length)
+            if (index < 0 ||
+                index >= _selectStateArray.Length)
             {
                 return;
             }
 
-            // すべて非選択にリセット
             for (int i = 0; i < _selectStateArray.Length; i++)
             {
-                _selectStateArray[i] = false;
+                // 選択状態更新
+                _selectStateArray[i] = i == index;
             }
-
-            // 指定インデックスのみ選択状態にする
-            _selectStateArray[index] = true;
         }
     }
 }

@@ -6,6 +6,7 @@
 // 概要     : タイトル UI の描画処理を担当するビュー
 // ======================================================
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,6 +48,15 @@ namespace UISystem.Presentation
 
         /// <summary>フォーカス OFF 時カラー</summary>
         private readonly Color _focusOffColor;
+
+        // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// Button に紐づく Image を保持するキャッシュ辞書
+        /// </summary>
+        private readonly Dictionary<Button, Image> _buttonImageCache = new();
 
         // ======================================================
         // コンストラクタ
@@ -182,22 +192,64 @@ namespace UISystem.Presentation
         /// </summary>
         public void SetFocus(in Button button, in bool isHover)
         {
-            // null安全チェック
             if (button == null)
             {
                 return;
             }
 
-            // Button 本体の Image を使用
-            Image image = button.image;
-
-            if (image == null)
+            // キャッシュから Image を取得
+            if (_buttonImageCache.TryGetValue(button, out Image image) == false)
             {
-                return;
+                // Button 本体の Image を取得
+                image = button.image;
+
+                if (image == null)
+                {
+                    return;
+                }
+
+                // 辞書登録
+                _buttonImageCache.Add(button, image);
             }
 
-            // フォーカス状態に応じて色反映
-            image.color = isHover ? _focusOnColor : _focusOffColor;
+            foreach (KeyValuePair<Button, Image> cache in _buttonImageCache)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // 対象 Button のみ指定状態を反映
+                if (cache.Key == button)
+                {
+                    // フォーカス状態に応じて色反映
+                    cache.Value.color = isHover
+                        ? _focusOnColor
+                        : _focusOffColor;
+
+                    continue;
+                }
+
+                // 対象以外はフォーカス OFF 状態へ変更
+                cache.Value.color = _focusOffColor;
+            }
+        }
+
+        /// <summary>
+        /// 全フォーカス表示をリセットする
+        /// </summary>
+        public void ResetFocus()
+        {
+            foreach (KeyValuePair<Button, Image> cache in _buttonImageCache)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // フォーカス OFF 状態へ変更
+                cache.Value.color = _focusOffColor;
+            }
         }
 
         // ======================================================

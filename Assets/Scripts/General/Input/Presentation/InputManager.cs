@@ -67,19 +67,13 @@ namespace InputSystem.Presentation
         /// </summary>
         private ButtonState[] _buttonStates;
 
-        /// <summary>
-        /// 左スティックの入力ベクトル
-        /// </summary>
+        /// <summary>左スティックの入力ベクトル</summary>
         private Vector2 _leftStick;
 
-        /// <summary>
-        /// 右スティックの入力ベクトル
-        /// </summary>
+        /// <summary>右スティックの入力ベクトル</summary>
         private Vector2 _rightStick;
 
-        /// <summary>
-        /// D-Pad の入力ベクトル
-        /// </summary>
+        /// <summary>D-Pad の入力ベクトル</summary>
         private Vector2 _dPad;
 
         /// <summary>ポインターの座標</summary>
@@ -153,6 +147,11 @@ namespace InputSystem.Presentation
         /// <summary>現在アクティブな入力デバイス種別</summary>
         public IReadOnlyReactiveProperty<InputDeviceType> ActiveDeviceType =>
             _deviceSwitchService.ActiveDeviceType;
+
+        /// <summary>
+        /// ポインター座標変更イベント購読管理
+        /// </summary>
+        private IDisposable _pointerPositionSubscription;
 
         // ======================================================
         // Unity イベント
@@ -275,6 +274,7 @@ namespace InputSystem.Presentation
         private void OnDestroy()
         {
             UnbindMappingStream();
+            UnbindPointerPositionStream();
         }
 
         // ======================================================
@@ -303,6 +303,32 @@ namespace InputSystem.Presentation
         {
             _mappingSubscription?.Dispose();
             _mappingSubscription = null;
+        }
+
+        /// <summary>
+        /// ポインター座標変更イベントを購読する
+        /// </summary>
+        public void BindPointerPositionStream(IObservable<Vector2> stream)
+        {
+            // 多重購読防止
+            _pointerPositionSubscription?.Dispose();
+
+            _pointerPositionSubscription = stream
+                .Subscribe(position =>
+                {
+                    _pointerStateUpdateService.SetPointerPosition(
+                        ref _pointer,
+                        in position);
+                });
+        }
+
+        /// <summary>
+        /// ポインター座標変更イベントの購読を解除する
+        /// </summary>
+        public void UnbindPointerPositionStream()
+        {
+            _pointerPositionSubscription?.Dispose();
+            _pointerPositionSubscription = null;
         }
 
         // ======================================================

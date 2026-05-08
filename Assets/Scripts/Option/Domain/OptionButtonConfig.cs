@@ -18,23 +18,6 @@ namespace OptionSystem.Domain
     public sealed class OptionButtonConfig
     {
         // ======================================================
-        // 列挙型
-        // ======================================================
-
-        /// <summary>
-        /// オプション種別
-        /// </summary>
-        public enum OptionType
-        {
-            PlayerCount,
-            LimitTime,
-            BoardSize,
-            ConnectCount,
-            CameraRotationSpeed,
-            PointerSpeed
-        }
-
-        // ======================================================
         // インスペクタ設定
         // ======================================================
 
@@ -62,22 +45,22 @@ namespace OptionSystem.Domain
             switch (_type)
             {
                 case OptionType.PlayerCount:
-                    return new OptionButtonData(button, OptionButtonData.OptionType.PlayerCount, _intValue);
+                    return new OptionButtonData(button, OptionType.PlayerCount, _intValue);
 
                 case OptionType.LimitTime:
-                    return new OptionButtonData(button, OptionButtonData.OptionType.LimitTime, _floatValue);
+                    return new OptionButtonData(button, OptionType.LimitTime, _floatValue);
 
                 case OptionType.BoardSize:
                     return new OptionButtonData(button, _boardSizeType);
 
                 case OptionType.ConnectCount:
-                    return new OptionButtonData(button, OptionButtonData.OptionType.ConnectCount, _intValue);
+                    return new OptionButtonData(button, OptionType.ConnectCount, _intValue);
 
                 case OptionType.CameraRotationSpeed:
-                    return new OptionButtonData(button, OptionButtonData.OptionType.CameraRotationSpeed, _floatValue);
+                    return new OptionButtonData(button, OptionType.CameraRotationSpeed, _floatValue);
 
                 case OptionType.PointerSpeed:
-                    return new OptionButtonData(button, OptionButtonData.OptionType.PointerSpeed, _floatValue);
+                    return new OptionButtonData(button, OptionType.PointerSpeed, _floatValue);
 
                 default:
                     return null;

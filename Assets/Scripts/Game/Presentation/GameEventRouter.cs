@@ -6,6 +6,11 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
@@ -15,11 +20,7 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using UISystem.Presentation;
-using UniRx;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -59,7 +60,10 @@ namespace GameSystem.Presentation
         // ======================================================
 
         /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
-        private PhaseType _cachedActivePhase;
+        private PhaseType _cachedActivePhase = PhaseType.None;
+
+        /// <summary>現在の入力マッピング番号</summary>
+        private int _currentMappingIndex = -1;
 
         // ======================================================
         // UniRx 変数
@@ -81,6 +85,9 @@ namespace GameSystem.Presentation
 
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
+
+        /// <summary>ポインター座標変更用 Subject</summary>
+        private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
 
         /// <summary>ゲームパッド検知用 Subject</summary>
         private readonly Subject<bool> _onGamepadUsed = new Subject<bool>();
@@ -176,6 +183,7 @@ namespace GameSystem.Presentation
             // 入力
             // --------------------------------------------------
             _inputManager.BindMappingStream(_onMappingChanged);
+            _inputManager.BindPointerPositionStream(_onPointerPositionChanged);
 
             // スタートボタン押下
             _inputManager.StartButton.OnDown
@@ -241,7 +249,15 @@ namespace GameSystem.Presentation
                 _titleUIPresenter.BindPointerVisibleStream(
                     _onGamepadUsed.Select(x => !x)
                 );
+
+                _titleUIPresenter.OnFocusPosition
+                    .Subscribe(e =>
+                     {
+                         _onPointerPositionChanged.OnNext(e);
+                     })
+                    .AddTo(_disposables);
             }
+
             if (_mainUIPresenter != null)
             {
                 _mainUIPresenter.BindPhaseStream(_currentPhase);
@@ -334,6 +350,14 @@ namespace GameSystem.Presentation
         /// </summary>
         private void NotifyMappingChanged(in int mappingIndex)
         {
+            // 現在のマッピング番号と一致している場合は処理なし
+            if (_currentMappingIndex == mappingIndex)
+            {
+                return;
+            }
+
+            _currentMappingIndex = mappingIndex;
+
             _onMappingChanged.OnNext(mappingIndex);
         }
 
@@ -361,57 +385,128 @@ namespace GameSystem.Presentation
             // 入力購読解除
             UnbindInputCommands();
 
-            // --------------------------------------------------
-            // Play
-            // --------------------------------------------------
-            if (phase == PhaseType.Play)
+            switch (phase)
             {
-                BindPlayPhaseInputCommands();
+                // --------------------------------------------------
+                // Title
+                // --------------------------------------------------
+                case PhaseType.Title:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
 
-                foreach (BoardPresenter boardPresenter in _boardPresenters)
-                {
-                    if (boardPresenter == null)
+                    return;
+
+                // --------------------------------------------------
+                // Ready
+                // --------------------------------------------------
+                case PhaseType.Ready:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    return;
+
+                // --------------------------------------------------
+                // Play
+                // --------------------------------------------------
+                case PhaseType.Play:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    // Play フェーズ時の入力コマンド登録
+                    BindPlayPhaseInputCommands();
+
+                    // 全ボードに落下入力ストリームを登録
+                    foreach (BoardPresenter boardPresenter in _boardPresenters)
                     {
-                        continue;
+                        if (boardPresenter == null)
+                        {
+                            continue;
+                        }
+
+                        // 落下入力ストリームを登録
+                        boardPresenter.BindDropInputStream(_onDropRequested);
                     }
 
-                    boardPresenter.BindDropInputStream(_onDropRequested);
-                }
+                    return;
 
-                return;
-            }
+                // --------------------------------------------------
+                // Event
+                // --------------------------------------------------
+                case PhaseType.Event:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
 
-            // --------------------------------------------------
-            // Event
-            // --------------------------------------------------
-            if (phase == PhaseType.Event)
-            {
-                BindEventPhaseInputCommands();
+                    // Event フェーズ時の入力コマンド登録
+                    BindEventPhaseInputCommands();
 
-                foreach (BoardPresenter boardPresenter in _boardPresenters)
-                {
-                    if (boardPresenter == null)
+                    // 全ボードに回転入力ストリームを登録
+                    foreach (BoardPresenter boardPresenter in _boardPresenters)
                     {
-                        continue;
+                        if (boardPresenter == null)
+                        {
+                            continue;
+                        }
+
+                        // 回転入力ストリームを登録
+                        boardPresenter.BindRotateInputStream(_onRotateExecuted);
                     }
 
-                    boardPresenter.BindRotateInputStream(_onRotateExecuted);
-                }
+                    return;
 
-                return;
-            }
+                // --------------------------------------------------
+                // ChangePlayer
+                // --------------------------------------------------
+                case PhaseType.ChangePlayer:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
 
-            // --------------------------------------------------
-            // その他
-            // --------------------------------------------------
-            foreach (BoardPresenter boardPresenter in _boardPresenters)
-            {
-                if (boardPresenter == null)
-                {
-                    continue;
-                }
+                    return;
 
-                boardPresenter.UnbindInputStream();
+                // --------------------------------------------------
+                // Pause
+                // --------------------------------------------------
+                case PhaseType.Pause:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
+
+                    return;
+
+                // --------------------------------------------------
+                // Pause
+                // --------------------------------------------------
+                case PhaseType.Finish:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
+
+                    return;
+
+                // --------------------------------------------------
+                // Pause
+                // --------------------------------------------------
+                case PhaseType.Result:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
+
+                    return;
+
+                // --------------------------------------------------
+                // その他
+                // --------------------------------------------------
+                default:
+                    // 全ボードの入力ストリームを解除
+                    foreach (BoardPresenter boardPresenter in _boardPresenters)
+                    {
+                        // null の場合はスキップ
+                        if (boardPresenter == null)
+                        {
+                            continue;
+                        }
+
+                        // 入力ストリームを解除
+                        boardPresenter.UnbindInputStream();
+                    }
+
+                    return;
             }
         }
 
@@ -535,12 +630,10 @@ namespace GameSystem.Presentation
         private void HandleStartButtonPressed(in PhaseType phase)
         {
             // マッピングと遷移先を決定する
-            int mappingIndex;
             PhaseType nextPhase;
 
             if (phase == PhaseType.Play)
             {
-                mappingIndex = 1;
                 nextPhase = PhaseType.Pause;
 
                 // 現在のアクティブ状態フェーズをキャッシュ
@@ -548,8 +641,6 @@ namespace GameSystem.Presentation
             }
             else if (phase == PhaseType.Pause)
             {
-                mappingIndex = 0;
-
                 // キャッシュしていたアクティブ状態フェーズへ復帰
                 nextPhase = _cachedActivePhase;
             }
@@ -558,7 +649,6 @@ namespace GameSystem.Presentation
                 return;
             }
 
-            NotifyMappingChanged(mappingIndex);
             NotifyPhaseChanged(nextPhase);
         }
 

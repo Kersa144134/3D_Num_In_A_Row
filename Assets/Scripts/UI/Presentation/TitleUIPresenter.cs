@@ -6,13 +6,17 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using System;
-using UnityEngine;
-using UnityEngine.UI;
-using UniRx;
 using InputSystem.Presentation;
+using OptionSystem.Domain;
+using OptionSystem.Presentation;
 using PhaseSystem.Domain;
+using System;
+using System.Collections.Generic;
 using UISystem.Infrastructure;
+using UniRx;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -98,6 +102,34 @@ namespace UISystem.Presentation
         private Color _focusOffColor = Color.gray;
 
         // --------------------------------------------------
+        // ボタン選択インデックス
+        // --------------------------------------------------
+        [Header("初期選択インデックス")]
+        /// <summary>プレイヤー人数</summary>
+        [SerializeField]
+        private int _playerCountSelectedIndex = 0;
+
+        /// <summary>制限時間</summary>
+        [SerializeField]
+        private int _limitTimeSelectedIndex = 1;
+
+        /// <summary>盤面サイズ</summary>
+        [SerializeField]
+        private int _boardSizeSelectedIndex = 0;
+
+        /// <summary>ライン成立条件</summary>
+        [SerializeField]
+        private int _connectCountSelectedIndex = 0;
+
+        /// <summary>カメラ回転速度</summary>
+        [SerializeField]
+        private int _cameraRotationSpeedSelectedIndex = 1;
+
+        /// <summary>ポインター速度</summary>
+        [SerializeField]
+        private int _pointerSpeedSelectedIndex = 1;
+
+        // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
         [Header("アニメーター")]
@@ -111,9 +143,6 @@ namespace UISystem.Presentation
 
         /// <summary>ビュー</summary>
         private TitleUIView _titleUIView;
-
-        /// <summary>InputManager キャッシュ</summary>
-        private InputManager _inputManager;
 
         /// <summary>GridLayoutGroup 内の Button を収集するクラス</summary>
         private readonly GridLayoutGroupButtonCollector _gridLayoutGroupButtonCollector =
@@ -136,6 +165,15 @@ namespace UISystem.Presentation
 
         /// <summary>ポインター速度ボタン選択制御</summary>
         private ButtonSelectionController _pointerSpeedSelectionController;
+
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
+
+        /// <summary>InputManager キャッシュ</summary>
+        private InputManager _inputManager;
+
+        /// <summary>EventSystem キャッシュ</summary>
+        private EventSystem _eventSystem;
 
         // ======================================================
         // フィールド
@@ -163,20 +201,21 @@ namespace UISystem.Presentation
         private bool _isInputLock = true;
 
         // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// OptionButton に紐づく RectTransform を保持するキャッシュ辞書
+        /// </summary>
+        private readonly Dictionary<OptionButton, RectTransform>
+            _buttonRectTransformMap = new Dictionary<OptionButton, RectTransform>();
+
+        // ======================================================
         // 定数
         // ======================================================
 
         /// <summary>BoardSize パラメータ名</summary>
         private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
-
-        /// <summary>PlayerID パラメータ名</summary>
-        private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
-
-        /// <summary>Pause パラメータ名</summary>
-        private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
-
-        /// <summary>SwitchProjection パラメータ名</summary>
-        private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
 
         // ======================================================
         // UniRx 変数
@@ -185,8 +224,11 @@ namespace UISystem.Presentation
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
-        /// <summary>投影切り替えストリーム</summary>
-        public IObservable<bool> OnSwitchProjection => _onSwitchProjection;
+        /// <summary>フォーカス座標通知用 Subject</summary>
+        private readonly Subject<Vector2> _onFocusPosition =  new Subject<Vector2>();
+
+        /// <summary>フォーカス座標通知ストリーム</summary>
+        public IObservable<Vector2> OnFocusPosition => _onFocusPosition;
 
         /// <summary>フェーズ購読</summary>
         private IDisposable _phaseSubscription;
@@ -206,7 +248,9 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
+            _eventSystem = EventSystem.current;
 
             if (_inputManager == null)
             {
@@ -261,6 +305,7 @@ namespace UISystem.Presentation
             // イベント購読解除
             UnbindPhaseStream();
             UnbindInputLockStream();
+            UnbindOptionButtons();
         }
 
         // ======================================================
@@ -360,7 +405,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// ポインターの表示状態を更新する
         /// </summary>
-        /// <param name="isVisible">表示する場合はtrue</param>
+        /// <param name="isVisible">表示する場合は true</param>
         private void SetPointerVisible(in bool isVisible)
         {
             _titleUIView.SetPointerVisible(isVisible);
@@ -401,34 +446,22 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // SelectionController 生成
             // --------------------------------------------------
-            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray, 0);
-            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray, 1);
-            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray, 0);
-            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray, 0);
-            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray, 1);
-            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray, 1);
+            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray);
+            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray);
+            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray);
+            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray);
+            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray);
+            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray);
+
+            // --------------------------------------------------
+            // 選択状態適用
+            // --------------------------------------------------
+            ApplySelectionIndexState();
 
             // --------------------------------------------------
             // ビュー更新
             // --------------------------------------------------
-            _titleUIView.ApplyButtonSelectionState(
-                _playerCountSelectionController.ButtonArray,
-                _playerCountSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _limitTimeSelectionController.ButtonArray,
-                _limitTimeSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _boardSizeSelectionController.ButtonArray,
-                _boardSizeSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _connectCountSelectionController.ButtonArray,
-                _connectCountSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _cameraRotationSpeedSelectionController.ButtonArray,
-                _cameraRotationSpeedSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _pointerSpeedSelectionController.ButtonArray,
-                _pointerSpeedSelectionController.SelectStateArray);
+            ApplyAllButtonSelectionState();
 
             // --------------------------------------------------
             // イベント購読
@@ -439,6 +472,72 @@ namespace UISystem.Presentation
             BindOptionButtons(connectCountButtons, _connectCountSelectionController);
             BindOptionButtons(cameraRotationSpeedButtons, _cameraRotationSpeedSelectionController);
             BindOptionButtons(pointerSpeedButtons, _pointerSpeedSelectionController);
+        }
+
+        /// <summary>
+        /// 選択インデックス状態を全 SelectionController へ反映する
+        /// </summary>
+        private void ApplySelectionIndexState()
+        {
+            // プレイヤー人数
+            _playerCountSelectionController.SelectByIndex(
+                _playerCountSelectedIndex);
+
+            // 制限時間
+            _limitTimeSelectionController.SelectByIndex(
+                _limitTimeSelectedIndex);
+
+            // 盤面サイズ
+            _boardSizeSelectionController.SelectByIndex(
+                _boardSizeSelectedIndex);
+
+            // ライン成立条件
+            _connectCountSelectionController.SelectByIndex(
+                _connectCountSelectedIndex);
+
+            // カメラ回転速度
+            _cameraRotationSpeedSelectionController.SelectByIndex(
+                _cameraRotationSpeedSelectedIndex);
+
+            // ポインター速度
+            _pointerSpeedSelectionController.SelectByIndex(
+                _pointerSpeedSelectedIndex);
+        }
+        
+        /// <summary>
+        /// 全ボタン選択状態をビューへ反映する
+        /// </summary>
+        private void ApplyAllButtonSelectionState()
+        {
+            // プレイヤー人数
+            _titleUIView.ApplyButtonSelectionState(
+                _playerCountSelectionController.ButtonArray,
+                _playerCountSelectionController.SelectStateArray);
+
+            // 制限時間
+            _titleUIView.ApplyButtonSelectionState(
+                _limitTimeSelectionController.ButtonArray,
+                _limitTimeSelectionController.SelectStateArray);
+
+            // 盤面サイズ
+            _titleUIView.ApplyButtonSelectionState(
+                _boardSizeSelectionController.ButtonArray,
+                _boardSizeSelectionController.SelectStateArray);
+
+            // ライン成立条件
+            _titleUIView.ApplyButtonSelectionState(
+                _connectCountSelectionController.ButtonArray,
+                _connectCountSelectionController.SelectStateArray);
+
+            // カメラ回転速度
+            _titleUIView.ApplyButtonSelectionState(
+                _cameraRotationSpeedSelectionController.ButtonArray,
+                _cameraRotationSpeedSelectionController.SelectStateArray);
+
+            // ポインター速度
+            _titleUIView.ApplyButtonSelectionState(
+                _pointerSpeedSelectionController.ButtonArray,
+                _pointerSpeedSelectionController.SelectStateArray);
         }
 
         /// <summary>
@@ -457,26 +556,37 @@ namespace UISystem.Presentation
 
             for (int index = 0; index < optionButtons.Length; index++)
             {
-                OptionButton optionButton =
-                    optionButtons[index];
+                OptionButton optionButton = optionButtons[index];
 
                 if (optionButton == null)
                 {
                     continue;
                 }
 
+                // Button コンポーネント取得
                 Button button = optionButton.GetComponent<Button>();
-
-                int captureIndex = index;
 
                 if (button == null)
                 {
                     continue;
                 }
 
+                // RectTransform 取得
+                RectTransform rectTransform = button.transform as RectTransform;
+
+                if (rectTransform == null)
+                {
+                    continue;
+                }
+
+                // 座標キャッシュ登録
+                _buttonRectTransformMap[optionButton] = rectTransform;
+
+                // --------------------------------------------------
                 // クリック時
+                // --------------------------------------------------
                 optionButton.OnClickAsObservable
-                    .Subscribe(_ =>
+                    .Subscribe(data =>
                     {
                         controller.Select(button);
 
@@ -484,25 +594,149 @@ namespace UISystem.Presentation
                         _titleUIView.ApplyButtonSelectionState(
                             controller.ButtonArray,
                             controller.SelectStateArray);
+
+                        switch (data.Type)
+                        {
+                            case OptionType.PlayerCount:
+                                _gameOptionManager.SetPlayerCount(data.IntValue);
+                                break;
+
+                            case OptionType.LimitTime:
+                                _gameOptionManager.SetLimitTime(data.FloatValue);
+                                break;
+
+                            case OptionType.BoardSize:
+                                _gameOptionManager.SetBoardSize(data.BoardSizeType);
+                                break;
+
+                            case OptionType.ConnectCount:
+                                _gameOptionManager.SetConnectCount(data.IntValue);
+                                break;
+
+                            case OptionType.CameraRotationSpeed:
+                                _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
+                                break;
+
+                            case OptionType.PointerSpeed:
+                                _gameOptionManager.SetPointerSpeed(data.FloatValue);
+                                break;
+                        }
                     })
                     .AddTo(optionButton);
 
-                // フォーカス開始時
-                optionButton.OnFocusEnterAsObservable
+                // --------------------------------------------------
+                // ホバー開始時
+                // --------------------------------------------------
+                optionButton.OnHoverEnterAsObservable
                     .Subscribe(_ =>
                     {
+                        // フォーカス状態表示を有効化
                         _titleUIView.SetFocus(button, true);
+
+                        // EventSystem の選択状態更新
+                        SetSelectedButton(button);
+
+                        // スクリーン座標へ変換
+                        Vector2 screenPosition =
+                            RectTransformUtility.WorldToScreenPoint(
+                                null,
+                                rectTransform.position);
+
+                        // フォーカス座標通知
+                        _onFocusPosition.OnNext(screenPosition);
                     })
                     .AddTo(optionButton);
 
-                // フォーカス終了
-                optionButton.OnFocusExitAsObservable
+                // --------------------------------------------------
+                // ホバー終了時
+                // --------------------------------------------------
+                optionButton.OnHoverExitAsObservable
                     .Subscribe(_ =>
                     {
+                        // フォーカス状態表示を無効化
+                        _titleUIView.SetFocus(button, false);
+                    })
+                    .AddTo(optionButton);
+
+                // --------------------------------------------------
+                // 選択開始時
+                // --------------------------------------------------
+                optionButton.OnSelectEnterAsObservable
+                    .Subscribe(_ =>
+                    {
+                        // フォーカス状態表示を有効化
+                        _titleUIView.SetFocus(button, true);
+
+                        // スクリーン座標へ変換
+                        Vector2 screenPosition =
+                            RectTransformUtility.WorldToScreenPoint(
+                                null,
+                                rectTransform.position);
+
+                        // フォーカス座標通知
+                        _onFocusPosition.OnNext(screenPosition);
+                    })
+                    .AddTo(optionButton);
+
+                // --------------------------------------------------
+                // 選択終了時
+                // --------------------------------------------------
+                optionButton.OnSelectExitAsObservable
+                    .Subscribe(_ =>
+                    {
+                        // フォーカス状態表示を無効化
                         _titleUIView.SetFocus(button, false);
                     })
                     .AddTo(optionButton);
             }
+        }
+
+        /// <summary>
+        /// OptionButton の入力イベント購読を解除する
+        /// </summary>
+        private void UnbindOptionButtons()
+        {
+            // 全 OptionButton を走査
+            foreach (KeyValuePair<OptionButton, RectTransform> pair
+                in _buttonRectTransformMap)
+            {
+                OptionButton optionButton = pair.Key;
+
+                if (optionButton == null)
+                {
+                    continue;
+                }
+
+                // イベント購読解除
+                optionButton.Dispose();
+            }
+
+            // キャッシュ削除
+            _buttonRectTransformMap.Clear();
+        }
+
+        // --------------------------------------------------
+        // フォーカス
+        // --------------------------------------------------
+        /// <summary>
+        /// EventSystem の選択状態を変更する
+        /// </summary>
+        /// <param name="button">選択対象ボタン</param>
+        private void SetSelectedButton(
+            Button button)
+        {
+            if (_eventSystem == null)
+            {
+                return;
+            }
+
+            if (button == null)
+            {
+                return;
+            }
+
+            // 選択状態を更新
+            _eventSystem.SetSelectedGameObject( button.gameObject);
         }
 
         // ======================================================
@@ -525,6 +759,13 @@ namespace UISystem.Presentation
         {
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
+
+            // ボタン選択リセット
+            ApplySelectionIndexState();
+            ApplyAllButtonSelectionState();
+
+            // フォーカスリセット
+            _titleUIView.ResetFocus();
         }
 
         // ======================================================

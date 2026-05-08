@@ -64,11 +64,8 @@ namespace ScoreSystem.Application
             // 指定された固定スコアを累計スコアへ加算する
             scoreData.TotalScore += score;
 
-            // スコアが上限値を超えた場合は最大値に補正する
-            if (scoreData.TotalScore > _maxScore)
-            {
-                scoreData.TotalScore = _maxScore;
-            }
+            // 範囲補正
+            ClampScore(scoreData.TotalScore);
 
             // 加算後スコアとの差分から実際の増加量を算出する
             int delta = scoreData.TotalScore - previousScore;
@@ -108,11 +105,8 @@ namespace ScoreSystem.Application
             // 累計スコアへ加算
             scoreData.TotalScore += scoreToAdd;
 
-            // 上限制御
-            if (scoreData.TotalScore > _maxScore)
-            {
-                scoreData.TotalScore = _maxScore;
-            }
+            // 範囲補正
+            ClampScore(scoreData.TotalScore);
 
             // 実際の増加量
             int delta = scoreData.TotalScore - previousScore;
@@ -152,23 +146,22 @@ namespace ScoreSystem.Application
         // ======================================================
 
         /// <summary>
-        /// スコアの上限制御を行う
+        /// スコアの範囲制御を行う
         /// </summary>
         private int ClampScore(in int score)
         {
-            // 上限を超えないように補正する
+            // 上限補正
             if (score > _maxScore)
             {
                 return _maxScore;
             }
 
-            // 下限は0固定（必要なら追加）
+            // 下限補正
             if (score < 0)
             {
                 return 0;
             }
 
-            // 範囲内ならそのまま返す
             return score;
         }
     }
