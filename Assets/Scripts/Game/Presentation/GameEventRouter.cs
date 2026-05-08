@@ -16,6 +16,8 @@ using BoardSystem.Presentation;
 using CameraSystem.Presentation;
 using InputSystem.Domain;
 using InputSystem.Presentation;
+using OptionSystem.Domain;
+using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
@@ -36,6 +38,9 @@ namespace GameSystem.Presentation
 
         /// <summary>フェーズ遷移管理マシン</summary>
         private PhaseMachine _phaseMachine;
+
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private readonly InputManager _inputManager;
@@ -75,6 +80,12 @@ namespace GameSystem.Presentation
         /// <summary>入力用購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
+        /// <summary>シーン変更通知用 Subject</summary>
+        private readonly Subject<string> _onSceneChanged = new Subject<string>();
+
+        /// <summary>フェーズ変更ストリーム</summary>
+        public IObservable<string> OnSceneChanged => _onSceneChanged;
+
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
 
@@ -108,6 +119,28 @@ namespace GameSystem.Presentation
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>3 x 3 ボードサイズ</summary>
+        private const int BOARD_SIZE_THREE = 3;
+
+        /// <summary>5 x 5 ボードサイズ</summary>
+        private const int BOARD_SIZE_FIVE = 5;
+
+        /// <summary>タイトルシーン名</summary>
+        private const string TITLE_SCENE_NAME = "TitleScene";
+
+        /// <summary>3 x 3 ボードシーン名</summary>
+        private const string THREE_SIZE_SCENE_NAME = "ThreeSizeScene";
+
+        /// <summary>5 x 5 ボードシーン名</summary>
+        private const string FIVE_SIZE_SCENE_NAME = "FiveSizeScene";
+
+        /// <summary>リザルトシーン名</summary>
+        private const string RESULT_SCENE_NAME = "ResultScene";
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -136,6 +169,7 @@ namespace GameSystem.Presentation
                 updatableReader.Get(UpdatableType.MainUIPresenter);
 
             // インスタンスからコンポーネント取得
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
         }
@@ -164,19 +198,13 @@ namespace GameSystem.Presentation
             _currentPhase
                 .DistinctUntilChanged()
                 .Skip(1)
-                .Subscribe(phase =>
-                {
-                    HandlePhaseInputSwitch(phase);
-                })
+                .Subscribe(phase => HandlePhaseInputSwitch(phase))
                 .AddTo(_disposables);
 
             _phaseMachine.CurrentPlayerIndex
                 .DistinctUntilChanged()
                 .Skip(1)
-                .Subscribe(player =>
-                {
-                    _onPlayerChanged.OnNext(player);
-                })
+                .Subscribe(player => _onPlayerChanged.OnNext(player))
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -245,8 +273,8 @@ namespace GameSystem.Presentation
                 _titleUIPresenter.BindInputLockStream(
                     _currentPhase.Select(phase => phase != PhaseType.Title)
                 );
-                // ポインター表示条件に合わせて反転して渡す
                 _titleUIPresenter.BindPointerVisibleStream(
+                    // ポインター表示条件に合わせて反転して渡す
                     _onGamepadUsed.Select(x => !x)
                 );
 
@@ -256,6 +284,14 @@ namespace GameSystem.Presentation
                          _onPointerPositionChanged.OnNext(e);
                      })
                     .AddTo(_disposables);
+
+                _titleUIPresenter.OnUpdateGameOption
+                    .Subscribe(e => HandleGameOptionUpdated(e))
+                    .AddTo(_disposables);
+
+                _titleUIPresenter.OnSceneChangeRequested
+                .Subscribe(_ => NotifySceneChanged())
+                .AddTo(_disposables);
             }
 
             if (_mainUIPresenter != null)
@@ -270,10 +306,11 @@ namespace GameSystem.Presentation
                 _mainUIPresenter.BindRotateStream(_onRotateRequested);
 
                 _mainUIPresenter.OnSwitchProjection
-                    .Subscribe(e =>
-                    {
-                        _cameraPresenter.SwitchProjection(e);
-                    })
+                    .Subscribe(e => _cameraPresenter.SwitchProjection(e))
+                    .AddTo(_disposables);
+
+                _mainUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChanged())
                     .AddTo(_disposables);
             }
         }
@@ -325,6 +362,50 @@ namespace GameSystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
+        /// <summary>
+        /// シーン変更を通知する
+        /// </summary>
+        private void NotifySceneChanged()
+        {
+            switch (_currentPhase.Value)
+            {
+                case PhaseType.Title:
+                    // 3 x 3 ボードシーンへ遷移
+                    if (_gameOptionManager.BoardSize == BOARD_SIZE_THREE)
+                    {
+                        _onSceneChanged.OnNext(THREE_SIZE_SCENE_NAME);
+                        break;
+                    }
+
+                    // 5 x 5 ボードシーンへ遷移
+                    if (_gameOptionManager.BoardSize == BOARD_SIZE_FIVE)
+                    {
+                        _onSceneChanged.OnNext(FIVE_SIZE_SCENE_NAME);
+                    }
+
+                    break;
+
+                case PhaseType.Finish:
+                    // リザルトシーンへ遷移
+                    _onSceneChanged.OnNext(RESULT_SCENE_NAME);
+
+                    break;
+
+                case PhaseType.Pause:
+                case PhaseType.Result:
+                    // タイトルシーンへ遷移
+                    _onSceneChanged.OnNext(TITLE_SCENE_NAME);
+
+                    break;
+
+                default:
+                    break;
+            }
+        }
 
         // --------------------------------------------------
         // フェーズ
@@ -650,6 +731,42 @@ namespace GameSystem.Presentation
             }
 
             NotifyPhaseChanged(nextPhase);
+        }
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>
+        /// ゲームオプション更新時の処理を行う
+        /// </summary>
+        private void HandleGameOptionUpdated(OptionButtonData data)
+        {
+            switch (data.Type)
+            {
+                case OptionType.PlayerCount:
+                    _gameOptionManager.SetPlayerCount(data.IntValue);
+                    break;
+
+                case OptionType.LimitTime:
+                    _gameOptionManager.SetLimitTime(data.FloatValue);
+                    break;
+
+                case OptionType.BoardSize:
+                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
+                    break;
+
+                case OptionType.ConnectCount:
+                    _gameOptionManager.SetConnectCount(data.IntValue);
+                    break;
+
+                case OptionType.CameraRotationSpeed:
+                    _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
+                    break;
+
+                case OptionType.PointerSpeed:
+                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
+                    break;
+            }
         }
 
         // --------------------------------------------------

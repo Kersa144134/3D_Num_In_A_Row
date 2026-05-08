@@ -86,5 +86,25 @@ namespace UISystem.Presentation
                 _selectStateArray[i] = i == index;
             }
         }
+
+        /// <summary>
+        /// 現在選択されているインデックスを取得する
+        /// </summary>
+        /// <returns>選択インデックス 未選択の場合は -1</returns>
+        public int GetCurrentSelectedIndex()
+        {
+            for (int index = 0; index < _selectStateArray.Length; index++)
+            {
+                if (_selectStateArray[index] == false)
+                {
+                    continue;
+                }
+
+                return index;
+            }
+
+            // 未選択状態
+            return -1;
+        }
     }
 }

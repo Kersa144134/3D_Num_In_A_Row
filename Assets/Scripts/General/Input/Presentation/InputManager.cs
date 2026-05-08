@@ -79,9 +79,6 @@ namespace InputSystem.Presentation
         /// <summary>ポインターの座標</summary>
         private Vector2 _pointer = Vector2.zero;
 
-        /// <summary>ポインター移動速度</summary>
-        private float _pointerSpeed;
-
         // ======================================================
         // プロパティ
         // ======================================================
@@ -141,16 +138,14 @@ namespace InputSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>マッピング変更購読</summary>
-        private IDisposable _mappingSubscription;
-
         /// <summary>現在アクティブな入力デバイス種別</summary>
         public IReadOnlyReactiveProperty<InputDeviceType> ActiveDeviceType =>
             _deviceSwitchService.ActiveDeviceType;
 
-        /// <summary>
-        /// ポインター座標変更イベント購読管理
-        /// </summary>
+        /// <summary>マッピング変更購読</summary>
+        private IDisposable _mappingSubscription;
+
+        /// <summary>ポインター座標変更購読</summary>
         private IDisposable _pointerPositionSubscription;
 
         // ======================================================
@@ -230,8 +225,6 @@ namespace InputSystem.Presentation
 
                 return;
             }
-
-            _pointerSpeed = _gameOptionManager.PointerSpeed;
         }
 
         private void Update()
@@ -268,7 +261,7 @@ namespace InputSystem.Presentation
             );
 
             // ポインター状態更新
-            _pointerStateUpdateService.UpdatePointer(controller, ref _pointer, _pointerSpeed);
+            _pointerStateUpdateService.UpdatePointer(controller, ref _pointer, _gameOptionManager.PointerSpeed);
         }
 
         private void OnDestroy()

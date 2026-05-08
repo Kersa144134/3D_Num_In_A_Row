@@ -213,7 +213,14 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             IUpdatableReader updatableReader = _updatableContexts;
             _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
-            
+
+            _eventRouter.OnSceneChanged
+                .Subscribe(e =>
+                {
+                    SetTargetScene(e);
+                })
+                .AddTo(_disposables);
+
             _eventRouter.OnPhaseChanged
                 .Subscribe(e =>
                 {
@@ -300,6 +307,20 @@ namespace GameSystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// 遷移先シーンを設定する
+        /// </summary>
+        private void SetTargetScene(in string nextScene)
+        {
+            // 同一シーンなら処理なし
+            if (_targetScene == nextScene)
+            {
+                return;
+            }
+
+            _targetScene = nextScene;
+        }
+
+        /// <summary>
         /// シーン遷移を行う
         /// </summary>
         private async UniTask ChangeScene(string sceneName)
@@ -325,21 +346,6 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// フェーズ遷移を行う
-        /// </summary>
-        private void ChangePhase(in PhaseType nextPhase)
-        {
-            // 同一フェーズでないなら実行しない
-            if (CurrentPhase.Value == nextPhase)
-            {
-                return;
-            }
-
-            // PhaseMachine の遷移先フェーズを更新
-            _phaseMachine.ChangePhase(nextPhase);
-        }
-
-        /// <summary>
         /// 遷移先フェーズを設定する
         /// </summary>
         private void SetTargetPhase(in PhaseType nextPhase)
@@ -352,6 +358,20 @@ namespace GameSystem.Presentation
 
             // 遷移先フェーズを更新
             _targetPhase = nextPhase;
+        }
+
+        /// <summary>
+        /// フェーズ遷移を行う
+        /// </summary>
+        private void ChangePhase(in PhaseType nextPhase)
+        {
+            // 同一フェーズでないなら処理なし
+            if (CurrentPhase.Value == nextPhase)
+            {
+                return;
+            }
+
+            _phaseMachine.ChangePhase(nextPhase);
         }
     }
 }

@@ -235,23 +235,6 @@ namespace UISystem.Presentation
             }
         }
 
-        /// <summary>
-        /// 全フォーカス表示をリセットする
-        /// </summary>
-        public void ResetFocus()
-        {
-            foreach (KeyValuePair<Button, Image> cache in _buttonImageCache)
-            {
-                if (cache.Value == null)
-                {
-                    continue;
-                }
-
-                // フォーカス OFF 状態へ変更
-                cache.Value.color = _focusOffColor;
-            }
-        }
-
         // ======================================================
         // プライベートメソッド
         // ======================================================

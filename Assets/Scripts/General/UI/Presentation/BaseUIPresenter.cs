@@ -6,9 +6,11 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
+using PhaseSystem.Domain;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using PhaseSystem.Domain;
+using UniRx;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -197,6 +199,18 @@ namespace UISystem.Presentation
         protected Animator _effectAnimator;
 
         // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>シーン遷移リクエスト通知用 Subject</summary>
+        private readonly Subject<Unit> _onSceneChangeRequested =
+            new Subject<Unit>();
+
+
+        /// <summary>シーン遷移リクエスト通知ストリーム</summary>
+        public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
+
+        // ======================================================
         // IUpdatable イベント
         // ======================================================
 
@@ -272,6 +286,18 @@ namespace UISystem.Presentation
         protected virtual void OnPhaseExitInternal(in PhaseType phase) { }
 
         protected virtual void OnExitInternal() { }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// シーン遷移リクエストを通知する
+        /// </summary>
+        public virtual void RequestSceneChange()
+        {
+            _onSceneChangeRequested.OnNext(Unit.Default);
+        }
 
         // ======================================================
         // プライベートメソッド

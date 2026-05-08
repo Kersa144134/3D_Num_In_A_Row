@@ -228,8 +228,6 @@ namespace BoardSystem.Presentation
             _boardSize = _gameOptionManager.BoardSize;
             _connectCount = _gameOptionManager.ConnectCount;
 
-            Debug.Log(_gameOptionManager.BoardSize);
-
             // モデル、ビュー初期化
             _model = new BoardModel(_boardSize, _connectCount);
             _view = new BoardView(

@@ -6,17 +6,16 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using InputSystem.Presentation;
-using OptionSystem.Domain;
-using OptionSystem.Presentation;
-using PhaseSystem.Domain;
 using System;
 using System.Collections.Generic;
-using UISystem.Infrastructure;
-using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UniRx;
+using InputSystem.Presentation;
+using OptionSystem.Domain;
+using PhaseSystem.Domain;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -44,6 +43,22 @@ namespace UISystem.Presentation
         /// <summary>オプション関連の UI を表示するキャンバス</summary>
         [SerializeField]
         private GameObject _optionCanvas;
+
+        // --------------------------------------------------
+        // キャンバス初期選択ボタン
+        // --------------------------------------------------
+        [Header("キャンバス初期選択ボタン")]
+        /// <summary>スタートボタン</summary>
+        [SerializeField]
+        private Button _startButton;
+
+        /// <summary>オプションボタン</summary>
+        [SerializeField]
+        private Button _optionButton;
+
+        /// <summary>オプションキャンバス初期選択ボタン</summary>
+        [SerializeField]
+        private Button _initialOptionCanvasSelectedButton;
 
         // --------------------------------------------------
         // ポインター
@@ -166,9 +181,6 @@ namespace UISystem.Presentation
         /// <summary>ポインター速度ボタン選択制御</summary>
         private ButtonSelectionController _pointerSpeedSelectionController;
 
-        /// <summary>GameOptionManager キャッシュ</summary>
-        private GameOptionManager _gameOptionManager;
-
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -178,6 +190,9 @@ namespace UISystem.Presentation
         // ======================================================
         // フィールド
         // ======================================================
+
+        /// <summary>現在オプションキャンバスで選択中のボタン</summary>
+        private Button _currentOptionCanvasSelectedButton;
 
         /// <summary>プレイヤー人数ボタン配列</summary>
         private Button[] _playerCountButtonArray;
@@ -230,6 +245,12 @@ namespace UISystem.Presentation
         /// <summary>フォーカス座標通知ストリーム</summary>
         public IObservable<Vector2> OnFocusPosition => _onFocusPosition;
 
+        /// <summary>ゲームオプション更新通知用 Subject</summary>
+        private readonly Subject<OptionButtonData> _onUpdateGameOption = new Subject<OptionButtonData>();
+
+        /// <summary>ゲームオプション更新通知ストリーム</summary>
+        public IObservable<OptionButtonData> OnUpdateGameOption => _onUpdateGameOption;
+
         /// <summary>フェーズ購読</summary>
         private IDisposable _phaseSubscription;
 
@@ -248,11 +269,13 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
-            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
             _eventSystem = EventSystem.current;
 
-            if (_inputManager == null)
+            if (_inputManager == null ||
+                _startButton == null ||
+                _optionButton == null ||
+                _initialOptionCanvasSelectedButton == null)
             {
                 Debug.LogError("[TitleUIPresenter] クラスの初期化に失敗しました。");
 
@@ -274,8 +297,13 @@ namespace UISystem.Presentation
                 _focusOffColor
             );
 
-            // ボタン初期化
+            // 初期選択ボタン設定
+            _currentOptionCanvasSelectedButton = _initialOptionCanvasSelectedButton;
+
+            // オプションボタン初期化
             InitializeButtons();
+
+            ShowStartCanvas();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -411,10 +439,6 @@ namespace UISystem.Presentation
             _titleUIView.SetPointerVisible(isVisible);
         }
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
@@ -454,9 +478,9 @@ namespace UISystem.Presentation
             _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray);
 
             // --------------------------------------------------
-            // 選択状態適用
+            // 選択状態をコントローラに適用
             // --------------------------------------------------
-            ApplySelectionIndexState();
+            ApplySelectedIndexToControllers();
 
             // --------------------------------------------------
             // ビュー更新
@@ -475,35 +499,29 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
-        /// 選択インデックス状態を全 SelectionController へ反映する
+        /// SelectedIndex 変数の状態を SelectionController へ反映する
         /// </summary>
-        private void ApplySelectionIndexState()
+        private void ApplySelectedIndexToControllers()
         {
             // プレイヤー人数
-            _playerCountSelectionController.SelectByIndex(
-                _playerCountSelectedIndex);
+            _playerCountSelectionController.SelectByIndex(_playerCountSelectedIndex);
 
             // 制限時間
-            _limitTimeSelectionController.SelectByIndex(
-                _limitTimeSelectedIndex);
+            _limitTimeSelectionController.SelectByIndex(_limitTimeSelectedIndex);
 
             // 盤面サイズ
-            _boardSizeSelectionController.SelectByIndex(
-                _boardSizeSelectedIndex);
+            _boardSizeSelectionController.SelectByIndex(_boardSizeSelectedIndex);
 
             // ライン成立条件
-            _connectCountSelectionController.SelectByIndex(
-                _connectCountSelectedIndex);
+            _connectCountSelectionController.SelectByIndex(_connectCountSelectedIndex);
 
             // カメラ回転速度
-            _cameraRotationSpeedSelectionController.SelectByIndex(
-                _cameraRotationSpeedSelectedIndex);
+            _cameraRotationSpeedSelectionController.SelectByIndex(_cameraRotationSpeedSelectedIndex);
 
             // ポインター速度
-            _pointerSpeedSelectionController.SelectByIndex(
-                _pointerSpeedSelectedIndex);
+            _pointerSpeedSelectionController.SelectByIndex(_pointerSpeedSelectedIndex);
         }
-        
+
         /// <summary>
         /// 全ボタン選択状態をビューへ反映する
         /// </summary>
@@ -595,32 +613,8 @@ namespace UISystem.Presentation
                             controller.ButtonArray,
                             controller.SelectStateArray);
 
-                        switch (data.Type)
-                        {
-                            case OptionType.PlayerCount:
-                                _gameOptionManager.SetPlayerCount(data.IntValue);
-                                break;
-
-                            case OptionType.LimitTime:
-                                _gameOptionManager.SetLimitTime(data.FloatValue);
-                                break;
-
-                            case OptionType.BoardSize:
-                                _gameOptionManager.SetBoardSize(data.BoardSizeType);
-                                break;
-
-                            case OptionType.ConnectCount:
-                                _gameOptionManager.SetConnectCount(data.IntValue);
-                                break;
-
-                            case OptionType.CameraRotationSpeed:
-                                _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
-                                break;
-
-                            case OptionType.PointerSpeed:
-                                _gameOptionManager.SetPointerSpeed(data.FloatValue);
-                                break;
-                        }
+                        // オプション更新通知
+                        _onUpdateGameOption.OnNext(data);
                     })
                     .AddTo(optionButton);
 
@@ -632,6 +626,9 @@ namespace UISystem.Presentation
                     {
                         // フォーカス状態表示を有効化
                         _titleUIView.SetFocus(button, true);
+
+                        // 現在のキャンバス選択ボタンを更新
+                        _currentOptionCanvasSelectedButton = button;
 
                         // EventSystem の選択状態更新
                         SetSelectedButton(button);
@@ -667,6 +664,9 @@ namespace UISystem.Presentation
                         // フォーカス状態表示を有効化
                         _titleUIView.SetFocus(button, true);
 
+                        // 現在のキャンバス選択ボタンを更新
+                        _currentOptionCanvasSelectedButton = button;
+
                         // スクリーン座標へ変換
                         Vector2 screenPosition =
                             RectTransformUtility.WorldToScreenPoint(
@@ -696,7 +696,6 @@ namespace UISystem.Presentation
         /// </summary>
         private void UnbindOptionButtons()
         {
-            // 全 OptionButton を走査
             foreach (KeyValuePair<OptionButton, RectTransform> pair
                 in _buttonRectTransformMap)
             {
@@ -715,15 +714,11 @@ namespace UISystem.Presentation
             _buttonRectTransformMap.Clear();
         }
 
-        // --------------------------------------------------
-        // フォーカス
-        // --------------------------------------------------
         /// <summary>
         /// EventSystem の選択状態を変更する
         /// </summary>
         /// <param name="button">選択対象ボタン</param>
-        private void SetSelectedButton(
-            Button button)
+        private void SetSelectedButton(in Button button)
         {
             if (_eventSystem == null)
             {
@@ -736,7 +731,7 @@ namespace UISystem.Presentation
             }
 
             // 選択状態を更新
-            _eventSystem.SetSelectedGameObject( button.gameObject);
+            _eventSystem.SetSelectedGameObject(button.gameObject);
         }
 
         // ======================================================
@@ -744,10 +739,28 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// シーン遷移リクエストを通知する
+        /// </summary>
+        public override void RequestSceneChange()
+        {
+            base.RequestSceneChange();
+        }
+
+        /// <summary>
         /// スタートキャンバスを表示する
         /// </summary>
         public void ShowStartCanvas()
         {
+            // 最後に選択していたボタンを復元
+            if (_optionCanvas.activeSelf)
+            {
+                _eventSystem.SetSelectedGameObject(_optionButton.gameObject);
+            }
+            else
+            {
+                _eventSystem.SetSelectedGameObject(_startButton.gameObject);
+            }
+
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
         }
@@ -757,15 +770,42 @@ namespace UISystem.Presentation
         /// </summary>
         public void ShowOptionCanvas()
         {
+            // 最後に選択していたボタンを復元
+            _eventSystem.SetSelectedGameObject(_currentOptionCanvasSelectedButton.gameObject);
+
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
 
             // ボタン選択リセット
-            ApplySelectionIndexState();
+            ApplySelectedIndexToControllers();
             ApplyAllButtonSelectionState();
 
             // フォーカスリセット
-            _titleUIView.ResetFocus();
+            _titleUIView.SetFocus(_currentOptionCanvasSelectedButton, true);
+        }
+
+        /// <summary>
+        /// SelectionController の状態を SelectedIndex 変数へ反映する
+        /// </summary>
+        public void ApplyControllersToSelectedIndex()
+        {
+            // プレイヤー人数
+            _playerCountSelectedIndex = _playerCountSelectionController.GetCurrentSelectedIndex();
+
+            // 制限時間
+            _limitTimeSelectedIndex = _limitTimeSelectionController.GetCurrentSelectedIndex();
+
+            // 盤面サイズ
+            _boardSizeSelectedIndex = _boardSizeSelectionController.GetCurrentSelectedIndex();
+
+            // ライン成立条件
+            _connectCountSelectedIndex = _connectCountSelectionController.GetCurrentSelectedIndex();
+
+            // カメラ回転速度
+            _cameraRotationSpeedSelectedIndex = _cameraRotationSpeedSelectionController.GetCurrentSelectedIndex();
+
+            // ポインター速度
+            _pointerSpeedSelectedIndex = _pointerSpeedSelectionController.GetCurrentSelectedIndex();
         }
 
         // ======================================================
