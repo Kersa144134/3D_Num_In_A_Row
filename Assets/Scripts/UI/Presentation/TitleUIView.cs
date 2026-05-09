@@ -240,7 +240,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// Selectable‘ÎÛTransformŒŸõ
+        /// Selectable ‘ÎÛ‚Ì Transform ŒŸõ
         /// </summary>
         private Transform FindSelectableTransform(in Transform root)
         {

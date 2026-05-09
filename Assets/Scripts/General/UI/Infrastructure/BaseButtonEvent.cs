@@ -1,0 +1,238 @@
+// ======================================================
+// BaseButtonEvent.cs
+// 作成者   : 高橋一翔
+// 作成日時 : 2026-05-09
+// 更新日時 : 2026-05-09
+// 概要     : UIボタン入力通知の共通処理を管理する基底クラス
+// ======================================================
+
+using System;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UniRx;
+
+namespace UISystem.Infrastructure
+{
+    /// <summary>
+    /// UIイベント通知を管理する基底クラス
+    /// </summary>
+    public abstract class BaseButtonEvent :
+        MonoBehaviour,
+        IDisposable,
+        IPointerClickHandler,
+        IPointerEnterHandler,
+        IPointerExitHandler,
+        ISelectHandler,
+        IDeselectHandler,
+        ISubmitHandler
+    {
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>
+        /// Button キャッシュ
+        /// </summary>
+        private Button _button;
+
+        /// <summary>
+        /// RectTransform キャッシュ
+        /// </summary>
+        private RectTransform _rectTransform;
+
+        /// <summary>
+        /// Dispose 実行済みフラグ
+        /// </summary>
+        private bool _isDisposed;
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>
+        /// Button キャッシュ
+        /// </summary>
+        public Button Button => _button;
+
+        /// <summary>
+        /// RectTransform キャッシュ
+        /// </summary>
+        public RectTransform RectTransform => _rectTransform;
+        
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        // --------------------------------------------------
+        // クリック
+        // --------------------------------------------------
+        /// <summary>
+        /// クリック通知用 Subject
+        /// </summary>
+        protected readonly Subject<Unit> OnClickSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// クリックイベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnClickAsObservable => OnClickSubject;
+
+        // --------------------------------------------------
+        // ホバー
+        // --------------------------------------------------
+        /// <summary>
+        /// ホバー開始通知用 Subject
+        /// </summary>
+        protected readonly Subject<Unit> OnHoverEnterSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// ホバー開始イベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnHoverEnterAsObservable => OnHoverEnterSubject;
+
+        /// <summary>
+        /// ホバー終了通知用 Subject
+        /// </summary>
+        protected readonly Subject<Unit> OnHoverExitSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// ホバー終了イベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnHoverExitAsObservable => OnHoverExitSubject;
+
+        // --------------------------------------------------
+        // 選択
+        // --------------------------------------------------
+        /// <summary>
+        /// 選択開始通知用 Subject
+        /// </summary>
+        protected readonly Subject<Unit> OnSelectEnterSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// 選択開始イベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnSelectEnterAsObservable => OnSelectEnterSubject;
+
+        /// <summary>
+        /// 選択終了通知用 Subject
+        /// </summary>
+        protected readonly Subject<Unit> OnSelectExitSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// 選択終了イベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnSelectExitAsObservable => OnSelectExitSubject;
+
+        // ======================================================
+        // Unityイベント
+        // ======================================================
+
+        protected virtual void Awake()
+        {
+            _button = GetComponent<Button>();
+            _rectTransform = transform as RectTransform;
+        }
+
+        protected virtual void OnDestroy()
+        {
+            Dispose();
+        }
+
+        // ======================================================
+        // IDisposable
+        // ======================================================
+
+        /// <summary>
+        /// リソースを解放する
+        /// </summary>
+        public virtual void Dispose()
+        {
+            // 多重実行防止
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+
+            OnClickSubject.Dispose();
+            OnHoverEnterSubject.Dispose();
+            OnHoverExitSubject.Dispose();
+            OnSelectEnterSubject.Dispose();
+            OnSelectExitSubject.Dispose();
+        }
+
+        // ======================================================
+        // EventSystem 入力イベント
+        // ======================================================
+
+        // --------------------------------------------------
+        // クリック
+        // --------------------------------------------------
+        /// <summary>
+        /// マウスクリック入力
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnPointerClick(
+            PointerEventData eventData)
+        {
+            OnClickSubject.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// 決定入力
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnSubmit(
+            BaseEventData eventData)
+        {
+            OnClickSubject.OnNext(Unit.Default);
+        }
+
+        // --------------------------------------------------
+        // ホバー
+        // --------------------------------------------------
+        /// <summary>
+        /// マウスホバー開始
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnPointerEnter(
+            PointerEventData eventData)
+        {
+            OnHoverEnterSubject.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// マウスホバー終了
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnPointerExit(
+            PointerEventData eventData)
+        {
+            OnHoverExitSubject.OnNext(Unit.Default);
+        }
+
+        // --------------------------------------------------
+        // 選択
+        // --------------------------------------------------
+        /// <summary>
+        /// EventSystem 選択開始
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnSelect(
+            BaseEventData eventData)
+        {
+            OnSelectEnterSubject.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// EventSystem 選択終了
+        /// </summary>
+        /// <param name="eventData">イベント情報</param>
+        public virtual void OnDeselect(
+            BaseEventData eventData)
+        {
+            OnSelectExitSubject.OnNext(Unit.Default);
+        }
+    }
+}

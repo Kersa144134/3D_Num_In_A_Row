@@ -1,8 +1,10 @@
 {
-    "name": "GeneralUIInfrastructure",
+    "name": "UIInfrastructure",
     "rootNamespace": "",
     "references": [
-        "GUID:560b04d1a97f54a4e82edc0cbbb69285"
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:c88db8695d7fe794f84a08c7b85ce889",
+        "GUID:c10cae77fa46ffe4fb4f66d4c9f86441"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

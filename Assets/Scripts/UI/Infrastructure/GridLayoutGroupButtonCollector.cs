@@ -46,24 +46,24 @@ namespace UISystem.Infrastructure
         }
 
         /// <summary>
-        /// OptionButton ‚ðŽæ“¾‚·‚é
+        /// OptionButtonEvent ‚ðŽæ“¾‚·‚é
         /// </summary>
-        public OptionButton[] GetOptionButtons(in GridLayoutGroup gridLayoutGroup)
+        public OptionButtonEvent[] GetOptionButtons(in GridLayoutGroup gridLayoutGroup)
         {
             if (gridLayoutGroup == null)
             {
-                return Array.Empty<OptionButton>();
+                return Array.Empty<OptionButtonEvent>();
             }
 
             int childCount = gridLayoutGroup.transform.childCount;
 
-            OptionButton[] buttons = new OptionButton[childCount];
+            OptionButtonEvent[] buttons = new OptionButtonEvent[childCount];
 
             for (int index = 0; index < childCount; index++)
             {
                 Transform child = gridLayoutGroup.transform.GetChild(index);
 
-                buttons[index] = child.GetComponent<OptionButton>();
+                buttons[index] = child.GetComponent<OptionButtonEvent>();
             }
 
             return buttons;

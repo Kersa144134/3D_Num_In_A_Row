@@ -21,20 +21,32 @@ namespace OptionSystem.Domain
         // インスペクタ設定
         // ======================================================
 
+        /// <summary>
+        /// オプション種別
+        /// </summary>
         [SerializeField]
         private OptionType _type;
 
+        /// <summary>
+        /// int 型オプション値
+        /// </summary>
         [SerializeField]
         private int _intValue;
 
+        /// <summary>
+        /// float 型オプション値
+        /// </summary>
         [SerializeField]
         private float _floatValue;
 
+        /// <summary>
+        /// ボードサイズ設定値
+        /// </summary>
         [SerializeField]
         private GameRules.BoardSizeType _boardSizeType;
 
         // ======================================================
-        // 変換処理
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
