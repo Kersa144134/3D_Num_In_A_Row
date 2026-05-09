@@ -1,0 +1,190 @@
+// ======================================================
+// TitleUIEventRouter.cs
+// 作成者   : 高橋一翔
+// 作成日時 : 2026-05-09
+// 更新日時 : 2026-05-09
+// 概要     : タイトル UI のイベント通知を管理する
+// ======================================================
+
+using System;
+using UnityEngine.UI;
+using UniRx;
+using UISystem.Infrastructure;
+
+namespace UISystem.Application
+{
+    /// <summary>
+    /// タイトル UI のイベント通知を管理する
+    /// </summary>
+    public sealed class TitleUIEventRouter : IDisposable
+    {
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>購読管理</summary>
+        private readonly CompositeDisposable _disposable = new CompositeDisposable();
+
+        /// <summary>通常ボタンクリック通知</summary>
+        private readonly Subject<NormalButtonEvent> _onNormalButtonClick = new Subject<NormalButtonEvent>();
+
+        /// <summary>オプションボタンクリック通知</summary>
+        private readonly Subject<OptionButtonEvent> _onOptionButtonClick = new Subject<OptionButtonEvent>();
+
+        /// <summary>フォーカス通知</summary>
+        private readonly Subject<BaseButtonEvent> _onFocus = new Subject<BaseButtonEvent>();
+
+        /// <summary>フォーカス解除通知</summary>
+        private readonly Subject<BaseButtonEvent> _onUnFocus = new Subject<BaseButtonEvent>();
+
+        /// <summary>選択通知</summary>
+        private readonly Subject<BaseButtonEvent> _onSelect = new Subject<BaseButtonEvent>();
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>通常ボタンクリック通知</summary>
+        public IObservable<NormalButtonEvent> OnNormalButtonClick => _onNormalButtonClick;
+
+        /// <summary>オプションボタンクリック通知</summary>
+        public IObservable<OptionButtonEvent> OnOptionButtonClick => _onOptionButtonClick;
+
+        /// <summary>フォーカス通知</summary>
+        public IObservable<BaseButtonEvent> OnFocus => _onFocus;
+
+        /// <summary>フォーカス解除通知</summary>
+        public IObservable<BaseButtonEvent> OnUnFocus => _onUnFocus;
+
+        /// <summary>選択通知</summary>
+        public IObservable<BaseButtonEvent> OnSelect => _onSelect;
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// NormalButton のイベントを登録する
+        /// </summary>
+        /// <param name="buttonEvent">対象イベント</param>
+        public void RegisterNormalButton(
+            NormalButtonEvent buttonEvent)
+        {
+            if (buttonEvent == null)
+            {
+                return;
+            }
+
+            // クリック通知
+            buttonEvent.OnNormalClickAsObservable
+                .Subscribe(_ =>
+                {
+                    _onNormalButtonClick.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // ホバー開始通知
+            buttonEvent.OnHoverEnterAsObservable
+                .Subscribe(_ =>
+                {
+                    _onFocus.OnNext(buttonEvent);
+                    _onSelect.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // ホバー終了通知
+            buttonEvent.OnHoverExitAsObservable
+                .Subscribe(_ =>
+                {
+                    _onUnFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // 選択開始通知
+            buttonEvent.OnSelectEnterAsObservable
+                .Subscribe(_ =>
+                {
+                    _onFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // 選択終了通知
+            buttonEvent.OnSelectExitAsObservable
+                .Subscribe(_ =>
+                {
+                    _onUnFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+        }
+
+        /// <summary>
+        /// OptionButton 配列を登録する
+        /// </summary>
+        /// <param name="buttonEvents">対象イベント配列</param>
+        public void RegisterOptionButtons(
+            OptionButtonEvent[] buttonEvents)
+        {
+            if (buttonEvents == null)
+            {
+                return;
+            }
+
+            foreach (OptionButtonEvent buttonEvent in buttonEvents)
+            {
+                if (buttonEvent == null)
+                {
+                    continue;
+                }
+
+                // クリック通知
+                buttonEvent.OnOptionClickAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _onOptionButtonClick.OnNext(buttonEvent);
+                    })
+                    .AddTo(_disposable);
+
+                // ホバー開始通知
+                buttonEvent.OnHoverEnterAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _onFocus.OnNext(buttonEvent);
+                        _onSelect.OnNext(buttonEvent);
+                    })
+                    .AddTo(_disposable);
+
+                // ホバー終了通知
+                buttonEvent.OnHoverExitAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _onUnFocus.OnNext(buttonEvent);
+                    })
+                    .AddTo(_disposable);
+
+                // 選択開始通知
+                buttonEvent.OnSelectEnterAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _onFocus.OnNext(buttonEvent);
+                    })
+                    .AddTo(_disposable);
+
+                // 選択終了通知
+                buttonEvent.OnSelectExitAsObservable
+                    .Subscribe(_ =>
+                    {
+                        _onUnFocus.OnNext(buttonEvent);
+                    })
+                    .AddTo(_disposable);
+            }
+        }
+
+        /// <summary>
+        /// イベント購読を解除する
+        /// </summary>
+        public void Dispose()
+        {
+            _disposable.Dispose();
+        }
+    }
+}

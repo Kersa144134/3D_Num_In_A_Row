@@ -7,7 +7,7 @@
 
 using UnityEngine.UI;
 
-namespace UISystem.Presentation
+namespace UISystem.Application
 {
     /// <summary>
     /// Button ‘I‘ğó‘Ô§ŒäƒNƒ‰ƒX

@@ -269,13 +269,8 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             if (_titleUIPresenter != null)
             {
-                _titleUIPresenter.BindPhaseStream(_currentPhase);
                 _titleUIPresenter.BindInputLockStream(
                     _currentPhase.Select(phase => phase != PhaseType.Title)
-                );
-                _titleUIPresenter.BindPointerVisibleStream(
-                    // ポインター表示条件に合わせて反転して渡す
-                    _onGamepadUsed.Select(x => !x)
                 );
 
                 _titleUIPresenter.OnFocusPosition
@@ -344,9 +339,7 @@ namespace GameSystem.Presentation
 
             if (_titleUIPresenter != null)
             {
-                _titleUIPresenter.UnbindPhaseStream();
                 _titleUIPresenter.UnbindInputLockStream();
-                _titleUIPresenter.UnbindPointerVisibleStream();
             }
             if (_mainUIPresenter != null)
             {

@@ -23,9 +23,7 @@ namespace UISystem.Infrastructure
         // インスペクタ設定
         // ======================================================
 
-        /// <summary>
-        /// インスペクタ設定用オプションデータ
-        /// </summary>
+        /// <summary>インスペクタ設定用オプションデータ</summary>
         [SerializeField]
         private OptionButtonConfig _config;
 
@@ -33,10 +31,15 @@ namespace UISystem.Infrastructure
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 実行時オプションデータ
-        /// </summary>
+        /// <summary>実行時オプションデータ</summary>
         private OptionButtonData _data;
+
+        // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>実行時オプションデータ</summary>
+        public OptionButtonData Data => _data;
 
         // ======================================================
         // UniRx 変数

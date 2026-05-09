@@ -99,23 +99,6 @@ namespace UISystem.Presentation
         // パブリックメソッド
         // ======================================================
 
-        // --------------------------------------------------
-        // ポインター
-        // --------------------------------------------------
-        /// <summary>
-        /// ポインターの表示状態を切り替える
-        /// </summary>
-        /// <param name="isVisible">表示する場合はtrue</param>
-        public void SetPointerVisible(in bool isVisible)
-        {
-            if (_pointerImage == null)
-            {
-                return;
-            }
-
-            _pointerImage.enabled = isVisible;
-        }
-
         /// <summary>
         /// ポインター位置更新
         /// </summary>
