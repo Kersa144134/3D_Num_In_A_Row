@@ -170,7 +170,7 @@ namespace UISystem.Presentation
         private TitleUIView _titleUIView;
 
         /// <summary>イベントを仲介するクラス</summary>
-        private readonly TitleUIEventRouter _eventRouter = new TitleUIEventRouter();
+        private TitleUIEventRouter _eventRouter;
 
         /// <summary>スタートボタンイベント</summary>
         private NormalButtonEvent _startButtonEvent;
@@ -277,8 +277,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>イベントルーター購読管理</summary>
-        private readonly CompositeDisposable _routerSubscriptions =
-            new CompositeDisposable();
+        private CompositeDisposable _routerSubscriptions = new CompositeDisposable();
 
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
@@ -379,6 +378,7 @@ namespace UISystem.Presentation
             // イベント購読解除
             UnbindInputLockStream();
             UnbindButtonEvents();
+            UnbindRouterEvents();
         }
 
         // ======================================================
@@ -426,6 +426,9 @@ namespace UISystem.Presentation
         /// </summary>
         private void BindRouterEvents()
         {
+            // ルーター初期化
+            _eventRouter = new TitleUIEventRouter();
+
             // 通常ボタンクリック
             _eventRouter.OnNormalButtonClick
                 .Subscribe(buttonEvent =>
@@ -466,7 +469,20 @@ namespace UISystem.Presentation
                 })
                 .AddTo(_routerSubscriptions);
         }
-        
+
+        /// <summary>
+        /// ルーターイベント購読を解除する
+        /// </summary>
+        private void UnbindRouterEvents()
+        {
+            _routerSubscriptions?.Dispose();
+            _routerSubscriptions = new CompositeDisposable();
+
+            // ルーター破棄
+            _eventRouter?.Dispose();
+            _eventRouter = null;
+        }
+
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
@@ -630,7 +646,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// OptionButtonEvent 配列の入力イベント購読を解除する
         /// </summary>
-        /// <param name="buttonEvents">対象の ButtonEvent 配列</param>
+        /// <param name="buttonEvents">対象 OptionButton イベント配列</param>
         private void DisposeOptionButtonEvents(
             in OptionButtonEvent[] buttonEvents)
         {
@@ -763,10 +779,9 @@ namespace UISystem.Presentation
                 buttonEvent.gameObject);
 
             // スクリーン座標変換
-            Vector2 screenPosition =
-                RectTransformUtility.WorldToScreenPoint(
-                    null,
-                    buttonEvent.RectTransform.position);
+            Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(
+                null,
+                buttonEvent.RectTransform.position);
 
             // フォーカス通知
             _onFocusPosition.OnNext(screenPosition);

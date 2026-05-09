@@ -7,7 +7,6 @@
 // ======================================================
 
 using System;
-using UnityEngine.UI;
 using UniRx;
 using UISystem.Infrastructure;
 
@@ -64,65 +63,33 @@ namespace UISystem.Application
         // ======================================================
 
         /// <summary>
-        /// NormalButton のイベントを登録する
+        /// NormalButton 登録処理
         /// </summary>
-        /// <param name="buttonEvent">対象イベント</param>
-        public void RegisterNormalButton(
-            NormalButtonEvent buttonEvent)
+        /// <param name="buttonEvent">対象 NormalButton イベント</param>
+        public void RegisterNormalButton(NormalButtonEvent buttonEvent)
         {
             if (buttonEvent == null)
             {
                 return;
             }
 
-            // クリック通知
+            // 共通イベント
+            RegisterCommonButton(buttonEvent);
+
+            // クリック
             buttonEvent.OnNormalClickAsObservable
                 .Subscribe(_ =>
                 {
                     _onNormalButtonClick.OnNext(buttonEvent);
                 })
                 .AddTo(_disposable);
-
-            // ホバー開始通知
-            buttonEvent.OnHoverEnterAsObservable
-                .Subscribe(_ =>
-                {
-                    _onFocus.OnNext(buttonEvent);
-                    _onSelect.OnNext(buttonEvent);
-                })
-                .AddTo(_disposable);
-
-            // ホバー終了通知
-            buttonEvent.OnHoverExitAsObservable
-                .Subscribe(_ =>
-                {
-                    _onUnFocus.OnNext(buttonEvent);
-                })
-                .AddTo(_disposable);
-
-            // 選択開始通知
-            buttonEvent.OnSelectEnterAsObservable
-                .Subscribe(_ =>
-                {
-                    _onFocus.OnNext(buttonEvent);
-                })
-                .AddTo(_disposable);
-
-            // 選択終了通知
-            buttonEvent.OnSelectExitAsObservable
-                .Subscribe(_ =>
-                {
-                    _onUnFocus.OnNext(buttonEvent);
-                })
-                .AddTo(_disposable);
         }
 
         /// <summary>
-        /// OptionButton 配列を登録する
+        /// OptionButton 登録処理
         /// </summary>
-        /// <param name="buttonEvents">対象イベント配列</param>
-        public void RegisterOptionButtons(
-            OptionButtonEvent[] buttonEvents)
+        /// <param name="buttonEvents">対象 OptionButton イベント配列</param>
+        public void RegisterOptionButtons(OptionButtonEvent[] buttonEvents)
         {
             if (buttonEvents == null)
             {
@@ -136,44 +103,14 @@ namespace UISystem.Application
                     continue;
                 }
 
-                // クリック通知
+                // 共通イベント
+                RegisterCommonButton(buttonEvent);
+
+                // クリック
                 buttonEvent.OnOptionClickAsObservable
                     .Subscribe(_ =>
                     {
                         _onOptionButtonClick.OnNext(buttonEvent);
-                    })
-                    .AddTo(_disposable);
-
-                // ホバー開始通知
-                buttonEvent.OnHoverEnterAsObservable
-                    .Subscribe(_ =>
-                    {
-                        _onFocus.OnNext(buttonEvent);
-                        _onSelect.OnNext(buttonEvent);
-                    })
-                    .AddTo(_disposable);
-
-                // ホバー終了通知
-                buttonEvent.OnHoverExitAsObservable
-                    .Subscribe(_ =>
-                    {
-                        _onUnFocus.OnNext(buttonEvent);
-                    })
-                    .AddTo(_disposable);
-
-                // 選択開始通知
-                buttonEvent.OnSelectEnterAsObservable
-                    .Subscribe(_ =>
-                    {
-                        _onFocus.OnNext(buttonEvent);
-                    })
-                    .AddTo(_disposable);
-
-                // 選択終了通知
-                buttonEvent.OnSelectExitAsObservable
-                    .Subscribe(_ =>
-                    {
-                        _onUnFocus.OnNext(buttonEvent);
                     })
                     .AddTo(_disposable);
             }
@@ -185,6 +122,50 @@ namespace UISystem.Application
         public void Dispose()
         {
             _disposable.Dispose();
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// ボタンのの共通登録処理
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        private void RegisterCommonButton(BaseButtonEvent buttonEvent)
+        {
+            // ホバー開始
+            buttonEvent.OnHoverEnterAsObservable
+                .Subscribe(_ =>
+                {
+                    _onFocus.OnNext(buttonEvent);
+                    _onSelect.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // ホバー終了
+            buttonEvent.OnHoverExitAsObservable
+                .Subscribe(_ =>
+                {
+                    _onUnFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // 選択開始
+            buttonEvent.OnSelectEnterAsObservable
+                .Subscribe(_ =>
+                {
+                    _onFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
+
+            // 選択終了
+            buttonEvent.OnSelectExitAsObservable
+                .Subscribe(_ =>
+                {
+                    _onUnFocus.OnNext(buttonEvent);
+                })
+                .AddTo(_disposable);
         }
     }
 }
