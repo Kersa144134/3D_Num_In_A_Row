@@ -226,8 +226,8 @@ namespace UISystem.Presentation
         /// <summary>ポインター速度ボタンイベント配列</summary>
         private OptionButtonEvent[] _pointerSpeedButtonEvents;
 
-        /// <summary>現在選択中のボタンイベント</summary>
-        private BaseButtonEvent _currentSelectedButtonEvent;
+        /// <summary>最後に選択したボタンイベント</summary>
+        private BaseButtonEvent _lastSelectedButtonEvent;
 
         /// <summary>現在ホバー選択中のボタンイベント</summary>
         private BaseButtonEvent _currentHoveredButtonEvent;
@@ -485,6 +485,7 @@ namespace UISystem.Presentation
                 .DistinctUntilChanged()
                 .Subscribe(isGamePadInput =>
                 {
+                    // 入力状態を更新
                     _isGamePadInput = isGamePadInput;
 
                     // --------------------------------------------------
@@ -492,17 +493,8 @@ namespace UISystem.Presentation
                     // --------------------------------------------------
                     if (isGamePadInput)
                     {
-                        // 最後に選択したボタンが存在しない場合
-                        if (_currentSelectedButtonEvent == null)
-                        {
-                            // ナビゲーション不能になるため初期選択を設定
-                            SelectInitialButtonByCanvas();
-
-                            return;
-                        }
-
                         // 最後に選択したボタンを再選択
-                        OnSelectButton(_currentSelectedButtonEvent);
+                        RefreshSelectionState(_lastSelectedButtonEvent);
 
                         return;
                     }
@@ -513,18 +505,14 @@ namespace UISystem.Presentation
                     // ホバー中ボタンが存在する場合
                     if (_currentHoveredButtonEvent != null)
                     {
-                        // ホバー中ボタンを選択状態にする
+                        // ホバー対象を選択
                         OnSelectButton(_currentHoveredButtonEvent);
 
                         return;
                     }
 
-                    // 最後に選択したボタンが存在する場合
-                    if (_currentSelectedButtonEvent != null)
-                    {
-                        // 選択解除
-                        OnUnSelectButton();
-                    }
+                    // 選択解除
+                    OnUnSelectButton();
                 });
         }
 
@@ -813,6 +801,34 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// 入力状態に応じて選択状態を更新する
+        /// </summary>
+        /// <param name="buttonEvent">再選択対象</param>
+        private void RefreshSelectionState(BaseButtonEvent buttonEvent = null)
+        {
+            // ゲームパッド入力ではない場合
+            if (!_isGamePadInput)
+            {
+                // EventSystem の選択解除
+                OnUnSelectButton();
+
+                return;
+            }
+
+            // 再選択対象が存在しない場合
+            if (buttonEvent == null)
+            {
+                // 初期選択を適用
+                SelectInitialButtonByCanvas();
+
+                return;
+            }
+
+            // 選択状態を更新
+            OnSelectButton(buttonEvent);
+        }
+
+        /// <summary>
         /// ButtonEvent の入力イベント購読を解除する
         /// </summary>
         private void UnbindButtonEvents()
@@ -871,24 +887,16 @@ namespace UISystem.Presentation
                 // オプションキャンバス表示
                 ShowOptionCanvas();
 
-                // ゲームパッド入力の場合
-                if (_isGamePadInput)
+                // 最後に選択したボタンが OptionButton の場合
+                if (_lastSelectedButtonEvent is OptionButtonEvent optionButton)
                 {
-                    // 最後に選択したボタンが OptionButton の場合
-                    if (_currentSelectedButtonEvent is OptionButtonEvent optionButton)
-                    {
-                        // 選択状態を更新
-                        OnSelectButton(optionButton);
-                    }
-                    else
-                    {
-                        // ナビゲーション不能になるため初期選択を設定
-                        SelectInitialButtonByCanvas();
-                    }
+                    // 入力状態に応じて選択状態を更新
+                    RefreshSelectionState(optionButton);
                 }
                 else
                 {
-                    OnUnSelectButton();
+                    // 入力状態に応じて初期選択を適用
+                    RefreshSelectionState();
                 }
 
                 // ボタン選択状態リセット
@@ -906,16 +914,8 @@ namespace UISystem.Presentation
                 // スタートキャンバス表示
                 ShowStartCanvas();
 
-                // ゲームパッド入力の場合
-                if (_isGamePadInput)
-                {
-                    // 選択状態を更新
-                    OnSelectButton(_optionButtonEvent);
-                }
-                else
-                {
-                    OnUnSelectButton();
-                }
+                // 入力状態に応じて選択状態を更新
+                RefreshSelectionState(_optionButtonEvent);
 
                 return;
             }
@@ -934,16 +934,8 @@ namespace UISystem.Presentation
                 _cameraRotationSpeedSelectedIndex = _cameraRotationSpeedSelectionController.GetCurrentSelectedIndex();
                 _pointerSpeedSelectedIndex = _pointerSpeedSelectionController.GetCurrentSelectedIndex();
 
-                // ゲームパッド入力の場合
-                if (_isGamePadInput)
-                {
-                    // 選択状態を更新
-                    OnSelectButton(_startButtonEvent);
-                }
-                else
-                {
-                    OnUnSelectButton();
-                }
+                // 入力状態に応じて選択状態を更新
+                RefreshSelectionState(_startButtonEvent);
             }
         }
 
@@ -1042,7 +1034,7 @@ namespace UISystem.Presentation
             }
 
             // 選択対象のボタンイベントをキャッシュ
-            _currentSelectedButtonEvent = buttonEvent;
+            _lastSelectedButtonEvent = buttonEvent;
 
             // 選択状態を更新
             SetSelectedGameObject(buttonEvent.gameObject);

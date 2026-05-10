@@ -42,6 +42,11 @@ namespace UISystem.Infrastructure
         private RectTransform _rectTransform;
 
         /// <summary>
+        /// EventSystem 選択中フラグ
+        /// </summary>
+        private bool _isSelected;
+
+        /// <summary>
         /// Dispose 実行済みフラグ
         /// </summary>
         private bool _isDisposed;
@@ -133,10 +138,30 @@ namespace UISystem.Infrastructure
             _rectTransform = transform as RectTransform;
         }
 
+        protected virtual void OnDisable()
+        {
+            // 選択中ではない場合
+            if (!_isSelected)
+            {
+                return;
+            }
+
+            // 選択終了通知
+            OnSelectExitInternal();
+        }
+
         protected virtual void OnDestroy()
         {
+            // 選択中の場合
+            if (_isSelected)
+            {
+                // 選択終了通知
+                OnSelectExitInternal();
+            }
+
             Dispose();
         }
+
 
         // ======================================================
         // IDisposable
@@ -222,6 +247,9 @@ namespace UISystem.Infrastructure
         public virtual void OnSelect(
             BaseEventData eventData)
         {
+            // 選択状態を有効化
+            _isSelected = true;
+
             OnSelectEnterSubject.OnNext(Unit.Default);
         }
 
@@ -232,6 +260,31 @@ namespace UISystem.Infrastructure
         public virtual void OnDeselect(
             BaseEventData eventData)
         {
+            // 選択状態を解除
+            _isSelected = false;
+
+            OnSelectExitSubject.OnNext(Unit.Default);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 選択終了処理を実行する
+        /// </summary>
+        private void OnSelectExitInternal()
+        {
+            // 未選択状態の場合
+            if (!_isSelected)
+            {
+                return;
+            }
+
+            // 選択状態を解除
+            _isSelected = false;
+
+            // 選択終了通知
             OnSelectExitSubject.OnNext(Unit.Default);
         }
     }
