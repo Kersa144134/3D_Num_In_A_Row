@@ -94,6 +94,10 @@ namespace BoardSystem.Presentation
         /// <summary>盤面の回転アニメーション時間（秒）</summary>
         private readonly float _rotationDuration;
 
+        // ======================================================
+        // 辞書
+        // ======================================================
+
         /// <summary>
         /// 生成駒辞書
         /// BoardIndex をキーとして駒データを管理

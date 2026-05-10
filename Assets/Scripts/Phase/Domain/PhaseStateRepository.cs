@@ -17,7 +17,7 @@ namespace PhaseSystem.Domain
     public sealed class PhaseStateRepository
     {
         // ======================================================
-        // フィールド
+        // 辞書
         // ======================================================
 
         /// <summary>フェーズ状態マップ</summary>

@@ -7,7 +7,6 @@
 // ======================================================
 
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UISystem.Application;
 
@@ -38,8 +37,8 @@ namespace UISystem.Presentation
         /// <summary>制限時間表示テキスト</summary>
         private readonly TextMeshProUGUI _limitTimeText;
 
-        /// <summary>ポインターImage</summary>
-        private readonly Image _pointerImage;
+        /// <summary>ポインター</summary>
+        private readonly GameObject _pointer;
 
         /// <summary>ポインター Rect</summary>
         private readonly RectTransform _pointerRect;
@@ -82,12 +81,12 @@ namespace UISystem.Presentation
         public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI limitTimeText,
-            in Image pointerImage)
+            in GameObject pointer)
         {
             _scoreTexts = scoreTexts;
             _limitTimeText = limitTimeText;
 
-            _pointerImage = pointerImage;
+            _pointer = pointer;
 
             _previousDisplayTotalSeconds = -1;
 
@@ -126,15 +125,17 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ポインター初期化
             // --------------------------------------------------
-            if (_pointerImage != null)
+            if (_pointer != null)
             {
-                _pointerRect = _pointerImage.rectTransform;
+                // RectTransform を取得
+                _pointerRect = _pointer.GetComponent<RectTransform>();
 
-                Canvas canvas =
-                    _pointerImage.GetComponentInParent<Canvas>();
+                // 親 Canvas を取得
+                Canvas canvas = _pointer.GetComponentInParent<Canvas>();
 
                 if (canvas != null)
                 {
+                    // Canvas の RectTransform をキャッシュ
                     _canvasRect = canvas.transform as RectTransform;
                 }
             }
@@ -264,12 +265,12 @@ namespace UISystem.Presentation
         /// <param name="isVisible">表示する場合はtrue</param>
         public void SetPointerVisible(in bool isVisible)
         {
-            if (_pointerImage == null)
+            if (_pointer == null)
             {
                 return;
             }
 
-            _pointerImage.enabled = isVisible;
+            _pointer.SetActive(isVisible);
         }
 
         /// <summary>

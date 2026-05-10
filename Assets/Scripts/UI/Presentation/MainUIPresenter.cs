@@ -8,7 +8,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UniRx;
 using InputSystem.Presentation;
@@ -50,9 +49,9 @@ namespace UISystem.Presentation
         // ポインター
         // --------------------------------------------------
         [Header("ポインター")]
-        /// <summary>ポインターを表示する Image</summary>
+        /// <summary>ポインター</summary>
         [SerializeField]
-        private Image _pointerImage;
+        private GameObject _pointer;
 
         // --------------------------------------------------
         // アニメーター
@@ -160,7 +159,7 @@ namespace UISystem.Presentation
                 new MainUIView(
                     _scoreTexts,
                     _limitTimeText,
-                    _pointerImage);
+                    _pointer);
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)

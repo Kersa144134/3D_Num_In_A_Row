@@ -28,8 +28,8 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
-        /// <summary>ポインター画像</summary>
-        private readonly Image _pointerImage;
+        /// <summary>ポインター</summary>
+        private readonly GameObject _pointer;
 
         /// <summary>ポインターRect</summary>
         private readonly RectTransform _pointerRect;
@@ -66,13 +66,13 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         public TitleUIView(
-            in Image pointerImage,
+            in GameObject pointer,
             in Color selectOnColor,
             in Color selectOffColor,
             in Color focusOnColor,
             in Color focusOffColor)
         {
-            _pointerImage = pointerImage;
+            _pointer = pointer;
             _selectOnColor = selectOnColor;
             _selectOffColor = selectOffColor;
             _focusOnColor = focusOnColor;
@@ -81,15 +81,17 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ポインター初期化
             // --------------------------------------------------
-            if (_pointerImage != null)
+            if (_pointer != null)
             {
-                _pointerRect = _pointerImage.rectTransform;
+                // RectTransform を取得
+                _pointerRect = _pointer.GetComponent<RectTransform>();
 
-                Canvas canvas =
-                    _pointerImage.GetComponentInParent<Canvas>();
+                // 親 Canvas を取得
+                Canvas canvas = _pointer.GetComponentInParent<Canvas>();
 
                 if (canvas != null)
                 {
+                    // Canvas の RectTransform をキャッシュ
                     _canvasRect = canvas.transform as RectTransform;
                 }
             }

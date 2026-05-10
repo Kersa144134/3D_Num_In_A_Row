@@ -267,7 +267,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             float unscaledDeltaTime = Time.unscaledDeltaTime;
             
-            _phaseMachine.OnUpdate(unscaledDeltaTime);
+            _phaseMachine?.OnUpdate(unscaledDeltaTime);
         }
 
         private void LateUpdate()
@@ -284,7 +284,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             float unscaledDeltaTime = Time.unscaledDeltaTime;
 
-            _phaseMachine.OnLateUpdate(unscaledDeltaTime);
+            _phaseMachine?.OnLateUpdate(unscaledDeltaTime);
             
             // --------------------------------------------------
             // フェーズ遷移判定

@@ -28,6 +28,20 @@ namespace UISystem.Presentation
     public sealed class TitleUIPresenter : BaseUIPresenter, IUpdatable
     {
         // ======================================================
+        // 列挙型
+        // ======================================================
+
+        /// <summary>
+        /// 現在アクティブな UI キャンバス種別
+        /// </summary>
+        private enum ActiveCanvasType
+        {
+            None,
+            Start,
+            Option
+        }
+        
+        // ======================================================
         // インスペクタ設定
         // ======================================================
 
@@ -51,7 +65,7 @@ namespace UISystem.Presentation
         [Header("ポインター")]
         /// <summary>ポインターを表示する Image</summary>
         [SerializeField]
-        private Image _pointerImage;
+        private GameObject _pointer;
 
         // --------------------------------------------------
         // ボタン
@@ -119,12 +133,16 @@ namespace UISystem.Presentation
         private Color _focusOffColor = Color.gray;
 
         // --------------------------------------------------
-        // オプションキャンバス初期選択ボタン
+        // 初期選択ボタン
         // --------------------------------------------------
-        [Header("オプションキャンバス初期選択ボタン")]
+        [Header("初期選択ボタン")]
+        /// <summary>スタートキャンバス初期選択ボタン</summary>
+        [SerializeField]
+        private BaseButtonEvent _initialSelectedStartCanvasButton;
+
         /// <summary>オプションキャンバス初期選択ボタン</summary>
         [SerializeField]
-        private Button _initialSelectedOptionButton;
+        private BaseButtonEvent _initialSelectedOptionCanvasButton;
 
         // --------------------------------------------------
         // オプション選択インデックス
@@ -158,7 +176,7 @@ namespace UISystem.Presentation
         // アニメーター
         // --------------------------------------------------
         [Header("アニメーター")]
-        /// <summary>ボードの GameObject ルート</summary>
+        /// <summary>ボードの GameObject ルートアニメーター</summary>
         [SerializeField]
         private Animator _boardAnimator;
 
@@ -166,12 +184,18 @@ namespace UISystem.Presentation
         // コンポーネント参照
         // ======================================================
 
+        // --------------------------------------------------
+        // UI 管理
+        // --------------------------------------------------
         /// <summary>ビュー</summary>
         private TitleUIView _titleUIView;
 
         /// <summary>イベントを仲介するクラス</summary>
         private TitleUIEventRouter _eventRouter;
 
+        // --------------------------------------------------
+        // ボタンイベント
+        // --------------------------------------------------
         /// <summary>スタートボタンイベント</summary>
         private NormalButtonEvent _startButtonEvent;
 
@@ -208,9 +232,9 @@ namespace UISystem.Presentation
         /// <summary>現在ホバー選択中のボタンイベント</summary>
         private BaseButtonEvent _currentHoveredButtonEvent;
 
-        /// <summary>現在選択中のオプションボタンイベント</summary>
-        private OptionButtonEvent _currentSelectedOptionButtonEvent;
-
+        // --------------------------------------------------
+        // オプション選択制御
+        // --------------------------------------------------
         /// <summary>GridLayoutGroup 内の Button 収集クラス</summary>
         private readonly GridLayoutGroupButtonCollector _gridLayoutGroupButtonCollector =
             new GridLayoutGroupButtonCollector();
@@ -233,6 +257,9 @@ namespace UISystem.Presentation
         /// <summary>ポインター速度ボタン選択状態制御クラス</summary>
         private ButtonSelectionController _pointerSpeedSelectionController;
 
+        // --------------------------------------------------
+        // システム参照
+        // --------------------------------------------------
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -245,6 +272,12 @@ namespace UISystem.Presentation
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
+
+        /// <summary>ゲームパッド入力状態フラグ</summary>
+        private bool _isGamePadInput = false;
+
+        /// <summary>現在アクティブなキャンバス</summary>
+        private ActiveCanvasType _activeCanvasType = ActiveCanvasType.None;
 
         /// <summary>プレイヤー人数ボタン配列</summary>
         private Button[] _playerCountButtonArray;
@@ -264,6 +297,13 @@ namespace UISystem.Presentation
         /// <summary>ポインター速度ボタン配列</summary>
         private Button[] _pointerSpeedButtonArray;
 
+        /// <summary>ポインターアニメーター</summary>
+        private Animator _pointerAnimator;
+
+        // ======================================================
+        // 辞書
+        // ======================================================
+
         /// <summary>
         /// OptionButtonEvent と選択制御クラスの対応辞書
         /// </summary>
@@ -276,6 +316,9 @@ namespace UISystem.Presentation
 
         /// <summary>BoardSize パラメータ名</summary>
         private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
+
+        /// <summary>IsTarget パラメータ名</summary>
+        private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
 
         // ======================================================
         // UniRx 変数
@@ -319,11 +362,13 @@ namespace UISystem.Presentation
 
             if (_inputManager == null ||
                 _eventSystem == null ||
+                _pointer == null ||
                 _startButton == null ||
                 _optionButton == null ||
                 _optionCancelButton == null ||
                 _optionDecideButton == null ||
-                _initialSelectedOptionButton == null)
+                _initialSelectedStartCanvasButton == null ||
+                _initialSelectedOptionCanvasButton == null)
             {
                 Debug.LogError("[TitleUIPresenter] クラスの初期化に失敗しました。");
 
@@ -338,12 +383,18 @@ namespace UISystem.Presentation
 
             // ビュー生成
             _titleUIView = new TitleUIView(
-                _pointerImage,
+                _pointer,
                 _selectOnColor,
                 _selectOffColor,
                 _focusOnColor,
                 _focusOffColor
             );
+
+            // アニメーター取得
+            _pointerAnimator = _pointer.GetComponent<Animator>();
+
+            // スタートキャンバスを表示
+            ShowStartCanvas();
 
             // ルーターイベント購読
             BindRouterEvents();
@@ -353,10 +404,6 @@ namespace UISystem.Presentation
 
             // オプションボタン初期化
             InitializeOptionButtons();
-
-            // 初期選択ボタンイベント設定
-            _currentSelectedButtonEvent = _startButtonEvent;
-            _currentSelectedOptionButtonEvent = _initialSelectedOptionButton.GetComponent<OptionButtonEvent>();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -438,21 +485,31 @@ namespace UISystem.Presentation
                 .DistinctUntilChanged()
                 .Subscribe(isGamePadInput =>
                 {
-                    // 最後に選択したボタンが存在しない場合
-                    if (_currentSelectedButtonEvent == null)
-                    {
-                        return;
-                    }
+                    _isGamePadInput = isGamePadInput;
 
+                    // --------------------------------------------------
                     // ゲームパッド入力時
+                    // --------------------------------------------------
                     if (isGamePadInput)
                     {
+                        // 最後に選択したボタンが存在しない場合
+                        if (_currentSelectedButtonEvent == null)
+                        {
+                            // ナビゲーション不能になるため初期選択を設定
+                            SelectInitialButtonByCanvas();
+
+                            return;
+                        }
+
                         // 最後に選択したボタンを再選択
                         OnSelectButton(_currentSelectedButtonEvent);
 
                         return;
                     }
 
+                    // --------------------------------------------------
+                    // 仮想パッド入力時
+                    // --------------------------------------------------
                     // ホバー中ボタンが存在する場合
                     if (_currentHoveredButtonEvent != null)
                     {
@@ -462,8 +519,12 @@ namespace UISystem.Presentation
                         return;
                     }
 
-                    // 選択解除
-                    OnUnSelectButton(_currentSelectedButtonEvent);
+                    // 最後に選択したボタンが存在する場合
+                    if (_currentSelectedButtonEvent != null)
+                    {
+                        // 選択解除
+                        OnUnSelectButton();
+                    }
                 });
         }
 
@@ -542,13 +603,13 @@ namespace UISystem.Presentation
                 .AddTo(_routerSubscriptions);
 
             // 選択解除通知
-            // ホバー選択時に実行される
+            // ホバー解除時に実行される
             _eventRouter.OnUnSelect
                 .Subscribe(buttonEvent =>
                 {
                     _currentHoveredButtonEvent = null;
 
-                    OnUnSelectButton(buttonEvent);
+                    OnUnSelectButton();
                 })
                 .AddTo(_routerSubscriptions);
         }
@@ -563,6 +624,31 @@ namespace UISystem.Presentation
 
             _routerSubscriptions?.Dispose();
             _routerSubscriptions = null;
+        }
+
+        // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
+        /// <summary>
+        /// スタートキャンバスを表示する
+        /// </summary>
+        private void ShowStartCanvas()
+        {
+            _startCanvas.SetActive(true);
+            _optionCanvas.SetActive(false);
+
+            _activeCanvasType = ActiveCanvasType.Start;
+        }
+
+        /// <summary>
+        /// オプションキャンバスを表示する
+        /// </summary>
+        private void ShowOptionCanvas()
+        {
+            _startCanvas.SetActive(false);
+            _optionCanvas.SetActive(true);
+
+            _activeCanvasType = ActiveCanvasType.Option;
         }
 
         // --------------------------------------------------
@@ -703,6 +789,30 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// 現在アクティブなキャンバスに応じて初期選択ボタンを選択する
+        /// </summary>
+        private void SelectInitialButtonByCanvas()
+        {
+            // 現在アクティブなキャンバス種別に応じて分岐
+            switch (_activeCanvasType)
+            {
+                // スタートキャンバス時
+                case ActiveCanvasType.Start:
+                    // スタートキャンバス初期選択ボタンを選択
+                    OnSelectButton(_initialSelectedStartCanvasButton);
+
+                    break;
+
+                // オプションキャンバス時
+                case ActiveCanvasType.Option:
+                    // オプションキャンバス初期選択ボタンを選択
+                    OnSelectButton(_initialSelectedOptionCanvasButton);
+
+                    break;
+            }
+        }
+
+        /// <summary>
         /// ButtonEvent の入力イベント購読を解除する
         /// </summary>
         private void UnbindButtonEvents()
@@ -758,10 +868,27 @@ namespace UISystem.Presentation
             // オプションボタン押下時
             if (buttonEvent == _optionButtonEvent)
             {
-                if (_currentSelectedOptionButtonEvent != null)
+                // オプションキャンバス表示
+                ShowOptionCanvas();
+
+                // ゲームパッド入力の場合
+                if (_isGamePadInput)
                 {
-                    // 選択状態を更新
-                    OnSelectButton(_currentSelectedOptionButtonEvent);
+                    // 最後に選択したボタンが OptionButton の場合
+                    if (_currentSelectedButtonEvent is OptionButtonEvent optionButton)
+                    {
+                        // 選択状態を更新
+                        OnSelectButton(optionButton);
+                    }
+                    else
+                    {
+                        // ナビゲーション不能になるため初期選択を設定
+                        SelectInitialButtonByCanvas();
+                    }
+                }
+                else
+                {
+                    OnUnSelectButton();
                 }
 
                 // ボタン選択状態リセット
@@ -776,8 +903,19 @@ namespace UISystem.Presentation
             // オプションキャンセル押下時
             if (buttonEvent == _optionCancelButtonEvent)
             {
-                // 選択状態を更新
-                OnSelectButton(_optionButtonEvent);
+                // スタートキャンバス表示
+                ShowStartCanvas();
+
+                // ゲームパッド入力の場合
+                if (_isGamePadInput)
+                {
+                    // 選択状態を更新
+                    OnSelectButton(_optionButtonEvent);
+                }
+                else
+                {
+                    OnUnSelectButton();
+                }
 
                 return;
             }
@@ -785,8 +923,8 @@ namespace UISystem.Presentation
             // オプション決定押下時
             if (buttonEvent == _optionDecideButtonEvent)
             {
-                // 選択状態を更新
-                OnSelectButton(_startButtonEvent);
+                // スタートキャンバス表示
+                ShowStartCanvas();
 
                 // オプション選択インデックスを更新
                 _playerCountSelectedIndex = _playerCountSelectionController.GetCurrentSelectedIndex();
@@ -795,6 +933,17 @@ namespace UISystem.Presentation
                 _connectCountSelectedIndex = _connectCountSelectionController.GetCurrentSelectedIndex();
                 _cameraRotationSpeedSelectedIndex = _cameraRotationSpeedSelectionController.GetCurrentSelectedIndex();
                 _pointerSpeedSelectedIndex = _pointerSpeedSelectionController.GetCurrentSelectedIndex();
+
+                // ゲームパッド入力の場合
+                if (_isGamePadInput)
+                {
+                    // 選択状態を更新
+                    OnSelectButton(_startButtonEvent);
+                }
+                else
+                {
+                    OnUnSelectButton();
+                }
             }
         }
 
@@ -858,6 +1007,9 @@ namespace UISystem.Presentation
 
             // フォーカス通知
             _onFocusPosition.OnNext(screenPosition);
+
+            // ターゲット検出状態を有効化
+            _pointerAnimator?.SetBool(IS_TARGET_HASH, true);
         }
 
         /// <summary>
@@ -873,6 +1025,9 @@ namespace UISystem.Presentation
             
             // フォーカス状態非表示
             _titleUIView.SetFocus(buttonEvent.Button, false);
+
+            // ターゲット検出状態を解除
+            _pointerAnimator?.SetBool(IS_TARGET_HASH, false);
         }
 
         /// <summary>
@@ -886,34 +1041,18 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // 選択状態を更新
-            if (!SetSelectedGameObject(buttonEvent.gameObject))
-            {
-                return;
-            }
-
             // 選択対象のボタンイベントをキャッシュ
             _currentSelectedButtonEvent = buttonEvent;
 
-            // 対象ボタンイベントがオプションボタンの場合
-            if (buttonEvent is OptionButtonEvent optionButton)
-            {
-                // 現在のキャンバス選択ボタンイベントを更新
-                _currentSelectedOptionButtonEvent = optionButton;
-            }
+            // 選択状態を更新
+            SetSelectedGameObject(buttonEvent.gameObject);
         }
 
         /// <summary>
         /// EventSystem の選択状態を解除する
         /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnUnSelectButton(BaseButtonEvent buttonEvent)
+        private void OnUnSelectButton()
         {
-            if (buttonEvent == null)
-            {
-                return;
-            }
-
             // 選択解除
             _eventSystem.SetSelectedGameObject(null);
         }
@@ -922,12 +1061,11 @@ namespace UISystem.Presentation
         /// EventSystem の選択状態を更新する
         /// </summary>
         /// <param name="target">選択対象</param>
-        /// <returns>true: 選択状態更新 / false: 更新なし</returns>
-        private bool SetSelectedGameObject(in GameObject target)
+        private void SetSelectedGameObject(in GameObject target)
         {
             if (target == null)
             {
-                return false;
+                return;
             }
 
             // 現在選択中のオブジェクト取得
@@ -936,13 +1074,11 @@ namespace UISystem.Presentation
             // 同一オブジェクトが選択されている場合
             if (currentSelectedObject == target)
             {
-                return false;
+                return;
             }
 
             // 選択状態を更新
             _eventSystem.SetSelectedGameObject(target);
-
-            return true;
         }
 
         // ======================================================
@@ -955,24 +1091,6 @@ namespace UISystem.Presentation
         public override void RequestSceneChange()
         {
             base.RequestSceneChange();
-        }
-
-        /// <summary>
-        /// スタートキャンバスを表示する
-        /// </summary>
-        public void ShowStartCanvas()
-        {
-            _startCanvas.SetActive(true);
-            _optionCanvas.SetActive(false);
-        }
-
-        /// <summary>
-        /// オプションキャンバスを表示する
-        /// </summary>
-        public void ShowOptionCanvas()
-        {
-            _startCanvas.SetActive(false);
-            _optionCanvas.SetActive(true);
         }
 
         // ======================================================
