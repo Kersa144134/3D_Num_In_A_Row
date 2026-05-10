@@ -298,8 +298,8 @@ namespace GameSystem.Presentation
         private void OnDestroy()
         {
             // ƒCƒxƒ“ƒgw“Ç‰ğœ
-            _disposables.Dispose();
-            _eventRouter.Dispose();
+            _disposables?.Dispose();
+            _eventRouter?.Dispose();
         }
 
         // ======================================================

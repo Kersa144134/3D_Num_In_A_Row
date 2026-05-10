@@ -20,15 +20,39 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 public class Fade : MonoBehaviour
 {
-	IFade fade;
+    IFade fade;
 
     [SerializeField, Range(0f, 1f)]
     private float cutoutRange;
+
+    // ======================================================
+    // --------------------------------------------------
+    // 追加コード
+    // 作成者   : 高橋一翔
+    // --------------------------------------------------
+    /// <summary>シングルトンインスタンス</summary>
+    public static Fade Instance { get; private set; }
+
+	private void Awake()
+    {
+        // --------------------------------------------------
+        // インスタンス生成
+        // --------------------------------------------------
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+    // ======================================================
 
     void Start ()
 	{

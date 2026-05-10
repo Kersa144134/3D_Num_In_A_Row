@@ -272,6 +272,7 @@ namespace GameSystem.Presentation
                 _titleUIPresenter.BindInputLockStream(
                     _currentPhase.Select(phase => phase != PhaseType.Title)
                 );
+                _titleUIPresenter.BindGamePadInputStream(_onGamepadUsed);
 
                 _titleUIPresenter.OnFocusPosition
                     .Subscribe(e =>
@@ -340,6 +341,7 @@ namespace GameSystem.Presentation
             if (_titleUIPresenter != null)
             {
                 _titleUIPresenter.UnbindInputLockStream();
+                _titleUIPresenter.UnbindGamePadInputStream();
             }
             if (_mainUIPresenter != null)
             {
