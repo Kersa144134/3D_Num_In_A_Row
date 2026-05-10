@@ -28,9 +28,6 @@ namespace UISystem.Application
         // プロパティ
         // ======================================================
 
-        /// <summary>Button 配列</summary>
-        public Button[] ButtonArray => _buttonArray;
-
         /// <summary>選択状態配列</summary>
         public bool[] SelectStateArray => _selectStateArray;
 
@@ -44,7 +41,6 @@ namespace UISystem.Application
         /// <param name="buttonArray">Button 配列</param>
         public ButtonSelectionController(in Button[] buttonArray)
         {
-            // Button 配列を保持
             _buttonArray = buttonArray;
 
             // 配列数に応じて選択状態配列を生成
