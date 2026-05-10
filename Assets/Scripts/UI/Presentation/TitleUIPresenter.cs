@@ -6,17 +6,18 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using InputSystem.Presentation;
+using OptionSystem.Domain;
+using OptionSystem.Presentation;
+using PhaseSystem.Domain;
 using System;
 using System.Collections.Generic;
+using UISystem.Application;
+using UISystem.Infrastructure;
+using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UniRx;
-using InputSystem.Presentation;
-using OptionSystem.Domain;
-using PhaseSystem.Domain;
-using UISystem.Application;
-using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -208,29 +209,11 @@ namespace UISystem.Presentation
         /// <summary>オプション決定ボタンイベント</summary>
         private NormalButtonEvent _optionDecideButtonEvent;
 
-        /// <summary>プレイヤー人数ボタンイベント配列</summary>
-        private OptionButtonEvent[] _playerCountButtonEvents;
-
-        /// <summary>制限時間ボタンイベント配列</summary>
-        private OptionButtonEvent[] _limitTimeButtonEvents;
-
-        /// <summary>盤面サイズボタンイベント配列</summary>
-        private OptionButtonEvent[] _boardSizeButtonEvents;
-
-        /// <summary>ライン成立条件ボタンイベント配列</summary>
-        private OptionButtonEvent[] _connectCountButtonEvents;
-
-        /// <summary>カメラ回転速度ボタンイベント配列</summary>
-        private OptionButtonEvent[] _cameraRotationSpeedButtonEvents;
-
-        /// <summary>ポインター速度ボタンイベント配列</summary>
-        private OptionButtonEvent[] _pointerSpeedButtonEvents;
-
         /// <summary>最後に選択したボタンイベント</summary>
         private BaseButtonEvent _lastSelectedButtonEvent;
 
-        /// <summary>現在ホバー選択中のボタンイベント</summary>
-        private BaseButtonEvent _currentHoveredButtonEvent;
+        /// <summary>最後にホバー選択中のボタンイベント</summary>
+        private BaseButtonEvent _lastHoveredButtonEvent;
 
         // --------------------------------------------------
         // オプション選択制御
@@ -239,32 +222,17 @@ namespace UISystem.Presentation
         private readonly GridLayoutGroupButtonCollector _gridLayoutGroupButtonCollector =
             new GridLayoutGroupButtonCollector();
 
-        /// <summary>プレイヤー人数ボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _playerCountSelectionController;
-
-        /// <summary>制限時間ボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _limitTimeSelectionController;
-
-        /// <summary>盤面サイズボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _boardSizeSelectionController;
-
-        /// <summary>ライン成立条件ボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _connectCountSelectionController;
-
-        /// <summary>カメラ回転速度ボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _cameraRotationSpeedSelectionController;
-
-        /// <summary>ポインター速度ボタン選択状態制御クラス</summary>
-        private ButtonSelectionController _pointerSpeedSelectionController;
-
         // --------------------------------------------------
         // システム参照
         // --------------------------------------------------
-        /// <summary>InputManager キャッシュ</summary>
-        private InputManager _inputManager;
-
         /// <summary>EventSystem キャッシュ</summary>
         private EventSystem _eventSystem;
+
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
+
+        /// <summary>InputManager キャッシュ</summary>
+        private InputManager _inputManager;
 
         // ======================================================
         // フィールド
@@ -279,24 +247,6 @@ namespace UISystem.Presentation
         /// <summary>現在アクティブなキャンバス</summary>
         private ActiveCanvasType _activeCanvasType = ActiveCanvasType.None;
 
-        /// <summary>プレイヤー人数ボタン配列</summary>
-        private Button[] _playerCountButtonArray;
-
-        /// <summary>制限時間ボタン配列</summary>
-        private Button[] _limitTimeButtonArray;
-
-        /// <summary>盤面サイズボタン配列</summary>
-        private Button[] _boardSizeButtonArray;
-
-        /// <summary>ライン成立条件ボタン配列</summary>
-        private Button[] _connectCountButtonArray;
-
-        /// <summary>カメラ回転速度ボタン配列</summary>
-        private Button[] _cameraRotationSpeedButtonArray;
-
-        /// <summary>ポインター速度ボタン配列</summary>
-        private Button[] _pointerSpeedButtonArray;
-
         /// <summary>ポインターアニメーター</summary>
         private Animator _pointerAnimator;
 
@@ -305,10 +255,16 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// OptionButtonEvent と選択制御クラスの対応辞書
+        /// オプション UI バインダー辞書
         /// </summary>
-        private readonly Dictionary<OptionButtonEvent, ButtonSelectionController>
-            _optionSelectionControllerMap = new Dictionary<OptionButtonEvent, ButtonSelectionController>();
+        private readonly Dictionary<OptionType, OptionButtonBinder> _optionBinders
+            = new Dictionary<OptionType, OptionButtonBinder>();
+
+        /// <summary>
+        /// オプション選択インデックステーブル
+        /// </summary>
+        private OptionSelectionIndexTable _optionIndexTable
+            = new OptionSelectionIndexTable();
 
         // ======================================================
         // 定数
@@ -357,11 +313,13 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
-            _inputManager = InputManager.Instance;
             _eventSystem = EventSystem.current;
+            _gameOptionManager = GameOptionManager.Instance;
+            _inputManager = InputManager.Instance;
 
-            if (_inputManager == null ||
-                _eventSystem == null ||
+            if (_eventSystem == null ||
+                _gameOptionManager == null ||
+                _inputManager == null ||
                 _pointer == null ||
                 _startButton == null ||
                 _optionButton == null ||
@@ -392,6 +350,14 @@ namespace UISystem.Presentation
 
             // アニメーター取得
             _pointerAnimator = _pointer.GetComponent<Animator>();
+
+            // オプション選択インデックス初期化
+            _optionIndexTable.Initialize(OptionType.PlayerCount, _playerCountSelectedIndex);
+            _optionIndexTable.Initialize(OptionType.LimitTime, _limitTimeSelectedIndex);
+            _optionIndexTable.Initialize(OptionType.BoardSize, _boardSizeSelectedIndex);
+            _optionIndexTable.Initialize(OptionType.ConnectCount, _connectCountSelectedIndex);
+            _optionIndexTable.Initialize(OptionType.CameraRotationSpeed, _cameraRotationSpeedSelectedIndex);
+            _optionIndexTable.Initialize(OptionType.PointerSpeed, _pointerSpeedSelectedIndex);
 
             // スタートキャンバスを表示
             ShowStartCanvas();
@@ -503,10 +469,10 @@ namespace UISystem.Presentation
                     // 仮想パッド入力時
                     // --------------------------------------------------
                     // ホバー中ボタンが存在する場合
-                    if (_currentHoveredButtonEvent != null)
+                    if (_lastHoveredButtonEvent != null)
                     {
                         // ホバー対象を選択
-                        OnSelectButton(_currentHoveredButtonEvent);
+                        OnSelectButton(_lastHoveredButtonEvent);
 
                         return;
                     }
@@ -584,7 +550,7 @@ namespace UISystem.Presentation
             _eventRouter.OnSelect
                 .Subscribe(buttonEvent =>
                 {
-                    _currentHoveredButtonEvent = buttonEvent;
+                    _lastHoveredButtonEvent = buttonEvent;
                     
                     OnSelectButton(buttonEvent);
                 })
@@ -595,7 +561,7 @@ namespace UISystem.Presentation
             _eventRouter.OnUnSelect
                 .Subscribe(buttonEvent =>
                 {
-                    _currentHoveredButtonEvent = null;
+                    _lastHoveredButtonEvent = null;
 
                     OnUnSelectButton();
                 })
@@ -665,139 +631,49 @@ namespace UISystem.Presentation
         /// </summary>
         private void InitializeOptionButtons()
         {
-            // Button 配列取得
-            _playerCountButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_playerCountButtons);
-            _limitTimeButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_limitTimeButtons);
-            _boardSizeButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_boardSizeButtons);
-            _connectCountButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_connectCountButtons);
-            _cameraRotationSpeedButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_cameraRotationSpeedButtons);
-            _pointerSpeedButtonArray = _gridLayoutGroupButtonCollector.GetButtons(_pointerSpeedButtons);
-
-            // OptionButtonEvent 配列取得
-            _playerCountButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_playerCountButtons);
-            _limitTimeButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_limitTimeButtons);
-            _boardSizeButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_boardSizeButtons);
-            _connectCountButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_connectCountButtons);
-            _cameraRotationSpeedButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_cameraRotationSpeedButtons);
-            _pointerSpeedButtonEvents = _gridLayoutGroupButtonCollector.GetOptionButtons(_pointerSpeedButtons);
-
-            // SelectionController 生成
-            _playerCountSelectionController = new ButtonSelectionController(_playerCountButtonArray);
-            _limitTimeSelectionController = new ButtonSelectionController(_limitTimeButtonArray);
-            _boardSizeSelectionController = new ButtonSelectionController(_boardSizeButtonArray);
-            _connectCountSelectionController = new ButtonSelectionController(_connectCountButtonArray);
-            _cameraRotationSpeedSelectionController = new ButtonSelectionController(_cameraRotationSpeedButtonArray);
-            _pointerSpeedSelectionController = new ButtonSelectionController(_pointerSpeedButtonArray);
-
-            // 辞書構築
-            RegisterSelectionControllerMap(_playerCountButtonEvents, _playerCountSelectionController);
-            RegisterSelectionControllerMap(_limitTimeButtonEvents, _limitTimeSelectionController);
-            RegisterSelectionControllerMap(_boardSizeButtonEvents, _boardSizeSelectionController);
-            RegisterSelectionControllerMap(_connectCountButtonEvents, _connectCountSelectionController);
-            RegisterSelectionControllerMap(_cameraRotationSpeedButtonEvents, _cameraRotationSpeedSelectionController);
-            RegisterSelectionControllerMap(_pointerSpeedButtonEvents, _pointerSpeedSelectionController);
-
-            // 選択状態を設定
-            ApplySelectedIndexToControllers();
-
-            // 選択状態ビュー更新
-            ApplyAllButtonSelectionState();
+            // バインダー生成
+            CreateBinder(OptionType.PlayerCount, _playerCountButtons);
+            CreateBinder(OptionType.LimitTime, _limitTimeButtons);
+            CreateBinder(OptionType.BoardSize, _boardSizeButtons);
+            CreateBinder(OptionType.ConnectCount, _connectCountButtons);
+            CreateBinder(OptionType.CameraRotationSpeed, _cameraRotationSpeedButtons);
+            CreateBinder(OptionType.PointerSpeed, _pointerSpeedButtons);
 
             // イベント購読
-            _eventRouter.RegisterOptionButtons(_playerCountButtonEvents);
-            _eventRouter.RegisterOptionButtons(_limitTimeButtonEvents);
-            _eventRouter.RegisterOptionButtons(_boardSizeButtonEvents);
-            _eventRouter.RegisterOptionButtons(_connectCountButtonEvents);
-            _eventRouter.RegisterOptionButtons(_cameraRotationSpeedButtonEvents);
-            _eventRouter.RegisterOptionButtons(_pointerSpeedButtonEvents);
-        }
-
-        /// <summary>
-        /// OptionButtonEvent と選択制御クラスの対応を登録する
-        /// </summary>
-        /// <param name="buttonEvents">対象イベント配列</param>
-        /// <param name="controller">選択制御クラス</param>
-        private void RegisterSelectionControllerMap(
-            in OptionButtonEvent[] buttonEvents,
-            in ButtonSelectionController controller)
-        {
-            if (buttonEvents == null || controller == null)
+            foreach (OptionButtonBinder binder in _optionBinders.Values)
             {
-                return;
-            }
-
-            foreach (OptionButtonEvent buttonEvent in buttonEvents)
-            {
-                if (buttonEvent == null)
-                {
-                    continue;
-                }
-
-                // 対応辞書へ登録
-                _optionSelectionControllerMap[buttonEvent] = controller;
+                _eventRouter.RegisterOptionButtons(binder.Events);
             }
         }
 
         /// <summary>
-        /// オプション選択インデックスを選択制御クラスへ反映する
+        /// バインダー生成
         /// </summary>
-        private void ApplySelectedIndexToControllers()
+        private void CreateBinder(in OptionType type, in GridLayoutGroup group)
         {
-            _playerCountSelectionController.SelectByIndex(_playerCountSelectedIndex);
-            _limitTimeSelectionController.SelectByIndex(_limitTimeSelectedIndex);
-            _boardSizeSelectionController.SelectByIndex(_boardSizeSelectedIndex);
-            _connectCountSelectionController.SelectByIndex(_connectCountSelectedIndex);
-            _cameraRotationSpeedSelectionController.SelectByIndex(_cameraRotationSpeedSelectedIndex);
-            _pointerSpeedSelectionController.SelectByIndex(_pointerSpeedSelectedIndex);
-        }
+            // ボタン取得
+            Button[] buttons = _gridLayoutGroupButtonCollector.GetButtons(group);
 
-        /// <summary>
-        /// 全ボタン選択状態をビューへ反映する
-        /// </summary>
-        private void ApplyAllButtonSelectionState()
-        {
-            _titleUIView.ApplyButtonSelectionState(
-                _playerCountSelectionController.ButtonArray,
-                _playerCountSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _limitTimeSelectionController.ButtonArray,
-                _limitTimeSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _boardSizeSelectionController.ButtonArray,
-                _boardSizeSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _connectCountSelectionController.ButtonArray,
-                _connectCountSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _cameraRotationSpeedSelectionController.ButtonArray,
-                _cameraRotationSpeedSelectionController.SelectStateArray);
-            _titleUIView.ApplyButtonSelectionState(
-                _pointerSpeedSelectionController.ButtonArray,
-                _pointerSpeedSelectionController.SelectStateArray);
-        }
+            // イベント取得
+            OptionButtonEvent[] events = _gridLayoutGroupButtonCollector.GetOptionButtons(group);
 
-        /// <summary>
-        /// 現在アクティブなキャンバスに応じて初期選択ボタンを選択する
-        /// </summary>
-        private void SelectInitialButtonByCanvas()
-        {
-            // 現在アクティブなキャンバス種別に応じて分岐
-            switch (_activeCanvasType)
-            {
-                // スタートキャンバス時
-                case ActiveCanvasType.Start:
-                    // スタートキャンバス初期選択ボタンを選択
-                    OnSelectButton(_initialSelectedStartCanvasButton);
+            // 選択制御クラス生成
+            ButtonSelectionController controller = new ButtonSelectionController(buttons);
 
-                    break;
+            // 初期インデックス取得
+            int initialIndex = _optionIndexTable.Get(type);
 
-                // オプションキャンバス時
-                case ActiveCanvasType.Option:
-                    // オプションキャンバス初期選択ボタンを選択
-                    OnSelectButton(_initialSelectedOptionCanvasButton);
+            // バインダー生成
+            OptionButtonBinder binder = new OptionButtonBinder(
+                type,
+                buttons,
+                events,
+                controller,
+                initialIndex
+            );
 
-                    break;
-            }
+            // 登録
+            _optionBinders[type] = binder;
         }
 
         /// <summary>
@@ -829,6 +705,30 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// 現在アクティブなキャンバスに応じて初期選択ボタンを選択する
+        /// </summary>
+        private void SelectInitialButtonByCanvas()
+        {
+            // 現在アクティブなキャンバス種別に応じて分岐
+            switch (_activeCanvasType)
+            {
+                // スタートキャンバス時
+                case ActiveCanvasType.Start:
+                    // スタートキャンバス初期選択ボタンを選択
+                    OnSelectButton(_initialSelectedStartCanvasButton);
+
+                    break;
+
+                // オプションキャンバス時
+                case ActiveCanvasType.Option:
+                    // オプションキャンバス初期選択ボタンを選択
+                    OnSelectButton(_initialSelectedOptionCanvasButton);
+
+                    break;
+            }
+        }
+
+        /// <summary>
         /// ButtonEvent の入力イベント購読を解除する
         /// </summary>
         private void UnbindButtonEvents()
@@ -838,38 +738,6 @@ namespace UISystem.Presentation
             _optionButtonEvent?.Dispose();
             _optionCancelButtonEvent?.Dispose();
             _optionDecideButtonEvent?.Dispose();
-
-            // OptionButtonEvent
-            DisposeOptionButtonEvents(_playerCountButtonEvents);
-            DisposeOptionButtonEvents(_limitTimeButtonEvents);
-            DisposeOptionButtonEvents(_boardSizeButtonEvents);
-            DisposeOptionButtonEvents(_connectCountButtonEvents);
-            DisposeOptionButtonEvents(_cameraRotationSpeedButtonEvents);
-            DisposeOptionButtonEvents(_pointerSpeedButtonEvents);
-        }
-
-        /// <summary>
-        /// OptionButtonEvent 配列の入力イベント購読を解除する
-        /// </summary>
-        /// <param name="buttonEvents">対象 OptionButton イベント配列</param>
-        private void DisposeOptionButtonEvents(
-            in OptionButtonEvent[] buttonEvents)
-        {
-            if (buttonEvents == null)
-            {
-                return;
-            }
-
-            foreach (OptionButtonEvent buttonEvent in buttonEvents)
-            {
-                if (buttonEvent == null)
-                {
-                    continue;
-                }
-
-                // イベント購読解除
-                buttonEvent.Dispose();
-            }
         }
 
         // --------------------------------------------------
@@ -899,11 +767,25 @@ namespace UISystem.Presentation
                     RefreshSelectionState();
                 }
 
-                // ボタン選択状態リセット
-                ApplySelectedIndexToControllers();
+                // --------------------------------------------------
+                // オプション UI 状態リセット
+                // --------------------------------------------------
+                foreach (OptionButtonBinder binder in _optionBinders.Values)
+                {
+                    // バインダー種別に対応する初期インデックスを辞書から取得
+                    int index = _optionIndexTable.Get(binder.Type);
 
-                // 選択状態ビュー更新
-                ApplyAllButtonSelectionState();
+                    // インデックスを適用して選択状態を更新
+                    binder.SelectByIndex(index);
+
+                    // ビューへ選択状態を反映
+                    _titleUIView.ApplyButtonSelectionState(
+                        binder.Buttons,
+                        binder.SelectStateArray);
+                }
+
+                // ボード変更アニメーションを実行
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, _gameOptionManager.BoardSize);
 
                 return;
             }
@@ -917,6 +799,9 @@ namespace UISystem.Presentation
                 // 入力状態に応じて選択状態を更新
                 RefreshSelectionState(_optionButtonEvent);
 
+                // ボード変更アニメーションを実行
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
+
                 return;
             }
 
@@ -927,15 +812,20 @@ namespace UISystem.Presentation
                 ShowStartCanvas();
 
                 // オプション選択インデックスを更新
-                _playerCountSelectedIndex = _playerCountSelectionController.GetCurrentSelectedIndex();
-                _limitTimeSelectedIndex = _limitTimeSelectionController.GetCurrentSelectedIndex();
-                _boardSizeSelectedIndex = _boardSizeSelectionController.GetCurrentSelectedIndex();
-                _connectCountSelectedIndex = _connectCountSelectionController.GetCurrentSelectedIndex();
-                _cameraRotationSpeedSelectedIndex = _cameraRotationSpeedSelectionController.GetCurrentSelectedIndex();
-                _pointerSpeedSelectedIndex = _pointerSpeedSelectionController.GetCurrentSelectedIndex();
+                foreach (KeyValuePair<OptionType, OptionButtonBinder> binder in _optionBinders)
+                {
+                    // 現在の選択インデックスを取得
+                    int currentIndex = binder.Value.GetCurrentSelectedIndex();
+
+                    // テーブルへ反映
+                    _optionIndexTable.Set(binder.Key, currentIndex);
+                }
 
                 // 入力状態に応じて選択状態を更新
                 RefreshSelectionState(_startButtonEvent);
+
+                // ボード変更アニメーションを実行
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
             }
         }
 
@@ -950,28 +840,34 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // 対応 SelectionController 取得
-            if (!_optionSelectionControllerMap.TryGetValue(
-                buttonEvent, out ButtonSelectionController controller))
+            // 種別取得
+            OptionType type = buttonEvent.Data.Type;
+
+            // バインダー取得
+            if (!_optionBinders.TryGetValue(type, out OptionButtonBinder binder))
             {
                 return;
             }
 
-            if (controller == null)
-            {
-                return;
-            }
-
-            // 選択状態更新
-            controller.Select(buttonEvent.Button);
+            // ボタン選択処理
+            binder.SelectByButton(buttonEvent.Button);
 
             // 選択状態をビューへ反映
             _titleUIView.ApplyButtonSelectionState(
-                controller.ButtonArray,
-                controller.SelectStateArray);
+                binder.Buttons,
+                binder.SelectStateArray);
 
             // オプション更新通知
             _onUpdateGameOption.OnNext(buttonEvent.Data);
+
+            // ボード変更アニメーションを実行
+            if (type == OptionType.BoardSize)
+            {
+                // ボードサイズの値を取得してアニメーターへ反映
+                int boardSize = (int)buttonEvent.Data.BoardSizeType;
+
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, boardSize);
+            }
         }
 
         /// <summary>

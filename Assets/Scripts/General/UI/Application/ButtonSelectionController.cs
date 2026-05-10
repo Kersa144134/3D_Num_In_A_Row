@@ -56,15 +56,15 @@ namespace UISystem.Application
         // ======================================================
 
         /// <summary>
-        /// Button を選択状態へ変更する
+        /// 指定 Button を選択状態へ変更する
         /// </summary>
-        /// <param name="selectedButton">選択 Button</param>
-        public void Select(in Button selectedButton)
+        /// <param name="button">選択対象ボタン</param>
+        public void SelectByButton(in Button button)
         {
             for (int index = 0; index < _buttonArray.Length; index++)
             {
                 // 選択状態更新
-                _selectStateArray[index] = _buttonArray[index] == selectedButton;
+                _selectStateArray[index] = _buttonArray[index] == button;
             }
         }
 
