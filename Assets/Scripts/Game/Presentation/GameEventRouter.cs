@@ -125,9 +125,6 @@ namespace GameSystem.Presentation
         /// <summary>ゲーム開始入力用 Subject</summary>
         private readonly Subject<Unit> _onGameStartRequested = new Subject<Unit>();
 
-        /// <summary>ゲーム開始入力ストリーム</summary>
-        public IObservable<Unit> OnGameStartRequested => _onGameStartRequested;
-
         /// <summary>プレイヤー変更用 Subject</summary>
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();
 
