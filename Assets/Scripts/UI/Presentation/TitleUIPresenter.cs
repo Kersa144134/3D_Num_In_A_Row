@@ -6,18 +6,18 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using UniRx;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Presentation;
 using PhaseSystem.Domain;
-using System;
-using System.Collections.Generic;
 using UISystem.Application;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -275,6 +275,9 @@ namespace UISystem.Presentation
 
         /// <summary>IsTarget パラメータ名</summary>
         private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
+
+        /// <summary>3 x 3 ボードサイズ</summary>
+        private const int BOARD_SIZE_THREE = 3;
 
         // ======================================================
         // UniRx 変数
@@ -784,8 +787,14 @@ namespace UISystem.Presentation
                         binder.SelectStateArray);
                 }
 
+                // 盤面サイズ取得
+                int boardSize = _gameOptionManager.BoardSize;
+
+                // ConnectCount 制御
+                ApplyBoardSizeDependentConnectCount(boardSize);
+
                 // ボード変更アニメーションを実行
-                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, _gameOptionManager.BoardSize);
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, boardSize);
 
                 return;
             }
@@ -860,13 +869,51 @@ namespace UISystem.Presentation
             // オプション更新通知
             _onUpdateGameOption.OnNext(buttonEvent.Data);
 
-            // ボード変更アニメーションを実行
+            // ボードサイズが変更された場合
             if (type == OptionType.BoardSize)
             {
-                // ボードサイズの値を取得してアニメーターへ反映
                 int boardSize = (int)buttonEvent.Data.BoardSizeType;
 
+                // ConnectCount 制御
+                ApplyBoardSizeDependentConnectCount(boardSize);
+
+                // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, boardSize);
+            }
+        }
+
+        /// <summary>
+        /// ボードサイズに応じて ConnectCount の表示状態と初期選択を制御する
+        /// </summary>
+        private void ApplyBoardSizeDependentConnectCount(in int boardSize)
+        {
+            // ConnectCount バインダー取得
+            if (!_optionBinders.TryGetValue(OptionType.ConnectCount, out OptionButtonBinder connectCountBinder))
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 3 x 3 判定
+            // --------------------------------------------------
+            bool isThreeSize = (boardSize == BOARD_SIZE_THREE);
+
+            // 3 x 3 の場合は強制的に先頭を選択状態にする
+            if (isThreeSize)
+            {
+                // インデックス 0 を選択
+                connectCountBinder.SelectByIndex(0);
+
+                // ビューへ選択状態を反映
+                _titleUIView.ApplyButtonSelectionState(
+                    connectCountBinder.Buttons,
+                    connectCountBinder.SelectStateArray);
+            }
+
+            for (int i = 1; i < connectCountBinder.Buttons.Length; i++)
+            {
+                // 3 x 3 ならボタンオブジェクト非表示、それ以外なら表示
+                connectCountBinder.Buttons[i].gameObject.SetActive(!isThreeSize);
             }
         }
 

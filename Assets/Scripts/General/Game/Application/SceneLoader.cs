@@ -2,18 +2,20 @@
 // SceneLoader.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-28
-// 更新日時 : 2026-04-28
-// 概要     : UniTask を使用したシーン遷移処理
+// 更新日時 : 2026-05-11
+// 概要     : シーン遷移処理クラス
 // ======================================================
 
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Cysharp.Threading.Tasks;
+using UniRx;
 
 namespace GameSystem.Application
 {
     /// <summary>
-    /// シーン遷移を管理するローダークラス
+    /// シーン遷移を管理するクラス
     /// </summary>
     public sealed class SceneLoader
     {
@@ -21,48 +23,99 @@ namespace GameSystem.Application
         // 定数
         // ======================================================
 
-        /// <summary>ロード完了直前とみなす進捗値</summary>
+        /// <summary>
+        /// シーンロード完了判定の閾値
+        /// </summary>
         private const float LOAD_COMPLETE_THRESHOLD = 0.9f;
 
-        /// ======================================================
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>非同期ロード処理の実体</summary>
+        private AsyncOperation _currentLoadOperation;
+
+        /// <summary>直前のアクティブシーン</summary>
+        private Scene _previousScene;
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>ロード進捗イベント通知用 Subject</summary>
+        private readonly Subject<float> _onLoadProgressSubject = new Subject<float>();
+
+        /// <summary>ロード進捗通知</summary>
+        public IObservable<float> OnLoadProgress => _onLoadProgressSubject;
+
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
         /// <summary>
-        /// シーン遷移を非同期で実行する
+        /// シーンの非同期ロードを開始する
         /// </summary>
-        /// <param name="sceneName">遷移先シーン名</param>
-        public async UniTask ChangeSceneAsync(string sceneName)
+        /// <param name="sceneName">読み込むシーン名</param>
+        public async UniTask BeginLoadSceneAsync(string sceneName)
         {
             if (string.IsNullOrEmpty(sceneName))
             {
                 return;
             }
 
-            // 非同期シーンロードを開始
-            AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName);
+            // 現在のアクティブシーンを保存
+            Scene activeScene = SceneManager.GetActiveScene();
+            _previousScene = activeScene;
 
-            // シーンアクティベーションを手動制御にする
-            loadOperation.allowSceneActivation = false;
+            // 非同期ロード開始
+            _currentLoadOperation = SceneManager.LoadSceneAsync(sceneName);
+
+            // シーンアクティベーションを無効化
+            _currentLoadOperation.allowSceneActivation = false;
 
             // --------------------------------------------------
-            // ロード進捗監視
+            // ロード進捗監視ループ
             // --------------------------------------------------
-            // ロード完了直前まで待機
-            while (loadOperation.progress < LOAD_COMPLETE_THRESHOLD)
+            while (_currentLoadOperation.progress < LOAD_COMPLETE_THRESHOLD)
             {
-                // 1 フレーム待機
-                await UniTask.Yield();
+                // 現在の進捗を通知
+                _onLoadProgressSubject.OnNext(_currentLoadOperation.progress);
+
+                await UniTask.Yield(PlayerLoopTiming.Update);
             }
 
-            // --------------------------------------------------
-            // ロード完了後の待機ポイント
-            // --------------------------------------------------
-            // シーンのアクティベーションを許可する
-            loadOperation.allowSceneActivation = true;
+            // 最終進捗を通知
+            _onLoadProgressSubject.OnNext(LOAD_COMPLETE_THRESHOLD);
+        }
 
-            // シーンの完全読み込みまで待機する
-            await loadOperation.ToUniTask();
+        /// <summary>
+        /// ロード済みシーンをアクティブ化し、シーンを切り替える
+        /// </summary>
+        public async UniTask CommitSceneChangeAsync()
+        {
+            // ロードが開始されていない場合は処理なし
+            if (_currentLoadOperation == null)
+            {
+                return;
+            }
+
+            // シーンアクティベーション有効化
+            _currentLoadOperation.allowSceneActivation = true;
+
+            // 完了まで待機
+            await _currentLoadOperation.ToUniTask();
+
+            // --------------------------------------------------
+            // 前シーン破棄処理
+            // --------------------------------------------------
+            if (_previousScene.IsValid() && _previousScene.isLoaded)
+            {
+                await SceneManager.UnloadSceneAsync(_previousScene).ToUniTask();
+            }
+
+            // 状態リセット
+            _currentLoadOperation = null;
+            _previousScene = default;
         }
     }
 }

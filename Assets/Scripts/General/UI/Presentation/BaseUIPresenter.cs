@@ -6,11 +6,12 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
-using PhaseSystem.Domain;
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UniRx;
+using PhaseSystem.Domain;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -189,6 +190,11 @@ namespace UISystem.Presentation
         /// </summary>
         private BaseUIView _view;
 
+        /// <summary>
+        /// フェードシステム
+        /// </summary>
+        protected Fade _fade;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -203,12 +209,28 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>シーン遷移リクエスト通知用 Subject</summary>
-        private readonly Subject<Unit> _onSceneChangeRequested =
-            new Subject<Unit>();
-
+        private readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
 
         /// <summary>シーン遷移リクエスト通知ストリーム</summary>
         public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
+
+        /// <summary>フェードイン完了通知用 Subject</summary>
+        private readonly Subject<Unit> _onFadeInCompleted = new Subject<Unit>();
+
+        /// <summary>フェードイン完了通知ストリーム</summary>
+        public IObservable<Unit> OnFadeInCompletedStream => _onFadeInCompleted;
+
+        /// <summary>フェードアウト完了通知用 Subject</summary>
+        private readonly Subject<Unit> _onFadeOutCompleted = new Subject<Unit>();
+
+        /// <summary>フェードアウト完了通知ストリーム</summary>
+        public IObservable<Unit> OnFadeOutCompletedStream => _onFadeOutCompleted;
+
+        /// <summary>フェードイン購読</summary>
+        private IDisposable _fadeInSubscription;
+
+        /// <summary>フェードアウト購読</summary>
+        private IDisposable _fadeOutSubscription;
 
         // ======================================================
         // IUpdatable イベント
@@ -217,6 +239,8 @@ namespace UISystem.Presentation
         public void OnEnter()
         {
             _effectAnimator = GetComponent<Animator>();
+
+            _fade = Fade.Instance;
 
             _view = new BaseUIView(
                 _binarizationFeature,
@@ -299,9 +323,98 @@ namespace UISystem.Presentation
             _onSceneChangeRequested.OnNext(Unit.Default);
         }
 
+        /// <summary>
+        /// フェードイン開始イベントを購読する
+        /// </summary>
+        public void BindFadeInStream(IObservable<float> seconds)
+        {
+            // 多重購読防止
+            _fadeInSubscription?.Dispose();
+
+            _fadeInSubscription = seconds
+                .Subscribe(time =>
+                {
+                    StartCoroutine(FadeInRoutine(time));
+                });
+        }
+
+        /// <summary>
+        /// フェードアウト開始イベントを購読する
+        /// </summary>
+        public void BindFadeOutStream(IObservable<float> seconds)
+        {
+            // 多重購読防止
+            _fadeOutSubscription?.Dispose();
+
+            _fadeOutSubscription = seconds
+                .Subscribe(time =>
+                {
+                    StartCoroutine(FadeOutRoutine(time));
+                });
+        }
+
+        /// <summary>
+        /// フェードストリーム購読を解除する
+        /// </summary>
+        public void UnbindFadeStream()
+        {
+            _fadeInSubscription?.Dispose();
+            _fadeOutSubscription?.Dispose();
+            _fadeInSubscription = null;
+            _fadeOutSubscription = null;
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// フェードイン処理
+        /// </summary>
+        private IEnumerator FadeInRoutine(float time)
+        {
+            // 完了状態フラグ
+            bool isCompleted = false;
+
+            // フェード開始
+            _fade.FadeIn(time, () =>
+            {
+                isCompleted = true;
+            });
+
+            // 完了待機
+            while (isCompleted == false)
+            {
+                yield return null;
+            }
+
+            // 完了通知
+            _onFadeInCompleted.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// フェードアウト処理
+        /// </summary>
+        private IEnumerator FadeOutRoutine(float time)
+        {
+            // 完了状態フラグ
+            bool isCompleted = false;
+
+            // フェード開始
+            _fade.FadeOut(time, () =>
+            {
+                isCompleted = true;
+            });
+
+            // 完了待機
+            while (isCompleted == false)
+            {
+                yield return null;
+            }
+
+            // 完了通知
+            _onFadeOutCompleted.OnNext(Unit.Default);
+        }
 
         /// <summary>
         /// アニメーターをタイムスケール非依存に設定する

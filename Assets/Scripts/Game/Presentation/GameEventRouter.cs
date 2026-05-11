@@ -40,7 +40,7 @@ namespace GameSystem.Presentation
         private PhaseMachine _phaseMachine;
 
         /// <summary>GameOptionManager キャッシュ</summary>
-        private GameOptionManager _gameOptionManager;
+        private readonly GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private readonly InputManager _inputManager;
@@ -80,11 +80,17 @@ namespace GameSystem.Presentation
         /// <summary>入力用購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
-        /// <summary>シーン変更通知用 Subject</summary>
-        private readonly Subject<string> _onSceneChanged = new Subject<string>();
+        /// <summary>シーン遷移予約通知用 Subject</summary>
+        private readonly Subject<string> _onSceneChangeRequested = new Subject<string>();
 
-        /// <summary>フェーズ変更ストリーム</summary>
-        public IObservable<string> OnSceneChanged => _onSceneChanged;
+        /// <summary>シーン遷移予約ストリーム</summary>
+        public IObservable<string> OnSceneChangeRequested => _onSceneChangeRequested;
+
+        /// <summary>シーン遷移実行通知用 Subject</summary>
+        private readonly Subject<Unit> _onSceneChangeExecuted = new Subject<Unit>();
+
+        /// <summary>シーン遷移実行ストリーム</summary>
+        public IObservable<Unit> OnSceneChangeExecuted => _onSceneChangeExecuted;
 
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
@@ -92,6 +98,7 @@ namespace GameSystem.Presentation
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
+        /// <summary>スコア更新用 Subject</summary>
         private readonly Subject<ScoreEvent> _onScoreUpdated = new Subject<ScoreEvent>();
 
         /// <summary>入力マッピング変更用 Subject</summary>
@@ -102,6 +109,24 @@ namespace GameSystem.Presentation
 
         /// <summary>ゲームパッド検知用 Subject</summary>
         private readonly Subject<bool> _onGamepadUsed = new Subject<bool>();
+
+        /// <summary>画面フェードイン開始通知用 Subject</summary>
+        private readonly Subject<float> _fadeInTrigger = new Subject<float>();
+
+        /// <summary>画面フェードアウト開始通知用 Subject</summary>
+        private readonly Subject<float> _fadeOutTrigger = new Subject<float>();
+
+        /// <summary>画面フェード完了通知用 Subject</summary>
+        private readonly Subject<Unit> _onFadeCompleted = new Subject<Unit>();
+
+        /// <summary>画面フェード完了ストリーム</summary>
+        public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
+
+        /// <summary>ゲーム開始入力用 Subject</summary>
+        private readonly Subject<Unit> _onGameStartRequested = new Subject<Unit>();
+
+        /// <summary>ゲーム開始入力ストリーム</summary>
+        public IObservable<Unit> OnGameStartRequested => _onGameStartRequested;
 
         /// <summary>プレイヤー変更用 Subject</summary>
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();
@@ -114,6 +139,18 @@ namespace GameSystem.Presentation
 
         /// <summary>回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
+
+        /// <summary>シーンロード用購読管理</summary>
+        private IDisposable _sceneLoadSubscription;
+
+        /// <summary>シーンロード準備開始購読</summary>
+        private IDisposable _loadPrepareStartSubscription;
+
+        /// <summary>シーンロード準備完了購読</summary>
+        private IDisposable _loadPrepareEndSubscription;
+
+        /// <summary>シーン変更用購読管理</summary>
+        private IDisposable _sceneChangeSubscription;
 
         /// <summary>現在フェーズストリーム参照</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
@@ -220,7 +257,7 @@ namespace GameSystem.Presentation
 
             // アクティブコントローラー変更
             _inputManager.ActiveDeviceType
-                .Subscribe(e => HandleActiveControllerChanged(e))
+                .Subscribe(e => NotifyActiveControllerChanged(e))
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -285,9 +322,21 @@ namespace GameSystem.Presentation
                     .Subscribe(e => HandleGameOptionUpdated(e))
                     .AddTo(_disposables);
 
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _titleUIPresenter.BindFadeInStream(_fadeInTrigger);
+                _titleUIPresenter.BindFadeOutStream(_fadeOutTrigger);
+
                 _titleUIPresenter.OnSceneChangeRequested
-                .Subscribe(_ => NotifySceneChanged())
-                .AddTo(_disposables);
+                    .Subscribe(_ => NotifySceneTChangeRequested())
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnFadeInCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnFadeOutCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
             }
 
             if (_mainUIPresenter != null)
@@ -305,8 +354,20 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _cameraPresenter.SwitchProjection(e))
                     .AddTo(_disposables);
 
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _mainUIPresenter.BindFadeInStream(_fadeInTrigger);
+                _mainUIPresenter.BindFadeOutStream(_fadeOutTrigger);
+
                 _mainUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneChanged())
+                    .Subscribe(_ => NotifySceneTChangeRequested())
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnFadeInCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnFadeOutCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
             }
         }
@@ -342,6 +403,11 @@ namespace GameSystem.Presentation
             {
                 _titleUIPresenter.UnbindInputLockStream();
                 _titleUIPresenter.UnbindGamePadInputStream();
+
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _titleUIPresenter.UnbindFadeStream();
             }
             if (_mainUIPresenter != null)
             {
@@ -351,7 +417,74 @@ namespace GameSystem.Presentation
                 _mainUIPresenter.UnbindInputLockStream();
                 _mainUIPresenter.UnbindPlayerChangeStream();
                 _mainUIPresenter.UnbindRotateStream();
+
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _mainUIPresenter.UnbindFadeStream();
             }
+        }
+
+        /// <summary>
+        /// シーンロード準備ストリームを購読する
+        /// </summary>
+        public void BindSceneLoadPrepareStream(
+            IObservable<string> onPrepareStart,
+            IObservable<float> onPrepareEnd)
+        {
+            // 多重購読防止
+            _loadPrepareStartSubscription?.Dispose();
+            _loadPrepareEndSubscription?.Dispose();
+
+            _loadPrepareStartSubscription = onPrepareStart
+                .Subscribe(sceneName =>
+                {
+                    // ロード準備開始
+                    HandleLoadPrepareStart(sceneName);
+                });
+
+            _loadPrepareEndSubscription = onPrepareEnd
+                .Subscribe(fadeTime =>
+                {
+                    // ロード準備完了
+                    HandleLoadPrepareEnd(fadeTime);
+                });
+        }
+
+        /// <summary>
+        /// シーンロード準備ストリームの購読を解除する
+        /// </summary>
+        public void UnbindSceneLoadPrepareStream()
+        {
+            _loadPrepareStartSubscription?.Dispose();
+            _loadPrepareEndSubscription?.Dispose();
+            _loadPrepareStartSubscription = null;
+            _loadPrepareEndSubscription = null;
+        }
+
+        /// <summary>
+        /// シーン変更ストリームを購読する
+        /// </summary>
+        public void BindSceneChangeStream(IObservable<float> onSceneChanged)
+        {
+            // 多重購読防止
+            _sceneChangeSubscription?.Dispose();
+
+            _loadPrepareStartSubscription = onSceneChanged
+                .Subscribe(seconds =>
+                {
+                    // フェードアウト時間を通知
+                    _fadeOutTrigger.OnNext(seconds);
+                });
+        }
+
+        /// <summary>
+        /// シーン変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindSceneChangeStream()
+        {
+            _sceneChangeSubscription?.Dispose();
+            _sceneChangeSubscription = null;
         }
 
         // ======================================================
@@ -362,9 +495,9 @@ namespace GameSystem.Presentation
         // シーン
         // --------------------------------------------------
         /// <summary>
-        /// シーン変更を通知する
+        /// シーン遷移予約を通知する
         /// </summary>
-        private void NotifySceneChanged()
+        private void NotifySceneTChangeRequested()
         {
             switch (_currentPhase.Value)
             {
@@ -372,34 +505,92 @@ namespace GameSystem.Presentation
                     // 3 x 3 ボードシーンへ遷移
                     if (_gameOptionManager.BoardSize == BOARD_SIZE_THREE)
                     {
-                        _onSceneChanged.OnNext(THREE_SIZE_SCENE_NAME);
+                        _onSceneChangeRequested.OnNext(THREE_SIZE_SCENE_NAME);
                         break;
                     }
 
                     // 5 x 5 ボードシーンへ遷移
                     if (_gameOptionManager.BoardSize == BOARD_SIZE_FIVE)
                     {
-                        _onSceneChanged.OnNext(FIVE_SIZE_SCENE_NAME);
+                        _onSceneChangeRequested.OnNext(FIVE_SIZE_SCENE_NAME);
                     }
 
                     break;
 
                 case PhaseType.Finish:
                     // リザルトシーンへ遷移
-                    _onSceneChanged.OnNext(RESULT_SCENE_NAME);
+                    _onSceneChangeRequested.OnNext(RESULT_SCENE_NAME);
 
                     break;
 
                 case PhaseType.Pause:
                 case PhaseType.Result:
                     // タイトルシーンへ遷移
-                    _onSceneChanged.OnNext(TITLE_SCENE_NAME);
+                    _onSceneChangeRequested.OnNext(TITLE_SCENE_NAME);
 
                     break;
 
                 default:
                     break;
             }
+        }
+
+        /// <summary>
+        /// シーンロード準備開始時の処理を行う
+        /// </summary>
+        /// <param name="sceneName">現在のシーン名</param>
+        private void HandleLoadPrepareStart(in string sceneName)
+        {
+            // 多重購読防止
+            _sceneLoadSubscription?.Dispose();
+            
+            switch (sceneName)
+            {
+                case TITLE_SCENE_NAME:
+                    // ゲーム開始入力
+                    _sceneLoadSubscription = _onGameStartRequested
+                        .Subscribe(_ =>
+                        {
+                            // シーン遷移実行通知
+                            _onSceneChangeExecuted.OnNext(Unit.Default);
+                        });
+
+                    break;
+
+                case THREE_SIZE_SCENE_NAME:
+                    break;
+
+                case FIVE_SIZE_SCENE_NAME:
+                    break;
+
+                case RESULT_SCENE_NAME:
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// シーンロード準備開始時の処理を行う
+        /// </summary>
+        private void HandleLoadPrepareEnd(in float fadeTime)
+        {
+            // 購読解除
+            _sceneLoadSubscription?.Dispose();
+            _sceneLoadSubscription = null;
+            
+            // フェードイン時間を通知
+            _fadeInTrigger.OnNext(fadeTime);
+        }
+
+        /// <summary>
+        /// シーン変更時の処理を行う
+        /// </summary>
+        private void HandleSceneChanged(in float fadeTime)
+        {
+            // フェードアウト時間を通知
+            _fadeOutTrigger.OnNext(fadeTime);
         }
 
         // --------------------------------------------------
@@ -438,9 +629,9 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// デバイス切替処理を行う
+        /// デバイス変更を通知する
         /// </summary>
-        private void HandleActiveControllerChanged(in InputDeviceType device)
+        private void NotifyActiveControllerChanged(in InputDeviceType device)
         {
             if (device == InputDeviceType.Gamepad)
             {
@@ -470,6 +661,8 @@ namespace GameSystem.Presentation
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
 
+                    // Title フェーズ時の入力コマンド登録
+                    BindTitlePhaseInputCommands();
                     return;
 
                 // --------------------------------------------------
@@ -586,6 +779,27 @@ namespace GameSystem.Presentation
             }
         }
 
+        /// <summary>
+        /// Title フェーズ用の入力コマンド購読を登録する
+        /// </summary>
+        private void BindTitlePhaseInputCommands()
+        {
+            // 既存購読を破棄
+            _inputDisposables?.Dispose();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
+            // ボタン A 押下
+            _inputManager.ButtonA.OnUp
+                .Subscribe(_ =>
+                {
+                    // ゲーム開始イベント発火
+                    _onGameStartRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_inputDisposables);
+        }
+        
         /// <summary>
         /// Play フェーズ用の入力コマンド購読を登録する
         /// </summary>
@@ -734,7 +948,7 @@ namespace GameSystem.Presentation
         /// <summary>
         /// ゲームオプション更新時の処理を行う
         /// </summary>
-        private void HandleGameOptionUpdated(OptionButtonData data)
+        private void HandleGameOptionUpdated(in OptionButtonData data)
         {
             switch (data.Type)
             {
@@ -769,27 +983,40 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         /// <summary>
         /// ライン成立時の処理を行う
+        /// 複数ラインを 1 本ずつスコアへ分解する
         /// </summary>
-        private void HandleLineCompleted(LineCompleteEvent e)
+        private void HandleLineCompleted(in LineCompleteEvent e)
         {
             // プレイヤー ID
             int playerId = e.Player;
 
-            // ラインリスト
+            // ライン配列
             IReadOnlyList<BoardIndex>[] lines = e.LinePositions;
 
-            // ラインの長さ
-            int lineLength = 0;
-
-            // ラインごとのセル数を合計する
-            for (int i = 0; i < lines.Length; i++)
+            if (lines == null)
             {
-                // 各ラインのセル数を加算
-                lineLength += lines[i]?.Count ?? 0;
+                return;
             }
 
-            // スコアイベントとして発火
-            _onScoreUpdated.OnNext(new ScoreEvent(playerId, lineLength));
+            // --------------------------------------------------
+            // 各ラインを個別にスコアへ変換
+            // --------------------------------------------------
+            for (int i = 0; i < lines.Length; i++)
+            {
+                // 現在のライン取得
+                IReadOnlyList<BoardIndex> line = lines[i];
+
+                if (line == null)
+                {
+                    continue;
+                }
+
+                // ラインの長さ
+                int lineLength = line.Count;
+
+                // スコアイベント発火
+                _onScoreUpdated.OnNext(new ScoreEvent(playerId, lineLength));
+            }
         }
     }
 }

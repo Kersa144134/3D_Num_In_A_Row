@@ -15,7 +15,7 @@ MonoBehaviour:
   Mappings:
   - gamepadInput: 0
     keyCode: 0
-    mouseInput: 0
+    mouseInput: 1
   - gamepadInput: 1
     keyCode: 0
     mouseInput: 0

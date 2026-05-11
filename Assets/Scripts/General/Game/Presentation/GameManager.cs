@@ -6,8 +6,9 @@
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
-using UnityEngine;
+using System;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UniRx;
 using GameSystem.Application;
 using OptionSystem.Presentation;
@@ -44,6 +45,9 @@ namespace GameSystem.Presentation
         // ======================================================
         // コンポーネント参照
         // ======================================================
+
+        /// <summary>シーン遷移管理クラス</summary>
+        private SceneLoader _sceneLoader = new SceneLoader();
 
         /// <summary>フェーズ管理マシン</summary>
         private PhaseMachine _phaseMachine;
@@ -107,12 +111,30 @@ namespace GameSystem.Presentation
         /// <summary>アプリケーション全体で固定する目標 FPS</summary>
         private const int TARGET_FRAME_RATE = 120;
 
+        /// <summary>最低保証ロード時間</summary>
+        private const float MIN_LOAD_TIME_SECONDS = 1.0f;
+
+        /// <summary>画面フェード時間</summary>
+        private const float SCREEN_FADE_DURATION_SECONDS = 0.5f;
+
+        /// <summary>フェード中の最低待機時間</summary>
+        private const float SCREEN_FADE_HOLD_TIME_SECONDS = 1.0f;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
 
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>シーンロード準備開始通知用 Subject</summary>
+        private readonly Subject<string> _onLoadPrepareStart = new Subject<string>();
+
+        /// <summary>シーンロード準備完了通知用 Subject</summary>
+        private readonly Subject<float> _onLoadPrepareEnd = new Subject<float>();
+
+        /// <summary>シーン変更通知用 Subject</summary>
+        private readonly Subject<float> _onSceneChanged = new Subject<float>();
 
         /// <summary>現在のフェーズ</summary>
         public IReadOnlyReactiveProperty<PhaseType> CurrentPhase => _phaseMachine.CurrentPhaseType;
@@ -214,7 +236,7 @@ namespace GameSystem.Presentation
             IUpdatableReader updatableReader = _updatableContexts;
             _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
 
-            _eventRouter.OnSceneChanged
+            _eventRouter.OnSceneChangeRequested
                 .Subscribe(e =>
                 {
                     SetTargetScene(e);
@@ -237,6 +259,11 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             _eventRouter.Subscribe(_phaseMachine);
+            _eventRouter.BindSceneLoadPrepareStream(_onLoadPrepareStart, _onLoadPrepareEnd);
+            _eventRouter.BindSceneChangeStream(_onSceneChanged);
+
+            // シーン変更後イベント
+            TriggerSceneChangedEventAsync().Forget();
         }
 
         private void Update()
@@ -300,12 +327,17 @@ namespace GameSystem.Presentation
             // イベント購読解除
             _disposables?.Dispose();
             _eventRouter?.Dispose();
+            _eventRouter?.UnbindSceneLoadPrepareStream();
+            _eventRouter?.UnbindSceneChangeStream();
         }
 
         // ======================================================
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
         /// <summary>
         /// 遷移先シーンを設定する
         /// </summary>
@@ -321,30 +353,102 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// シーン遷移を行う
+        /// シーン遷移フローを実行する
         /// </summary>
-        private async UniTask ChangeScene(string sceneName)
+        private async UniTask ChangeScene(string nextScene)
         {
-            // シーン名が無効な場合は処理を中断する
-            if (string.IsNullOrEmpty(sceneName))
+            if (string.IsNullOrEmpty(nextScene))
             {
                 _isSceneTransitioning = false;
                 return;
             }
 
+            // --------------------------------------------------
+            // ロード処理
+            // --------------------------------------------------
+            // ロード準備開始イベント
+            _onLoadPrepareStart.OnNext(_currentScene);
+
+            // ロード処理
+            UniTask loadTask = BeginSceneLoad(nextScene);
+
+            // 最低保証時間
+            UniTask minWaitTask = UniTask.Delay(TimeSpan.FromSeconds(MIN_LOAD_TIME_SECONDS));
+
+            // シーン切替完了イベント待機
+            UniTask executeTask = _eventRouter.OnSceneChangeExecuted.ToUniTask(true);
+
+            // 完了まで待機
+            await UniTask.WhenAll(
+                loadTask,
+                minWaitTask,
+                executeTask
+            );
+
+            // ロード準備完了イベント
+            _onLoadPrepareEnd.OnNext(SCREEN_FADE_DURATION_SECONDS);
+
+            // --------------------------------------------------
+            // 画面フェード処理
+            // --------------------------------------------------
+            await _eventRouter.OnFadeCompleted.ToUniTask(useFirstValue: true);
+
+            // フェード完了後待機時間
+            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS));
+
+            // --------------------------------------------------
+            // Updatable 終了処理
+            // --------------------------------------------------
             // 列挙専用として扱う
             IUpdatableEnumerable updatableEnumerable = _updatableContexts;
 
-            // Updatable の終了時処理を実行する
+            // 終了処理実行
             _updatableLifecycleRunner.RunExit(updatableEnumerable);
 
-            // SceneLoader を生成
-            SceneLoader sceneLoader = new SceneLoader();
-
-            // 非同期シーン遷移を実行する
-            await sceneLoader.ChangeSceneAsync(sceneName);
+            // --------------------------------------------------
+            // シーン遷移処理
+            // --------------------------------------------------
+            await CommitSceneLoad();
         }
 
+        /// <summary>
+        /// シーンのロードを開始する
+        /// </summary>
+        private async UniTask BeginSceneLoad(string nextScene)
+        {
+            _sceneLoader ??= new SceneLoader();
+
+            await _sceneLoader.BeginLoadSceneAsync(nextScene);
+        }
+
+        /// <summary>
+        /// ロード済みシーンを確定する
+        /// </summary>
+        private async UniTask CommitSceneLoad()
+        {
+            if (_sceneLoader == null)
+            {
+                return;
+            }
+
+            await _sceneLoader.CommitSceneChangeAsync();
+        }
+
+        /// <summary>
+        /// シーン遷移完了イベントを実行する
+        /// </summary>
+        private async UniTaskVoid TriggerSceneChangedEventAsync()
+        {
+            // フェード開始タイミングまで待機
+            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS));
+
+            // フェードアウト時間を通知
+            _onSceneChanged.OnNext(SCREEN_FADE_DURATION_SECONDS);
+        }
+
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
         /// <summary>
         /// 遷移先フェーズを設定する
         /// </summary>
