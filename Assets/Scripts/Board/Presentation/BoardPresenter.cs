@@ -171,9 +171,6 @@ namespace BoardSystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>入力用イベント購読管理</summary>
-        private CompositeDisposable _inputDisposables;
-
         /// <summary>プレイヤー入力通知用 Subject</summary>
         private readonly Subject<Unit> _onInputReceived = new Subject<Unit>();
 
@@ -195,6 +192,12 @@ namespace BoardSystem.Presentation
 
         /// <summary>プレイヤーインデックス購読</summary>
         private IDisposable _playerIndexSubscription;
+
+        /// <summary>ドロップ入力購読</summary>
+        private IDisposable _dropInputSubscription;
+
+        /// <summary>回転入力購読管理</summary>
+        private CompositeDisposable _rotateInputDisposables;
 
         // ======================================================
         // IUpdatable イベント
@@ -315,11 +318,12 @@ namespace BoardSystem.Presentation
         public void OnExit()
         {
             // 購読解除
-            _disposables.Dispose();
+            _disposables?.Dispose();
             _model.Dispose();
 
             UnbindPlayerChangeStream();
-            UnbindInputStream();
+            UnbindDropInputStream();
+            UnbindRotateInputStream();
         }
 
         public void OnPhaseEnter(in PhaseType phase)
@@ -348,82 +352,6 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 駒配置入力ストリームを購読する
-        /// </summary>
-        /// <param name="dropStream">駒配置入力ストリーム</param>
-        public void BindDropInputStream(in IObservable<Unit> dropStream)
-        {
-            // 既存購読があれば破棄
-            _inputDisposables?.Dispose();
-
-            // CompositeDisposable 初期化
-            _inputDisposables = new CompositeDisposable();
-
-            // 駒配置入力購読
-            dropStream
-                .Subscribe(_ =>
-                {
-                    // ドロップ中、またはプレイヤー未設定なら無効
-                    if (!_canDrop || _currentPlayer == PLAYER_NONE)
-                    {
-                        return;
-                    }
-
-                    // 駒配置処理
-                    HandleDropColumn();
-                })
-                .AddTo(_inputDisposables);
-
-            // 駒落下フラグ更新
-            _canDrop = true;
-        }
-
-        /// <summary>
-        /// 回転入力ストリームを購読する
-        /// </summary>
-        /// <param name="rotateStream">回転入力ストリーム</param>
-        public void BindRotateInputStream(in IObservable<RotationCommand> rotateStream)
-        {
-            // 既存購読があれば破棄
-            _inputDisposables?.Dispose();
-
-            // CompositeDisposable 初期化
-            _inputDisposables = new CompositeDisposable();
-
-            // 回転入力購読
-            rotateStream
-                .Subscribe(cmd =>
-                {
-                    // 駒落下中、または回転中なら無効
-                    if (!_canDrop || !_canRotate)
-                    {
-                        return;
-                    }
-
-                    // 非同期回転処理実行
-                    HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
-                })
-                .AddTo(_inputDisposables);
-
-            // 入力可能フラグ更新
-            _canRotate = true;
-        }
-        
-        /// <summary>
-        /// 入力ストリームの購読を解除する
-        /// </summary>
-        public void UnbindInputStream()
-        {
-            _inputDisposables?.Dispose();
-            _inputDisposables = null;
-            
-            _currentPlayer = PLAYER_NONE;
-
-            // 列選択表示を非表示にする
-            _view.SeteColumnSelectVisible(false);
-        }
-
-        /// <summary>
         /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
         /// </summary>
         /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
@@ -446,6 +374,81 @@ namespace BoardSystem.Presentation
         {
             _playerIndexSubscription?.Dispose();
             _playerIndexSubscription = null;
+        }
+
+        /// <summary>
+        /// 駒配置入力ストリームを購読する
+        /// </summary>
+        /// <param name="dropStream">駒配置入力ストリーム</param>
+        public void BindDropInputStream(in IObservable<Unit> dropStream)
+        {
+            // 多重購読防止
+            _dropInputSubscription?.Dispose();
+
+            _dropInputSubscription = dropStream
+                .Subscribe(_ =>
+                {
+                    // ドロップ中、またはプレイヤー未設定なら無効
+                    if (!_canDrop || _currentPlayer == PLAYER_NONE)
+                    {
+                        return;
+                    }
+
+                    // 駒配置処理
+                    HandleDropColumn();
+                });
+
+            _canDrop = true;
+        }
+
+        /// <summary>
+        /// 駒配置入力ストリームの購読を解除する
+        /// </summary>
+        public void UnbindDropInputStream()
+        {
+            _dropInputSubscription?.Dispose();
+            _dropInputSubscription = null;
+
+            _canDrop = false;
+        }
+
+        /// <summary>
+        /// 回転入力ストリームを購読する
+        /// </summary>
+        /// <param name="rotateStream">回転入力ストリーム</param>
+        public void BindRotateInputStream(in IObservable<RotationCommand> rotateStream)
+        {
+            // 多重購読防止
+            _rotateInputDisposables?.Dispose();
+
+            _rotateInputDisposables = new CompositeDisposable();
+
+            rotateStream
+                .Subscribe(cmd =>
+                {
+                    // 回転中なら無効
+                    if (!_canRotate)
+                    {
+                        return;
+                    }
+
+                    // ボード回転処理
+                    HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
+                })
+                .AddTo(_rotateInputDisposables);
+
+            _canRotate = true;
+        }
+        
+        /// <summary>
+        /// 入力ストリームの購読を解除する
+        /// </summary>
+        public void UnbindRotateInputStream()
+        {
+            _rotateInputDisposables?.Dispose();
+            _rotateInputDisposables = null;
+
+            _canRotate = false;
         }
 
         // ======================================================

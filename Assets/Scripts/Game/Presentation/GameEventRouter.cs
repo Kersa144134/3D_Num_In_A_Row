@@ -387,7 +387,8 @@ namespace GameSystem.Presentation
                 }
 
                 boardPresenter.UnbindPlayerChangeStream();
-                boardPresenter.UnbindInputStream();
+                boardPresenter.UnbindDropInputStream();
+                boardPresenter.UnbindRotateInputStream();
             }
 
             if (_cameraPresenter != null)
@@ -581,15 +582,6 @@ namespace GameSystem.Presentation
             _fadeInTrigger.OnNext(fadeTime);
         }
 
-        /// <summary>
-        /// シーン変更時の処理を行う
-        /// </summary>
-        private void HandleSceneChanged(in float fadeTime)
-        {
-            // フェードアウト時間を通知
-            _fadeOutTrigger.OnNext(fadeTime);
-        }
-
         // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
@@ -660,6 +652,7 @@ namespace GameSystem.Presentation
 
                     // Title フェーズ時の入力コマンド登録
                     BindTitlePhaseInputCommands();
+
                     return;
 
                 // --------------------------------------------------
@@ -681,7 +674,6 @@ namespace GameSystem.Presentation
                     // Play フェーズ時の入力コマンド登録
                     BindPlayPhaseInputCommands();
 
-                    // 全ボードに落下入力ストリームを登録
                     foreach (BoardPresenter boardPresenter in _boardPresenters)
                     {
                         if (boardPresenter == null)
@@ -689,8 +681,11 @@ namespace GameSystem.Presentation
                             continue;
                         }
 
-                        // 落下入力ストリームを登録
+                        // 入力ストリーム登録
                         boardPresenter.BindDropInputStream(_onDropRequested);
+
+                        // 入力ストリーム解除
+                        boardPresenter.UnbindRotateInputStream();
                     }
 
                     return;
@@ -705,7 +700,6 @@ namespace GameSystem.Presentation
                     // Event フェーズ時の入力コマンド登録
                     BindEventPhaseInputCommands();
 
-                    // 全ボードに回転入力ストリームを登録
                     foreach (BoardPresenter boardPresenter in _boardPresenters)
                     {
                         if (boardPresenter == null)
@@ -713,8 +707,11 @@ namespace GameSystem.Presentation
                             continue;
                         }
 
-                        // 回転入力ストリームを登録
+                        // 入力ストリーム登録
                         boardPresenter.BindRotateInputStream(_onRotateExecuted);
+
+                        // 入力ストリーム解除
+                        boardPresenter.UnbindDropInputStream();
                     }
 
                     return;
@@ -726,6 +723,18 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
+                    foreach (BoardPresenter boardPresenter in _boardPresenters)
+                    {
+                        if (boardPresenter == null)
+                        {
+                            continue;
+                        }
+
+                        // 入力ストリーム解除
+                        boardPresenter.UnbindDropInputStream();
+                        boardPresenter.UnbindRotateInputStream();
+                    }
+
                     return;
 
                 // --------------------------------------------------
@@ -735,10 +744,22 @@ namespace GameSystem.Presentation
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
 
+                    foreach (BoardPresenter boardPresenter in _boardPresenters)
+                    {
+                        if (boardPresenter == null)
+                        {
+                            continue;
+                        }
+
+                        // 入力ストリーム解除
+                        boardPresenter.UnbindDropInputStream();
+                        boardPresenter.UnbindRotateInputStream();
+                    }
+
                     return;
 
                 // --------------------------------------------------
-                // Pause
+                // Finish
                 // --------------------------------------------------
                 case PhaseType.Finish:
                     // 入力マッピングを UI 用に変更
@@ -747,7 +768,7 @@ namespace GameSystem.Presentation
                     return;
 
                 // --------------------------------------------------
-                // Pause
+                // Result
                 // --------------------------------------------------
                 case PhaseType.Result:
                     // 入力マッピングを UI 用に変更
@@ -755,23 +776,7 @@ namespace GameSystem.Presentation
 
                     return;
 
-                // --------------------------------------------------
-                // その他
-                // --------------------------------------------------
                 default:
-                    // 全ボードの入力ストリームを解除
-                    foreach (BoardPresenter boardPresenter in _boardPresenters)
-                    {
-                        // null の場合はスキップ
-                        if (boardPresenter == null)
-                        {
-                            continue;
-                        }
-
-                        // 入力ストリームを解除
-                        boardPresenter.UnbindInputStream();
-                    }
-
                     return;
             }
         }
@@ -814,6 +819,7 @@ namespace GameSystem.Presentation
                 {
                     // 駒配置イベント発火
                     _onDropRequested.OnNext(Unit.Default);
+                    Debug.Log("drop");
                 })
                 .AddTo(_inputDisposables);
 
@@ -823,6 +829,7 @@ namespace GameSystem.Presentation
                 {
                     // 回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
+                    Debug.Log("rotate");
                 })
                 .AddTo(_inputDisposables);
 
