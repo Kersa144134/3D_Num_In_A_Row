@@ -259,7 +259,7 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             _eventRouter.Subscribe(_phaseMachine);
-            _eventRouter.BindSceneChangeStream(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
+            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
 
             // シーン変更後イベント
             TriggerSceneChangedEventAsync().Forget();
@@ -326,7 +326,6 @@ namespace GameSystem.Presentation
             // イベント購読解除
             _disposables?.Dispose();
             _eventRouter?.Dispose();
-            _eventRouter?.UnbindSceneChangeStream();
         }
 
         // ======================================================
