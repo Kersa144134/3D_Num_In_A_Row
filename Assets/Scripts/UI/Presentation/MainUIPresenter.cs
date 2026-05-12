@@ -98,29 +98,14 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
         /// <summary>投影切り替えストリーム</summary>
         public IObservable<bool> OnSwitchProjection => _onSwitchProjection;
-
-        /// <summary>フェーズ購読</summary>
-        private IDisposable _phaseSubscription;
-
-        /// <summary>ライン成立購読</summary>
-        private IDisposable _lineCompleteSubscription;
-
-        /// <summary>制限時間状態購読</summary>
-        private IDisposable _limitTimeSubscription;
-
-        /// <summary>入力ロック状態購読</summary>
-        private IDisposable _inputLockSubscription;
-
-        /// <summary>プレイヤーインデックス購読</summary>
-        private IDisposable _playerIndexSubscription;
-
-        /// <summary>回転入力購読</summary>
-        private IDisposable _rotationSubscription;
 
         // ======================================================
         // IUpdatable 派生イベント
@@ -179,12 +164,7 @@ namespace UISystem.Presentation
             base.OnExitInternal();
 
             // イベント購読解除
-            UnbindPhaseStream();
-            UnbindLineCompleteStream();
-            UnbindLimitTimeStream();
-            UnbindInputLockStream();
-            UnbindPlayerChangeStream();
-            UnbindRotateStream();
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -192,25 +172,31 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// フェーズ変更ストリームを購読し、現在のフェーズに応じて入力の有効・無効を制御する
+        /// イベントストリームをまとめて購読する
         /// </summary>
-        /// <param name="phase">フェーズ種別を通知するストリーム</param>
-        public void BindPhaseStream(in IObservable<PhaseType> phase)
+        /// <param name="phase">フェーズ状態を通知するストリーム</param>
+        /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
+        /// <param name="lineComplete">ライン成立結果を通知するストリーム</param>
+        /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
+        /// <param name="rotate">回転入力を通知するストリーム</param>
+        /// <param name="limitTime">制限時間の残り時間を通知するストリーム</param>
+        public void BindStreams(
+            in IObservable<PhaseType> phase,
+            in IObservable<int> playerChange,
+            in IObservable<ScoreEvent> lineComplete,
+            in IObservable<bool> inputLock,
+            in IObservable<Unit> rotate,
+            in IObservable<float> limitTime)
         {
-            // 多重購読防止
-            _phaseSubscription?.Dispose();
-
-            _phaseSubscription = phase
+            phase
                 .Subscribe(type =>
                 {
                     // Ready
                     bool isReady = type == PhaseType.Ready;
-
                     SetReadyState(isReady);
 
                     // Play
                     bool isPlay = type == PhaseType.Play;
-
                     SetLimitTimeVisible(isPlay);
                     SetPointerVisible(isPlay);
 
@@ -221,146 +207,43 @@ namespace UISystem.Presentation
                     // Event
                     bool isEvent = type == PhaseType.Event;
 
+                    // Event以外
                     if (!isEvent)
                     {
                         SetSwitchProjection(false);
                     }
+                })
+                .AddTo(_disposables);
+
+            playerChange
+                .Subscribe(playerIndex =>
+                {
+                    SetChangePlayerState(playerIndex);
                 });
-        }
 
-        /// <summary>
-        /// フェーズ変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPhaseStream()
-        {
-            _phaseSubscription?.Dispose();
-            _phaseSubscription = null;
-        }
-
-        /// <summary>
-        /// ライン成立イベントストリームを購読し、スコア表示を更新する
-        /// </summary>
-        /// <param name="stream">スコア更新イベントストリーム</param>
-        public void BindLineCompleteStream(in IObservable<ScoreEvent> stream)
-        {
-            // 多重購読防止
-            _lineCompleteSubscription?.Dispose();
-
-            _lineCompleteSubscription = stream
+            lineComplete
                 .Subscribe(e =>
                 {
                     UpdateScore(e.PlayerId, e.LineLength);
                 });
-        }
 
-        /// <summary>
-        /// ライン成立イベント購読を解除する
-        /// </summary>
-        public void UnbindLineCompleteStream()
-        {
-            _lineCompleteSubscription?.Dispose();
-            _lineCompleteSubscription = null;
-        }
-
-        /// <summary>
-        /// 制限時間ストリームを購読し、UI表示を更新する
-        /// </summary>
-        /// <param name="limitTime">制限時間を通知するストリーム</param>
-        public void BindLimitTimeStream(in IObservable<float> limitTime)
-        {
-            // 多重購読防止
-            _limitTimeSubscription?.Dispose();
-
-            _limitTimeSubscription = limitTime
-                .Subscribe(time =>
-                {
-                    UpdateLimitTimeDisplay(time);
-                });
-        }
-
-        /// <summary>
-        /// 制限時間ストリームの購読を解除する
-        /// </summary>
-        public void UnbindLimitTimeStream()
-        {
-            _limitTimeSubscription?.Dispose();
-            _limitTimeSubscription = null;
-        }
-
-        /// <summary>
-        /// 入力ロック状態を購読する
-        /// </summary>
-        /// <param name="input">true:ロック / false:解除</param>
-        public void BindInputLockStream(in IObservable<bool> input)
-        {
-            // 多重購読防止
-            _inputLockSubscription?.Dispose();
-
-            _inputLockSubscription = input
+            inputLock
                 .Subscribe(isLock =>
                 {
-                    // 入力ロック状態を更新
                     _isInputLock = isLock;
                 });
-        }
 
-        /// <summary>
-        /// 入力ロック状態ストリームの購読を解除する
-        /// </summary>
-        public void UnbindInputLockStream()
-        {
-            _inputLockSubscription?.Dispose();
-            _inputLockSubscription = null;
-        }
-
-        /// <summary>
-        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
-        /// </summary>
-        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
-        public void BindPlayerChangeStream(in IObservable<int> player)
-        {
-            // 多重購読防止
-            _playerIndexSubscription?.Dispose();
-
-            _playerIndexSubscription = player
-                .Subscribe(player =>
-                {
-                    SetChangePlayerState(player);
-                });
-        }
-
-        /// <summary>
-        /// プレイヤー変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPlayerChangeStream()
-        {
-            _playerIndexSubscription?.Dispose();
-            _playerIndexSubscription = null;
-        }
-
-        /// <summary>
-        /// 回転入力ストリームを購読する
-        /// </summary>
-        /// <param name="rotate">回転コマンド通知ストリーム</param>
-        public void BindRotateStream(in IObservable<Unit> rotate)
-        {
-            // 多重購読防止
-            _rotationSubscription?.Dispose();
-
-            _rotationSubscription = rotate
+            rotate
                 .Subscribe(_ =>
                 {
                     SetSwitchProjection(true);
                 });
-        }
 
-        /// <summary>
-        /// 回転入力ストリームの購読を解除する
-        /// </summary>
-        public void UnbindRotateStream()
-        {
-            _rotationSubscription?.Dispose();
-            _rotationSubscription = null;
+            limitTime
+                .Subscribe(time =>
+                {
+                    UpdateLimitTimeDisplay(time);
+                });
         }
 
         // ======================================================

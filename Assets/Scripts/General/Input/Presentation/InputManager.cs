@@ -138,15 +138,12 @@ namespace InputSystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        
         /// <summary>現在アクティブな入力デバイス種別</summary>
         public IReadOnlyReactiveProperty<InputDeviceType> ActiveDeviceType =>
             _deviceSwitchService.ActiveDeviceType;
-
-        /// <summary>マッピング変更購読</summary>
-        private IDisposable _mappingSubscription;
-
-        /// <summary>ポインター座標変更購読</summary>
-        private IDisposable _pointerPositionSubscription;
 
         // ======================================================
         // Unity イベント
@@ -266,8 +263,8 @@ namespace InputSystem.Presentation
 
         private void OnDestroy()
         {
-            UnbindMappingStream();
-            UnbindPointerPositionStream();
+            // イベント購読解除
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -275,53 +272,31 @@ namespace InputSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力マッピング変更イベントを購読する
+        /// イベントストリームをまとめて購読する
         /// </summary>
-        public void BindMappingStream(IObservable<int> stream)
+        /// <param name="mapping">入力マッピング変更ストリーム</param>
+        /// <param name="pointerPosition">ポインター座標変更ストリーム</param>
+        public void BindStreams(
+            IObservable<int> mapping,
+            IObservable<Vector2> pointerPosition)
         {
-            // 多重購読防止
-            _mappingSubscription?.Dispose();
-
-            _mappingSubscription = stream
+            mapping
                 .Subscribe(index =>
                 {
                     ApplyInputMapping(index);
-                });
-        }
 
-        /// <summary>
-        /// 入力マッピング変更イベントの購読を解除する
-        /// </summary>
-        public void UnbindMappingStream()
-        {
-            _mappingSubscription?.Dispose();
-            _mappingSubscription = null;
-        }
+                })
+                .AddTo(_disposables);
 
-        /// <summary>
-        /// ポインター座標変更イベントを購読する
-        /// </summary>
-        public void BindPointerPositionStream(IObservable<Vector2> stream)
-        {
-            // 多重購読防止
-            _pointerPositionSubscription?.Dispose();
-
-            _pointerPositionSubscription = stream
+            pointerPosition
                 .Subscribe(position =>
                 {
                     _pointerStateUpdateService.SetPointerPosition(
                         ref _pointer,
                         in position);
-                });
-        }
 
-        /// <summary>
-        /// ポインター座標変更イベントの購読を解除する
-        /// </summary>
-        public void UnbindPointerPositionStream()
-        {
-            _pointerPositionSubscription?.Dispose();
-            _pointerPositionSubscription = null;
+                })
+                .AddTo(_disposables);
         }
 
         // ======================================================

@@ -46,14 +46,10 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
-        [Header("基本ボタン")]
-        /// <summary>ダイアログの Yes ボタン</summary>
+        [Header("ボタン")]
+        /// <summary>シーン共通の通常ボタン配列</summary>
         [SerializeField]
-        protected NormalButton _dialogueYesButton;
-
-        /// <summary>ダイアログの No ボタン</summary>
-        [SerializeField]
-        protected NormalButton _dialogueNoButton;
+        protected NormalButton[] _baseNormalButtons;
 
         // --------------------------------------------------
         // 演出 <2 値化>
@@ -246,6 +242,9 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
         /// <summary>シーン遷移リクエスト通知用 Subject</summary>
         private readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
 
@@ -263,12 +262,6 @@ namespace UISystem.Presentation
 
         /// <summary>フェードアウト完了通知ストリーム</summary>
         public IObservable<Unit> OnFadeOutCompletedStream => _onFadeOutCompleted;
-
-        /// <summary>フェードイン購読</summary>
-        private IDisposable _fadeInSubscription;
-
-        /// <summary>フェードアウト購読</summary>
-        private IDisposable _fadeOutSubscription;
 
         // ======================================================
         // IUpdatable イベント
@@ -336,6 +329,9 @@ namespace UISystem.Presentation
 
         public void OnExit()
         {
+            // イベント購読解除
+            _disposables?.Dispose();
+
             OnExitInternal();
         }
 
@@ -368,49 +364,26 @@ namespace UISystem.Presentation
         /// <summary>
         /// フェードイン開始イベントを購読する
         /// </summary>
-        public void BindFadeStream(in IObservable<float> fadeInSeconds, in IObservable<float> fadeOutSeconds)
+        public void BindBaseStreams(in IObservable<float> fadeInSeconds, in IObservable<float> fadeOutSeconds)
         {
-            // 多重購読防止
-            _fadeInSubscription?.Dispose();
-
-            _fadeInSubscription = fadeInSeconds
+            fadeInSeconds
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeInRoutine(time));
-                });
+                })
+                .AddTo(_disposables);
 
-            // 多重購読防止
-            _fadeOutSubscription?.Dispose();
-
-            _fadeOutSubscription = fadeOutSeconds
+            fadeOutSeconds
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeOutRoutine(time));
-                });
-        }
-
-        /// <summary>
-        /// フェードストリーム購読を解除する
-        /// </summary>
-        public void UnbindFadeStream()
-        {
-            _fadeInSubscription?.Dispose();
-            _fadeOutSubscription?.Dispose();
-            _fadeInSubscription = null;
-            _fadeOutSubscription = null;
+                })
+                .AddTo(_disposables);
         }
 
         // ======================================================
         // プライベートメソッド
         // ======================================================
-
-        /// <summary>
-        /// ダイアログキャンバスを表示する
-        /// </summary>
-        protected virtual void ShowDialogueCanvas()
-        {
-            _dialogueCanvas.SetActive(true);
-        }
 
         /// <summary>
         /// フェードイン処理

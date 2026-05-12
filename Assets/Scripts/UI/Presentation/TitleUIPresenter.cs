@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using UniRx;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
@@ -71,47 +70,14 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
-        [Header("基本ボタン")]
-        /// <summary>スタートボタン</summary>
+        [Header("ボタン")]
+        /// <summary>タイトルシーン用の通常ボタン配列</summary>
         [SerializeField]
-        private NormalButton _startButton;
+        private NormalButton[] _titleNormalButtons;
 
-        /// <summary>オプションボタン</summary>
+        /// <summary>タイトルシーン用のオプションボタン配列</summary>
         [SerializeField]
-        private NormalButton _optionButton;
-
-        /// <summary>オプションのキャンセルボタン</summary>
-        [SerializeField]
-        private NormalButton _optionCancelButton;
-
-        /// <summary>オプションの決定ボタン</summary>
-        [SerializeField]
-        private NormalButton _optionDecideButton;
-
-        [Header("オプションボタングループ")]
-        /// <summary>プレイヤー人数</summary>
-        [SerializeField]
-        private OptionButtonGroup _playerCountButtons;
-
-        /// <summary>制限時間</summary>
-        [SerializeField]
-        private OptionButtonGroup _limitTimeButtons;
-
-        /// <summary>盤面サイズ</summary>
-        [SerializeField]
-        private OptionButtonGroup _boardSizeButtons;
-
-        /// <summary>ライン成立条件</summary>
-        [SerializeField]
-        private OptionButtonGroup _connectCountButtons;
-
-        /// <summary>カメラ回転速度</summary>
-        [SerializeField]
-        private OptionButtonGroup _cameraRotationSpeedButtons;
-
-        /// <summary>ポインター速度</summary>
-        [SerializeField]
-        private OptionButtonGroup _pointerSpeedButtons;
+        private OptionButtonGroup[] _titleOptionButtons;
 
         // --------------------------------------------------
         // ボタンカラー
@@ -155,32 +121,12 @@ namespace UISystem.Presentation
         private BaseButtonEvent _initialSelectedOptionCanvasButton;
 
         // --------------------------------------------------
-        // オプション選択インデックス
+        // オプション初期選択インデックス
         // --------------------------------------------------
-        [Header("オプション選択インデックス")]
-        /// <summary>プレイヤー人数</summary>
+        [Header("オプション初期選択インデックス")]
+        /// <summary>オプション種別ごとの選択インデックス管理テーブル</summary>
         [SerializeField]
-        private int _playerCountSelectedIndex = 0;
-
-        /// <summary>制限時間</summary>
-        [SerializeField]
-        private int _limitTimeSelectedIndex = 1;
-
-        /// <summary>盤面サイズ</summary>
-        [SerializeField]
-        private int _boardSizeSelectedIndex = 0;
-
-        /// <summary>ライン成立条件</summary>
-        [SerializeField]
-        private int _connectCountSelectedIndex = 0;
-
-        /// <summary>カメラ回転速度</summary>
-        [SerializeField]
-        private int _cameraRotationSpeedSelectedIndex = 1;
-
-        /// <summary>ポインター速度</summary>
-        [SerializeField]
-        private int _pointerSpeedSelectedIndex = 1;
+        private OptionSelectionIndexTable _optionIndexTable;
 
         // --------------------------------------------------
         // アニメーター
@@ -203,8 +149,14 @@ namespace UISystem.Presentation
         /// <summary>イベントを仲介するクラス</summary>
         private readonly UIEventRouter _eventRouter = new UIEventRouter();
 
+        /// <summary>通常ボタンの参照解決クラス</summary>
+        private NormalButtonResolver _normalButtonResolver;
+
         /// <summary>OptionButtonBinder 生成クラス</summary>
         private OptionButtonBinderFactory _optionButtonBinderFactory;
+
+        /// <summary>タイトル UI のキャンバス状態と初期ボタン選択状態を管理するクラス</summary>
+        private TitleUIStateController _titleUIStateController;
 
         // --------------------------------------------------
         // ボタンイベント
@@ -237,9 +189,6 @@ namespace UISystem.Presentation
         /// <summary>ゲームパッド入力状態フラグ</summary>
         private bool _isGamePadInput = false;
 
-        /// <summary>現在アクティブなキャンバス</summary>
-        private ActiveCanvasType _activeCanvasType = ActiveCanvasType.None;
-
         // ======================================================
         // 辞書
         // ======================================================
@@ -255,12 +204,6 @@ namespace UISystem.Presentation
         /// </summary>
         private Dictionary<OptionType, OptionButtonBinder> _optionBinders
             = new Dictionary<OptionType, OptionButtonBinder>();
-
-        /// <summary>
-        /// オプション選択インデックステーブル
-        /// </summary>
-        private OptionSelectionIndexTable _optionIndexTable
-            = new OptionSelectionIndexTable();
 
         // ======================================================
         // 定数
@@ -279,8 +222,11 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>イベントルーター購読管理</summary>
+        /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>ルーター用購読管理</summary>
+        private readonly CompositeDisposable _routerDisposables = new CompositeDisposable();
 
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
@@ -320,10 +266,8 @@ namespace UISystem.Presentation
                 _gameOptionManager == null ||
                 _inputManager == null ||
                 _pointer == null ||
-                _startButton == null ||
-                _optionButton == null ||
-                _optionCancelButton == null ||
-                _optionDecideButton == null ||
+                _titleNormalButtons == null ||
+                _titleOptionButtons == null ||
                 _initialSelectedStartCanvasButton == null ||
                 _initialSelectedOptionCanvasButton == null)
             {
@@ -338,15 +282,7 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // オプション選択インデックス初期化
-            _optionIndexTable.Initialize(OptionType.PlayerCount, _playerCountSelectedIndex);
-            _optionIndexTable.Initialize(OptionType.LimitTime, _limitTimeSelectedIndex);
-            _optionIndexTable.Initialize(OptionType.BoardSize, _boardSizeSelectedIndex);
-            _optionIndexTable.Initialize(OptionType.ConnectCount, _connectCountSelectedIndex);
-            _optionIndexTable.Initialize(OptionType.CameraRotationSpeed, _cameraRotationSpeedSelectedIndex);
-            _optionIndexTable.Initialize(OptionType.PointerSpeed, _pointerSpeedSelectedIndex);
-
-            // UI 管理クラス生成
+            // ビュー生成
             _titleUIView = new TitleUIView(
                 _pointer,
                 _normalFocusOnColor,
@@ -356,16 +292,34 @@ namespace UISystem.Presentation
                 _optionFocusOnColor,
                 _optionFocusOffColor
             );
-            _optionButtonBinderFactory = new OptionButtonBinderFactory(_optionIndexTable);
-
-            // スタートキャンバスを表示
-            ShowStartCanvas();
 
             // 通常ボタン初期化
             InitializeNormalButtons();
 
+            // 通常ボタンの参照解決クラス生成
+            _normalButtonResolver = new NormalButtonResolver(_normalButtonEventTable);
+
+            // オプション初期選択テーブル初期化
+            _optionIndexTable.Initialize();
+
+            // オプションバインダーファクトリ生成
+            _optionButtonBinderFactory = new OptionButtonBinderFactory(_optionIndexTable);
+
             // オプションボタン初期化
-            InitializeOptionButtons(); ;
+            InitializeOptionButtons();
+
+            // キャンバス状態管理クラス生成
+            _titleUIStateController = new TitleUIStateController(
+                _startCanvas,
+                _optionCanvas,
+                _dialogueCanvas,
+                _initialSelectedStartCanvasButton,
+                _initialSelectedOptionCanvasButton,
+                _normalButtonResolver.Get(UIActionType.DialogueYes)
+            );
+
+            // スタートキャンバスを表示
+            _titleUIStateController.ShowStartCanvas();
 
             // イベント購読
             Subscribe();
@@ -393,59 +347,34 @@ namespace UISystem.Presentation
 
             // イベント購読解除
             Dispose();
-            UnbindInputLockStream();
-            UnbindGamePadInputStream();
+            _disposables?.Dispose();
         }
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
-        // --------------------------------------------------
-        // イベント購読
-        // --------------------------------------------------
         /// <summary>
-        /// 入力ロック状態を購読する
+        /// イベントストリームをまとめて購読する
         /// </summary>
-        /// <param name="input">true: ロック / false: 解除</param>
-        public void BindInputLockStream(in IObservable<bool> input)
+        /// <param name="inputLock">入力ロック状態ストリーム</param>
+        /// <param name="gamePadInput">ゲームパッド入力状態ストリーム</param>
+        public void BindStreams(
+            in IObservable<bool> inputLock,
+            in IObservable<bool> gamePadInput)
         {
-            // 多重購読防止
-            _inputLockSubscription?.Dispose();
-
-            _inputLockSubscription = input
+            inputLock
                 .Subscribe(isLock =>
                 {
-                    // 入力ロック状態を更新
                     _isInputLock = isLock;
-                });
-        }
+                })
+                .AddTo(_disposables);
 
-        /// <summary>
-        /// 入力ロック状態ストリームの購読を解除する
-        /// </summary>
-        public void UnbindInputLockStream()
-        {
-            _inputLockSubscription?.Dispose();
-            _inputLockSubscription = null;
-        }
 
-        /// <summary>
-        /// ゲームパッド入力状態を購読する
-        /// </summary>
-        /// <param name="input">
-        /// true: ゲームパッド入力 / false: マウス入力
-        /// </param>
-        public void BindGamePadInputStream(in IObservable<bool> input)
-        {
-            // 多重購読防止
-            _gamePadInputSubscription?.Dispose();
-
-            _gamePadInputSubscription = input
+            gamePadInput
                 .DistinctUntilChanged()
                 .Subscribe(isGamePadInput =>
                 {
-                    // 入力状態を更新
                     _isGamePadInput = isGamePadInput;
 
                     // --------------------------------------------------
@@ -453,39 +382,27 @@ namespace UISystem.Presentation
                     // --------------------------------------------------
                     if (isGamePadInput)
                     {
-                        // 最後に選択したボタンを初期選択
-                        RefreshSelectionState(_lastSelectedButtonEvent);
+                        // 最後に入力した選択状態を復元
+                        SetSelectionState(_lastSelectedButtonEvent);
 
                         return;
                     }
 
                     // --------------------------------------------------
-                    // 仮想パッド入力時
+                    // マウス入力時
                     // --------------------------------------------------
-                    // ホバー中ボタンが存在する場合
                     if (_lastHoveredButtonEvent != null)
                     {
-                        // ホバー対象を初期選択
+                        // ホバー中のボタンを選択状態にする
                         OnSelectButton(_lastHoveredButtonEvent);
-
                         return;
                     }
 
                     // 選択解除
                     OnUnSelectButton();
-                });
-        }
 
-        /// <summary>
-        /// ゲームパッド入力状態ストリームの購読を解除する
-        /// </summary>
-        public void UnbindGamePadInputStream()
-        {
-            // 購読解除
-            _gamePadInputSubscription?.Dispose();
-
-            // 参照解放
-            _gamePadInputSubscription = null;
+                })
+                .AddTo(_disposables);
         }
 
         // ======================================================
@@ -503,12 +420,12 @@ namespace UISystem.Presentation
             // 通常ボタンクリック
             _eventRouter.OnNormalButtonClick
                 .Subscribe(buttonEvent => OnNormalButtonClick(buttonEvent))
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
 
             // オプションボタンクリック
             _eventRouter.OnOptionButtonClick
                 .Subscribe(buttonEvent => OnOptionButtonClick(buttonEvent))
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
 
             // ホバー通知
             _eventRouter.OnHover
@@ -518,7 +435,7 @@ namespace UISystem.Presentation
 
                     OnSelectButton(buttonEvent);
                 })
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
 
             // ホバー解除通知
             _eventRouter.OnUnHover
@@ -529,17 +446,17 @@ namespace UISystem.Presentation
                     // ホバー対象を選択
                     OnUnSelectButton();
                 })
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
 
             // フォーカス通知
             _eventRouter.OnFocus
                 .Subscribe(buttonEvent => OnFocusButton(buttonEvent))
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
 
             // フォーカス解除通知
             _eventRouter.OnUnFocus
                 .Subscribe(buttonEvent => OnUnFocusButton(buttonEvent))
-                .AddTo(_disposables);
+                .AddTo(_routerDisposables);
         }
 
         /// <summary>
@@ -547,50 +464,8 @@ namespace UISystem.Presentation
         /// </summary>
         private void Dispose()
         {
-            _disposables?.Dispose();
+            _routerDisposables?.Dispose();
             _eventRouter?.Dispose();
-        }
-
-        // --------------------------------------------------
-        // キャンバス
-        // --------------------------------------------------
-        /// <summary>
-        /// スタートキャンバスを表示する
-        /// </summary>
-        private void ShowStartCanvas()
-        {
-            _dialogueCanvas.SetActive(false);
-
-            _startCanvas.SetActive(true);
-            _optionCanvas.SetActive(false);
-
-            _activeCanvasType = ActiveCanvasType.Start;
-        }
-
-        /// <summary>
-        /// オプションキャンバスを表示する
-        /// </summary>
-        private void ShowOptionCanvas()
-        {
-            _dialogueCanvas.SetActive(false);
-
-            _startCanvas.SetActive(false);
-            _optionCanvas.SetActive(true);
-
-            _activeCanvasType = ActiveCanvasType.Option;
-        }
-
-        /// <summary>
-        /// ダイアログキャンバスを表示する
-        /// </summary>
-        protected override void ShowDialogueCanvas()
-        {
-            base.ShowDialogueCanvas();
-
-            _startCanvas.SetActive(false);
-            _optionCanvas.SetActive(false);
-
-            _activeCanvasType = ActiveCanvasType.Dialogue;
         }
 
         // --------------------------------------------------
@@ -601,16 +476,25 @@ namespace UISystem.Presentation
         /// </summary>
         private void InitializeNormalButtons()
         {
-            // 辞書生成
-            _normalButtonEventTable = _buttonDictionaryBuilder.BuildNormalButtons(
-                _startButton,
-                _optionButton,
-                _optionCancelButton,
-                _optionDecideButton,
-                _dialogueYesButton,
-                _dialogueNoButton);
+            // --------------------------------------------------
+            // NormalButton 配列生成
+            // --------------------------------------------------
+            NormalButton[] normalButtons = new NormalButton[_baseNormalButtons.Length + _titleNormalButtons.Length];
 
+            // ベースボタン配列コピー
+            Array.Copy(_baseNormalButtons, 0,  normalButtons, 0, _baseNormalButtons.Length);
+
+            // タイトルボタン配列コピー
+            Array.Copy( _titleNormalButtons, 0, normalButtons, _baseNormalButtons.Length, _titleNormalButtons.Length);
+
+            // --------------------------------------------------
+            // 辞書生成
+            // --------------------------------------------------
+            _normalButtonEventTable = _buttonDictionaryBuilder.BuildNormalButtons(normalButtons);
+
+            // --------------------------------------------------
             // イベント登録
+            // --------------------------------------------------
             foreach (NormalButtonEvent buttonEvent in _normalButtonEventTable.Values)
             {
                 _eventRouter.RegisterNormalButton(buttonEvent);
@@ -622,79 +506,18 @@ namespace UISystem.Presentation
         /// </summary>
         private void InitializeOptionButtons()
         {
+            // --------------------------------------------------
             // 辞書生成
-            _optionBinders = _buttonDictionaryBuilder.BuildOptionButtons(
-                _optionButtonBinderFactory,
-                _playerCountButtons,
-                _limitTimeButtons,
-                _boardSizeButtons,
-                _connectCountButtons,
-                _cameraRotationSpeedButtons,
-                _pointerSpeedButtons);
+            // --------------------------------------------------
+            _optionBinders = _buttonDictionaryBuilder.BuildOptionButtons(_optionButtonBinderFactory, _titleOptionButtons);
 
+            // --------------------------------------------------
             // イベント登録
+            // --------------------------------------------------
             foreach (OptionButtonBinder binder in _optionBinders.Values)
             {
-                _eventRouter.RegisterOptionButtons(
-                    binder.Events);
+                _eventRouter.RegisterOptionButtons(binder.Events);
             }
-        }
-
-        /// <summary>
-        /// 通常ボタンイベントを取得する
-        /// </summary>
-        /// <param name="type">ボタン種別</param>
-        /// <param name="buttonEvent">取得した NormalButtonEvent</param>
-        /// <returns>取得した</returns>
-        private NormalButtonEvent GetNormalButtonEvent(in UIActionType type)
-        {
-            if (_normalButtonEventTable.TryGetValue(type,  out NormalButtonEvent buttonEvent))
-            {
-                return buttonEvent;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// 指定イベントに対応するボタン種別を取得する
-        /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        /// <param name="type">対応するボタン種別</param>
-        /// <returns>>true: 取得成功 / false: 取得失敗</returns>
-        private bool TryGetNormalButtonType(
-            in NormalButtonEvent buttonEvent,
-            out UIActionType type)
-        {
-            foreach (KeyValuePair<UIActionType, NormalButtonEvent> pair
-                in _normalButtonEventTable)
-            {
-                if (pair.Value == buttonEvent)
-                {
-                    type = pair.Key;
-                    return true;
-                }
-            }
-
-            type = default;
-
-            return false;
-        }
-
-        /// <summary>
-        /// ボタンの表示状態を更新する
-        /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        /// <param name="isVisible">表示状態</param>
-        private void SetButtonVisible(in BaseButtonEvent buttonEvent, in bool isVisible)
-        {
-            if (buttonEvent == null)
-            {
-                return;
-            }
-
-            // GameObject の表示状態を更新
-            buttonEvent.gameObject.SetActive(isVisible);
         }
 
         /// <summary>
@@ -732,9 +555,7 @@ namespace UISystem.Presentation
             if (buttonEvent is NormalButtonEvent normalButton)
             {
                 // 通常ボタンのフォーカス状態を有効化
-                _titleUIView.SetNormalFocus(
-                    normalButton.Button,
-                    isFocus);
+                _titleUIView.SetNormalFocus(normalButton.Button, isFocus);
 
                 return;
             }
@@ -743,19 +564,17 @@ namespace UISystem.Presentation
             if (buttonEvent is OptionButtonEvent optionButton)
             {
                 // オプションボタンのフォーカス状態を有効化
-                _titleUIView.SetOptionFocus(
-                    optionButton.Button,
-                    isFocus);
+                _titleUIView.SetOptionFocus(optionButton.Button, isFocus);
 
                 return;
             }
         }
 
         /// <summary>
-        /// 入力状態に応じて選択状態を更新する
+        /// 入力状態に応じて選択状態を設定する
         /// </summary>
         /// <param name="buttonEvent">再選択対象</param>
-        private void RefreshSelectionState(BaseButtonEvent buttonEvent = null)
+        private void SetSelectionState(BaseButtonEvent buttonEvent = null)
         {
             // ゲームパッド入力ではない場合
             if (!_isGamePadInput)
@@ -769,43 +588,17 @@ namespace UISystem.Presentation
             // 再選択対象が存在しない場合
             if (buttonEvent == null)
             {
-                // 初期選択を適用
-                SelectInitialButtonByCanvas();
+                // 現在キャンバスに対応する初期選択ボタンを取得
+                BaseButtonEvent initialButtonEvent = _titleUIStateController.GetInitialSelectedButton();
+
+                // 初期選択ボタンを選択
+                OnSelectButton(initialButtonEvent);
 
                 return;
             }
 
-            // 選択状態を更新
+            // 選択状態を設定
             OnSelectButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// 現在アクティブなキャンバスに応じて初期選択ボタンを選択する
-        /// </summary>
-        private void SelectInitialButtonByCanvas()
-        {
-            // 現在アクティブなキャンバス種別に応じて分岐
-            switch (_activeCanvasType)
-            {
-                // スタートキャンバス時
-                case ActiveCanvasType.Start:
-                    // スタートキャンバス初期選択ボタンを選択
-                    OnSelectButton(_initialSelectedStartCanvasButton);
-
-                    break;
-
-                // オプションキャンバス時
-                case ActiveCanvasType.Option:
-                    // オプションキャンバス初期選択ボタンを選択
-                    OnSelectButton(_initialSelectedOptionCanvasButton);
-
-                    break;
-
-                // ダイアログキャンバス時
-                case ActiveCanvasType.Dialogue:
-                    // ダイアログ表示処理と同時に設定するため記載なし
-                    break;
-            }
         }
 
         /// <summary>
@@ -839,7 +632,7 @@ namespace UISystem.Presentation
             for (int i = 1; i < connectCountBinder.Buttons.Length; i++)
             {
                 // インデックス 1 以降のボタンオブジェクト非表示
-                SetButtonVisible(connectCountBinder.Events[i], !isThreeSize);
+                connectCountBinder.Events[i].gameObject.SetActive(!isThreeSize);
             }
         }
 
@@ -855,14 +648,14 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // スタートボタン押下時
             // --------------------------------------------------
-            if (TryGetNormalButtonType(buttonEvent, out UIActionType typeStart)
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeStart)
                 && typeStart == UIActionType.TitleStart)
             {
-                // ダイアログ表示
-                ShowDialogueCanvas();
+                // ダイアログキャンバス表示
+                _titleUIStateController.ShowDialogueCanvas();
 
                 // ダイアログ YES ボタンを初期選択
-                RefreshSelectionState(GetNormalButtonEvent(UIActionType.DialogueYes));
+                SetSelectionState(_normalButtonResolver.Get(UIActionType.DialogueYes));
 
                 return;
             }
@@ -870,22 +663,22 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // オプションボタン押下時
             // --------------------------------------------------
-            if (TryGetNormalButtonType(buttonEvent, out UIActionType typeOption)
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeOption)
                 && typeOption == UIActionType.TitleOption)
             {
                 // オプションキャンバス表示
-                ShowOptionCanvas();
+                _titleUIStateController.ShowOptionCanvas();
 
                 // 最後に選択したボタンが OptionButton の場合
                 if (_lastSelectedButtonEvent is OptionButtonEvent optionButton)
                 {
                     // 最後に選択したオプションボタンを初期選択
-                    RefreshSelectionState(optionButton);
+                    SetSelectionState(optionButton);
                 }
                 else
                 {
                     // 入力状態に応じて初期選択を適用
-                    RefreshSelectionState();
+                    SetSelectionState();
                 }
 
                 // --------------------------------------------------
@@ -920,14 +713,14 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // オプションキャンセルボタン押下時
             // --------------------------------------------------
-            if (TryGetNormalButtonType(buttonEvent, out UIActionType typeCancel)
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeCancel)
                 && typeCancel == UIActionType.TitleOptionCancel)
             {
                 // スタートキャンバス表示
-                ShowStartCanvas();
+                _titleUIStateController.ShowStartCanvas();
 
                 // オプションボタンを初期選択
-                RefreshSelectionState(GetNormalButtonEvent(UIActionType.TitleOption));
+                SetSelectionState(_normalButtonResolver.Get(UIActionType.TitleOption));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -938,11 +731,11 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // オプション決定ボタン押下時
             // --------------------------------------------------
-            if (TryGetNormalButtonType(buttonEvent, out UIActionType typeDecide)
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDecide)
                 && typeDecide == UIActionType.TitleOptionDecide)
             {
                 // スタートキャンバス表示
-                ShowStartCanvas();
+                _titleUIStateController.ShowStartCanvas();
 
                 // オプション選択インデックスを更新
                 foreach (KeyValuePair<OptionType, OptionButtonBinder> binder in _optionBinders)
@@ -955,7 +748,7 @@ namespace UISystem.Presentation
                 }
 
                 // スタートボタンを初期選択
-                RefreshSelectionState(GetNormalButtonEvent(UIActionType.TitleStart));
+                SetSelectionState(_normalButtonResolver.Get(UIActionType.TitleStart));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -1013,7 +806,6 @@ namespace UISystem.Presentation
         private void OnFocusButton(BaseButtonEvent buttonEvent)
         {
             if (buttonEvent == null ||
-                buttonEvent.Button == null ||
                 buttonEvent.RectTransform == null)
             {
                 return;
@@ -1040,7 +832,7 @@ namespace UISystem.Presentation
         /// <param name="buttonEvent">対象ボタンイベント</param>
         private void OnUnFocusButton(BaseButtonEvent buttonEvent)
         {
-            if (buttonEvent == null || buttonEvent.Button == null)
+            if (buttonEvent == null)
             {
                 return;
             }

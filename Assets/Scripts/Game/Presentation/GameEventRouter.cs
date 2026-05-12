@@ -42,23 +42,23 @@ namespace GameSystem.Presentation
         /// <summary>GameOptionManager キャッシュ</summary>
         private readonly GameOptionManager _gameOptionManager;
 
-        /// <summary>InputManager キャッシュ</summary>
-        private readonly InputManager _inputManager;
-
         /// <summary>ScoreManager キャッシュ</summary>
         private readonly ScoreManager _scoreManager;
 
-        /// <summary>SceneObjectContainer キャッシュ配列</summary>
-        private readonly BoardPresenter[] _boardPresenters;
-
-        /// <summary>CameraPresenter キャッシュ</summary>
-        private readonly CameraPresenter _cameraPresenter;
+        /// <summary>InputManager キャッシュ</summary>
+        private readonly InputManager _inputManager;
 
         /// <summary>TitleUIPresenter キャッシュ</summary>
         private readonly TitleUIPresenter _titleUIPresenter;
 
         /// <summary>MainUIPresenter キャッシュ</summary>
         private readonly MainUIPresenter _mainUIPresenter;
+
+        /// <summary>CameraPresenter キャッシュ</summary>
+        private readonly CameraPresenter _cameraPresenter;
+
+        /// <summary>SceneObjectContainer キャッシュ配列</summary>
+        private readonly BoardPresenter[] _boardPresenters;
 
         // ======================================================
         // フィールド
@@ -74,15 +74,21 @@ namespace GameSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>購読管理</summary>
+        // --------------------------------------------------
+        // 購読管理
+        // --------------------------------------------------
+        /// <summary>共通購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
-
-        /// <summary>シーン変更購読管理</summary>
-        private readonly CompositeDisposable _sceneChangeDisposables = new CompositeDisposable();
 
         /// <summary>入力用購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
+        /// <summary>シーンロード用購読管理</summary>
+        private IDisposable _sceneLoadSubscription;
+
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
         /// <summary>シーン遷移予約通知用 Subject</summary>
         private readonly Subject<string> _onSceneChangeRequested = new Subject<string>();
 
@@ -95,6 +101,9 @@ namespace GameSystem.Presentation
         /// <summary>シーン遷移実行ストリーム</summary>
         public IObservable<Unit> OnSceneChangeExecuted => _onSceneChangeExecuted;
 
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
         /// <summary>現在フェーズストリーム</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
@@ -104,18 +113,30 @@ namespace GameSystem.Presentation
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
 
+        /// <summary>プレイヤー変更用 Subject</summary>
+        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
+
+        // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
         /// <summary>スコア更新用 Subject</summary>
         private readonly Subject<ScoreEvent> _onScoreUpdated = new Subject<ScoreEvent>();
 
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
         /// <summary>入力マッピング変更用 Subject</summary>
         private readonly Subject<int> _onMappingChanged = new Subject<int>();
-
-        /// <summary>ポインター座標変更用 Subject</summary>
-        private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
 
         /// <summary>ゲームパッド検知用 Subject</summary>
         private readonly Subject<bool> _onGamepadUsed = new Subject<bool>();
 
+        /// <summary>ポインター座標変更用 Subject</summary>
+        private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
+
+        // --------------------------------------------------
+        // UI
+        // --------------------------------------------------
         /// <summary>画面フェードイン開始通知用 Subject</summary>
         private readonly Subject<float> _fadeInTrigger = new Subject<float>();
 
@@ -131,31 +152,25 @@ namespace GameSystem.Presentation
         /// <summary>ゲーム開始入力用 Subject</summary>
         private readonly Subject<Unit> _onGameStartRequested = new Subject<Unit>();
 
-        /// <summary>プレイヤー変更用 Subject</summary>
-        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
-
+        // --------------------------------------------------
+        // ボード
+        // --------------------------------------------------
         /// <summary>駒配置入力用 Subject</summary>
         private readonly Subject<Unit> _onDropRequested = new Subject<Unit>();
 
-        /// <summary>回転入力用 Subject</summary>
+        /// <summary>ボード回転入力用 Subject</summary>
         private readonly Subject<Unit> _onRotateRequested = new Subject<Unit>();
 
-        /// <summary>回転実行用 Subject</summary>
+        /// <summary>ボード回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
-
-        /// <summary>シーンロード用購読管理</summary>
-        private IDisposable _sceneLoadSubscription;
 
         // ======================================================
         // 定数
         // ======================================================
 
-        /// <summary>3 x 3 ボードサイズ</summary>
-        private const int BOARD_SIZE_THREE = 3;
-
-        /// <summary>5 x 5 ボードサイズ</summary>
-        private const int BOARD_SIZE_FIVE = 5;
-
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
         /// <summary>タイトルシーン名</summary>
         private const string TITLE_SCENE_NAME = "TitleScene";
 
@@ -167,6 +182,15 @@ namespace GameSystem.Presentation
 
         /// <summary>リザルトシーン名</summary>
         private const string RESULT_SCENE_NAME = "ResultScene";
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>3 x 3 ボードサイズ</summary>
+        private const int BOARD_SIZE_THREE = 3;
+
+        /// <summary>5 x 5 ボードサイズ</summary>
+        private const int BOARD_SIZE_FIVE = 5;
 
         // ======================================================
         // コンストラクタ
@@ -228,7 +252,6 @@ namespace GameSystem.Presentation
                 .Skip(1)
                 .Subscribe(phase => HandlePhaseInputSwitch(phase))
                 .AddTo(_disposables);
-
             _phaseMachine.CurrentPlayerIndex
                 .DistinctUntilChanged()
                 .Skip(1)
@@ -238,18 +261,87 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
-            _inputManager.BindMappingStream(_onMappingChanged);
-            _inputManager.BindPointerPositionStream(_onPointerPositionChanged);
+            _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
 
             // スタートボタン押下
             _inputManager.StartButton.OnDown
                 .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
                 .AddTo(_disposables);
-
             // アクティブコントローラー変更
             _inputManager.ActiveDeviceType
                 .Subscribe(e => NotifyActiveControllerChanged(e))
                 .AddTo(_disposables);
+
+            // --------------------------------------------------
+            // UI
+            // --------------------------------------------------
+            if (_titleUIPresenter != null)
+            {
+                _titleUIPresenter.BindStreams(
+                    _currentPhase.Select(phase => phase != PhaseType.Title),
+                    _onGamepadUsed);
+
+                _titleUIPresenter.OnFocusPosition
+                    .Subscribe(e =>
+                     {
+                         _onPointerPositionChanged.OnNext(e);
+                     })
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnUpdateGameOption
+                    .Subscribe(e => HandleGameOptionUpdated(e))
+                    .AddTo(_disposables);
+
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+
+                _titleUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnFadeInCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnFadeOutCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+            }
+
+            if (_mainUIPresenter != null)
+            {
+                _mainUIPresenter.BindStreams(
+                    _currentPhase,
+                    _onPlayerChanged,
+                    _onScoreUpdated,
+                    _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _onRotateRequested,
+                    _phaseMachine.LimitTime);
+
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+
+                _mainUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnFadeInCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnFadeOutCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+            }
+
+            // --------------------------------------------------
+            // カメラ
+            // --------------------------------------------------
+            if (_cameraPresenter != null)
+            {
+                _cameraPresenter.BindStreams(
+                    _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _mainUIPresenter.OnSwitchProjection);
+            }
 
             // --------------------------------------------------
             // ボード
@@ -268,96 +360,13 @@ namespace GameSystem.Presentation
                     boardPresenter.OnInputReceived
                         .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                         .AddTo(_disposables);
-
                     boardPresenter.OnLineComplete
                         .Subscribe(e => HandleLineCompleted(e))
                         .AddTo(_disposables);
-
                     boardPresenter.OnPlayerEnd
                         .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
                         .AddTo(_disposables);
                 }
-            }
-
-            // --------------------------------------------------
-            // カメラ
-            // --------------------------------------------------
-            if (_cameraPresenter != null)
-            {
-                _cameraPresenter.BindInputLockStream(
-                    _currentPhase.Select(phase => phase != PhaseType.Play)
-                );
-                _cameraPresenter.BindBoardRotationPreparationStream(
-                    _mainUIPresenter.OnSwitchProjection.Select(_ => Unit.Default)
-                );
-            }
-
-            // --------------------------------------------------
-            // UI
-            // --------------------------------------------------
-            if (_titleUIPresenter != null)
-            {
-                _titleUIPresenter.BindInputLockStream(
-                    _currentPhase.Select(phase => phase != PhaseType.Title)
-                );
-                _titleUIPresenter.BindGamePadInputStream(_onGamepadUsed);
-
-                _titleUIPresenter.OnFocusPosition
-                    .Subscribe(e =>
-                     {
-                         _onPointerPositionChanged.OnNext(e);
-                     })
-                    .AddTo(_disposables);
-
-                _titleUIPresenter.OnUpdateGameOption
-                    .Subscribe(e => HandleGameOptionUpdated(e))
-                    .AddTo(_disposables);
-
-                // --------------------------------------------------
-                // 共通
-                // --------------------------------------------------
-                _titleUIPresenter.BindFadeStream(_fadeInTrigger, _fadeOutTrigger);
-
-                _titleUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneChangeRequested())
-                    .AddTo(_disposables);
-                _titleUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
-                    .AddTo(_disposables);
-                _titleUIPresenter.OnFadeOutCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
-                    .AddTo(_disposables);
-            }
-
-            if (_mainUIPresenter != null)
-            {
-                _mainUIPresenter.BindPhaseStream(_currentPhase);
-                _mainUIPresenter.BindLineCompleteStream(_onScoreUpdated);
-                _mainUIPresenter.BindLimitTimeStream(_phaseMachine.LimitTime);
-                _mainUIPresenter.BindInputLockStream(
-                    _currentPhase.Select(phase => phase != PhaseType.Play)
-                );
-                _mainUIPresenter.BindPlayerChangeStream(_onPlayerChanged);
-                _mainUIPresenter.BindRotateStream(_onRotateRequested);
-
-                _mainUIPresenter.OnSwitchProjection
-                    .Subscribe(e => _cameraPresenter.SwitchProjection(e))
-                    .AddTo(_disposables);
-
-                // --------------------------------------------------
-                // 共通
-                // --------------------------------------------------
-                _mainUIPresenter.BindFadeStream(_fadeInTrigger, _fadeOutTrigger);
-
-                _mainUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneChangeRequested())
-                    .AddTo(_disposables);
-                _mainUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
-                    .AddTo(_disposables);
-                _mainUIPresenter.OnFadeOutCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
-                    .AddTo(_disposables);
             }
         }
 
@@ -368,8 +377,6 @@ namespace GameSystem.Presentation
         {
             // 購読解除
             _disposables.Dispose();
-
-            _inputManager.UnbindMappingStream();
 
             foreach (BoardPresenter boardPresenter in _boardPresenters)
             {
@@ -382,43 +389,12 @@ namespace GameSystem.Presentation
                 boardPresenter.UnbindDropInputStream();
                 boardPresenter.UnbindRotateInputStream();
             }
-
-            if (_cameraPresenter != null)
-            {
-                _cameraPresenter.UnbindInputLockStream();
-                _cameraPresenter.UnbindBoardRotationPreparationStream();
-            }
-
-            if (_titleUIPresenter != null)
-            {
-                _titleUIPresenter.UnbindInputLockStream();
-                _titleUIPresenter.UnbindGamePadInputStream();
-
-                // --------------------------------------------------
-                // 共通
-                // --------------------------------------------------
-                _titleUIPresenter.UnbindFadeStream();
-            }
-            if (_mainUIPresenter != null)
-            {
-                _mainUIPresenter.UnbindPhaseStream();
-                _mainUIPresenter.UnbindLineCompleteStream();
-                _mainUIPresenter.UnbindLimitTimeStream();
-                _mainUIPresenter.UnbindInputLockStream();
-                _mainUIPresenter.UnbindPlayerChangeStream();
-                _mainUIPresenter.UnbindRotateStream();
-
-                // --------------------------------------------------
-                // 共通
-                // --------------------------------------------------
-                _mainUIPresenter.UnbindFadeStream();
-            }
         }
 
         /// <summary>
-        /// シーン変更ストリームを購読する
+        /// イベントストリームをまとめて購読する
         /// </summary>
-        public void BindSceneChangeStream(
+        public void BindStreams(
             IObservable<string> onPrepareStart,
             IObservable<float> onPrepareEnd,
             IObservable<float> onSceneChanged)
@@ -429,7 +405,7 @@ namespace GameSystem.Presentation
                     // ロード準備開始
                     HandleLoadPrepareStart(sceneName);
                 })
-                .AddTo(_sceneChangeDisposables);
+                .AddTo(_disposables);
 
             onPrepareEnd
                 .Subscribe(fadeTime =>
@@ -437,7 +413,7 @@ namespace GameSystem.Presentation
                     // ロード準備完了
                     HandleLoadPrepareEnd(fadeTime);
                 })
-                .AddTo(_sceneChangeDisposables);
+                .AddTo(_disposables);
 
             onSceneChanged
                 .Subscribe(seconds =>
@@ -445,15 +421,7 @@ namespace GameSystem.Presentation
                     // フェードアウト時間を通知
                     _fadeOutTrigger.OnNext(seconds);
                 })
-                .AddTo(_sceneChangeDisposables);
-        }
-
-        /// <summary>
-        /// シーン変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindSceneChangeStream()
-        {
-            _sceneChangeDisposables?.Dispose();
+                .AddTo(_disposables);
         }
 
         /// <summary>
@@ -545,7 +513,7 @@ namespace GameSystem.Presentation
                             // シーン遷移実行通知
                             _onSceneChangeExecuted.OnNext(Unit.Default);
                         })
-                        .AddTo(_sceneChangeDisposables);
+                        .AddTo(_disposables);
 
                     break;
 
@@ -590,6 +558,42 @@ namespace GameSystem.Presentation
                     nextPhase
                 )
             );
+        }
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>
+        /// ゲームオプション更新時の処理を行う
+        /// </summary>
+        private void HandleGameOptionUpdated(in OptionButtonData data)
+        {
+            switch (data.Type)
+            {
+                case OptionType.PlayerCount:
+                    _gameOptionManager.SetPlayerCount(data.IntValue);
+                    break;
+
+                case OptionType.LimitTime:
+                    _gameOptionManager.SetLimitTime(data.FloatValue);
+                    break;
+
+                case OptionType.BoardSize:
+                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
+                    break;
+
+                case OptionType.ConnectCount:
+                    _gameOptionManager.SetConnectCount(data.IntValue);
+                    break;
+
+                case OptionType.CameraRotationSpeed:
+                    _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
+                    break;
+
+                case OptionType.PointerSpeed:
+                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
+                    break;
+            }
         }
 
         // --------------------------------------------------
@@ -787,7 +791,16 @@ namespace GameSystem.Presentation
             _inputDisposables = new CompositeDisposable();
 
             // ボタン A 押下
-            _inputManager.ButtonA.OnUp
+            _inputManager.ButtonA.OnDown
+                .Subscribe(_ =>
+                {
+                    // ゲーム開始イベント発火
+                    _onGameStartRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン B 押下
+            _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
                     // ゲーム開始イベント発火
@@ -936,42 +949,6 @@ namespace GameSystem.Presentation
             }
 
             NotifyPhaseChanged(nextPhase);
-        }
-
-        // --------------------------------------------------
-        // オプション
-        // --------------------------------------------------
-        /// <summary>
-        /// ゲームオプション更新時の処理を行う
-        /// </summary>
-        private void HandleGameOptionUpdated(in OptionButtonData data)
-        {
-            switch (data.Type)
-            {
-                case OptionType.PlayerCount:
-                    _gameOptionManager.SetPlayerCount(data.IntValue);
-                    break;
-
-                case OptionType.LimitTime:
-                    _gameOptionManager.SetLimitTime(data.FloatValue);
-                    break;
-
-                case OptionType.BoardSize:
-                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
-                    break;
-
-                case OptionType.ConnectCount:
-                    _gameOptionManager.SetConnectCount(data.IntValue);
-                    break;
-
-                case OptionType.CameraRotationSpeed:
-                    _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
-                    break;
-
-                case OptionType.PointerSpeed:
-                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
-                    break;
-            }
         }
 
         // --------------------------------------------------

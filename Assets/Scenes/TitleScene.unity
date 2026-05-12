@@ -401,7 +401,7 @@ GameObject:
   - component: {fileID: 117030197}
   - component: {fileID: 117030198}
   m_Layer: 5
-  m_Name: PlayerCountButton
+  m_Name: PlayerCountButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -889,6 +889,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb3a2cb6b84db754fabde32dfb520398, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIPresentation::UISystem.Presentation.TitleUIPresenter
+  _dialogueCanvas: {fileID: 1023710145}
+  _pointer: {fileID: 8161198212952549266}
+  _baseNormalButtons:
+  - _type: 1
+    _button: {fileID: 1818665429}
+  - _type: 2
+    _button: {fileID: 1923632927}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEnabled: 0
@@ -915,20 +922,28 @@ MonoBehaviour:
   _distortionNoise: 0
   _startCanvas: {fileID: 208103528}
   _optionCanvas: {fileID: 1937325282}
-  _dialogueCanvas: {fileID: 1023710145}
-  _pointer: {fileID: 8161198212952549266}
-  _startButton: {fileID: 1465509588}
-  _optionButton: {fileID: 966253134}
-  _optionCancelButton: {fileID: 1277195818}
-  _optionDecideButton: {fileID: 1759186153}
-  _dialogueYesButton: {fileID: 1818665429}
-  _dialogueNoButton: {fileID: 1923632927}
-  _playerCountButtons: {fileID: 117030198}
-  _limitTimeButtons: {fileID: 254447543}
-  _boardSizeButtons: {fileID: 1513795295}
-  _connectCountButtons: {fileID: 1792331701}
-  _cameraRotationSpeedButtons: {fileID: 1123100631}
-  _pointerSpeedButtons: {fileID: 713872354}
+  _titleNormalButtons:
+  - _type: 3
+    _button: {fileID: 1465509588}
+  - _type: 4
+    _button: {fileID: 966253134}
+  - _type: 5
+    _button: {fileID: 1277195818}
+  - _type: 6
+    _button: {fileID: 1759186153}
+  _titleOptionButtons:
+  - _type: 0
+    _group: {fileID: 117030198}
+  - _type: 1
+    _group: {fileID: 254447543}
+  - _type: 2
+    _group: {fileID: 1513795295}
+  - _type: 3
+    _group: {fileID: 1792331701}
+  - _type: 4
+    _group: {fileID: 1123100631}
+  - _type: 5
+    _group: {fileID: 713872354}
   _normalFocusOnColor: {r: 1, g: 1, b: 1, a: 1}
   _normalFocusOffColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   _optionSelectOnColor: {r: 1, g: 1, b: 1, a: 1}
@@ -937,12 +952,7 @@ MonoBehaviour:
   _optionFocusOffColor: {r: 0.5, g: 0.5, b: 0.5, a: 0}
   _initialSelectedStartCanvasButton: {fileID: 1465509592}
   _initialSelectedOptionCanvasButton: {fileID: 999518384}
-  _playerCountSelectedIndex: 0
-  _limitTimeSelectedIndex: 1
-  _boardSizeSelectedIndex: 1
-  _connectCountSelectedIndex: 0
-  _cameraRotationSpeedSelectedIndex: 1
-  _pointerSpeedSelectedIndex: 1
+  _optionIndexTable: {fileID: 11400000, guid: 0c3e3a8a69ba4a64097d565de8438fb6, type: 2}
   _boardAnimator: {fileID: 70761840}
 --- !u!1 &216449496
 GameObject:
@@ -1092,7 +1102,7 @@ GameObject:
   - component: {fileID: 254447542}
   - component: {fileID: 254447543}
   m_Layer: 5
-  m_Name: LimitTimeButton
+  m_Name: LimitTimeButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3643,7 +3653,7 @@ GameObject:
   - component: {fileID: 713872353}
   - component: {fileID: 713872354}
   m_Layer: 5
-  m_Name: PointerSpeedButton
+  m_Name: PointerSpeedButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5654,7 +5664,7 @@ GameObject:
   - component: {fileID: 1123100630}
   - component: {fileID: 1123100631}
   m_Layer: 5
-  m_Name: CameraRotationSpeedButton
+  m_Name: CameraRotationSpeedButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7600,7 +7610,7 @@ GameObject:
   - component: {fileID: 1513795294}
   - component: {fileID: 1513795295}
   m_Layer: 5
-  m_Name: BoardSizeButton
+  m_Name: BoardSizeButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9023,7 +9033,7 @@ GameObject:
   - component: {fileID: 1792331700}
   - component: {fileID: 1792331701}
   m_Layer: 5
-  m_Name: ConnectCountButton
+  m_Name: ConnectCountButtons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

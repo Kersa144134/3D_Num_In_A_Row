@@ -107,11 +107,8 @@ namespace CameraSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>入力ロック状態購読</summary>
-        private IDisposable _inputLockSubscription;
-
-        /// <summary>ボード回転準備状態購読</summary>
-        private IDisposable _rotationPreparationSubscription;
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
         // ======================================================
         // IUpdatable イベント
@@ -192,7 +189,7 @@ namespace CameraSystem.Presentation
             // --------------------------------------------------
             // 回転処理
             // --------------------------------------------------
-            // 入力がロックされている場合は処理なし
+            // 入力ロック中は処理なし
             if (_isInputLock)
             {
                 return;
@@ -203,7 +200,8 @@ namespace CameraSystem.Presentation
 
         public void OnExit()
         {
-            UnbindInputLockStream();
+            // イベント購読解除
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -211,76 +209,43 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力ロック状態ストリームを購読する
+        /// 入力ロックおよびボード回転準備ストリームをまとめて購読する
         /// </summary>
-        /// <param name="stream">true:ロック / false:解除</param>
-        public void BindInputLockStream(in IObservable<bool> stream)
+        /// <param name="inputLock">入力ロック状態ストリーム（true:ロック / false:解除）</param>
+        /// <param name="rotationPreparation">ボード回転準備トリガーストリーム</param>
+        public void BindStreams(
+            IObservable<bool> inputLock,
+            IObservable<bool> rotationPreparation)
         {
-            // 多重購読防止
-            _inputLockSubscription?.Dispose();
-
-            _inputLockSubscription = stream
+            inputLock
                 .Subscribe(isLock =>
                 {
-                    // 入力ロック状態を更新
                     _isInputLock = isLock;
 
                     if (_isInputLock)
                     {
-                        // 回転速度リセット
                         _rotationUseCase.ResetRotationVelocity();
                     }
-                });
-        }
 
-        /// <summary>
-        /// 入力ロック状態ストリームの購読を解除する
-        /// </summary>
-        public void UnbindInputLockStream()
-        {
-            _inputLockSubscription?.Dispose();
-            _inputLockSubscription = null;
-        }
+                })
+                .AddTo(_disposables);
 
-        /// <summary>
-        /// ボード回転準備状態ストリームを購読する
-        /// </summary>
-        /// <param name="stream">true:開始 / false:終了</param>
-        public void BindBoardRotationPreparationStream(in IObservable<Unit> stream)
-        {
-            // 多重購読防止
-            _rotationPreparationSubscription?.Dispose();
-
-            _rotationPreparationSubscription = stream
-                .Subscribe(_ =>
+            rotationPreparation
+                .Subscribe(isPerspective =>
                 {
-                    // 入力ロック
                     _isInputLock = true;
 
-                    // ボード回転準備状態
                     _cameraModel.SetRotationX(90f);
                     _cameraModel.SetRotationY(0f);
 
-                    _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
-                });
-        }
+                    _cameraView.ApplyRotation(
+                        _cameraModel.RotationX,
+                        _cameraModel.RotationY);
 
-        /// <summary>
-        /// ボード回転準備状態ストリームの購読を解除する
-        /// </summary>
-        public void UnbindBoardRotationPreparationStream()
-        {
-            _rotationPreparationSubscription?.Dispose();
-            _rotationPreparationSubscription = null;
-        }
+                    _projectionService.SetProjection(_camera, isPerspective);
 
-        /// <summary>
-        /// 投影方式を透視または平行に切り替える
-        /// </summary>
-        /// <param name="isPerspective">true:透視 / false:平行</param>
-        public void SwitchProjection(in bool isPerspective)
-        {
-            _projectionService.SetProjection(_camera, isPerspective);
+                })
+                .AddTo(_disposables);
         }
 
         // ======================================================
