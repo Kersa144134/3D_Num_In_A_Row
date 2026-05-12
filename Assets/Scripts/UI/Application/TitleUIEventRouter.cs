@@ -1,9 +1,9 @@
 // ======================================================
-// TitleUIEventRouter.cs
+// UIEventRouter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-09
 // 更新日時 : 2026-05-09
-// 概要     : タイトル UI のイベント通知を管理する
+// 概要     : UI のイベント通知を管理する
 // ======================================================
 
 using System;
@@ -13,9 +13,9 @@ using UISystem.Infrastructure;
 namespace UISystem.Application
 {
     /// <summary>
-    /// タイトル UI のイベント通知を管理する
+    /// UI のイベント通知を管理する
     /// </summary>
-    public sealed class TitleUIEventRouter : IDisposable
+    public sealed class UIEventRouter : IDisposable
     {
         // ======================================================
         // UniRx 変数
@@ -30,17 +30,17 @@ namespace UISystem.Application
         /// <summary>オプションボタンクリック通知</summary>
         private readonly Subject<OptionButtonEvent> _onOptionButtonClick = new Subject<OptionButtonEvent>();
 
+        /// <summary>ホバー通知</summary>
+        private readonly Subject<BaseButtonEvent> _onHover = new Subject<BaseButtonEvent>();
+
+        /// <summary>ホバー解除通知</summary>
+        private readonly Subject<BaseButtonEvent> _onUnHover = new Subject<BaseButtonEvent>();
+
         /// <summary>フォーカス通知</summary>
         private readonly Subject<BaseButtonEvent> _onFocus = new Subject<BaseButtonEvent>();
 
         /// <summary>フォーカス解除通知</summary>
         private readonly Subject<BaseButtonEvent> _onUnFocus = new Subject<BaseButtonEvent>();
-
-        /// <summary>選択通知</summary>
-        private readonly Subject<BaseButtonEvent> _onSelect = new Subject<BaseButtonEvent>();
-
-        /// <summary>選択解除通知</summary>
-        private readonly Subject<BaseButtonEvent> _onUnSelect = new Subject<BaseButtonEvent>();
 
         // ======================================================
         // プロパティ
@@ -52,17 +52,17 @@ namespace UISystem.Application
         /// <summary>オプションボタンクリック通知</summary>
         public IObservable<OptionButtonEvent> OnOptionButtonClick => _onOptionButtonClick;
 
+        /// <summary>ホバー通知</summary>
+        public IObservable<BaseButtonEvent> OnHover => _onHover;
+
+        /// <summary>ホバー解除通知</summary>
+        public IObservable<BaseButtonEvent> OnUnHover => _onUnHover;
+
         /// <summary>フォーカス通知</summary>
         public IObservable<BaseButtonEvent> OnFocus => _onFocus;
 
         /// <summary>フォーカス解除通知</summary>
         public IObservable<BaseButtonEvent> OnUnFocus => _onUnFocus;
-
-        /// <summary>選択通知</summary>
-        public IObservable<BaseButtonEvent> OnSelect => _onSelect;
-
-        /// <summary>選択解除通知</summary>
-        public IObservable<BaseButtonEvent> OnUnSelect => _onUnSelect;
 
         // ======================================================
         // パブリックメソッド
@@ -84,10 +84,7 @@ namespace UISystem.Application
 
             // クリック
             buttonEvent.OnNormalClickAsObservable
-                .Subscribe(_ =>
-                {
-                    _onNormalButtonClick.OnNext(buttonEvent);
-                })
+                .Subscribe(_ => _onNormalButtonClick.OnNext(buttonEvent))
                 .AddTo(_disposable);
         }
 
@@ -114,10 +111,7 @@ namespace UISystem.Application
 
                 // クリック
                 buttonEvent.OnOptionClickAsObservable
-                    .Subscribe(_ =>
-                    {
-                        _onOptionButtonClick.OnNext(buttonEvent);
-                    })
+                    .Subscribe(_ => _onOptionButtonClick.OnNext(buttonEvent))
                     .AddTo(_disposable);
             }
         }
@@ -142,38 +136,22 @@ namespace UISystem.Application
         {
             // ホバー開始
             buttonEvent.OnHoverEnterAsObservable
-                .Subscribe(_ =>
-                {
-                    // 選択状態にする
-                    _onSelect.OnNext(buttonEvent);
-                })
+                .Subscribe(_ => _onHover.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
             // ホバー終了
             buttonEvent.OnHoverExitAsObservable
-                .Subscribe(_ =>
-                {
-                    // 選択状態を解除する
-                    _onUnSelect.OnNext(buttonEvent);
-                })
+                .Subscribe(_ => _onUnHover.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
-            // 選択開始
+            // フォーカス開始
             buttonEvent.OnSelectEnterAsObservable
-                .Subscribe(_ =>
-                {
-                    // フォーカス状態にする
-                    _onFocus.OnNext(buttonEvent);
-                })
+                .Subscribe(_ => _onFocus.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
-            // 選択終了
+            // フォーカス終了
             buttonEvent.OnSelectExitAsObservable
-                .Subscribe(_ =>
-                {
-                    // フォーカス状態を解除する
-                    _onUnFocus.OnNext(buttonEvent);
-                })
+                .Subscribe(_ => _onUnFocus.OnNext(buttonEvent))
                 .AddTo(_disposable);
         }
     }

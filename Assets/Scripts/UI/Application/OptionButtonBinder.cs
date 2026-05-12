@@ -8,10 +8,10 @@
 
 using UnityEngine.UI;
 using OptionSystem.Domain;
-using UISystem.Application;
 using UISystem.Infrastructure;
+using UISystem.Domain;
 
-namespace UISystem.Presentation
+namespace UISystem.Application
 {
     /// <summary>
     /// オプションボタンと選択制御クラスを結びつけるバインダークラス
@@ -99,6 +99,23 @@ namespace UISystem.Presentation
         public int GetCurrentSelectedIndex()
         {
             return _controller.GetCurrentSelectedIndex();
+        }
+
+        /// <summary>
+        /// OptionType を UIActionType に変換する
+        /// </summary>
+        public UIActionType ToUIAction(in OptionType type)
+        {
+            return type switch
+            {
+                OptionType.PlayerCount => UIActionType.OptionPlayerCount,
+                OptionType.LimitTime => UIActionType.OptionLimitTime,
+                OptionType.BoardSize => UIActionType.OptionBoardSize,
+                OptionType.ConnectCount => UIActionType.OptionConnectCount,
+                OptionType.CameraRotationSpeed => UIActionType.OptionCameraRotationSpeed,
+                OptionType.PointerSpeed => UIActionType.OptionPointerSpeed,
+                _ => UIActionType.None
+            };
         }
     }
 }

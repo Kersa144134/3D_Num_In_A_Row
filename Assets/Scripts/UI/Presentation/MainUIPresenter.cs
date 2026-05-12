@@ -46,14 +46,6 @@ namespace UISystem.Presentation
         private TextMeshProUGUI _limitTimeText;
 
         // --------------------------------------------------
-        // ポインター
-        // --------------------------------------------------
-        [Header("ポインター")]
-        /// <summary>ポインター</summary>
-        [SerializeField]
-        private GameObject _pointer;
-
-        // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
         [Header("アニメーター")]

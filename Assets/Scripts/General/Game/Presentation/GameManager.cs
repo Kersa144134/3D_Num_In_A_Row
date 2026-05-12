@@ -259,8 +259,7 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             _eventRouter.Subscribe(_phaseMachine);
-            _eventRouter.BindSceneLoadPrepareStream(_onLoadPrepareStart, _onLoadPrepareEnd);
-            _eventRouter.BindSceneChangeStream(_onSceneChanged);
+            _eventRouter.BindSceneChangeStream(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
 
             // シーン変更後イベント
             TriggerSceneChangedEventAsync().Forget();
@@ -327,7 +326,6 @@ namespace GameSystem.Presentation
             // イベント購読解除
             _disposables?.Dispose();
             _eventRouter?.Dispose();
-            _eventRouter?.UnbindSceneLoadPrepareStream();
             _eventRouter?.UnbindSceneChangeStream();
         }
 
@@ -418,6 +416,9 @@ namespace GameSystem.Presentation
         {
             _sceneLoader ??= new SceneLoader();
 
+            // イベント購読
+            _eventRouter.BindSceneLoadProgressStream(_sceneLoader.OnLoadProgress);
+
             await _sceneLoader.BeginLoadSceneAsync(nextScene);
         }
 
@@ -430,6 +431,9 @@ namespace GameSystem.Presentation
             {
                 return;
             }
+
+            // イベント購読
+            _eventRouter.UnbindSceneLoadProgressStream();
 
             await _sceneLoader.CommitSceneChangeAsync();
         }

@@ -12,6 +12,8 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UniRx;
 using PhaseSystem.Domain;
+using UISystem.Application;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -24,6 +26,34 @@ namespace UISystem.Presentation
         // ======================================================
         // インスペクタ設定
         // ======================================================
+
+        // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
+        [Header("キャンバス")]
+        /// <summary>ダイアログ関連の UI を表示するキャンバス</summary>
+        [SerializeField]
+        protected GameObject _dialogueCanvas;
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        [Header("ポインター")]
+        /// <summary>ポインターを表示する Image</summary>
+        [SerializeField]
+        protected GameObject _pointer;
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        [Header("基本ボタン")]
+        /// <summary>ダイアログの Yes ボタン</summary>
+        [SerializeField]
+        protected NormalButton _dialogueYesButton;
+
+        /// <summary>ダイアログの No ボタン</summary>
+        [SerializeField]
+        protected NormalButton _dialogueNoButton;
 
         // --------------------------------------------------
         // 演出 <2 値化>
@@ -191,6 +221,11 @@ namespace UISystem.Presentation
         private BaseUIView _view;
 
         /// <summary>
+        /// UIボタン辞書およびバインダー構築を行うビルダークラス
+        /// </summary>
+        protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
+
+        /// <summary>
         /// フェードシステム
         /// </summary>
         protected Fade _fade;
@@ -203,6 +238,9 @@ namespace UISystem.Presentation
         /// エフェクト用アニメーター
         /// </summary>
         protected Animator _effectAnimator;
+
+        /// <summary>ポインターアニメーター</summary>
+        protected Animator _pointerAnimator;
 
         // ======================================================
         // UniRx 変数
@@ -238,8 +276,7 @@ namespace UISystem.Presentation
 
         public void OnEnter()
         {
-            _effectAnimator = GetComponent<Animator>();
-
+            // インスタンスからコンポーネント取得
             _fade = Fade.Instance;
 
             _view = new BaseUIView(
@@ -251,7 +288,12 @@ namespace UISystem.Presentation
                 _distortionMaterial
             );
 
+            // アニメーター取得
+            _effectAnimator = GetComponent<Animator>();
+            _pointerAnimator = _pointer.GetComponent<Animator>();
+
             SetAnimatorUnscaledTime(_effectAnimator);
+            SetAnimatorUnscaledTime(_pointerAnimator);
 
             OnEnterInternal();
         }
@@ -326,27 +368,21 @@ namespace UISystem.Presentation
         /// <summary>
         /// フェードイン開始イベントを購読する
         /// </summary>
-        public void BindFadeInStream(IObservable<float> seconds)
+        public void BindFadeStream(in IObservable<float> fadeInSeconds, in IObservable<float> fadeOutSeconds)
         {
             // 多重購読防止
             _fadeInSubscription?.Dispose();
 
-            _fadeInSubscription = seconds
+            _fadeInSubscription = fadeInSeconds
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeInRoutine(time));
                 });
-        }
 
-        /// <summary>
-        /// フェードアウト開始イベントを購読する
-        /// </summary>
-        public void BindFadeOutStream(IObservable<float> seconds)
-        {
             // 多重購読防止
             _fadeOutSubscription?.Dispose();
 
-            _fadeOutSubscription = seconds
+            _fadeOutSubscription = fadeOutSeconds
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeOutRoutine(time));
@@ -367,6 +403,14 @@ namespace UISystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// ダイアログキャンバスを表示する
+        /// </summary>
+        protected virtual void ShowDialogueCanvas()
+        {
+            _dialogueCanvas.SetActive(true);
+        }
 
         /// <summary>
         /// フェードイン処理
@@ -419,7 +463,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// アニメーターをタイムスケール非依存に設定する
         /// </summary>
-        protected void SetAnimatorUnscaledTime(in Animator animator)
+        private void SetAnimatorUnscaledTime(in Animator animator)
         {
             if (animator == null)
             {

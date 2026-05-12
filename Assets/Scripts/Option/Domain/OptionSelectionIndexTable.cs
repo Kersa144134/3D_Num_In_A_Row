@@ -6,7 +6,6 @@
 // 概要     : 各オプション種別に対応する選択インデックスを管理するテーブル
 // ======================================================
 
-using System;
 using System.Collections.Generic;
 
 namespace OptionSystem.Domain

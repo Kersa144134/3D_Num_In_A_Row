@@ -37,26 +37,39 @@ namespace UISystem.Presentation
         /// <summary>CanvasRect</summary>
         private readonly RectTransform _canvasRect;
 
-        /// <summary>選択 ON 時カラー</summary>
-        private readonly Color _selectOnColor;
+        /// <summary>通常フォーカス時カラー</summary>
+        private Color _normalFocusOnColor;
 
-        /// <summary>選択 OFF 時カラー</summary>
-        private readonly Color _selectOffColor;
+        /// <summary>通常非フォーカス時カラー</summary>
+        private Color _normalFocusOffColor;
 
-        /// <summary>フォーカス ON 時カラー</summary>
-        private readonly Color _focusOnColor;
+        /// <summary>オプション選択時カラー</summary>
+        private Color _optionSelectOnColor;
 
-        /// <summary>フォーカス OFF 時カラー</summary>
-        private readonly Color _focusOffColor;
+        /// <summary>オプション非選択時カラー</summary>
+        private Color _optionSelectOffColor;
+
+        /// <summary>オプションフォーカス時カラー</summary>
+        private Color _optionFocusOnColor;
+
+        /// <summary>オプション非フォーカス時カラー</summary>
+        private Color _optionFocusOffColor;
 
         // ======================================================
         // 辞書
         // ======================================================
 
         /// <summary>
-        /// Button に紐づく Image を保持するキャッシュ辞書
+        /// 通常ボタン に紐づく Image キャッシュ
         /// </summary>
-        private readonly Dictionary<Button, Image> _buttonImageCache = new();
+        private readonly Dictionary<Button, Image> _normalButtonImageCache =
+            new Dictionary<Button, Image>();
+
+        /// <summary>
+        /// オプションボタン に紐づく Image キャッシュ
+        /// </summary>
+        private readonly Dictionary<Button, Image> _optionButtonImageCache =
+            new Dictionary<Button, Image>();
 
         // ======================================================
         // コンストラクタ
@@ -67,16 +80,20 @@ namespace UISystem.Presentation
         /// </summary>
         public TitleUIView(
             in GameObject pointer,
-            in Color selectOnColor,
-            in Color selectOffColor,
-            in Color focusOnColor,
-            in Color focusOffColor)
+            in Color normalFocusOnColor,
+            in Color normalfocusOffColor,
+            in Color optionSelectOnColor,
+            in Color optionSelectOffColor,
+            in Color optionFocusOnColor,
+            in Color optionFocusOffColor)
         {
             _pointer = pointer;
-            _selectOnColor = selectOnColor;
-            _selectOffColor = selectOffColor;
-            _focusOnColor = focusOnColor;
-            _focusOffColor = focusOffColor;
+            _normalFocusOnColor = normalFocusOnColor;
+            _normalFocusOffColor = normalfocusOffColor;
+            _optionSelectOnColor = optionSelectOnColor;
+            _optionSelectOffColor = optionSelectOffColor;
+            _optionFocusOnColor = optionFocusOnColor;
+            _optionFocusOffColor = optionFocusOffColor;
 
             // --------------------------------------------------
             // ポインター初期化
@@ -143,8 +160,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             for (int index = 0; index < count; index++)
             {
-                Button button =
-                    buttonArray[index];
+                Button button = buttonArray[index];
 
                 if (button == null)
                 {
@@ -168,56 +184,48 @@ namespace UISystem.Presentation
                 }
 
                 // 選択状態に応じて色反映
-                image.color = selectStateArray[index] ? _selectOnColor : _selectOffColor;
+                image.color = selectStateArray[index] ? _optionSelectOnColor : _optionSelectOffColor;
             }
         }
 
         /// <summary>
-        /// フォーカス状態更新
+        /// 通常ボタンのフォーカス状態を更新する
         /// </summary>
-        public void SetFocus(in Button button, in bool isHover)
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        public void SetNormalFocus(in Button button, in bool isFocus)
         {
-            if (button == null)
-            {
-                return;
-            }
+            // 通常ボタン辞書へ登録
+            RegisterButtonImageCache(
+                button,
+                _normalButtonImageCache);
 
-            // キャッシュから Image を取得
-            if (_buttonImageCache.TryGetValue(button, out Image image) == false)
-            {
-                // Button 本体の Image を取得
-                image = button.image;
+            SetFocusState(
+                button,
+                isFocus,
+                _normalButtonImageCache,
+                _normalFocusOnColor,
+                _normalFocusOffColor);
+        }
 
-                if (image == null)
-                {
-                    return;
-                }
+        /// <summary>
+        /// オプションボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        public void SetOptionFocus(in Button button, in bool isFocus)
+        {
+            // オプションボタン辞書へ登録
+            RegisterButtonImageCache(
+                button,
+                _optionButtonImageCache);
 
-                // 辞書登録
-                _buttonImageCache.Add(button, image);
-            }
-
-            foreach (KeyValuePair<Button, Image> cache in _buttonImageCache)
-            {
-                if (cache.Value == null)
-                {
-                    continue;
-                }
-
-                // 対象 Button のみ指定状態を反映
-                if (cache.Key == button)
-                {
-                    // フォーカス状態に応じて色反映
-                    cache.Value.color = isHover
-                        ? _focusOnColor
-                        : _focusOffColor;
-
-                    continue;
-                }
-
-                // 対象以外はフォーカス OFF 状態へ変更
-                cache.Value.color = _focusOffColor;
-            }
+            SetFocusState(
+                button,
+                isFocus,
+                _optionButtonImageCache,
+                _optionFocusOnColor,
+                _optionFocusOffColor);
         }
 
         // ======================================================
@@ -251,6 +259,109 @@ namespace UISystem.Presentation
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Button と Image の対応情報を登録する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="cacheDictionary">登録先辞書</param>
+        private void RegisterButtonImageCache(
+            in Button button,
+            in Dictionary<Button, Image> cacheDictionary)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            // 既に登録済みの場合は処理なし
+            if (cacheDictionary.ContainsKey(button))
+            {
+                return;
+            }
+
+            // Button 本体の Image を取得
+            Image image = button.image;
+
+            if (image == null)
+            {
+                return;
+            }
+
+            cacheDictionary.Add(button, image);
+        }
+
+        /// <summary>
+        /// 指定ボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        /// <param name="cacheDictionary">対象辞書</param>
+        /// <param name="focusOnColor">フォーカス ON 時の色</param>
+        /// <param name="focusOffColor">対象ボタンの OFF 色</param>
+        private void SetFocusState(
+            in Button button,
+            in bool isFocus,
+            in Dictionary<Button, Image> cacheDictionary,
+            in Color focusOnColor,
+            in Color focusOffColor)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            // 対象外辞書を取得
+            Dictionary<Button, Image> otherDictionary =
+                cacheDictionary == _normalButtonImageCache
+                    ? _optionButtonImageCache
+                    : _normalButtonImageCache;
+
+            // --------------------------------------------------
+            // 指定辞書のフォーカス状態更新
+            // --------------------------------------------------
+            foreach (KeyValuePair<Button, Image> cache in cacheDictionary)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // 対象ボタンの場合
+                if (cache.Key == button)
+                {
+                    // フォーカス状態に応じた色を設定
+                    cache.Value.color = isFocus
+                        ? focusOnColor
+                        : focusOffColor;
+
+                    continue;
+                }
+
+                // 対象外ボタンはフォーカス OFF 状態へ変更
+                cache.Value.color = focusOffColor;
+            }
+
+            // --------------------------------------------------
+            // 非対象辞書のフォーカス状態更新
+            // --------------------------------------------------
+            foreach (KeyValuePair<Button, Image> cache in otherDictionary)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // 対象外辞書に対応する OFF カラーを取得
+                Color otherDictionaryOffColor =
+                    cacheDictionary == _normalButtonImageCache
+                        ? _optionFocusOffColor
+                        : _normalFocusOffColor;
+                
+                // 非対象辞書はすべてフォーカス OFF 状態へ変更
+                cache.Value.color = otherDictionaryOffColor;
+            }
         }
     }
 }

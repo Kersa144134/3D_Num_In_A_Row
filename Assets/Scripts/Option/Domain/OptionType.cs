@@ -17,11 +17,22 @@ namespace OptionSystem.Domain
     /// </summary>
     public enum OptionType
     {
+        /// <summary>プレイヤー人数</summary>
         PlayerCount,
+
+        /// <summary>制限時間</summary>
         LimitTime,
+
+        /// <summary>ボードサイズ</summary>
         BoardSize,
+
+        /// <summary>ライン成立条件</summary>
         ConnectCount,
+
+        /// <summary>カメラ回転速度</summary>
         CameraRotationSpeed,
+
+        /// <summary>ポインター速度</summary>
         PointerSpeed
     }
 }

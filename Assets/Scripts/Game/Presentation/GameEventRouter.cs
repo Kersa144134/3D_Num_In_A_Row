@@ -77,6 +77,9 @@ namespace GameSystem.Presentation
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
+        /// <summary>シーン変更購読管理</summary>
+        private readonly CompositeDisposable _sceneChangeDisposables = new CompositeDisposable();
+
         /// <summary>入力用購読管理</summary>
         private CompositeDisposable _inputDisposables;
 
@@ -91,6 +94,9 @@ namespace GameSystem.Presentation
 
         /// <summary>シーン遷移実行ストリーム</summary>
         public IObservable<Unit> OnSceneChangeExecuted => _onSceneChangeExecuted;
+
+        /// <summary>現在フェーズストリーム</summary>
+        private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
@@ -139,18 +145,6 @@ namespace GameSystem.Presentation
 
         /// <summary>シーンロード用購読管理</summary>
         private IDisposable _sceneLoadSubscription;
-
-        /// <summary>シーンロード準備開始購読</summary>
-        private IDisposable _loadPrepareStartSubscription;
-
-        /// <summary>シーンロード準備完了購読</summary>
-        private IDisposable _loadPrepareEndSubscription;
-
-        /// <summary>シーン変更用購読管理</summary>
-        private IDisposable _sceneChangeSubscription;
-
-        /// <summary>現在フェーズストリーム参照</summary>
-        private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
         // ======================================================
         // 定数
@@ -322,11 +316,10 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _titleUIPresenter.BindFadeInStream(_fadeInTrigger);
-                _titleUIPresenter.BindFadeOutStream(_fadeOutTrigger);
+                _titleUIPresenter.BindFadeStream(_fadeInTrigger, _fadeOutTrigger);
 
                 _titleUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneTChangeRequested())
+                    .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -354,11 +347,10 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _mainUIPresenter.BindFadeInStream(_fadeInTrigger);
-                _mainUIPresenter.BindFadeOutStream(_fadeOutTrigger);
+                _mainUIPresenter.BindFadeStream(_fadeInTrigger, _fadeOutTrigger);
 
                 _mainUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneTChangeRequested())
+                    .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -424,56 +416,36 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// シーンロード準備ストリームを購読する
+        /// シーン変更ストリームを購読する
         /// </summary>
-        public void BindSceneLoadPrepareStream(
+        public void BindSceneChangeStream(
             IObservable<string> onPrepareStart,
-            IObservable<float> onPrepareEnd)
+            IObservable<float> onPrepareEnd,
+            IObservable<float> onSceneChanged)
         {
-            // 多重購読防止
-            _loadPrepareStartSubscription?.Dispose();
-            _loadPrepareEndSubscription?.Dispose();
-
-            _loadPrepareStartSubscription = onPrepareStart
+            onPrepareStart
                 .Subscribe(sceneName =>
                 {
                     // ロード準備開始
                     HandleLoadPrepareStart(sceneName);
-                });
+                })
+                .AddTo(_sceneChangeDisposables);
 
-            _loadPrepareEndSubscription = onPrepareEnd
+            onPrepareEnd
                 .Subscribe(fadeTime =>
                 {
                     // ロード準備完了
                     HandleLoadPrepareEnd(fadeTime);
-                });
-        }
+                })
+                .AddTo(_sceneChangeDisposables);
 
-        /// <summary>
-        /// シーンロード準備ストリームの購読を解除する
-        /// </summary>
-        public void UnbindSceneLoadPrepareStream()
-        {
-            _loadPrepareStartSubscription?.Dispose();
-            _loadPrepareEndSubscription?.Dispose();
-            _loadPrepareStartSubscription = null;
-            _loadPrepareEndSubscription = null;
-        }
-
-        /// <summary>
-        /// シーン変更ストリームを購読する
-        /// </summary>
-        public void BindSceneChangeStream(IObservable<float> onSceneChanged)
-        {
-            // 多重購読防止
-            _sceneChangeSubscription?.Dispose();
-
-            _loadPrepareStartSubscription = onSceneChanged
+            onSceneChanged
                 .Subscribe(seconds =>
                 {
                     // フェードアウト時間を通知
                     _fadeOutTrigger.OnNext(seconds);
-                });
+                })
+                .AddTo(_sceneChangeDisposables);
         }
 
         /// <summary>
@@ -481,8 +453,32 @@ namespace GameSystem.Presentation
         /// </summary>
         public void UnbindSceneChangeStream()
         {
-            _sceneChangeSubscription?.Dispose();
-            _sceneChangeSubscription = null;
+            _sceneChangeDisposables?.Dispose();
+        }
+
+        /// <summary>
+        /// シーンロード進捗ストリームを購読する
+        /// </summary>
+        public void BindSceneLoadProgressStream(IObservable<float> onSceneLoadProgress)
+        {
+            // 多重購読防止
+            _sceneLoadSubscription?.Dispose();
+
+            _sceneLoadSubscription = onSceneLoadProgress
+                .Subscribe(progress =>
+                {
+                    // フェードアウト時間を通知
+                    _fadeOutTrigger.OnNext(progress);
+                });
+        }
+
+        /// <summary>
+        /// シーン変更ストリームの購読を解除する
+        /// </summary>
+        public void UnbindSceneLoadProgressStream()
+        {
+            _sceneLoadSubscription?.Dispose();
+            _sceneLoadSubscription = null;
         }
 
         // ======================================================
@@ -495,7 +491,7 @@ namespace GameSystem.Presentation
         /// <summary>
         /// シーン遷移予約を通知する
         /// </summary>
-        private void NotifySceneTChangeRequested()
+        private void NotifySceneChangeRequested()
         {
             switch (_currentPhase.Value)
             {
@@ -539,19 +535,17 @@ namespace GameSystem.Presentation
         /// <param name="sceneName">現在のシーン名</param>
         private void HandleLoadPrepareStart(in string sceneName)
         {
-            // 多重購読防止
-            _sceneLoadSubscription?.Dispose();
-            
             switch (sceneName)
             {
                 case TITLE_SCENE_NAME:
                     // ゲーム開始入力
-                    _sceneLoadSubscription = _onGameStartRequested
+                    _onGameStartRequested
                         .Subscribe(_ =>
                         {
                             // シーン遷移実行通知
                             _onSceneChangeExecuted.OnNext(Unit.Default);
-                        });
+                        })
+                        .AddTo(_sceneChangeDisposables);
 
                     break;
 
@@ -819,7 +813,6 @@ namespace GameSystem.Presentation
                 {
                     // 駒配置イベント発火
                     _onDropRequested.OnNext(Unit.Default);
-                    Debug.Log("drop");
                 })
                 .AddTo(_inputDisposables);
 
@@ -829,7 +822,6 @@ namespace GameSystem.Presentation
                 {
                     // 回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
-                    Debug.Log("rotate");
                 })
                 .AddTo(_inputDisposables);
 
