@@ -54,7 +54,7 @@ namespace OptionSystem.Infrastructure
         private const float DEFAULT_LIMIT_TIME = 15f;
 
         /// <summary>盤面サイズ デフォルト値</summary>
-        private const GameRules.BoardSizeType DEFAULT_BOARD_SIZE = GameRules.BoardSizeType.Size3;
+        private const GameRules.BoardSizeType DEFAULT_BOARD_SIZE = GameRules.BoardSizeType.Size5;
 
         /// <summary>ライン成立条件 デフォルト値</summary>
         private const int DEFAULT_CONNECT_COUNT = 3;
@@ -72,7 +72,7 @@ namespace OptionSystem.Infrastructure
         /// <summary>
         /// セーブデータが存在するか判定
         /// </summary>
-        public bool Exists()
+        public bool HasSavedData()
         {
             // セーブ済みフラグを参照する
             // 未設定時は 0

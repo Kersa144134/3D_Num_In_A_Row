@@ -21,10 +21,10 @@ namespace UISystem.Domain
         None,
 
         /// <summary>ダイアログ YES</summary>
-        DialogueYes,
+        DialogYes,
 
         /// <summary>ダイアログ NO</summary>
-        DialogueNo,
+        DialogNo,
 
         // ======================================================
         // タイトル

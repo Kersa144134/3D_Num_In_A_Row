@@ -50,7 +50,7 @@ namespace InputSystem.Application
         /// </summary>
         /// <param name="controller">入力取得元コントローラー</param>
         /// <param name="type">取得対象ボタン種別</param>
-        /// <returns>押下中であれば true</returns>
+        /// <returns>押している状態であれば true</returns>
         private bool GetButtonValue(
             in IGamepadInputSource controller,
             in GamepadInputType type)

@@ -13,6 +13,7 @@ using UnityEngine.EventSystems;
 using UniRx;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
+using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
 using UISystem.Application;
 using UISystem.Infrastructure;
@@ -27,28 +28,6 @@ namespace UISystem.Presentation
     [UpdatableBind(UpdatableType.TitleUIPresenter)]
     public sealed class TitleUIPresenter : BaseUIPresenter, IUpdatable
     {
-        // ======================================================
-        // 列挙型
-        // ======================================================
-
-        /// <summary>
-        /// 現在アクティブな UI キャンバス種別
-        /// </summary>
-        private enum ActiveCanvasType
-        {
-            /// <summary>未選択</summary>
-            None,
-
-            /// <summary>スタートキャンバス</summary>
-            Start,
-
-            /// <summary>オプションキャンバス</summary>
-            Option,
-
-            /// <summary>ダイアログキャンバス</summary>
-            Dialogue
-        }
-        
         // ======================================================
         // インスペクタ設定
         // ======================================================
@@ -179,6 +158,12 @@ namespace UISystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>
+        /// オプション選択状態リポジトリ
+        /// </summary>
+        private readonly PlayerPrefsOptionSelectionRepository _repository
+            = new PlayerPrefsOptionSelectionRepository();
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -243,12 +228,6 @@ namespace UISystem.Presentation
         /// <summary>ゲームオプション更新通知ストリーム</summary>
         public IObservable<OptionButtonData> OnUpdateGameOption => _onUpdateGameOption;
 
-        /// <summary>入力ロック状態購読</summary>
-        private IDisposable _inputLockSubscription;
-
-        /// <summary>ゲームパッド入力状態購読</summary>
-        private IDisposable _gamePadInputSubscription;
-
         // ======================================================
         // IUpdatable 派生イベント
         // ======================================================
@@ -282,7 +261,9 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // --------------------------------------------------
             // ビュー生成
+            // --------------------------------------------------
             _titleUIView = new TitleUIView(
                 _pointer,
                 _normalFocusOnColor,
@@ -293,35 +274,83 @@ namespace UISystem.Presentation
                 _optionFocusOffColor
             );
 
+            // --------------------------------------------------
+            // 通常ボタン初期化
+            // --------------------------------------------------
             // 通常ボタン初期化
             InitializeNormalButtons();
 
             // 通常ボタンの参照解決クラス生成
             _normalButtonResolver = new NormalButtonResolver(_normalButtonEventTable);
 
+            // --------------------------------------------------
+            // オプションボタン初期化
+            // --------------------------------------------------
             // オプション初期選択テーブル初期化
             _optionIndexTable.Initialize();
 
-            // オプションバインダーファクトリ生成
-            _optionButtonBinderFactory = new OptionButtonBinderFactory(_optionIndexTable);
+            // 初期選択インデックス取得用リーダー
+            IOptionSelectionIndexReader reader;
+
+            // デバッグ用
+            _repository.Delete();
+
+            // 保存データが存在する場合
+            if (_repository.HasSavedData())
+            {
+                // PlayerPrefs をそのまま使用
+                reader = _repository;
+            }
+            else
+            {
+                // ScriptableObject の初期値を使用するため初期化
+                _optionIndexTable.Initialize();
+
+                // 未保存データのみを PlayerPrefs に同期
+                foreach (OptionType type in Enum.GetValues(typeof(OptionType)))
+                {
+                    // 保存済みならスキップ
+                    if (_repository.Exists(type))
+                    {
+                        continue;
+                    }
+
+                    // ScriptableObject の初期値取得
+                    int index = _optionIndexTable.Get(type);
+
+                    // 保存
+                    _repository.Save(type, index);
+                }
+
+                // 初期データとして Repository を使用
+                reader = _repository;
+            }
+
+            // バインダーファクトリ生成
+            _optionButtonBinderFactory = new OptionButtonBinderFactory(reader);
 
             // オプションボタン初期化
             InitializeOptionButtons();
 
+            // --------------------------------------------------
+            // キャンバス初期化
+            // --------------------------------------------------
             // キャンバス状態管理クラス生成
             _titleUIStateController = new TitleUIStateController(
                 _startCanvas,
                 _optionCanvas,
-                _dialogueCanvas,
+                _dialogCanvas,
                 _initialSelectedStartCanvasButton,
                 _initialSelectedOptionCanvasButton,
-                _normalButtonResolver.Get(UIActionType.DialogueYes)
+                _normalButtonResolver.Get(UIActionType.DialogYes)
             );
 
             // スタートキャンバスを表示
             _titleUIStateController.ShowStartCanvas();
 
+            // --------------------------------------------------
             // イベント購読
+            // --------------------------------------------------
             Subscribe();
         }
 
@@ -597,6 +626,9 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // 選択状態をリセット
+            OnUnSelectButton();
+
             // 選択状態を設定
             OnSelectButton(buttonEvent);
         }
@@ -646,22 +678,60 @@ namespace UISystem.Presentation
         private void OnNormalButtonClick(NormalButtonEvent buttonEvent)
         {
             // --------------------------------------------------
-            // スタートボタン押下時
+            // ダイアログ Yes ボタン
             // --------------------------------------------------
-            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeStart)
-                && typeStart == UIActionType.TitleStart)
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDialogYes)
+            && typeDialogYes == UIActionType.DialogYes)
             {
-                // ダイアログキャンバス表示
-                _titleUIStateController.ShowDialogueCanvas();
-
-                // ダイアログ YES ボタンを初期選択
-                SetSelectionState(_normalButtonResolver.Get(UIActionType.DialogueYes));
+                // ダイアログボタン非表示
+                buttonEvent.gameObject.SetActive(false);
+                _normalButtonResolver.Get(UIActionType.DialogNo).gameObject.SetActive(false);
 
                 return;
             }
 
             // --------------------------------------------------
-            // オプションボタン押下時
+            // ダイアログ No ボタン
+            // --------------------------------------------------
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDialogNo)
+            && typeDialogNo == UIActionType.DialogNo)
+            {
+                // ダイアログキャンバス非表示
+                _titleUIStateController.HideDialogCanvas();
+
+                // 入力状態に応じて初期選択を適用
+                SetSelectionState();
+
+                // ダイアログ非表示を通知
+                _onDialogVisibleChanged.OnNext(false);
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // スタートボタン
+            // --------------------------------------------------
+            if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeStart)
+                && typeStart == UIActionType.TitleStart)
+            {
+                // ダイアログキャンバス表示
+                _titleUIStateController.ShowDialogCanvas();
+
+                // ダイアログボタン表示
+                _normalButtonResolver.Get(UIActionType.DialogYes).gameObject.SetActive(true);
+                _normalButtonResolver.Get(UIActionType.DialogNo).gameObject.SetActive(true);
+
+                // ダイアログ YES ボタンを初期選択
+                SetSelectionState(_normalButtonResolver.Get(UIActionType.DialogYes));
+
+                // ダイアログ表示を通知
+                _onDialogVisibleChanged.OnNext(true);
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // オプションボタン
             // --------------------------------------------------
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeOption)
                 && typeOption == UIActionType.TitleOption)
@@ -686,8 +756,8 @@ namespace UISystem.Presentation
                 // --------------------------------------------------
                 foreach (OptionButtonBinder binder in _optionBinders.Values)
                 {
-                    // バインダー種別に対応する初期インデックスを辞書から取得
-                    int index = _optionIndexTable.Get(binder.Type);
+                    // バインダー種別に対応する初期インデックスをリポジトリから取得
+                    int index = _repository.Get(binder.Type);
 
                     // インデックスを適用して選択状態を更新
                     binder.SelectByIndex(index);
@@ -711,7 +781,7 @@ namespace UISystem.Presentation
             }
 
             // --------------------------------------------------
-            // オプションキャンセルボタン押下時
+            // オプションキャンセルボタン
             // --------------------------------------------------
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeCancel)
                 && typeCancel == UIActionType.TitleOptionCancel)
@@ -729,7 +799,7 @@ namespace UISystem.Presentation
             }
 
             // --------------------------------------------------
-            // オプション決定ボタン押下時
+            // オプション決定ボタン
             // --------------------------------------------------
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDecide)
                 && typeDecide == UIActionType.TitleOptionDecide)
@@ -743,8 +813,8 @@ namespace UISystem.Presentation
                     // 現在の選択インデックスを取得
                     int currentIndex = binder.Value.GetCurrentSelectedIndex();
 
-                    // テーブルへ反映
-                    _optionIndexTable.Set(binder.Key, currentIndex);
+                    // リポジトリへ反映
+                    _repository.Save(binder.Key, currentIndex);
                 }
 
                 // スタートボタンを初期選択
@@ -811,6 +881,9 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // 選択対象のボタンイベントをキャッシュ
+            _lastSelectedButtonEvent = buttonEvent;
+
             // フォーカス状態表示
             SetFocusState(buttonEvent, true);
 
@@ -855,9 +928,6 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // 選択対象のボタンイベントをキャッシュ
-            _lastSelectedButtonEvent = buttonEvent;
-
             // 選択状態を更新
             SetSelectedGameObject(buttonEvent.gameObject);
         }
@@ -869,6 +939,27 @@ namespace UISystem.Presentation
         {
             // 選択解除
             _eventSystem.SetSelectedGameObject(null);
+        }
+
+        /// <summary>
+        /// ダイアログ入力時の処理を行う
+        /// </summary>
+        /// <param name="isDecide">決定入力かどうか</param>
+        protected override void HandleDialogInput(in bool isDecide)
+        {
+            if (!isDecide)
+            {
+                // ダイアログキャンバス非表示
+                _titleUIStateController.HideDialogCanvas();
+
+                // 入力状態に応じて初期選択を適用
+                SetSelectionState();
+
+                // ダイアログ非表示を通知
+                _onDialogVisibleChanged.OnNext(false);
+
+                return;
+            }
         }
 
         // ======================================================

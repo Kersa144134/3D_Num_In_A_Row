@@ -134,12 +134,6 @@ namespace OptionSystem.Presentation
 
             DontDestroyOnLoad(gameObject);
 
-            // リポジトリ初期化
-            _repository = new PlayerPrefsGameOptionRepository();
-
-            // デバッグ用
-            _repository.Delete();
-
             // インスペクタ設定値で初期化
             _currentRules = new GameRules
             {
@@ -151,8 +145,14 @@ namespace OptionSystem.Presentation
                 PointerSpeed = _pointerSpeed
             };
 
+            // リポジトリ初期化
+            _repository = new PlayerPrefsGameOptionRepository();
+
+            // デバッグ用
+            _repository.Delete();
+
             // オプションセーブデータがあるか
-            if (_repository.Exists())
+            if (_repository.HasSavedData())
             {
                 Load();
             }

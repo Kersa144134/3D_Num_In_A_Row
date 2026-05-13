@@ -256,7 +256,7 @@ namespace InputSystem.Infrastructure
                 // 反映する値を初期化
                 float value = 0f;
 
-                // 指定ゲームパッド入力に対応するキーを押下していれば 1f とする
+                // 指定ゲームパッド入力に対応するキーを押していれば 1f とする
                 if (_keyboard.GetButton(map.gamepadInput))
                 {
                     value = 1f;
@@ -332,7 +332,7 @@ namespace InputSystem.Infrastructure
                     case MouseInputType.WheelDown: value = delta.WheelDown; break;
                 }
 
-                // ボタン系のマウス入力の場合、押下していれば 1f とする
+                // ボタン系のマウス入力の場合、押していれば 1f とする
                 if (map.mouseInput == MouseInputType.LeftButton ||
                     map.mouseInput == MouseInputType.RightButton ||
                     map.mouseInput == MouseInputType.MiddleButton)
@@ -380,7 +380,7 @@ namespace InputSystem.Infrastructure
         /// <param name="rightStick">右スティック入力ベクトル参照</param>
         /// <param name="dpad">D-Pad 入力ベクトル参照</param>
         /// <param name="type">反映するゲームパッド入力種別</param>
-        /// <param name="value">入力値（押下なら 1f、軸なら変位量）</param>
+        /// <param name="value">入力値（押しているなら 1f、軸なら変位量）</param>
         private void ApplyGamepadMapping(
             ref bool buttonA, ref bool buttonB, ref bool buttonX, ref bool buttonY,
             ref bool leftShoulder, ref bool rightShoulder,

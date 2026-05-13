@@ -22,26 +22,26 @@ namespace InputSystem.Domain
         // ボタン入力
         // ======================================================
 
-        /// <summary>ボタンAが押下されているかを返す</summary>
+        /// <summary>ボタンA が押されているかを返す</summary>
         bool ButtonA { get; }
 
-        /// <summary>ボタンBが押下されているかを返す</summary>
+        /// <summary>ボタンB が押されているかを返す</summary>
         bool ButtonB { get; }
 
-        /// <summary>ボタンXが押下されているかを返す</summary>
+        /// <summary>ボタンX が押されているかを返す</summary>
         bool ButtonX { get; }
 
-        /// <summary>ボタンYが押下されているかを返す</summary>
+        /// <summary>ボタンY が押されているかを返す</summary>
         bool ButtonY { get; }
 
         // ======================================================
         // ショルダー／トリガー／スティックボタン入力
         // ======================================================
 
-        /// <summary>左ショルダーボタンが押下されているかを返す</summary>
+        /// <summary>左ショルダーボタンが押されているかを返す</summary>
         bool LeftShoulder { get; }
 
-        /// <summary>右ショルダーボタンが押下されているかを返す</summary>
+        /// <summary>右ショルダーボタンが押されているかを返す</summary>
         bool RightShoulder { get; }
 
         /// <summary>左トリガーがデッドゾーン以上押されているかを返す</summary>
@@ -50,20 +50,20 @@ namespace InputSystem.Domain
         /// <summary>右トリガーがデッドゾーン以上押されているかを返す</summary>
         bool RightTrigger { get; }
 
-        /// <summary>左スティックボタンが押下されているかを返す</summary>
+        /// <summary>左スティックボタンが押されているかを返す</summary>
         bool LeftStickButton { get; }
 
-        /// <summary>右スティックボタンが押下されているかを返す</summary>
+        /// <summary>右スティックボタンが押されているかを返す</summary>
         bool RightStickButton { get; }
 
         // ======================================================
         // システムボタン
         // ======================================================
 
-        /// <summary>Startボタンが押下されているかを返す</summary>
+        /// <summary>Startボタンが押されているかを返す</summary>
         bool StartButton { get; }
 
-        /// <summary>Selectボタンが押下されているかを返す</summary>
+        /// <summary>Selectボタンが押されているかを返す</summary>
         bool SelectButton { get; }
 
         // ======================================================

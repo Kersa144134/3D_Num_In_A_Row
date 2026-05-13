@@ -33,7 +33,7 @@ namespace UISystem.Presentation
         [Header("キャンバス")]
         /// <summary>ダイアログ関連の UI を表示するキャンバス</summary>
         [SerializeField]
-        protected GameObject _dialogueCanvas;
+        protected GameObject _dialogCanvas;
 
         // --------------------------------------------------
         // ポインター
@@ -54,156 +54,108 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // 演出 <2 値化>
         // --------------------------------------------------
-        /// <summary>
-        /// 2 値化エフェクトのRenderFeature
-        /// </summary>
         [Header("演出 <2 値化>")]
+        /// <summary>2 値化エフェクトのRenderFeature</summary>
         [SerializeField]
         private ScriptableRendererFeature _binarizationFeature;
 
-        /// <summary>
-        /// 2 値化エフェクト用マテリアル
-        /// </summary>
+        /// <summary>2 値化エフェクト用マテリアル</summary>
         [SerializeField]
         private Material _binarizationMaterial;
 
-        /// <summary>
-        /// 2 値化エフェクトの有効状態
-        /// </summary>
+        /// <summary>2 値化エフェクトの有効状態</summary>
         [SerializeField]
         private bool _isBinarizationEnabled;
 
-        /// <summary>
-        /// 歪み中心座標
-        /// </summary>
+        /// <summary>歪み中心座標</summary>
         [SerializeField]
         private Vector2 _binarizationDistortionCenter;
 
-        /// <summary>
-        /// 歪み強度
-        /// </summary>
+        /// <summary>歪み強度</summary>
         [SerializeField]
         private float _binarizationDistortionStrength;
 
-        /// <summary>
-        /// ノイズ強度
-        /// </summary>
+        /// <summary>ノイズ強度</summary>
         [SerializeField]
         private float _binarizationNoise;
 
-        /// <summary>
-        /// ポスタライズ閾値
-        /// </summary>
+        /// <summary>ポスタライズ閾値</summary>
         [SerializeField]
         private float _binarizationThreshold;
 
-        /// <summary>
-        /// 明部カラー
-        /// </summary>
+        /// <summary>明部カラー</summary>
         [SerializeField]
         private Color _binarizationLight;
 
-        /// <summary>
-        /// 暗部カラー
-        /// </summary>
+        /// <summary>暗部カラー</summary>
         [SerializeField]
         private Color _binarizationDark;
 
         // --------------------------------------------------
         // 演出 <グレースケール>
         // --------------------------------------------------
-        /// <summary>
-        /// グレースケールのRenderFeature
-        /// </summary>
         [Header("演出 <グレースケール>")]
+        /// <summary>グレースケールのRenderFeature</summary>
         [SerializeField]
         private ScriptableRendererFeature _greyScaleFeature;
 
-        /// <summary>
-        /// グレースケール用マテリアル
-        /// </summary>
+        /// <summary>グレースケール用マテリアル</summary>
         [SerializeField]
         private Material _greyScaleMaterial;
 
-        /// <summary>
-        /// グレースケールの有効状態
-        /// </summary>
+        /// <summary>グレースケールの有効状態</summary>
         [SerializeField]
         private bool _isGreyScaleEnabled;
 
-        /// <summary>
-        /// グレースケール強度
-        /// </summary>
+        /// <summary>グレースケール強度</summary>
         [SerializeField]
         private Vector3 _greyScaleStrength;
 
-        /// <summary>
-        /// 歪み中心
-        /// </summary>
+        /// <summary>歪み中心</summary>
         [SerializeField]
         private Vector2 _greyScaleDistortionCenter;
 
-        /// <summary>
-        /// 歪み強度
-        /// </summary>
+        /// <summary>歪み強度</summary>
         [SerializeField]
         private float _greyScaleDistortionStrength;
 
-        /// <summary>
-        /// ノイズ強度
-        /// </summary>
+        /// <summary>ノイズ強度</summary>
         [SerializeField]
         private float _greyScaleNoise;
 
-        /// <summary>
-        /// 明部カラー
-        /// </summary>
+        /// <summary>明部カラー</summary>
         [SerializeField]
         private Color _greyScaleLight;
 
-        /// <summary>
-        /// 暗部カラー
-        /// </summary>
+        /// <summary>暗部カラー</summary>
         [SerializeField]
         private Color _greyScaleDark;
 
         // --------------------------------------------------
         // 演出 <歪み>
         // --------------------------------------------------
-        /// <summary>
-        /// 歪みのRenderFeature
-        /// </summary>
         [Header("演出 <歪み>")]
+        /// <summary>歪みのRenderFeature</summary>
         [SerializeField]
         private ScriptableRendererFeature _distortionFeature;
 
-        /// <summary>
-        /// 歪み用マテリアル
-        /// </summary>
+        /// <summary>歪み用マテリアル</summary>
         [SerializeField]
         private Material _distortionMaterial;
 
-        /// <summary>
-        /// 歪みの有効状態
-        /// </summary>
+        /// <summary>歪みの有効状態</summary>
         [SerializeField]
         private bool _isDistortionEnabled;
 
-        /// <summary>
-        /// 歪み中心
-        /// </summary>
+        /// <summary>歪み中心</summary>
         [SerializeField]
         private Vector2 _distortionCenter;
 
-        /// <summary>
-        /// 歪み強度
-        /// </summary>
+        /// <summary>歪み強度</summary>
         [SerializeField]
         private float _distortionStrength;
 
-        /// <summary>
-        /// ノイズ強度
-        /// </summary>
+        /// <summary>ノイズ強度</summary>
         [SerializeField]
         private float _distortionNoise;
 
@@ -211,28 +163,20 @@ namespace UISystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>
-        /// UI 描画ビュー
-        /// </summary>
+        /// <summary>ビュー</summary>
         private BaseUIView _view;
 
-        /// <summary>
-        /// UIボタン辞書およびバインダー構築を行うビルダークラス
-        /// </summary>
+        /// <summary>ボタンの辞書およびバインダー構築を行うクラス</summary>
         protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
 
-        /// <summary>
-        /// フェードシステム
-        /// </summary>
+        /// <summary>フェードシステム</summary>
         protected Fade _fade;
 
         // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// エフェクト用アニメーター
-        /// </summary>
+        /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
         /// <summary>ポインターアニメーター</summary>
@@ -250,6 +194,12 @@ namespace UISystem.Presentation
 
         /// <summary>シーン遷移リクエスト通知ストリーム</summary>
         public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
+        
+        /// <summary>ダイアログ表示状態通知用 Subject</summary>
+        protected readonly Subject<bool> _onDialogVisibleChanged = new Subject<bool>();
+
+        /// <summary>ダイアログ表示状態通知ストリーム</summary>
+        public IObservable<bool> OnDialogVisibleChanged => _onDialogVisibleChanged;
 
         /// <summary>フェードイン完了通知用 Subject</summary>
         private readonly Subject<Unit> _onFadeInCompleted = new Subject<Unit>();
@@ -349,6 +299,12 @@ namespace UISystem.Presentation
 
         protected virtual void OnExitInternal() { }
 
+        /// <summary>
+        /// ダイアログ入力時の処理を行う
+        /// </summary>
+        /// <param name="isDecide">決定入力かどうか</param>
+        protected virtual void HandleDialogInput(in bool isDecide) { }
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -362,10 +318,20 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
-        /// フェードイン開始イベントを購読する
+        /// 共通イベントストリームをまとめて購読する
         /// </summary>
-        public void BindBaseStreams(in IObservable<float> fadeInSeconds, in IObservable<float> fadeOutSeconds)
+        public void BindBaseStreams(
+            in IObservable<bool> dialogInput,
+            in IObservable<float> fadeInSeconds,
+            in IObservable<float> fadeOutSeconds)
         {
+            dialogInput
+                .Subscribe(isDecide =>
+                {
+                    HandleDialogInput(isDecide);
+                })
+                .AddTo(_disposables);
+
             fadeInSeconds
                 .Subscribe(time =>
                 {

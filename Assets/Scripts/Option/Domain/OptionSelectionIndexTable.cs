@@ -15,10 +15,8 @@ namespace OptionSystem.Domain
     /// <summary>
     /// オプション選択インデックス管理テーブル
     /// </summary>
-    [CreateAssetMenu(
-        fileName = "OptionSelectionIndexTable",
-        menuName = "OptionSystem/OptionSelectionIndexTable")]
-    public sealed class OptionSelectionIndexTable : ScriptableObject
+    [CreateAssetMenu(fileName = "OptionSelectionIndexTable", menuName = "OptionSystem/OptionSelectionIndexTable")]
+    public sealed class OptionSelectionIndexTable : ScriptableObject, IOptionSelectionIndexReader
     {
         // ======================================================
         // インスペクタ設定
@@ -80,14 +78,6 @@ namespace OptionSystem.Domain
             }
 
             return 0;
-        }
-
-        /// <summary>
-        /// 選択インデックス更新
-        /// </summary>
-        public void Set(in OptionType type, in int index)
-        {
-            _indexTable[type] = index;
         }
 
 #if UNITY_EDITOR

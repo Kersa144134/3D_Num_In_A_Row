@@ -18,7 +18,7 @@ MonoBehaviour:
     mouseInput: 1
   - gamepadInput: 1
     keyCode: 0
-    mouseInput: 0
+    mouseInput: 2
   - gamepadInput: 2
     keyCode: 0
     mouseInput: 0

@@ -8,6 +8,7 @@
 
 using UnityEngine.UI;
 using OptionSystem.Domain;
+using OptionSystem.Infrastructure;
 using UISystem.Infrastructure;
 
 namespace UISystem.Application
@@ -27,9 +28,9 @@ namespace UISystem.Application
         private readonly GridLayoutGroupButtonCollector _gridLayoutGroupButtonCollector = new GridLayoutGroupButtonCollector();
 
         /// <summary>
-        /// オプション選択インデックス管理テーブル
+        /// 選択インデックス取得専用インターフェース
         /// </summary>
-        private readonly OptionSelectionIndexTable _optionSelectionIndexTable;
+        private readonly IOptionSelectionIndexReader _optionSelectionIndexReader;
 
         // ======================================================
         // コンストラクタ
@@ -39,9 +40,9 @@ namespace UISystem.Application
         /// コンストラクタ
         /// </summary>
         /// <param name="optionSelectionIndexTable">オプションインデックス管理テーブル</param>
-        public OptionButtonBinderFactory(in OptionSelectionIndexTable optionSelectionIndexTable)
+        public OptionButtonBinderFactory(in IOptionSelectionIndexReader optionSelectionIndexReader)
         {
-            _optionSelectionIndexTable = optionSelectionIndexTable;
+            _optionSelectionIndexReader = optionSelectionIndexReader;
         }
 
         // ======================================================
@@ -68,7 +69,7 @@ namespace UISystem.Application
             ButtonSelectionController controller = new ButtonSelectionController(buttons);
 
             // オプション種別に対応した初期選択インデックスを取得
-            int initialIndex = _optionSelectionIndexTable.Get(type);
+            int initialIndex = _optionSelectionIndexReader.Get(type);
 
             // OptionButtonBinder を生成
             OptionButtonBinder binder = new OptionButtonBinder(

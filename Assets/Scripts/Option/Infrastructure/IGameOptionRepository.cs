@@ -28,7 +28,7 @@ namespace OptionSystem.Infrastructure
         /// <summary>
         /// İ’è‚ª‘¶İ‚·‚é‚©
         /// </summary>
-        bool Exists();
+        bool HasSavedData();
 
         /// <summary>
         /// İ’è‚ğíœ‚·‚é

@@ -86,6 +86,9 @@ namespace GameSystem.Presentation
         /// <summary>シーンロード用購読管理</summary>
         private IDisposable _sceneLoadSubscription;
 
+        /// <summary>スキップ入力用購読管理</summary>
+        private IDisposable _skipInputSubscription;
+
         // --------------------------------------------------
         // シーン
         // --------------------------------------------------
@@ -134,6 +137,9 @@ namespace GameSystem.Presentation
         /// <summary>ポインター座標変更用 Subject</summary>
         private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
 
+        /// <summary>スキップ入力用 Subject</summary>
+        private readonly Subject<Unit> _onSkipRequested = new Subject<Unit>();
+
         // --------------------------------------------------
         // UI
         // --------------------------------------------------
@@ -149,8 +155,8 @@ namespace GameSystem.Presentation
         /// <summary>画面フェード完了ストリーム</summary>
         public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
 
-        /// <summary>ゲーム開始入力用 Subject</summary>
-        private readonly Subject<Unit> _onGameStartRequested = new Subject<Unit>();
+        /// <summary>ダイアログ画面での入力用 Subject</summary>
+        private readonly Subject<bool> _onDialogInputed = new Subject<bool>();
 
         // --------------------------------------------------
         // ボード
@@ -244,6 +250,15 @@ namespace GameSystem.Presentation
                 .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                 .AddTo(_disposables);
 
+            // ボタン A 押す
+            _inputManager.ButtonA.OnDown
+                .Subscribe(_ =>
+                {
+                    // スキップイベント発火
+                    _onSkipRequested.OnNext(Unit.Default);
+                })
+                .AddTo(_disposables);
+
             // --------------------------------------------------
             // フェーズ
             // --------------------------------------------------
@@ -263,9 +278,9 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
 
-            // スタートボタン押下
+            // スタートボタン押す
             _inputManager.StartButton.OnDown
-                .Subscribe(e => HandleStartButtonPressed(_currentPhase.Value))
+                .Subscribe(e => TogglePausePhase(_currentPhase.Value))
                 .AddTo(_disposables);
             // アクティブコントローラー変更
             _inputManager.ActiveDeviceType
@@ -294,10 +309,25 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+                _titleUIPresenter.BindBaseStreams(_onDialogInputed, _fadeInTrigger, _fadeOutTrigger);
 
                 _titleUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnDialogVisibleChanged
+                    .Subscribe(isVisible =>
+                    {
+                        // ダイアログ表示時
+                        if (isVisible)
+                        {
+                            BindShowDialogInputCommands();
+                        }
+                        // ダイアログ非表示時
+                        else
+                        {
+                            UnbindInputCommands();
+                        }
+                    })
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -320,10 +350,25 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+                _mainUIPresenter.BindBaseStreams(_onDialogInputed, _fadeInTrigger, _fadeOutTrigger);
 
                 _mainUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnDialogVisibleChanged
+                    .Subscribe(isVisible =>
+                    {
+                        // ダイアログ表示時
+                        if (isVisible)
+                        {
+                            BindShowDialogInputCommands();
+                        }
+                        // ダイアログ非表示時
+                        else
+                        {
+                            UnbindInputCommands();
+                        }
+                    })
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -435,8 +480,8 @@ namespace GameSystem.Presentation
             _sceneLoadSubscription = onSceneLoadProgress
                 .Subscribe(progress =>
                 {
-                    // フェードアウト時間を通知
-                    _fadeOutTrigger.OnNext(progress);
+                    // デバッグ用
+                    Debug.Log(progress);
                 });
         }
 
@@ -506,8 +551,8 @@ namespace GameSystem.Presentation
             switch (sceneName)
             {
                 case TITLE_SCENE_NAME:
-                    // ゲーム開始入力
-                    _onGameStartRequested
+                    // スキップ入力
+                    _onSkipRequested
                         .Subscribe(_ =>
                         {
                             // シーン遷移実行通知
@@ -559,6 +604,35 @@ namespace GameSystem.Presentation
                 )
             );
         }
+
+        /// <summary>
+        /// ポーズ用のフェーズトグル処理を行う
+        /// </summary>
+        private void TogglePausePhase(in PhaseType phase)
+        {
+            // フェーズ遷移先を決定する
+            PhaseType nextPhase;
+
+            if (phase == PhaseType.Play)
+            {
+                nextPhase = PhaseType.Pause;
+
+                // 現在のアクティブ状態フェーズをキャッシュ
+                _cachedActivePhase = phase;
+            }
+            else if (phase == PhaseType.Pause)
+            {
+                // キャッシュしていたアクティブ状態フェーズへ復帰
+                nextPhase = _cachedActivePhase;
+            }
+            else
+            {
+                return;
+            }
+
+            NotifyPhaseChanged(nextPhase);
+        }
+
 
         // --------------------------------------------------
         // オプション
@@ -639,6 +713,9 @@ namespace GameSystem.Presentation
             // 入力購読解除
             UnbindInputCommands();
 
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
             switch (phase)
             {
                 // --------------------------------------------------
@@ -647,9 +724,6 @@ namespace GameSystem.Presentation
                 case PhaseType.Title:
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
-
-                    // Title フェーズ時の入力コマンド登録
-                    BindTitlePhaseInputCommands();
 
                     return;
 
@@ -780,47 +854,11 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// Title フェーズ用の入力コマンド購読を登録する
-        /// </summary>
-        private void BindTitlePhaseInputCommands()
-        {
-            // 既存購読を破棄
-            _inputDisposables?.Dispose();
-
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
-            // ボタン A 押下
-            _inputManager.ButtonA.OnDown
-                .Subscribe(_ =>
-                {
-                    // ゲーム開始イベント発火
-                    _onGameStartRequested.OnNext(Unit.Default);
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン B 押下
-            _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
-                {
-                    // ゲーム開始イベント発火
-                    _onGameStartRequested.OnNext(Unit.Default);
-                })
-                .AddTo(_inputDisposables);
-        }
-        
-        /// <summary>
         /// Play フェーズ用の入力コマンド購読を登録する
         /// </summary>
         private void BindPlayPhaseInputCommands()
         {
-            // 既存購読を破棄
-            _inputDisposables?.Dispose();
-
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
-            // ボタン A 押下
+            // ボタン A 離す
             _inputManager.ButtonA.OnUp
                 .Subscribe(_ =>
                 {
@@ -829,7 +867,7 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // ボタン B 押下
+            // ボタン B 押す
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
@@ -837,13 +875,6 @@ namespace GameSystem.Presentation
                     _onRotateRequested.OnNext(Unit.Default);
                 })
                 .AddTo(_inputDisposables);
-
-            _onRotateExecuted.OnNext(
-                new RotationCommand(
-                    RotationAxis.X,
-                    RotationDirection.Positive
-                )
-            );
         }
 
         /// <summary>
@@ -851,13 +882,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private void BindEventPhaseInputCommands()
         {
-            // 既存購読を破棄
-            _inputDisposables?.Dispose();
-
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
-            // 左スティック左押下
+            // 左スティック左押す
             _inputManager.ButtonX.OnDown
                 .Subscribe(_ =>
                 {
@@ -871,7 +896,7 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // 左スティック右押下
+            // 左スティック右押す
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
@@ -885,7 +910,7 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // 左スティック上押下
+            // 左スティック上押す
             _inputManager.ButtonY.OnDown
                 .Subscribe(_ =>
                 {
@@ -899,7 +924,7 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_inputDisposables);
 
-            // 左スティック下押下
+            // 左スティック下押す
             _inputManager.ButtonA.OnDown
                 .Subscribe(_ =>
                 {
@@ -915,6 +940,51 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
+        /// ダイアログ表示時のマッピング変更処理を行う
+        /// </summary>
+        private void BindShowDialogInputCommands()
+        {
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
+            // ボタン A 押す
+            _inputManager.ButtonA.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面での決定入力として発火
+                    _onDialogInputed.OnNext(true);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン B 押す
+            _inputManager.ButtonB.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン X 押す
+            _inputManager.ButtonX.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン Y 押す
+            _inputManager.ButtonY.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+        }
+
+        /// <summary>
         /// 入力コマンド購読を解除する
         /// </summary>
         private void UnbindInputCommands()
@@ -922,35 +992,6 @@ namespace GameSystem.Presentation
             _inputDisposables?.Dispose();
             _inputDisposables = null;
         }
-
-        /// <summary>
-        /// スタートボタン押下時のマッピング変更処理を行う
-        /// </summary>
-        private void HandleStartButtonPressed(in PhaseType phase)
-        {
-            // マッピングと遷移先を決定する
-            PhaseType nextPhase;
-
-            if (phase == PhaseType.Play)
-            {
-                nextPhase = PhaseType.Pause;
-
-                // 現在のアクティブ状態フェーズをキャッシュ
-                _cachedActivePhase = phase;
-            }
-            else if (phase == PhaseType.Pause)
-            {
-                // キャッシュしていたアクティブ状態フェーズへ復帰
-                nextPhase = _cachedActivePhase;
-            }
-            else
-            {
-                return;
-            }
-
-            NotifyPhaseChanged(nextPhase);
-        }
-
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------

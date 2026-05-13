@@ -13,7 +13,7 @@ using InputSystem.Domain;
 namespace InputSystem.Infrastructure
 {
     /// <summary>
-    /// キーボード入力を処理し、ゲームパッド互換の抽象入力種別に対応した押下状態を返すクラス
+    /// キーボード入力を処理し、ゲームパッド互換の抽象入力種別に対応した押している状態を返すクラス
     /// </summary>
     public class KeyboardInputController
     {
@@ -42,7 +42,7 @@ namespace InputSystem.Infrastructure
         // ======================================================
 
         /// <summary>
-        /// 指定されたゲームパッド入力に対応するキーが押下されているかを返す
+        /// 指定されたゲームパッド入力に対応するキーが押されているかを返す
         /// </summary>
         public bool GetButton(in GamepadInputType inputType)
         {

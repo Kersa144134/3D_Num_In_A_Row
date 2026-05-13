@@ -6,8 +6,9 @@
 // 概要     : タイトル UI のキャンバス状態管理と初期選択制御を管理する
 // ======================================================
 
-using UISystem.Infrastructure;
 using UnityEngine;
+using UISystem.Domain;
+using UISystem.Infrastructure;
 
 namespace UISystem.Application
 {
@@ -16,28 +17,6 @@ namespace UISystem.Application
     /// </summary>
     public sealed class TitleUIStateController
     {
-        // ======================================================
-        // 列挙型
-        // ======================================================
-
-        /// <summary>
-        /// 現在アクティブなキャンバス種別
-        /// </summary>
-        public enum ActiveCanvasType
-        {
-            /// <summary>未選択</summary>
-            None,
-
-            /// <summary>スタートキャンバス</summary>
-            Start,
-
-            /// <summary>オプションキャンバス</summary>
-            Option,
-
-            /// <summary>ダイアログキャンバス</summary>
-            Dialogue
-        }
-
         // ======================================================
         // フィールド
         // ======================================================
@@ -52,7 +31,7 @@ namespace UISystem.Application
         private readonly GameObject _optionCanvas;
 
         /// <summary>ダイアログ UI キャンバス</summary>
-        private readonly GameObject _dialogueCanvas;
+        private readonly GameObject _dialogCanvas;
 
         // --------------------------------------------------
         // 初期選択ボタン
@@ -64,20 +43,23 @@ namespace UISystem.Application
         private readonly BaseButtonEvent _initialSelectedOptionCanvasButton;
 
         /// <summary>ダイアログキャンバス初期選択ボタン</summary>
-        private readonly BaseButtonEvent _initialSelectedDialogueCanvasButton;
+        private readonly BaseButtonEvent _initialSelectedDialogCanvasButton;
 
         // --------------------------------------------------
         // 状態
         // --------------------------------------------------
         /// <summary>現在アクティブなキャンバス状態</summary>
-        private ActiveCanvasType _activeCanvasType = ActiveCanvasType.None;
+        private CanvasType _activeCanvasType = CanvasType.None;
+
+        /// <summary>キャンバス状態キャッシュ</summary>
+        private CanvasType _cachedCanvasType = CanvasType.None;
 
         // ======================================================
         // プロパティ
         // ======================================================
 
         /// <summary>現在アクティブなキャンバス状態</summary>
-        public ActiveCanvasType ActiveCanvas => _activeCanvasType;
+        public CanvasType ActiveCanvasType => _activeCanvasType;
 
         // ======================================================
         // コンストラクタ
@@ -88,24 +70,24 @@ namespace UISystem.Application
         /// </summary>
         /// <param name="startCanvas">スタートキャンバス</param>
         /// <param name="optionCanvas">オプションキャンバス</param>
-        /// <param name="dialogueCanvas">ダイアログキャンバス</param>
+        /// <param name="dialogCanvas">ダイアログキャンバス</param>
         /// <param name="initialSelectedStartCanvasButton">スタートキャンバス初期選択ボタン</param>
         /// <param name="initialSelectedOptionCanvasButton">オプションキャンバス初期選択ボタン</param>
-        /// <param name="initialSelectedDialogueCanvasButton">ダイアログキャンバス初期選択ボタン/param>
+        /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>
         public TitleUIStateController(
             GameObject startCanvas,
             GameObject optionCanvas,
-            GameObject dialogueCanvas,
+            GameObject dialogCanvas,
             BaseButtonEvent initialSelectedStartCanvasButton,
             BaseButtonEvent initialSelectedOptionCanvasButton,
-            BaseButtonEvent initialSelectedDialogueCanvasButton)
+            BaseButtonEvent initialSelectedDialogCanvasButton)
         {
             _startCanvas = startCanvas;
             _optionCanvas = optionCanvas;
-            _dialogueCanvas = dialogueCanvas;
+            _dialogCanvas = dialogCanvas;
             _initialSelectedStartCanvasButton = initialSelectedStartCanvasButton;
             _initialSelectedOptionCanvasButton = initialSelectedOptionCanvasButton;
-            _initialSelectedDialogueCanvasButton = initialSelectedDialogueCanvasButton;
+            _initialSelectedDialogCanvasButton = initialSelectedDialogCanvasButton;
         }
 
         // ======================================================
@@ -119,10 +101,10 @@ namespace UISystem.Application
         {
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
-            _dialogueCanvas.SetActive(false);
+            _dialogCanvas.SetActive(false);
 
             // 現在状態を更新
-            _activeCanvasType = ActiveCanvasType.Start;
+            _activeCanvasType = CanvasType.Start;
         }
 
         /// <summary>
@@ -132,23 +114,44 @@ namespace UISystem.Application
         {
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
-            _dialogueCanvas.SetActive(false);
+            _dialogCanvas.SetActive(false);
 
             // 現在状態を更新
-            _activeCanvasType = ActiveCanvasType.Option;
+            _activeCanvasType = CanvasType.Option;
         }
 
         /// <summary>
         /// ダイアログキャンバスを表示する
         /// </summary>
-        public void ShowDialogueCanvas()
+        public void ShowDialogCanvas()
         {
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(false);
-            _dialogueCanvas.SetActive(true);
+            _dialogCanvas.SetActive(true);
+
+            // ダイアログ表示前の状態をキャッシュ
+            _cachedCanvasType = _activeCanvasType;
 
             // 現在状態を更新
-            _activeCanvasType = ActiveCanvasType.Dialogue;
+            _activeCanvasType = CanvasType.Dialog;
+        }
+
+        /// <summary>
+        /// ダイアログキャンバスを非表示にする
+        /// </summary>
+        public void HideDialogCanvas()
+        {
+            // キャッシュした状態に応じて復帰
+            switch (_cachedCanvasType)
+            {
+                case CanvasType.Start:
+                    ShowStartCanvas();
+                    break;
+
+                case CanvasType.Option:
+                    ShowOptionCanvas();
+                    break;
+            }
         }
 
         /// <summary>
@@ -159,14 +162,14 @@ namespace UISystem.Application
         {
             switch (_activeCanvasType)
             {
-                case ActiveCanvasType.Start:
+                case CanvasType.Start:
                     return _initialSelectedStartCanvasButton;
 
-                case ActiveCanvasType.Option:
+                case CanvasType.Option:
                     return _initialSelectedOptionCanvasButton;
 
-                case ActiveCanvasType.Dialogue:
-                    return _initialSelectedDialogueCanvasButton;
+                case CanvasType.Dialog:
+                    return _initialSelectedDialogCanvasButton;
             }
 
             return null;

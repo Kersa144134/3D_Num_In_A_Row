@@ -195,12 +195,18 @@ namespace UISystem.Infrastructure
         // クリック
         // --------------------------------------------------
         /// <summary>
-        /// マウスクリック入力
+        /// クリック入力
         /// </summary>
         /// <param name="eventData">イベント情報</param>
         public virtual void OnPointerClick(
             PointerEventData eventData)
         {
+            // 左クリック以外は処理なし
+            if (eventData.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+
             OnClickSubject.OnNext(Unit.Default);
         }
 
