@@ -6,6 +6,7 @@
 // 概要     : タイトル UI のキャンバス状態管理と初期選択制御を管理する
 // ======================================================
 
+using System;
 using UnityEngine;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -54,12 +55,13 @@ namespace UISystem.Application
         /// <summary>キャンバス状態キャッシュ</summary>
         private CanvasType _cachedCanvasType = CanvasType.None;
 
-        // ======================================================
-        // プロパティ
-        // ======================================================
+        /// <summary>キャンバスごとの最後に選択したボタンイベント</summary>
+        private readonly BaseButtonEvent[] _lastSelectedButtonEvents =
+            new BaseButtonEvent[Enum.GetValues(typeof(CanvasType)).Length];
 
-        /// <summary>現在アクティブなキャンバス状態</summary>
-        public CanvasType ActiveCanvasType => _activeCanvasType;
+        /// <summary>キャンバスごとの最後にホバー中のボタンイベント</summary>
+        private readonly BaseButtonEvent[] _lastHoveredButtonEvents =
+            new BaseButtonEvent[Enum.GetValues(typeof(CanvasType)).Length];
 
         // ======================================================
         // コンストラクタ
@@ -68,26 +70,26 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
+        /// <param name="dialogCanvas">ダイアログキャンバス</param>
         /// <param name="startCanvas">スタートキャンバス</param>
         /// <param name="optionCanvas">オプションキャンバス</param>
-        /// <param name="dialogCanvas">ダイアログキャンバス</param>
+        /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>
         /// <param name="initialSelectedStartCanvasButton">スタートキャンバス初期選択ボタン</param>
         /// <param name="initialSelectedOptionCanvasButton">オプションキャンバス初期選択ボタン</param>
-        /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>
         public TitleUIStateController(
+            GameObject dialogCanvas,
             GameObject startCanvas,
             GameObject optionCanvas,
-            GameObject dialogCanvas,
+            BaseButtonEvent initialSelectedDialogCanvasButton,
             BaseButtonEvent initialSelectedStartCanvasButton,
-            BaseButtonEvent initialSelectedOptionCanvasButton,
-            BaseButtonEvent initialSelectedDialogCanvasButton)
+            BaseButtonEvent initialSelectedOptionCanvasButton)
         {
+            _dialogCanvas = dialogCanvas;
             _startCanvas = startCanvas;
             _optionCanvas = optionCanvas;
-            _dialogCanvas = dialogCanvas;
+            _initialSelectedDialogCanvasButton = initialSelectedDialogCanvasButton;
             _initialSelectedStartCanvasButton = initialSelectedStartCanvasButton;
             _initialSelectedOptionCanvasButton = initialSelectedOptionCanvasButton;
-            _initialSelectedDialogCanvasButton = initialSelectedDialogCanvasButton;
         }
 
         // ======================================================
@@ -95,13 +97,22 @@ namespace UISystem.Application
         // ======================================================
 
         /// <summary>
+        /// 現在アクティブなキャンバス状態を取得する
+        /// </summary>
+        /// <returns>現在アクティブなキャンバス種別</returns>
+        public CanvasType GetActiveCanvasType()
+        {
+            return _activeCanvasType;
+        }
+        
+        /// <summary>
         /// スタートキャンバスを表示する
         /// </summary>
         public void ShowStartCanvas()
         {
+            _dialogCanvas.SetActive(false);
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
-            _dialogCanvas.SetActive(false);
 
             // 現在状態を更新
             _activeCanvasType = CanvasType.Start;
@@ -112,9 +123,9 @@ namespace UISystem.Application
         /// </summary>
         public void ShowOptionCanvas()
         {
+            _dialogCanvas.SetActive(false);
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
-            _dialogCanvas.SetActive(false);
 
             // 現在状態を更新
             _activeCanvasType = CanvasType.Option;
@@ -125,9 +136,9 @@ namespace UISystem.Application
         /// </summary>
         public void ShowDialogCanvas()
         {
+            _dialogCanvas.SetActive(true);
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(false);
-            _dialogCanvas.SetActive(true);
 
             // ダイアログ表示前の状態をキャッシュ
             _cachedCanvasType = _activeCanvasType;
@@ -162,17 +173,121 @@ namespace UISystem.Application
         {
             switch (_activeCanvasType)
             {
+                case CanvasType.Dialog:
+                    return _initialSelectedDialogCanvasButton;
+
                 case CanvasType.Start:
                     return _initialSelectedStartCanvasButton;
 
                 case CanvasType.Option:
                     return _initialSelectedOptionCanvasButton;
-
-                case CanvasType.Dialog:
-                    return _initialSelectedDialogCanvasButton;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 指定キャンバスの最後に選択したボタンイベントを設定する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        /// <param name="buttonEvent">設定するボタンイベント</param>
+        public void SetLastSelectedButtonEvent(in CanvasType canvasType, in BaseButtonEvent buttonEvent)
+        {
+            int canvasIndex = (int)canvasType;
+
+            _lastSelectedButtonEvents[canvasIndex] = buttonEvent;
+        }
+
+        /// <summary>
+        /// 指定キャンバスの最後にホバー中のボタンイベントを設定する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        /// <param name="buttonEvent">設定するボタンイベント</param>
+        public void SetLastHoveredButtonEvent(in CanvasType canvasType, in BaseButtonEvent buttonEvent)
+        {
+            int canvasIndex = (int)canvasType;
+
+            _lastHoveredButtonEvents[canvasIndex] = buttonEvent;
+        }
+
+        /// <summary>
+        /// 指定キャンバスの最後に選択したボタンイベントを取得する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        /// <returns>キャッシュ済みボタンイベント</returns>
+        public BaseButtonEvent GetLastSelectedButtonEvent(in CanvasType canvasType)
+        {
+            int canvasIndex = (int)canvasType;
+
+            return _lastSelectedButtonEvents[canvasIndex];
+        }
+
+        /// <summary>
+        /// 指定キャンバスの最後にホバー中のボタンイベントを取得する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        /// <returns>キャッシュ済みボタンイベント</returns>
+        public BaseButtonEvent GetLastHoveredButtonEvent(in CanvasType canvasType)
+        {
+            int canvasIndex = (int)canvasType;
+
+            return _lastHoveredButtonEvents[canvasIndex];
+        }
+
+        /// <summary>
+        /// 指定キャンバスの最後に選択したボタンイベントをクリアする
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        public void ClearLastSelectedButtonEvent(in CanvasType canvasType)
+        {
+            // キャンバス種別を配列インデックスへ変換
+            int canvasIndex = (int)canvasType;
+
+            // 指定キャンバスの選択ボタンキャッシュをクリア
+            _lastSelectedButtonEvents[canvasIndex] = null;
+        }
+
+        /// <summary>
+        /// 最後にホバー中のボタンイベントをクリアする
+        /// </summary>
+        public void ClearLastHoveredButtonEvent(in CanvasType canvasType)
+        {
+            // キャンバス種別を配列インデックスへ変換
+            int canvasIndex = (int)canvasType;
+
+            // 指定キャンバスのホバーボタンキャッシュをクリア
+            _lastHoveredButtonEvents[canvasIndex] = null;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// キャンバス種別を配列インデックスへ変換する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス種別</param>
+        /// <returns>配列インデックス</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// 配列範囲外のキャンバス種別が指定された場合
+        /// </exception>
+        private int GetCanvasIndex(in CanvasType canvasType)
+        {
+            // enum を int へ変換
+            int canvasIndex = (int)canvasType;
+
+            // 配列範囲外の場合は例外
+            if (canvasIndex < 0 ||
+                canvasIndex >= _lastSelectedButtonEvents.Length)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(canvasType),
+                    canvasType,
+                    "無効な CanvasType が指定されました。");
+            }
+
+            // 配列インデックスを返却
+            return canvasIndex;
         }
     }
 }

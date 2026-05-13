@@ -31,39 +31,36 @@ namespace UISystem.Infrastructure
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// Button キャッシュ
-        /// </summary>
-        private Button _button;
+        /// <summary>GameObject キャッシュ</summary>
+        private GameObject _gameObject;
 
-        /// <summary>
-        /// RectTransform キャッシュ
-        /// </summary>
+        /// <summary>RectTransform キャッシュ</summary>
         private RectTransform _rectTransform;
 
-        /// <summary>
-        /// EventSystem 選択中フラグ
-        /// </summary>
+        /// <summary>Button キャッシュ</summary>
+        private Button _button;
+
+        /// <summary>EventSystem ホバー中フラグ</summary>
+        private bool _isHovered;
+
+        /// <summary>EventSystem 選択中フラグ</summary>
         private bool _isSelected;
 
-        /// <summary>
-        /// Dispose 実行済みフラグ
-        /// </summary>
+        /// <summary>Dispose 実行済みフラグ</summary>
         private bool _isDisposed;
 
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>
-        /// Button キャッシュ
-        /// </summary>
-        public Button Button => _button;
+        /// <summary>GameObject キャッシュ</summary>
+        public GameObject GameObject => _gameObject;
 
-        /// <summary>
-        /// RectTransform キャッシュ
-        /// </summary>
+        /// <summary>RectTransform キャッシュ</summary>
         public RectTransform RectTransform => _rectTransform;
+
+        /// <summary>Button キャッシュ</summary>
+        public Button Button => _button;
         
         // ======================================================
         // UniRx 変数
@@ -72,60 +69,40 @@ namespace UISystem.Infrastructure
         // --------------------------------------------------
         // クリック
         // --------------------------------------------------
-        /// <summary>
-        /// クリック通知用 Subject
-        /// </summary>
+        /// <summary>クリック通知用 Subject</summary>
         protected readonly Subject<Unit> OnClickSubject = new Subject<Unit>();
 
-        /// <summary>
-        /// クリックイベントストリーム
-        /// </summary>
+        /// <summary>クリックストリーム</summary>
         public IObservable<Unit> OnClickAsObservable => OnClickSubject;
 
         // --------------------------------------------------
         // ホバー
         // --------------------------------------------------
-        /// <summary>
-        /// ホバー開始通知用 Subject
-        /// </summary>
+        /// <summary>ホバー開始通知用 Subject</summary>
         protected readonly Subject<Unit> OnHoverEnterSubject = new Subject<Unit>();
 
-        /// <summary>
-        /// ホバー開始イベントストリーム
-        /// </summary>
+        /// <summary>ホバー開始ストリーム</summary>
         public IObservable<Unit> OnHoverEnterAsObservable => OnHoverEnterSubject;
 
-        /// <summary>
-        /// ホバー終了通知用 Subject
-        /// </summary>
+        /// <summary>ホバー終了通知用 Subject</summary>
         protected readonly Subject<Unit> OnHoverExitSubject = new Subject<Unit>();
 
-        /// <summary>
-        /// ホバー終了イベントストリーム
-        /// </summary>
+        /// <summary>ホバー終了ストリーム</summary>
         public IObservable<Unit> OnHoverExitAsObservable => OnHoverExitSubject;
 
         // --------------------------------------------------
         // 選択
         // --------------------------------------------------
-        /// <summary>
-        /// 選択開始通知用 Subject
-        /// </summary>
+        /// <summary>選択開始通知用 Subject</summary>
         protected readonly Subject<Unit> OnSelectEnterSubject = new Subject<Unit>();
 
-        /// <summary>
-        /// 選択開始イベントストリーム
-        /// </summary>
+        /// <summary>選択開始ストリーム</summary>
         public IObservable<Unit> OnSelectEnterAsObservable => OnSelectEnterSubject;
 
-        /// <summary>
-        /// 選択終了通知用 Subject
-        /// </summary>
+        /// <summary>選択終了通知用 Subject</summary>
         protected readonly Subject<Unit> OnSelectExitSubject = new Subject<Unit>();
 
-        /// <summary>
-        /// 選択終了イベントストリーム
-        /// </summary>
+        /// <summary>選択終了ストリーム</summary>
         public IObservable<Unit> OnSelectExitAsObservable => OnSelectExitSubject;
 
         // ======================================================
@@ -134,24 +111,37 @@ namespace UISystem.Infrastructure
 
         protected virtual void Awake()
         {
-            _button = GetComponent<Button>();
+            _gameObject = gameObject;
             _rectTransform = transform as RectTransform;
+            _button = GetComponent<Button>();
         }
 
         protected virtual void OnDisable()
         {
-            // 選択中ではない場合
-            if (!_isSelected)
+            // ホバー中の場合
+            if (_isHovered)
             {
-                return;
+                // ホバー終了通知
+                OnHoverExitInternal();
             }
-
-            // 選択終了通知
-            OnSelectExitInternal();
+            
+            // 選択中の場合
+            if (_isSelected)
+            {
+                // 選択終了通知
+                OnSelectExitInternal();
+            }
         }
 
         protected virtual void OnDestroy()
         {
+            // ホバー中の場合
+            if (_isHovered)
+            {
+                // ホバー終了通知
+                OnHoverExitInternal();
+            }
+
             // 選択中の場合
             if (_isSelected)
             {
@@ -230,6 +220,9 @@ namespace UISystem.Infrastructure
         public virtual void OnPointerEnter(
             PointerEventData eventData)
         {
+            // ホバー状態を有効化
+            _isHovered = true;
+
             OnHoverEnterSubject.OnNext(Unit.Default);
         }
 
@@ -240,6 +233,9 @@ namespace UISystem.Infrastructure
         public virtual void OnPointerExit(
             PointerEventData eventData)
         {
+            // ホバー状態を解除
+            _isHovered = false;
+
             OnHoverExitSubject.OnNext(Unit.Default);
         }
 
@@ -275,6 +271,24 @@ namespace UISystem.Infrastructure
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// ホバー終了処理を実行する
+        /// </summary>
+        private void OnHoverExitInternal()
+        {
+            // 未ホバー状態の場合
+            if (!_isHovered)
+            {
+                return;
+            }
+
+            // ホバー状態を解除
+            _isHovered = false;
+
+            // ホバー終了通知
+            OnHoverExitSubject.OnNext(Unit.Default);
+        }
 
         /// <summary>
         /// 選択終了処理を実行する

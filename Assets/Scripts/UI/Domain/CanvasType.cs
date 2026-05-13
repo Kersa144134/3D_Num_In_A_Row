@@ -18,15 +18,15 @@ namespace UISystem.Domain
     public enum CanvasType
     {
         /// <summary>未選択状態</summary>
-        None,
-
-        /// <summary>スタートキャンバス</summary>
-        Start,
-
-        /// <summary>オプションキャンバス</summary>
-        Option,
+        None = 0,
 
         /// <summary>ダイアログキャンバス</summary>
-        Dialog
+        Dialog = 1,
+
+        /// <summary>スタートキャンバス</summary>
+        Start = 2,
+
+        /// <summary>オプションキャンバス</summary>
+        Option = 3
     }
 }

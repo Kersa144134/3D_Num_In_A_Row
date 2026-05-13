@@ -233,8 +233,14 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // イベント購読
             // --------------------------------------------------
+            // 読み込み専用として扱う
             IUpdatableReader updatableReader = _updatableContexts;
+
+            // ルーター生成
             _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
+
+            _eventRouter.Subscribe(_phaseMachine);
+            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
 
             _eventRouter.OnSceneChangeRequested
                 .Subscribe(e =>
@@ -257,9 +263,6 @@ namespace GameSystem.Presentation
                     SetTargetPhase(e);
                 })
                 .AddTo(_disposables);
-
-            _eventRouter.Subscribe(_phaseMachine);
-            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
 
             // シーン変更後イベント
             TriggerSceneChangedEventAsync().Forget();
