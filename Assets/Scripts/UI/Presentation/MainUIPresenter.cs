@@ -204,11 +204,9 @@ namespace UISystem.Presentation
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
 
-                    // Event
-                    bool isEvent = type == PhaseType.Event;
-
-                    // Event以外
-                    if (!isEvent)
+                    // ChangePlayer
+                    bool isChangePlayer = type == PhaseType.ChangePlayer;
+                    if (isChangePlayer)
                     {
                         SetSwitchProjection(false);
                     }

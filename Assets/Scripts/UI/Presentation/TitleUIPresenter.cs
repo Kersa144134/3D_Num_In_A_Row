@@ -6,20 +6,18 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UniRx;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
-using System;
-using System.Collections.Generic;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.EventSystems;
 using UpdateSystem.Domain;
-using static UnityEngine.GraphicsBuffer;
 
 namespace UISystem.Presentation
 {
@@ -141,9 +139,6 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // システム参照
         // --------------------------------------------------
-        /// <summary>EventSystem キャッシュ</summary>
-        private EventSystem _eventSystem;
-
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
 
@@ -229,14 +224,12 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
-            _eventSystem = EventSystem.current;
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
 
-            if (_eventSystem == null ||
-                _gameOptionManager == null ||
+            if (_gameOptionManager == null ||
                 _inputManager == null ||
-                _pointer == null ||
+                _baseNormalButtons == null ||
                 _titleNormalButtons == null ||
                 _titleOptionButtons == null ||
                 _initialSelectedStartCanvasButton == null ||
@@ -332,7 +325,7 @@ namespace UISystem.Presentation
                 _dialogCanvas,
                 _startCanvas,
                 _optionCanvas,
-                _normalButtonResolver.Get(UIActionType.DialogYes),
+                _normalButtonResolver.GetButton(UIActionType.DialogYes),
                 _initialSelectedStartCanvasButton,
                 _initialSelectedOptionCanvasButton
             );
@@ -557,12 +550,8 @@ namespace UISystem.Presentation
                 // --------------------------------------------------
                 if (canvasType == CanvasType.Dialog)
                 {
-                    // ダイアログ Yes ボタンを取得
-                    BaseButtonEvent dialogYesButton =
-                        _titleUIStateController.GetInitialSelectedButton();
-
                     // ダイアログ Yes ボタンを適用
-                    OnSelectButton(dialogYesButton);
+                    OnSelectButton(_normalButtonResolver.GetButton(UIActionType.DialogYes));
                     return;
                 }
 
@@ -684,11 +673,11 @@ namespace UISystem.Presentation
             // ダイアログ Yes ボタン
             // --------------------------------------------------
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDialogYes)
-            && typeDialogYes == UIActionType.DialogYes)
+                && typeDialogYes == UIActionType.DialogYes)
             {
                 // ダイアログボタン非表示
                 buttonEvent.gameObject.SetActive(false);
-                _normalButtonResolver.Get(UIActionType.DialogNo).gameObject.SetActive(false);
+                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(false);
 
                 return;
             }
@@ -697,7 +686,7 @@ namespace UISystem.Presentation
             // ダイアログ No ボタン
             // --------------------------------------------------
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeDialogNo)
-            && typeDialogNo == UIActionType.DialogNo)
+                && typeDialogNo == UIActionType.DialogNo)
             {
                 // ダイアログキャンバス非表示
                 _titleUIStateController.HideDialogCanvas();
@@ -721,11 +710,11 @@ namespace UISystem.Presentation
                 _titleUIStateController.ShowDialogCanvas();
 
                 // ダイアログボタン表示
-                _normalButtonResolver.Get(UIActionType.DialogYes).gameObject.SetActive(true);
-                _normalButtonResolver.Get(UIActionType.DialogNo).gameObject.SetActive(true);
+                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
+                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
 
                 // ダイアログ YES ボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.Get(UIActionType.DialogYes));
+                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
 
                 // ダイアログ表示を通知
                 _onDialogVisibleChanged.OnNext(true);
@@ -793,7 +782,7 @@ namespace UISystem.Presentation
                 _titleUIStateController.ShowStartCanvas();
 
                 // オプションボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.Get(UIActionType.TitleOption));
+                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleOption));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -821,7 +810,7 @@ namespace UISystem.Presentation
                 }
 
                 // スタートボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.Get(UIActionType.TitleStart));
+                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleStart));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -939,13 +928,13 @@ namespace UISystem.Presentation
             GameObject currentSelectedObject = _eventSystem.currentSelectedGameObject;
 
             // 同一オブジェクトが選択されている場合
-            if (currentSelectedObject == buttonEvent.GameObject)
+            if (currentSelectedObject == buttonEvent.gameObject)
             {
                 return;
             }
 
             // 選択状態を更新
-            _eventSystem.SetSelectedGameObject(buttonEvent.GameObject);
+            _eventSystem.SetSelectedGameObject(buttonEvent.gameObject);
         }
 
         /// <summary>

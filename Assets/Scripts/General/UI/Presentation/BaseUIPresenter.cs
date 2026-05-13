@@ -9,6 +9,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UniRx;
 using PhaseSystem.Domain;
@@ -172,6 +173,9 @@ namespace UISystem.Presentation
         /// <summary>フェードシステム</summary>
         protected Fade _fade;
 
+        /// <summary>EventSystem キャッシュ</summary>
+        protected EventSystem _eventSystem;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -220,7 +224,26 @@ namespace UISystem.Presentation
         public void OnEnter()
         {
             // インスタンスからコンポーネント取得
+            _eventSystem = EventSystem.current;
             _fade = Fade.Instance;
+
+            if (_eventSystem == null ||
+                _fade == null ||
+                _dialogCanvas == null ||
+                _pointer == null)
+            {
+                Debug.LogError("[BaseUIPresenter] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+            
+            // インスタンスからコンポーネント取得
 
             _view = new BaseUIView(
                 _binarizationFeature,

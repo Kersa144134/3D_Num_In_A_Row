@@ -31,9 +31,6 @@ namespace UISystem.Infrastructure
         // フィールド
         // ======================================================
 
-        /// <summary>GameObject キャッシュ</summary>
-        private GameObject _gameObject;
-
         /// <summary>RectTransform キャッシュ</summary>
         private RectTransform _rectTransform;
 
@@ -52,9 +49,6 @@ namespace UISystem.Infrastructure
         // ======================================================
         // プロパティ
         // ======================================================
-
-        /// <summary>GameObject キャッシュ</summary>
-        public GameObject GameObject => _gameObject;
 
         /// <summary>RectTransform キャッシュ</summary>
         public RectTransform RectTransform => _rectTransform;
@@ -111,47 +105,29 @@ namespace UISystem.Infrastructure
 
         protected virtual void Awake()
         {
-            _gameObject = gameObject;
             _rectTransform = transform as RectTransform;
             _button = GetComponent<Button>();
         }
 
         protected virtual void OnDisable()
         {
-            // ホバー中の場合
-            if (_isHovered)
-            {
-                // ホバー終了通知
-                OnHoverExitInternal();
-            }
-            
-            // 選択中の場合
-            if (_isSelected)
-            {
-                // 選択終了通知
-                OnSelectExitInternal();
-            }
+            // ホバー終了通知
+            OnHoverExitInternal();
+
+            // 選択終了通知
+            OnSelectExitInternal();
         }
 
         protected virtual void OnDestroy()
         {
-            // ホバー中の場合
-            if (_isHovered)
-            {
-                // ホバー終了通知
-                OnHoverExitInternal();
-            }
+            // ホバー終了通知
+            OnHoverExitInternal();
 
-            // 選択中の場合
-            if (_isSelected)
-            {
-                // 選択終了通知
-                OnSelectExitInternal();
-            }
+            // 選択終了通知
+            OnSelectExitInternal();
 
             Dispose();
         }
-
 
         // ======================================================
         // IDisposable
@@ -207,6 +183,7 @@ namespace UISystem.Infrastructure
         public virtual void OnSubmit(
             BaseEventData eventData)
         {
+            // クリック入力として扱う
             OnClickSubject.OnNext(Unit.Default);
         }
 

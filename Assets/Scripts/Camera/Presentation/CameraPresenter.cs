@@ -233,6 +233,15 @@ namespace CameraSystem.Presentation
             rotationPreparation
                 .Subscribe(isPerspective =>
                 {
+                    if (!isPerspective)
+                    {
+                        _isInputLock = false;
+
+                        _projectionService.SetProjection(_camera, isPerspective);
+
+                        return;
+                    }
+
                     _isInputLock = true;
 
                     _cameraModel.SetRotationX(90f);
@@ -243,7 +252,6 @@ namespace CameraSystem.Presentation
                         _cameraModel.RotationY);
 
                     _projectionService.SetProjection(_camera, isPerspective);
-
                 })
                 .AddTo(_disposables);
         }

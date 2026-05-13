@@ -33,6 +33,22 @@ namespace GameSystem.Presentation
     public sealed class GameEventRouter
     {
         // ======================================================
+        // 列挙型
+        // ======================================================
+
+        /// <summary>
+        /// ボード操作入力種別
+        /// </summary>
+        private enum BoardInputType
+        {
+            /// <summary>駒落下入力</summary>
+            Drop = 0,
+
+            /// <summary>ボード回転入力</summary>
+            Rotate = 1
+        }
+        
+        // ======================================================
         // コンポーネント参照
         // ======================================================
 
@@ -81,7 +97,7 @@ namespace GameSystem.Presentation
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
         /// <summary>入力用購読管理</summary>
-        private CompositeDisposable _inputDisposables;
+        private CompositeDisposable _inputDisposables = new CompositeDisposable();
 
         /// <summary>シーンロード用購読管理</summary>
         private IDisposable _sceneLoadSubscription;
@@ -109,6 +125,9 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         /// <summary>現在フェーズストリーム</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
+
+        /// <summary>現在ボード入力種別ストリーム</summary>
+        private readonly ReactiveProperty<BoardInputType> _currentBoardInputType = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
 
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
@@ -246,10 +265,6 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ルーター
             // --------------------------------------------------
-            _onRotateRequested
-                .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
-                .AddTo(_disposables);
-
             // ボタン A 押す
             _inputManager.ButtonA.OnDown
                 .Subscribe(_ =>
@@ -325,6 +340,7 @@ namespace GameSystem.Presentation
                         // ダイアログ非表示時
                         else
                         {
+                            // 入力購読解除
                             UnbindInputCommands();
                         }
                     })
@@ -366,6 +382,7 @@ namespace GameSystem.Presentation
                         // ダイアログ非表示時
                         else
                         {
+                            // 入力購読解除
                             UnbindInputCommands();
                         }
                     })
@@ -384,7 +401,7 @@ namespace GameSystem.Presentation
             if (_cameraPresenter != null)
             {
                 _cameraPresenter.BindStreams(
-                    _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _currentBoardInputType.Select(input => input == BoardInputType.Rotate),
                     _mainUIPresenter.OnSwitchProjection);
             }
 
@@ -402,8 +419,11 @@ namespace GameSystem.Presentation
 
                     boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
 
-                    boardPresenter.OnInputReceived
-                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                    boardPresenter.OnDropInputted
+                        .Subscribe(_ => UnbindInputCommands())
+                        .AddTo(_disposables);
+                    boardPresenter.OnRotateInputted
+                        .Subscribe(_ => UnbindInputCommands())
                         .AddTo(_disposables);
                     boardPresenter.OnLineComplete
                         .Subscribe(e => HandleLineCompleted(e))
@@ -422,18 +442,6 @@ namespace GameSystem.Presentation
         {
             // 購読解除
             _disposables.Dispose();
-
-            foreach (BoardPresenter boardPresenter in _boardPresenters)
-            {
-                if (boardPresenter == null)
-                {
-                    continue;
-                }
-
-                boardPresenter.UnbindPlayerChangeStream();
-                boardPresenter.UnbindDropInputStream();
-                boardPresenter.UnbindRotateInputStream();
-            }
         }
 
         /// <summary>
@@ -713,9 +721,6 @@ namespace GameSystem.Presentation
             // 入力購読解除
             UnbindInputCommands();
 
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
             switch (phase)
             {
                 // --------------------------------------------------
@@ -743,21 +748,20 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
-                    // Play フェーズ時の入力コマンド登録
-                    BindPlayPhaseInputCommands();
-
-                    foreach (BoardPresenter boardPresenter in _boardPresenters)
+                    // --------------------------------------------------
+                    // 直前の入力種別に応じて入力コマンドを登録
+                    // --------------------------------------------------
+                    switch (_currentBoardInputType.Value)
                     {
-                        if (boardPresenter == null)
-                        {
-                            continue;
-                        }
+                        // 駒落下入力コマンドを登録
+                        case BoardInputType.Drop:
+                            BindDropInputCommands();
+                            break;
 
-                        // 入力ストリーム登録
-                        boardPresenter.BindDropInputStream(_onDropRequested);
-
-                        // 入力ストリーム解除
-                        boardPresenter.UnbindRotateInputStream();
+                        // ボード回転入力コマンドを登録
+                        case BoardInputType.Rotate:
+                            BindRotateInputCommands();
+                            break;
                     }
 
                     return;
@@ -769,9 +773,6 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
-                    // Event フェーズ時の入力コマンド登録
-                    BindEventPhaseInputCommands();
-
                     foreach (BoardPresenter boardPresenter in _boardPresenters)
                     {
                         if (boardPresenter == null)
@@ -779,11 +780,8 @@ namespace GameSystem.Presentation
                             continue;
                         }
 
-                        // 入力ストリーム登録
-                        boardPresenter.BindRotateInputStream(_onRotateExecuted);
-
-                        // 入力ストリーム解除
                         boardPresenter.UnbindDropInputStream();
+                        boardPresenter.UnbindRotateInputStream();
                     }
 
                     return;
@@ -795,17 +793,8 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
-                    foreach (BoardPresenter boardPresenter in _boardPresenters)
-                    {
-                        if (boardPresenter == null)
-                        {
-                            continue;
-                        }
-
-                        // 入力ストリーム解除
-                        boardPresenter.UnbindDropInputStream();
-                        boardPresenter.UnbindRotateInputStream();
-                    }
+                    // ボード入力種別キャッシュをリセット
+                    _currentBoardInputType.Value = BoardInputType.Drop;
 
                     return;
 
@@ -815,18 +804,6 @@ namespace GameSystem.Presentation
                 case PhaseType.Pause:
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
-
-                    foreach (BoardPresenter boardPresenter in _boardPresenters)
-                    {
-                        if (boardPresenter == null)
-                        {
-                            continue;
-                        }
-
-                        // 入力ストリーム解除
-                        boardPresenter.UnbindDropInputStream();
-                        boardPresenter.UnbindRotateInputStream();
-                    }
 
                     return;
 
@@ -854,10 +831,64 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// Play フェーズ用の入力コマンド購読を登録する
+        /// ダイアログ表示時のマッピング変更処理を行う
         /// </summary>
-        private void BindPlayPhaseInputCommands()
+        private void BindShowDialogInputCommands()
         {
+            // 入力購読解除
+            UnbindInputCommands();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
+            // ボタン A 押す
+            _inputManager.ButtonA.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面での決定入力として発火
+                    _onDialogInputed.OnNext(true);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン B 押す
+            _inputManager.ButtonB.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン X 押す
+            _inputManager.ButtonX.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+
+            // ボタン Y 押す
+            _inputManager.ButtonY.OnDown
+                .Subscribe(_ =>
+                {
+                    // ダイアログ画面でのキャンセル入力として発火
+                    _onDialogInputed.OnNext(false);
+                })
+                .AddTo(_inputDisposables);
+        }
+
+        /// <summary>
+        /// 駒落下用の入力コマンド購読を登録する
+        /// </summary>
+        private void BindDropInputCommands()
+        {
+            // 入力購読解除
+            UnbindInputCommands();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
             // ボタン A 離す
             _inputManager.ButtonA.OnUp
                 .Subscribe(_ =>
@@ -873,15 +904,44 @@ namespace GameSystem.Presentation
                 {
                     // 回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
+
+                    // 入力購読解除
+                    UnbindInputCommands();
+
+                    // CompositeDisposable 生成
+                    _inputDisposables = new CompositeDisposable();
+
+                    // 駒落下時の入力コマンド登録
+                    BindRotateInputCommands();
                 })
                 .AddTo(_inputDisposables);
+
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            {
+                if (boardPresenter == null)
+                {
+                    continue;
+                }
+
+                boardPresenter.BindDropInputStream(_onDropRequested);
+                boardPresenter.UnbindRotateInputStream();
+            }
+
+            // ボード入力更新
+            _currentBoardInputType.Value = BoardInputType.Drop;
         }
 
         /// <summary>
-        /// Event フェーズ用の入力コマンド購読を登録する
+        /// ボード回転用の入力コマンド購読を登録する
         /// </summary>
-        private void BindEventPhaseInputCommands()
+        private void BindRotateInputCommands()
         {
+            // 入力購読解除
+            UnbindInputCommands();
+
+            // CompositeDisposable 生成
+            _inputDisposables = new CompositeDisposable();
+
             // 左スティック左押す
             _inputManager.ButtonX.OnDown
                 .Subscribe(_ =>
@@ -937,51 +997,20 @@ namespace GameSystem.Presentation
                     );
                 })
                 .AddTo(_inputDisposables);
-        }
 
-        /// <summary>
-        /// ダイアログ表示時のマッピング変更処理を行う
-        /// </summary>
-        private void BindShowDialogInputCommands()
-        {
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
-            // ボタン A 押す
-            _inputManager.ButtonA.OnDown
-                .Subscribe(_ =>
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            {
+                if (boardPresenter == null)
                 {
-                    // ダイアログ画面での決定入力として発火
-                    _onDialogInputed.OnNext(true);
-                })
-                .AddTo(_inputDisposables);
+                    continue;
+                }
 
-            // ボタン B 押す
-            _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
+                boardPresenter.UnbindDropInputStream();
+                boardPresenter.BindRotateInputStream(_onRotateExecuted);
+            }
 
-            // ボタン X 押す
-            _inputManager.ButtonX.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン Y 押す
-            _inputManager.ButtonY.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
+            // ボード入力更新
+            _currentBoardInputType.Value = BoardInputType.Rotate;
         }
 
         /// <summary>
@@ -992,6 +1021,7 @@ namespace GameSystem.Presentation
             _inputDisposables?.Dispose();
             _inputDisposables = null;
         }
+
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------

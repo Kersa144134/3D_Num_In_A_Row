@@ -240,10 +240,8 @@ namespace UISystem.Application
         /// <param name="canvasType">対象キャンバス種別</param>
         public void ClearLastSelectedButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列インデックスへ変換
             int canvasIndex = (int)canvasType;
 
-            // 指定キャンバスの選択ボタンキャッシュをクリア
             _lastSelectedButtonEvents[canvasIndex] = null;
         }
 
@@ -252,42 +250,9 @@ namespace UISystem.Application
         /// </summary>
         public void ClearLastHoveredButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列インデックスへ変換
             int canvasIndex = (int)canvasType;
 
-            // 指定キャンバスのホバーボタンキャッシュをクリア
             _lastHoveredButtonEvents[canvasIndex] = null;
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// キャンバス種別を配列インデックスへ変換する
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス種別</param>
-        /// <returns>配列インデックス</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// 配列範囲外のキャンバス種別が指定された場合
-        /// </exception>
-        private int GetCanvasIndex(in CanvasType canvasType)
-        {
-            // enum を int へ変換
-            int canvasIndex = (int)canvasType;
-
-            // 配列範囲外の場合は例外
-            if (canvasIndex < 0 ||
-                canvasIndex >= _lastSelectedButtonEvents.Length)
-            {
-                throw new System.ArgumentOutOfRangeException(
-                    nameof(canvasType),
-                    canvasType,
-                    "無効な CanvasType が指定されました。");
-            }
-
-            // 配列インデックスを返却
-            return canvasIndex;
         }
     }
 }

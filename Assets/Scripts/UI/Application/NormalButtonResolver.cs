@@ -60,7 +60,7 @@ namespace UISystem.Application
         /// <summary>
         /// UIActionType からボタンイベント取得
         /// </summary>
-        public NormalButtonEvent Get(in UIActionType type)
+        public NormalButtonEvent GetButton(in UIActionType type)
         {
             if (_forwardTable.TryGetValue(type, out NormalButtonEvent buttonEvent))
             {

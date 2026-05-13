@@ -171,11 +171,17 @@ namespace BoardSystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>プレイヤー入力通知用 Subject</summary>
-        private readonly Subject<Unit> _onInputReceived = new Subject<Unit>();
+        /// <summary>駒落下入力通知用 Subject</summary>
+        private readonly Subject<Unit> _onDropInputted = new Subject<Unit>();
 
-        /// <summary>プレイヤー入力ストリーム</summary>
-        public IObservable<Unit> OnInputReceived => _onInputReceived;
+        /// <summary>駒落下入力ストリーム</summary>
+        public IObservable<Unit> OnDropInputted => _onDropInputted;
+
+        /// <summary>ボード回転入力通知用 Subject</summary>
+        private readonly Subject<Unit> _onRotateInputted = new Subject<Unit>();
+
+        /// <summary>ボード回転入力ストリーム</summary>
+        public IObservable<Unit> OnRotateInputted => _onRotateInputted;
 
         /// <summary>ライン成立通知用 Subject</summary>
         private readonly Subject<LineCompleteEvent> _onLineComplete =
@@ -491,7 +497,7 @@ namespace BoardSystem.Presentation
             }
 
             // 入力通知
-            _onInputReceived.OnNext(Unit.Default);
+            _onDropInputted.OnNext(Unit.Default);
 
             _canDrop = false;
 
@@ -510,7 +516,7 @@ namespace BoardSystem.Presentation
             RotationDirection direction)
         {
             // 入力通知
-            _onInputReceived.OnNext(Unit.Default);
+            _onRotateInputted.OnNext(Unit.Default);
 
             _canRotate = false;
 
