@@ -26,9 +26,6 @@ namespace PhaseSystem.Domain
         /// <summary>Ready ¨ ChangePlayer ‘JˆÚŠÔ</summary>
         public float ReadyToChangePlayerWaitTime { get; }
 
-        /// <summary>Play ¨ Finish ‘JˆÚŠÔ</summary>
-        public float PlayToFinishWaitTime { get; }
-
         /// <summary>ChangePlayer ¨ Play ‘JˆÚŠÔ</summary>
         public float ChangePlayerToPlayWaitTime { get; }
 
@@ -43,13 +40,11 @@ namespace PhaseSystem.Domain
             in int playerCount,
             in float perPlayerLimitTime,
             in float readyToChangePlayerWaitTime,
-            in float playToFinishWaitTime,
             in float changePlayerToPlayWaitTime)
         {
             PlayerCount = playerCount;
             PerPlayerLimitTime = perPlayerLimitTime;
             ReadyToChangePlayerWaitTime = readyToChangePlayerWaitTime;
-            PlayToFinishWaitTime = playToFinishWaitTime;
             ChangePlayerToPlayWaitTime = changePlayerToPlayWaitTime;
         }
     }

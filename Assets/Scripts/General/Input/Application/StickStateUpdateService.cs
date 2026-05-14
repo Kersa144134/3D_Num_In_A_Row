@@ -29,13 +29,13 @@ namespace InputSystem.Application
         /// <param name="dPad">D-Pad èoóÕ</param>
         public void GetStickStates(
             in IGamepadInputSource controller,
-            out Vector2 left,
-            out Vector2 right,
-            out Vector2 dPad)
+            in StickState left,
+            in StickState right,
+            in StickState dPad)
         {
-            left = controller.LeftStick;
-            right = controller.RightStick;
-            dPad = controller.DPad;
+            left.Update(controller.LeftStick);
+            right.Update(controller.RightStick);
+            dPad.Update(controller.DPad);
         }
     }
 }

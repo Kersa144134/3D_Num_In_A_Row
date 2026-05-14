@@ -23,17 +23,11 @@ namespace InputSystem.Infrastructure
         // 定数
         // ======================================================
 
-        /// <summary>左トリガーのデッドゾーン値</summary>
-        private const float LEFT_TRIGGER_DEAD_ZONE = 0.1f;
+        /// <summary>トリガーのデッドゾーン値</summary>
+        private const float TRIGGER_DEAD_ZONE = 0.2f;
 
-        /// <summary>右トリガーのデッドゾーン値</summary>
-        private const float RIGHT_TRIGGER_DEAD_ZONE = 0.1f;
-
-        /// <summary>左スティックのデッドゾーン値</summary>
-        private const float LEFT_STICK_DEAD_ZONE = 0.1f;
-
-        /// <summary>右スティックのデッドゾーン値</summary>
-        private const float RIGHT_STICK_DEAD_ZONE = 0.1f;
+        /// <summary>スティックのデッドゾーン値</summary>
+        private const float STICK_DEAD_ZONE = 0.2f;
 
         // ======================================================
         // フィールド
@@ -133,8 +127,8 @@ namespace InputSystem.Infrastructure
             // ショルダー / トリガー / スティックボタン入力取得
             LeftShoulder = pad.leftShoulder.isPressed;
             RightShoulder = pad.rightShoulder.isPressed;
-            LeftTrigger = pad.leftTrigger.ReadValue() >= LEFT_TRIGGER_DEAD_ZONE;
-            RightTrigger = pad.rightTrigger.ReadValue() >= RIGHT_TRIGGER_DEAD_ZONE;
+            LeftTrigger = pad.leftTrigger.ReadValue() >= TRIGGER_DEAD_ZONE;
+            RightTrigger = pad.rightTrigger.ReadValue() >= TRIGGER_DEAD_ZONE;
             LeftStickButton = pad.leftStickButton.isPressed;
             RightStickButton = pad.rightStickButton.isPressed;
 
@@ -143,8 +137,8 @@ namespace InputSystem.Infrastructure
             SelectButton = pad.selectButton.isPressed;
 
             // スティック入力取得
-            LeftStick = ApplyDeadZone(pad.leftStick.ReadValue(), LEFT_STICK_DEAD_ZONE);
-            RightStick = ApplyDeadZone(pad.rightStick.ReadValue(), RIGHT_STICK_DEAD_ZONE);
+            LeftStick = ApplyDeadZone(pad.leftStick.ReadValue(), STICK_DEAD_ZONE);
+            RightStick = ApplyDeadZone(pad.rightStick.ReadValue(), STICK_DEAD_ZONE);
             DPad = pad.dpad.ReadValue();
 
             // 入力検知

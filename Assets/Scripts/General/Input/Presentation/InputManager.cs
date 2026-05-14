@@ -68,13 +68,13 @@ namespace InputSystem.Presentation
         private ButtonState[] _buttonStates;
 
         /// <summary>左スティックの入力ベクトル</summary>
-        private Vector2 _leftStick;
+        private readonly StickState _leftStick = new StickState();
 
         /// <summary>右スティックの入力ベクトル</summary>
-        private Vector2 _rightStick;
+        private readonly StickState _rightStick = new StickState();
 
         /// <summary>D-Pad の入力ベクトル</summary>
-        private Vector2 _dPad;
+        private readonly StickState _dPad = new StickState();
 
         /// <summary>ポインターの座標</summary>
         private Vector2 _pointer = Vector2.zero;
@@ -86,16 +86,16 @@ namespace InputSystem.Presentation
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
         public int CurrentMappingIndex { get; private set; } = 0;
 
-        /// <summary>ボタンAの状態</summary>
+        /// <summary>ボタン A の状態</summary>
         public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
 
-        /// <summary>ボタンBの状態</summary>
+        /// <summary>ボタン B の状態</summary>
         public ButtonState ButtonB => _buttonStates[(int)GamepadInputType.ButtonB];
 
-        /// <summary>ボタンXの状態</summary>
+        /// <summary>ボタン X の状態</summary>
         public ButtonState ButtonX => _buttonStates[(int)GamepadInputType.ButtonX];
 
-        /// <summary>ボタンYの状態</summary>
+        /// <summary>ボタン Y の状態</summary>
         public ButtonState ButtonY => _buttonStates[(int)GamepadInputType.ButtonY];
 
         /// <summary>左ショルダーの状態</summary>
@@ -116,20 +116,20 @@ namespace InputSystem.Presentation
         /// <summary>右スティックボタンの状態</summary>
         public ButtonState RightStickButton => _buttonStates[(int)GamepadInputType.RightStickButton];
 
-        /// <summary>Startボタンの状態</summary>
+        /// <summary>Start ボタンの状態</summary>
         public ButtonState StartButton => _buttonStates[(int)GamepadInputType.Start];
 
-        /// <summary>Selectボタンの状態</summary>
+        /// <summary>Select ボタンの状態</summary>
         public ButtonState SelectButton => _buttonStates[(int)GamepadInputType.Select];
 
         /// <summary>左スティック</summary>
-        public Vector2 LeftStick => _leftStick;
+        public StickState LeftStick => _leftStick;
 
         /// <summary>右スティック</summary>
-        public Vector2 RightStick => _rightStick;
+        public StickState RightStick => _rightStick;
 
         /// <summary>D-Pad</summary>
-        public Vector2 DPad => _dPad;
+        public StickState DPad => _dPad;
 
         /// <summary>ポインターの座標</summary>
         public Vector2 Pointer => _pointer;
@@ -252,9 +252,9 @@ namespace InputSystem.Presentation
             // スティック状態更新
             _stickStateUpdateService.GetStickStates(
                 controller,
-                out _leftStick,
-                out _rightStick,
-                out _dPad
+                _leftStick,
+                _rightStick,
+                _dPad
             );
 
             // ポインター状態更新

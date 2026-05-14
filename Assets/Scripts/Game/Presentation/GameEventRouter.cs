@@ -180,11 +180,14 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------
-        /// <summary>駒配置入力用 Subject</summary>
+        /// <summary>駒落下入力用 Subject</summary>
         private readonly Subject<Unit> _onDropRequested = new Subject<Unit>();
 
         /// <summary>ボード回転入力用 Subject</summary>
         private readonly Subject<Unit> _onRotateRequested = new Subject<Unit>();
+
+        /// <summary>駒落下入力用 Subject</summary>
+        private readonly Subject<Unit> _onDropExecuted = new Subject<Unit>();
 
         /// <summary>ボード回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
@@ -207,6 +210,12 @@ namespace GameSystem.Presentation
 
         /// <summary>リザルトシーン名</summary>
         private const string RESULT_SCENE_NAME = "ResultScene";
+
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
+        /// <summary>入力待機時間(秒)</summary>
+        private const float INPUT_WAIT_TIME = 2.0f;
 
         // --------------------------------------------------
         // オプション
@@ -272,6 +281,16 @@ namespace GameSystem.Presentation
                     // スキップイベント発火
                     _onSkipRequested.OnNext(Unit.Default);
                 })
+                .AddTo(_disposables);
+
+            // 駒落下実行時
+            _onDropExecuted
+        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                .AddTo(_disposables);
+
+            // ボード回転実行時
+            _onRotateExecuted
+                .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -360,6 +379,7 @@ namespace GameSystem.Presentation
                     _onPlayerChanged,
                     _onScoreUpdated,
                     _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _onDropRequested,
                     _onRotateRequested,
                     _phaseMachine.LimitTime);
 
@@ -442,15 +462,18 @@ namespace GameSystem.Presentation
         {
             // 購読解除
             _disposables.Dispose();
+
+            UnbindSceneLoadProgressStream();
+            UnbindEventSkipStream();
         }
 
         /// <summary>
         /// イベントストリームをまとめて購読する
         /// </summary>
         public void BindStreams(
-            IObservable<string> onPrepareStart,
-            IObservable<float> onPrepareEnd,
-            IObservable<float> onSceneChanged)
+            in IObservable<string> onPrepareStart,
+            in IObservable<float> onPrepareEnd,
+            in IObservable<float> onSceneChanged)
         {
             onPrepareStart
                 .Subscribe(sceneName =>
@@ -480,7 +503,7 @@ namespace GameSystem.Presentation
         /// <summary>
         /// シーンロード進捗ストリームを購読する
         /// </summary>
-        public void BindSceneLoadProgressStream(IObservable<float> onSceneLoadProgress)
+        public void BindSceneLoadProgressStream(in IObservable<float> onSceneLoadProgress)
         {
             // 多重購読防止
             _sceneLoadSubscription?.Dispose();
@@ -494,7 +517,7 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// シーン変更ストリームの購読を解除する
+        /// シーンロード進捗ストリームの購読を解除する
         /// </summary>
         public void UnbindSceneLoadProgressStream()
         {
@@ -502,9 +525,43 @@ namespace GameSystem.Presentation
             _sceneLoadSubscription = null;
         }
 
+        /// <summary>
+        /// イベントスキップストリームを購読する
+        /// </summary>
+        /// <typeparam name="TEvent">発火イベント型</typeparam>
+        /// <param name="subject">発火対象 Subject</param>
+        /// <param name="eventValue">発火時に送信する値</param>
+        public void BindEventSkipStream<TEvent>(Subject<TEvent> subject, TEvent eventValue)
+        {
+            // 多重購読防止
+            _skipInputSubscription?.Dispose();
+
+            _skipInputSubscription = _onSkipRequested
+                .Subscribe(_ =>
+                {
+                    // スキップ入力時に指定イベントを発火
+                    subject.OnNext(eventValue);
+
+                    // 即時購読解除
+                    UnbindEventSkipStream();
+                });
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベントスキップストリームの購読を解除する
+        /// </summary>
+        private void UnbindEventSkipStream()
+        {
+            _skipInputSubscription?.Dispose();
+            _skipInputSubscription = null;
+        }
 
         // --------------------------------------------------
         // シーン
@@ -560,13 +617,8 @@ namespace GameSystem.Presentation
             {
                 case TITLE_SCENE_NAME:
                     // スキップ入力
-                    _onSkipRequested
-                        .Subscribe(_ =>
-                        {
-                            // シーン遷移実行通知
-                            _onSceneChangeExecuted.OnNext(Unit.Default);
-                        })
-                        .AddTo(_disposables);
+                    // シーン遷移実行通知
+                    BindEventSkipStream(_onSceneChangeExecuted, Unit.Default);
 
                     break;
 
@@ -704,7 +756,7 @@ namespace GameSystem.Presentation
         {
             if (device == InputDeviceType.Gamepad)
             {
-                _onGamepadUsed.OnNext( true );
+                _onGamepadUsed.OnNext(true);
             }
             else
             {
@@ -724,14 +776,18 @@ namespace GameSystem.Presentation
             switch (phase)
             {
                 // --------------------------------------------------
-                // Title
+                // Title, Event, Pause, Finish, Result
                 // --------------------------------------------------
                 case PhaseType.Title:
+                case PhaseType.Event:
+                case PhaseType.Pause:
+                case PhaseType.Finish:
+                case PhaseType.Result:
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
 
-                    return;
-
+                    break;
+                
                 // --------------------------------------------------
                 // Ready
                 // --------------------------------------------------
@@ -739,7 +795,23 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
-                    return;
+                    // 待機時間経過後に購読開始
+                    Observable.Timer(TimeSpan.FromSeconds(INPUT_WAIT_TIME))
+                        .Subscribe(_ =>
+                        {
+                            // スキップ入力
+                            // ChangePlayer へフェーズ遷移通知
+                            BindEventSkipStream(
+                                _onPhaseChanged,
+                                new PhaseChangeEvent(
+                                    _currentPhase.Value,
+                                    PhaseType.ChangePlayer
+                                )
+                            );
+                        })
+                        .AddTo(_disposables);
+
+                    break;
 
                 // --------------------------------------------------
                 // Play
@@ -764,27 +836,7 @@ namespace GameSystem.Presentation
                             break;
                     }
 
-                    return;
-
-                // --------------------------------------------------
-                // Event
-                // --------------------------------------------------
-                case PhaseType.Event:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
-                    foreach (BoardPresenter boardPresenter in _boardPresenters)
-                    {
-                        if (boardPresenter == null)
-                        {
-                            continue;
-                        }
-
-                        boardPresenter.UnbindDropInputStream();
-                        boardPresenter.UnbindRotateInputStream();
-                    }
-
-                    return;
+                    break;
 
                 // --------------------------------------------------
                 // ChangePlayer
@@ -796,37 +848,16 @@ namespace GameSystem.Presentation
                     // ボード入力種別キャッシュをリセット
                     _currentBoardInputType.Value = BoardInputType.Drop;
 
-                    return;
+                    // ボード回転準備イベント発火
+                    _onDropRequested.OnNext(Unit.Default);
 
-                // --------------------------------------------------
-                // Pause
-                // --------------------------------------------------
-                case PhaseType.Pause:
-                    // 入力マッピングを UI 用に変更
-                    NotifyMappingChanged(1);
+                    // スキップ入力購読解除
+                    UnbindEventSkipStream();
 
-                    return;
-
-                // --------------------------------------------------
-                // Finish
-                // --------------------------------------------------
-                case PhaseType.Finish:
-                    // 入力マッピングを UI 用に変更
-                    NotifyMappingChanged(1);
-
-                    return;
-
-                // --------------------------------------------------
-                // Result
-                // --------------------------------------------------
-                case PhaseType.Result:
-                    // 入力マッピングを UI 用に変更
-                    NotifyMappingChanged(1);
-
-                    return;
+                    break;
 
                 default:
-                    return;
+                    break;
             }
         }
 
@@ -893,8 +924,8 @@ namespace GameSystem.Presentation
             _inputManager.ButtonA.OnUp
                 .Subscribe(_ =>
                 {
-                    // 駒配置イベント発火
-                    _onDropRequested.OnNext(Unit.Default);
+                    // 駒落下イベント発火
+                    _onDropExecuted.OnNext(Unit.Default);
                 })
                 .AddTo(_inputDisposables);
 
@@ -902,7 +933,7 @@ namespace GameSystem.Presentation
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
-                    // 回転準備イベント発火
+                    // ボード回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
 
                     // 入力購読解除
@@ -923,7 +954,7 @@ namespace GameSystem.Presentation
                     continue;
                 }
 
-                boardPresenter.BindDropInputStream(_onDropRequested);
+                boardPresenter.BindDropInputStream(_onDropExecuted);
                 boardPresenter.UnbindRotateInputStream();
             }
 
@@ -942,59 +973,81 @@ namespace GameSystem.Presentation
             // CompositeDisposable 生成
             _inputDisposables = new CompositeDisposable();
 
-            // 左スティック左押す
-            _inputManager.ButtonX.OnDown
-                .Subscribe(_ =>
+            // 左スティック初回入力
+            _inputManager.LeftStick.OnDown
+                .Subscribe(direction =>
                 {
-                    // Z- 回転実行イベント発火
-                    _onRotateExecuted.OnNext(
-                        new RotationCommand(
-                            RotationAxis.Z,
-                            RotationDirection.Negative
-                        )
-                    );
+                    // 左方向
+                    if (direction == Vector2.left)
+                    {
+                        // Z- 回転実行イベント発火
+                        _onRotateExecuted.OnNext(
+                            new RotationCommand(
+                                RotationAxis.Z,
+                                RotationDirection.Negative
+                            )
+                        );
+
+                        return;
+                    }
+
+                    // 右方向
+                    if (direction == Vector2.right)
+                    {
+                        // Z+ 回転実行イベント発火
+                        _onRotateExecuted.OnNext(
+                            new RotationCommand(
+                                RotationAxis.Z,
+                                RotationDirection.Positive
+                            )
+                        );
+
+                        return;
+                    }
+
+                    // 上方向
+                    if (direction == Vector2.up)
+                    {
+                        // X- 回転実行イベント発火
+                        _onRotateExecuted.OnNext(
+                            new RotationCommand(
+                                RotationAxis.X,
+                                RotationDirection.Negative
+                            )
+                        );
+
+                        return;
+                    }
+
+                    // 下方向
+                    if (direction == Vector2.down)
+                    {
+                        // X+ 回転実行イベント発火
+                        _onRotateExecuted.OnNext(
+                            new RotationCommand(
+                                RotationAxis.X,
+                                RotationDirection.Positive
+                            )
+                        );
+                    }
                 })
                 .AddTo(_inputDisposables);
 
-            // 左スティック右押す
+            // ボタン B 押す
             _inputManager.ButtonB.OnDown
                 .Subscribe(_ =>
                 {
-                    // Z+ 回転実行イベント発火
-                    _onRotateExecuted.OnNext(
-                        new RotationCommand(
-                            RotationAxis.Z,
-                            RotationDirection.Positive
-                        )
-                    );
-                })
-                .AddTo(_inputDisposables);
+                    // 駒落下準備イベント発火
+                    _onDropRequested.OnNext(Unit.Default);
 
-            // 左スティック上押す
-            _inputManager.ButtonY.OnDown
-                .Subscribe(_ =>
-                {
-                    // Z- 回転実行イベント発火
-                    _onRotateExecuted.OnNext(
-                        new RotationCommand(
-                            RotationAxis.X,
-                            RotationDirection.Negative
-                        )
-                    );
-                })
-                .AddTo(_inputDisposables);
+                    // 入力購読解除
+                    UnbindInputCommands();
 
-            // 左スティック下押す
-            _inputManager.ButtonA.OnDown
-                .Subscribe(_ =>
-                {
-                    // Z+ 回転実行イベント発火
-                    _onRotateExecuted.OnNext(
-                        new RotationCommand(
-                            RotationAxis.X,
-                            RotationDirection.Positive
-                        )
-                    );
+                    // CompositeDisposable 生成
+                    _inputDisposables = new CompositeDisposable();
+
+                    // 駒落下時の入力コマンド登録
+                    BindDropInputCommands();
                 })
                 .AddTo(_inputDisposables);
 
@@ -1020,6 +1073,17 @@ namespace GameSystem.Presentation
         {
             _inputDisposables?.Dispose();
             _inputDisposables = null;
+
+            foreach (BoardPresenter boardPresenter in _boardPresenters)
+            {
+                if (boardPresenter == null)
+                {
+                    continue;
+                }
+
+                boardPresenter.UnbindDropInputStream();
+                boardPresenter.UnbindRotateInputStream();
+            }
         }
 
         // --------------------------------------------------

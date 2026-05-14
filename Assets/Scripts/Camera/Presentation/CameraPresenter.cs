@@ -178,10 +178,10 @@ namespace CameraSystem.Presentation
             // “ü—Íæ“¾
             // --------------------------------------------------
             // ¶‰E“ü—Í‚ğæ“¾‚·‚é
-            float inputHorizontal = _inputManager.LeftStick.x;
+            float inputHorizontal = _inputManager.LeftStick.Angle.x;
 
             // ã‰º“ü—Í‚ğæ“¾‚·‚é
-            float inputVertical = _inputManager.LeftStick.y;
+            float inputVertical = _inputManager.LeftStick.Angle.y;
 
             // “ü—Í’l‚ğ Vector2 ‚Æ‚µ‚Ä‚Ü‚Æ‚ß‚é
             Vector2 input = new Vector2(inputHorizontal, inputVertical);

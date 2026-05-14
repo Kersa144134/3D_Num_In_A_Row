@@ -6,11 +6,10 @@
 // 概要     : フェーズ状態の実行および遷移制御を行うステートマシン
 // ======================================================
 
-using PhaseSystem.Domain;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UniRx;
+using PhaseSystem.Domain;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
 

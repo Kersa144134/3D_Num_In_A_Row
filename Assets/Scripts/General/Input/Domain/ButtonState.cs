@@ -13,7 +13,7 @@ namespace InputSystem.Domain
 {
     /// <summary>
     /// ボタン状態管理用クラス
-    /// 押している / 押す / 離す状態を管理し、イベント通知も行う
+    /// 押している / 押す / 離す状態を管理し、イベント通知を行う
     /// </summary>
     public class ButtonState
     {
@@ -28,16 +28,16 @@ namespace InputSystem.Domain
         // UniRx 変数
         // ======================================================
 
-        /// <summary>押すイベント</summary>
+        /// <summary>押すイベント用 Subject</summary>
         private readonly Subject<Unit> _onDown = new Subject<Unit>();
 
-        /// <summary>離すイベント</summary>
+        /// <summary>離すイベント用 Subject</summary>
         private readonly Subject<Unit> _onUp = new Subject<Unit>();
 
-        /// <summary>押すイベント購読用</summary>
+        /// <summary>押すイベントストリーム</summary>
         public IObservable<Unit> OnDown => _onDown;
 
-        /// <summary>離すイベント購読用</summary>
+        /// <summary>離すイベントストリーム</summary>
         public IObservable<Unit> OnUp => _onUp;
 
         // ======================================================

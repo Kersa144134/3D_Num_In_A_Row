@@ -178,6 +178,7 @@ namespace UISystem.Presentation
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="lineComplete">ライン成立結果を通知するストリーム</param>
         /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
+        /// <param name="drop">落下入力を通知するストリーム</param>
         /// <param name="rotate">回転入力を通知するストリーム</param>
         /// <param name="limitTime">制限時間の残り時間を通知するストリーム</param>
         public void BindStreams(
@@ -185,6 +186,7 @@ namespace UISystem.Presentation
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> lineComplete,
             in IObservable<bool> inputLock,
+            in IObservable<Unit> drop,
             in IObservable<Unit> rotate,
             in IObservable<float> limitTime)
         {
@@ -203,45 +205,26 @@ namespace UISystem.Presentation
                     // Pause
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
-
-                    // ChangePlayer
-                    bool isChangePlayer = type == PhaseType.ChangePlayer;
-                    if (isChangePlayer)
-                    {
-                        SetSwitchProjection(false);
-                    }
                 })
                 .AddTo(_disposables);
 
             playerChange
-                .Subscribe(playerIndex =>
-                {
-                    SetChangePlayerState(playerIndex);
-                });
+                .Subscribe(playerIndex => SetChangePlayerState(playerIndex));
 
             lineComplete
-                .Subscribe(e =>
-                {
-                    UpdateScore(e.PlayerId, e.LineLength);
-                });
+                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength));
 
             inputLock
-                .Subscribe(isLock =>
-                {
-                    _isInputLock = isLock;
-                });
+                .Subscribe(isLock => _isInputLock = isLock);
+
+            drop
+                .Subscribe(_ => SetSwitchProjection(false));
 
             rotate
-                .Subscribe(_ =>
-                {
-                    SetSwitchProjection(true);
-                });
+                .Subscribe(_ => SetSwitchProjection(true));
 
             limitTime
-                .Subscribe(time =>
-                {
-                    UpdateLimitTimeDisplay(time);
-                });
+                .Subscribe(time => UpdateLimitTimeDisplay(time));
         }
 
         // ======================================================

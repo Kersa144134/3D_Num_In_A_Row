@@ -36,9 +36,6 @@ namespace GameSystem.Presentation
         /// <summary>Ready フェーズから ChangePlayer フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _readyToChangePlayerWaitTime = 3.0f;
 
-        /// <summary>Play フェーズから Finish フェーズへ遷移するまでの時間（秒）</summary>
-        [SerializeField, Min(0f)] private float _playToFinishWaitTime = 120.0f;
-
         /// <summary>ChangePlayer フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
         [SerializeField, Min(0f)] private float _changePlayerToPlayWaitTime = 2.0f;
 
@@ -220,7 +217,6 @@ namespace GameSystem.Presentation
                 _gameOptionManager.PlayerCount,
                 _gameOptionManager.LimitTime,
                 _readyToChangePlayerWaitTime,
-                _playToFinishWaitTime,
                 _changePlayerToPlayWaitTime
             );
 
