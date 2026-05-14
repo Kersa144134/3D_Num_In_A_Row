@@ -44,6 +44,12 @@ namespace CameraSystem.Application
         /// <summary>入力判定に使用する閾値</summary>
         private const float INPUT_THRESHOLD = 0.01f;
 
+        /// <summary>Pitch 角の最小絶対値</summary>
+        private const float MIN_PITCH_ANGLE = 30f;
+
+        /// <summary>Pitch 角の最大絶対値</summary>
+        private const float MAX_PITCH_ANGLE = 60f;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -78,7 +84,7 @@ namespace CameraSystem.Application
             // 入力ベクトルの長さを取得
             float inputMagnitude = input.magnitude;
 
-            // デッドゾーン判定
+            // 入力無効判定
             bool isNoInput = inputMagnitude < INPUT_THRESHOLD;
 
             // --------------------------------------------------
@@ -87,32 +93,31 @@ namespace CameraSystem.Application
             float targetVelocityX;
             float targetVelocityY;
 
-            // 有効入力時
-            if (!isNoInput)
+            if (isNoInput)
             {
-                // 入力方向を正規化
-                Vector2 inputDirection = input.normalized;
-
-                // 目標速度算出
-                targetVelocityX = inputDirection.y * _maxSpeed * inputMagnitude;
-                targetVelocityY = inputDirection.x * _maxSpeed * inputMagnitude;
-            }
-            else
-            {
-                // 入力なしの場合目標速度停止
+                // 目標速度停止
                 targetVelocityX = 0.0f;
                 targetVelocityY = 0.0f;
+
+                return;
             }
+
+            // 入力方向を正規化
+            Vector2 inputDirection = input.normalized;
+
+            // 目標速度算出
+            targetVelocityX = inputDirection.y * _maxSpeed * inputMagnitude;
+            targetVelocityY = inputDirection.x * _maxSpeed * inputMagnitude;
 
             // --------------------------------------------------
             // 速度補間
             // --------------------------------------------------
+            // 現在速度を目標速度へ補間
             _velocityX = UpdateVelocity(
                 _velocityX,
                 targetVelocityX,
                 _acceleration,
                 deltaTime);
-
             _velocityY = UpdateVelocity(
                 _velocityY,
                 targetVelocityY,
@@ -126,7 +131,7 @@ namespace CameraSystem.Application
             float nextX = _cameraModel.RotationX + _velocityX * deltaTime;
             float nextY = _cameraModel.RotationY + _velocityY * deltaTime;
 
-            // 回転反映
+            // 計算結果をモデルへ適用
             _cameraModel.SetRotationX(nextX);
             _cameraModel.SetRotationY(nextY);
         }
@@ -147,43 +152,72 @@ namespace CameraSystem.Application
 
             // 正規化して方向取得
             Vector3 direction = input.normalized;
-            
+
             // --------------------------------------------------
             // 目標回転生成
             // --------------------------------------------------
-            // X 軸回転
-            float targetRotationX = 0f;
+            // XZ 平面上の水平方向距離を算出
+            float horizontalDistance = Mathf.Sqrt(
+                direction.x * direction.x +
+                direction.z * direction.z);
 
-            // Y 軸回転
-            // XZ 平面の方向から Yaw 角を算出
+            // X 軸回転角を算出（Pitch）
+            // Y 成分と水平方向距離から上下方向の角度を生成し、ラジアン値を度数法へ変換
+            float targetRotationX =
+                Mathf.Atan2(direction.y, horizontalDistance) * Mathf.Rad2Deg;
+
+            // Y 軸回転角を算出（Yaw）
+            // XZ 平面上の方向ベクトルから左右方向の角度を生成し、ラジアン値を度数法へ変換
+            // カメラを対象方向の反対側へ向けるため、180 度加算する
             float targetRotationY =
-                -Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+                Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + 180f;
 
             // --------------------------------------------------
-            // 回転収束
+            // Pitch 角度制限
             // --------------------------------------------------
-            float nextX =
-                Mathf.SmoothDampAngle(
-                    _cameraModel.RotationX,
-                    targetRotationX,
-                    ref _velocityX,
-                    _smoothTime,
-                    Mathf.Infinity,
-                    deltaTime);
+            // 符号情報を保持したまま絶対値を取得
+            float pitchAbs = Mathf.Abs(targetRotationX);
 
-            float nextY =
-                Mathf.SmoothDampAngle(
-                    _cameraModel.RotationY,
-                    targetRotationY,
-                    ref _velocityY,
-                    _smoothTime,
-                    Mathf.Infinity,
-                    deltaTime);
+            // 絶対値が最小角未満の場合は最小角として扱う
+            if (pitchAbs < MIN_PITCH_ANGLE)
+            {
+                pitchAbs = MIN_PITCH_ANGLE;
+            }
+
+            // 絶対値が最大角を超える場合は最大角として扱う
+            if (pitchAbs > MAX_PITCH_ANGLE)
+            {
+                pitchAbs = MAX_PITCH_ANGLE;
+            }
+
+            // 元の符号を保持したまま制限後の値を再適用
+            targetRotationX = Mathf.Sign(targetRotationX) * pitchAbs;
+
+            // --------------------------------------------------
+            // 回転反映
+            // --------------------------------------------------
+            // X 軸回転を目標 Pitch 角へ補間
+            float nextX = Mathf.SmoothDampAngle(
+                _cameraModel.RotationX,
+                targetRotationX,
+                ref _velocityX,
+                _smoothTime,
+                Mathf.Infinity,
+                deltaTime);
+
+            // Y 軸回転を目標 Yaw 角へ補間
+            float nextY = Mathf.SmoothDampAngle(
+                _cameraModel.RotationY,
+                targetRotationY,
+                ref _velocityY,
+                _smoothTime,
+                Mathf.Infinity,
+                deltaTime);
 
             // --------------------------------------------------
             // モデル反映
             // --------------------------------------------------
-            // 計算結果をカメラモデルへ適用
+            // 計算結果をモデルへ適用
             _cameraModel.SetRotationX(nextX);
             _cameraModel.SetRotationY(nextY);
         }

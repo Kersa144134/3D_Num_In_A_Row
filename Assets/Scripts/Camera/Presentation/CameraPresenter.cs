@@ -241,7 +241,7 @@ namespace CameraSystem.Presentation
                     _isInputLock = isLock;
 
                     // --------------------------------------------------
-                    // ロック時処理
+                    // ロック時
                     // --------------------------------------------------
                     if (_isInputLock)
                     {
@@ -250,6 +250,12 @@ namespace CameraSystem.Presentation
 
                         return;
                     }
+
+                    // --------------------------------------------------
+                    // ロック解除時
+                    // --------------------------------------------------
+                    // イベント回転の目標値をリセット
+                    _centerOffset = Vector3.zero;
                 })
                 .AddTo(_disposables);
 
