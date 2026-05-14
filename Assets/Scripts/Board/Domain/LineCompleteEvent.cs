@@ -23,7 +23,7 @@ namespace BoardSystem.Domain
         public readonly int Player;
 
         /// <summary>成立ラインごとの座標リスト</summary>
-        public readonly IReadOnlyList<BoardIndex>[] LinePositions;
+        public readonly IReadOnlyList<IReadOnlyList<BoardIndex>> LinePositions;
 
         // ======================================================
         // コンストラクタ
@@ -33,10 +33,10 @@ namespace BoardSystem.Domain
         /// コンストラクタ
         /// </summary>
         /// <param name="player">プレイヤー番号</param>
-        /// <param name="linePositions">成立ラインの座標配列</param>
+        /// <param name="linePositions">成立ラインの座標リスト</param>
         public LineCompleteEvent(
             in int player,
-            in IReadOnlyList<BoardIndex>[] linePositions)
+            in IReadOnlyList<IReadOnlyList<BoardIndex>> linePositions)
         {
             Player = player;
             LinePositions = linePositions;

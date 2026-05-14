@@ -216,6 +216,27 @@ namespace ScoreSystem.Presentation
         }
 
         /// <summary>
+        /// プレイヤー別累計スコアを取得する
+        /// </summary>
+        /// <param name="playerId">プレイヤーID</param>
+        /// <returns>現在スコア</returns>
+        public int GetScore(int playerId)
+        {
+            if (_totalScores == null)
+            {
+                return 0;
+            }
+
+            // 範囲外チェック
+            if (playerId < 0 || playerId >= _totalScores.Length)
+            {
+                return 0;
+            }
+
+            return _totalScores[playerId].Value;
+        }
+        
+        /// <summary>
         /// スコア関連リソースを破棄する
         /// </summary>
         private void Dispose()

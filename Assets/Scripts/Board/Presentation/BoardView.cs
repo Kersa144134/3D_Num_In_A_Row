@@ -230,6 +230,14 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
+        /// ‹îæ“¾
+        /// </summary>
+        public bool TryGetPiece(in BoardIndex index, out PieceData piece)
+        {
+            return _pieces.TryGetValue(index, out piece);
+        }
+
+        /// <summary>
         /// ‹î“o˜^
         /// </summary>
         public void SetPiece(
@@ -270,14 +278,6 @@ namespace BoardSystem.Presentation
             {
                 Debug.LogWarning($"DestroyPiece: ‹î‚ª‘¶İ‚µ‚Ü‚¹‚ñ ({index.X}, {index.Y}, {index.Z})");
             }
-        }
-
-        /// <summary>
-        /// ‹îæ“¾
-        /// </summary>
-        public bool TryGetPiece(in BoardIndex index, out PieceData piece)
-        {
-            return _pieces.TryGetValue(index, out piece);
         }
 
         // --------------------------------------------------

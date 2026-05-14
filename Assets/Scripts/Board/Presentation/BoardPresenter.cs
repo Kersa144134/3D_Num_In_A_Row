@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-03-16
 // 更新日時 : 2026-04-07
-// 概要     : 3D 目並べゲームの盤面を制御するクラス
+// 概要     : 3D 目並べゲームのボードを制御するクラス
 // ======================================================
 
 using System;
@@ -31,7 +31,7 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 盤面の列選択表示ルート
+        /// ボードの列選択表示ルート
         /// </summary>
         [SerializeField]
         private GameObject _columnSelectRoot;
@@ -63,7 +63,7 @@ namespace BoardSystem.Presentation
 
         [Header("ヒット判定")]
         /// <summary>
-        /// 盤面のクリック判定用 Collider
+        /// ボードのクリック判定用 Collider
         /// </summary>
         [SerializeField]
         private Collider _boardCollider;
@@ -90,7 +90,7 @@ namespace BoardSystem.Presentation
         /// <summary>駒落下ハンドラ</summary>
         private BoardDropHandler _dropHandler;
 
-        /// <summary>盤面回転ユースケース</summary>
+        /// <summary>ボード回転ユースケース</summary>
         private BoardRotationUseCase _rotationUseCase;
 
         /// <summary>駒再配置ユースケース</summary>
@@ -115,10 +115,10 @@ namespace BoardSystem.Presentation
         // RaycastHit配列
         private readonly RaycastHit[] _raycastHits = new RaycastHit[1];
 
-        /// <summary>盤面の列選択表示プレーン</summary>
+        /// <summary>ボードの列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
 
-        /// <summary>盤面サイズ</summary>
+        /// <summary>ボードサイズ</summary>
         private int _boardSize;
 
         /// <summary>ライン成立条件</summary>
@@ -150,17 +150,17 @@ namespace BoardSystem.Presentation
         private const string TAG_PLANE = "Plane";
 
         /// <summary>
-        /// 駒削除後、落下処理を開始するまでの待機時間（ミリ秒）
+        /// 駒削除後、落下処理を開始するまでの待機時間（秒）
         /// </summary>
-        private const int PIECE_DROP_DELAY_MS = 500;
+        private const float PIECE_DROP_DELAY = 0.5f;
 
         /// <summary>
-        /// ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（ミリ秒）
+        /// ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（秒）
         /// </summary>
-        private const int FINISH_LINE_CHECK_DELAY_MS = 1000;
+        private const float FINISH_LINE_CHECK_DELAY = 1.0f;
 
         /// <summary>
-        /// 盤面の回転アニメーション時間（秒）
+        /// ボードの回転アニメーション時間（秒）
         /// </summary>
         private const float ROTATION_DURATION = 0.5f;
 
@@ -184,11 +184,11 @@ namespace BoardSystem.Presentation
         public IObservable<Unit> OnRotateInputted => _onRotateInputted;
 
         /// <summary>ライン成立通知用 Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete =
-            new Subject<LineCompleteEvent>();
+        private readonly Subject<IReadOnlyList<LineCompleteEvent>> _onLineComplete =
+            new Subject<IReadOnlyList<LineCompleteEvent>>();
 
         /// <summary>ライン成立ストリーム</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete => _onLineComplete;
+        public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _onLineComplete;
 
         /// <summary>プレイヤー行動終了通知用 Subject</summary>
         private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
@@ -203,7 +203,10 @@ namespace BoardSystem.Presentation
         private IDisposable _dropInputSubscription;
 
         /// <summary>回転入力購読管理</summary>
-        private CompositeDisposable _rotateInputDisposables;
+        private IDisposable _rotateInputDisposables;
+
+        /// <summary>中心座標算出ストリーム</summary>
+        public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
 
         // ======================================================
         // IUpdatable イベント
@@ -326,6 +329,7 @@ namespace BoardSystem.Presentation
             // 購読解除
             _disposables?.Dispose();
             _model.Dispose();
+            _deleteHandler.Dispose();
 
             UnbindPlayerChangeStream();
             UnbindDropInputStream();
@@ -429,7 +433,7 @@ namespace BoardSystem.Presentation
 
             _rotateInputDisposables = new CompositeDisposable();
 
-            rotateStream
+            _rotateInputDisposables = rotateStream
                 .Subscribe(cmd =>
                 {
                     // 回転中なら無効
@@ -440,8 +444,7 @@ namespace BoardSystem.Presentation
 
                     // ボード回転処理
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
-                })
-                .AddTo(_rotateInputDisposables);
+                });
 
             _canRotate = true;
         }
@@ -509,7 +512,7 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
-        /// 盤面回転処理
+        /// ボード回転処理
         /// </summary>
         private async UniTask HandleRotateAsync(
             RotationAxis axis,
@@ -550,16 +553,16 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ライン成立時に駒を削除し再配置を行う
         /// </summary>
-        private async UniTask HandleLineDeleteAsync(LineCompleteEvent lineEvent)
+        private async UniTask HandleLineDeleteAsync(IReadOnlyList<LineCompleteEvent> lineEvents)
         {
             LineDeleteResult result = 
-                await _deleteHandler.HandleLineDeleteAsync(lineEvent);
+                await _deleteHandler.HandleLineDeleteAsync(lineEvents);
 
             // --------------------------------------------------
             // 再配置処理
             //// --------------------------------------------------
             // 演出待機
-            await UniTask.Delay(PIECE_DROP_DELAY_MS);
+            await UniTask.Delay(TimeSpan.FromSeconds(PIECE_DROP_DELAY));
 
             await PiecesRepositionAsync(result.RepositionColumns);
 
@@ -607,7 +610,7 @@ namespace BoardSystem.Presentation
             }
 
             // 演出待機
-            await UniTask.Delay(FINISH_LINE_CHECK_DELAY_MS);
+            await UniTask.Delay(TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY));
 
             // フェーズ終了通知
             _onPlayerEnd.OnNext(Unit.Default);

@@ -42,13 +42,12 @@ namespace BoardSystem.Domain
         // UniRx 変数
         // ======================================================
 
-        /// <summary>ライン成立イベント Subject</summary>
-        private readonly Subject<LineCompleteEvent> _onLineComplete =
-            new Subject<LineCompleteEvent>();
+        /// <summary>ライン成立イベントリスト Subject</summary>
+        private readonly Subject<IReadOnlyList<LineCompleteEvent>> _onLineComplete =
+            new Subject<IReadOnlyList<LineCompleteEvent>>();
 
-        /// <summary>ライン成立イベント購読用</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete =>
-            _onLineComplete;
+        /// <summary>ライン成立イベントリストストリーム</summary>
+        public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _onLineComplete;
 
         // ======================================================
         // コンストラクタ
@@ -82,28 +81,40 @@ namespace BoardSystem.Domain
             // ライン成立フラグ
             bool isAnyLineComplete = false;
 
+            // 全イベントをまとめるリスト
+            List<LineCompleteEvent> allConsecutiveLines =
+                new List<LineCompleteEvent>();
+
             foreach (int[][] line in _lines)
             {
                 // ライン内の連続成立セル座標を取得
                 List<(IReadOnlyList<BoardIndex> Cells, int Player)> consecutiveLines =
                     CalculateLinePositions(board, line);
 
-                // 成立ラインが存在する場合
+                // 成立判定
                 if (consecutiveLines.Count > 0)
                 {
                     isAnyLineComplete = true;
                 }
 
-                // 取得した連続ラインごとにイベント発火
+                // LineEvent として変換して追加
                 foreach ((IReadOnlyList<BoardIndex> Cells, int Player) lineInfo in consecutiveLines)
                 {
-                    _onLineComplete.OnNext(
+                    allConsecutiveLines.Add(
                         new LineCompleteEvent(
                             lineInfo.Player,
                             new IReadOnlyList<BoardIndex>[] { lineInfo.Cells }
                         )
                     );
                 }
+            }
+
+            // --------------------------------------------------
+            // イベント発火
+            // --------------------------------------------------
+            if (allConsecutiveLines.Count > 0)
+            {
+                _onLineComplete.OnNext(allConsecutiveLines);
             }
 
             return isAnyLineComplete;

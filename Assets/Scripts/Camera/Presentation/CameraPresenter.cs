@@ -91,17 +91,31 @@ namespace CameraSystem.Presentation
         /// <summary>回転の最大速度（度 / 秒）</summary>
         private float _maxRotationSpeed;
 
-        /// <summary>回転の加速度（度 / 秒の2乗）</summary>
-        private float _rotationAcceleration;
+        /// <summary>入力用の回転加速度（度 / 秒の2乗）</summary>
+        private float _acceleration;
+
+        /// <summary>ロック前の X 回転キャッシュ</summary>
+        private float _cachedRotationX;
+
+        /// <summary>ロック前の Y 回転キャッシュ</summary>
+        private float _cachedRotationY;
+
+        /// <summary>成立ライン中心差分ベクトル</summary>
+        private Vector3 _centerOffset = Vector3.zero;
 
         // ======================================================
         // 定数
         // ======================================================
 
         /// <summary>
-        /// 回転加速度の倍率
+        /// 入力用回転加速度の倍率
         /// </summary>
-        private const float ROTATION_ACCELERATION_MULTIPLIER = 2f;
+        private const float INPUT_ACCELERATION_MULTIPLIER = 2f;
+
+        /// <summary>
+        /// イベント用回転収束時間
+        /// </summary>
+        private const float EVENT_SMOOTH_TIME = 0.2f;
 
         // ======================================================
         // UniRx 変数
@@ -138,7 +152,7 @@ namespace CameraSystem.Presentation
 
             // オプションを取得
             _maxRotationSpeed = _gameOptionManager.CameraRotationSpeed;
-            _rotationAcceleration = _maxRotationSpeed * ROTATION_ACCELERATION_MULTIPLIER;
+            _acceleration = _maxRotationSpeed * INPUT_ACCELERATION_MULTIPLIER;
 
             // 現在の Transform の回転を取得する
             Vector3 euler = transform.rotation.eulerAngles;
@@ -168,7 +182,8 @@ namespace CameraSystem.Presentation
             _rotationUseCase = new CameraRotationUseCase(
                 _cameraModel,
                 _maxRotationSpeed,
-                _rotationAcceleration
+                _acceleration,
+                EVENT_SMOOTH_TIME
             );
         }
 
@@ -192,10 +207,11 @@ namespace CameraSystem.Presentation
             // 入力ロック中は処理なし
             if (_isInputLock)
             {
+                UpdateEventRotation(_centerOffset, unscaledDeltaTime);
                 return;
             }
 
-            UpdateRotation(input, unscaledDeltaTime);
+            UpdateInputRotation(input, unscaledDeltaTime);
         }
 
         public void OnExit()
@@ -211,47 +227,86 @@ namespace CameraSystem.Presentation
         /// <summary>
         /// 入力ロックおよびボード回転準備ストリームをまとめて購読する
         /// </summary>
-        /// <param name="inputLock">入力ロック状態ストリーム（true:ロック / false:解除）</param>
+        /// <param name="inputLock">入力ロック状態ストリーム　true:ロック / false:解除</param>
         /// <param name="rotationPreparation">ボード回転準備トリガーストリーム</param>
         public void BindStreams(
             IObservable<bool> inputLock,
-            IObservable<bool> rotationPreparation)
+            IObservable<bool> rotationPreparation,
+            IObservable<Vector3> centerOffset)
         {
             inputLock
                 .Subscribe(isLock =>
                 {
+                    // 入力ロック状態を更新
                     _isInputLock = isLock;
 
+                    // --------------------------------------------------
+                    // ロック時処理
+                    // --------------------------------------------------
                     if (_isInputLock)
                     {
+                        // 回転速度を初期化
                         _rotationUseCase.ResetRotationVelocity();
-                    }
 
+                        return;
+                    }
                 })
                 .AddTo(_disposables);
 
             rotationPreparation
                 .Subscribe(isPerspective =>
                 {
+                    // --------------------------------------------------
+                    // 平行投影切り替え時
+                    // --------------------------------------------------
                     if (!isPerspective)
                     {
+                        // カメラ入力ロック解除
                         _isInputLock = false;
 
+                        // 事前に保存した回転を復元
+                        _cameraModel.SetRotationX(_cachedRotationX);
+                        _cameraModel.SetRotationY(_cachedRotationY);
+
+                        // ビュー反映
+                        _cameraView.ApplyRotation(
+                            _cameraModel.RotationX,
+                            _cameraModel.RotationY);
+
+                        // カメラ投影設定を更新
                         _projectionService.SetProjection(_camera, isPerspective);
 
                         return;
                     }
 
+                    // --------------------------------------------------
+                    // 透視投影切り替え時
+                    // --------------------------------------------------
+                    // カメラ入力ロック
                     _isInputLock = true;
 
+                    // 現在の回転値をキャッシュ
+                    _cachedRotationX = _cameraModel.RotationX;
+                    _cachedRotationY = _cameraModel.RotationY;
+
+                    // 真上視点用の回転へ変更
                     _cameraModel.SetRotationX(90f);
                     _cameraModel.SetRotationY(0f);
 
+                    // ビュー反映
                     _cameraView.ApplyRotation(
                         _cameraModel.RotationX,
                         _cameraModel.RotationY);
 
+                    // カメラ投影設定を更新
                     _projectionService.SetProjection(_camera, isPerspective);
+                })
+                .AddTo(_disposables);
+
+            centerOffset
+                .Subscribe(centerOffset =>
+                {
+                    _centerOffset = centerOffset;
                 })
                 .AddTo(_disposables);
         }
@@ -261,19 +316,28 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// カメラ回転処理
+        /// 入力によるカメラ回転処理
         /// </summary>
         /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
-        private void UpdateRotation(in Vector2 input, in float unscaledDeltaTime)
+        private void UpdateInputRotation(in Vector2 input, in float unscaledDeltaTime)
         {
-            // --------------------------------------------------
             // 回転更新
-            // --------------------------------------------------
-            _rotationUseCase.UpdateRotation(input, unscaledDeltaTime);
+            _rotationUseCase.UpdateInputRotation(input, unscaledDeltaTime);
 
-            // --------------------------------------------------
             // ビュー反映
-            // --------------------------------------------------
+            _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+        }
+
+        /// <summary>
+        /// イベントによるカメラ回転処理
+        /// </summary>
+        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
+        private void UpdateEventRotation(in Vector3 angle, in float unscaledDeltaTime)
+        {
+            // 回転更新
+            _rotationUseCase.UpdateEventRotation(angle, unscaledDeltaTime);
+
+            // ビュー反映
             _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
         }
     }

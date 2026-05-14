@@ -37,16 +37,8 @@ namespace BoardSystem.Domain
         // UniRx 変数
         // ======================================================
 
-        /// <summary>ライン成立イベント</summary>
-        public IObservable<LineCompleteEvent> OnLineComplete
-        {
-            get
-            {
-                return _lineJudge != null
-                    ? _lineJudge.OnLineComplete
-                    : Observable.Empty<LineCompleteEvent>();
-            }
-        }
+        /// <summary>ライン成立ストリーム</summary>
+        public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _lineJudge.OnLineComplete;
 
         // ======================================================
         // コンストラクタ

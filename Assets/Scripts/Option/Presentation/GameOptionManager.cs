@@ -42,14 +42,14 @@ namespace OptionSystem.Presentation
         // --------------------------------------------------
         [Header("制限時間")]
         [SerializeField, Range(0f, 60f)]
-        private float _limitTime = 15f;
+        private float _limitTime = 30f;
 
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------
         [Header("盤面サイズ")]
         [SerializeField]
-        private GameRules.BoardSizeType _boardSizeType;
+        private GameRules.BoardSizeType _boardSizeType = GameRules.BoardSizeType.Size3;
 
         [Header("ライン成立条件")]
         [SerializeField, Range(3, 5)]

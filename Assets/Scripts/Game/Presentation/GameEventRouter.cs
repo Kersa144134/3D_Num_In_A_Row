@@ -87,6 +87,14 @@ namespace GameSystem.Presentation
         private int _currentMappingIndex = -1;
 
         // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>ボードごとの位置をキャッシュする辞書</summary>
+        private readonly Dictionary<BoardPresenter, Vector3> _boardPosition =
+            new Dictionary<BoardPresenter, Vector3>();
+
+        // ======================================================
         // UniRx 変数
         // ======================================================
 
@@ -192,6 +200,9 @@ namespace GameSystem.Presentation
         /// <summary>ボード回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
 
+        /// <summary>成立ライン中心差分ベクトル算出通知用 Subject</summary>
+        private readonly Subject<Vector3> _onCenterOffsetCalculated = new Subject<Vector3>();
+
         // ======================================================
         // 定数
         // ======================================================
@@ -283,23 +294,22 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            // 駒落下実行時
-            _onDropExecuted
-        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
-                .AddTo(_disposables);
-
-            // ボード回転実行時
-            _onRotateExecuted
-                .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
-                .AddTo(_disposables);
-
             // --------------------------------------------------
             // フェーズ
             // --------------------------------------------------
             _currentPhase
                 .DistinctUntilChanged()
                 .Skip(1)
-                .Subscribe(phase => HandlePhaseInputSwitch(phase))
+                .Subscribe(phase =>
+                {
+                    HandlePhaseInputSwitch(phase);
+
+                    if (phase == PhaseType.Ready)
+                    {
+                        // スコア計算クラス初期化
+                        _scoreManager.Initialize(_gameOptionManager.PlayerCount);
+                    }
+                })
                 .AddTo(_disposables);
             _phaseMachine.CurrentPlayerIndex
                 .DistinctUntilChanged()
@@ -421,8 +431,23 @@ namespace GameSystem.Presentation
             if (_cameraPresenter != null)
             {
                 _cameraPresenter.BindStreams(
-                    _currentBoardInputType.Select(input => input == BoardInputType.Rotate),
-                    _mainUIPresenter.OnSwitchProjection);
+                    Observable.CombineLatest(
+                        _currentPhase,
+                        _currentBoardInputType,
+                        (phase, inputType) =>
+                        {
+                            // Play フェーズ状態
+                            bool isPlay = phase == PhaseType.Play;
+
+                            // Rotate 入力状態
+                            bool isRotate = inputType == BoardInputType.Rotate;
+
+                            // Play フェーズでないまたは Rotate 中に有効
+                            return !isPlay || isRotate;
+                        }),
+                    _mainUIPresenter.OnSwitchProjection,
+                    _onCenterOffsetCalculated
+                );
             }
 
             // --------------------------------------------------
@@ -439,17 +464,20 @@ namespace GameSystem.Presentation
 
                     boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
 
+                    boardPresenter.OnPlayerEnd
+                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
+                        .AddTo(_disposables);
                     boardPresenter.OnDropInputted
-                        .Subscribe(_ => UnbindInputCommands())
+                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                         .AddTo(_disposables);
                     boardPresenter.OnRotateInputted
-                        .Subscribe(_ => UnbindInputCommands())
+                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
                         .AddTo(_disposables);
                     boardPresenter.OnLineComplete
                         .Subscribe(e => HandleLineCompleted(e))
                         .AddTo(_disposables);
-                    boardPresenter.OnPlayerEnd
-                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
+                    boardPresenter.OnCenterPositionCalculated
+                        .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
                         .AddTo(_disposables);
                 }
             }
@@ -1093,38 +1121,93 @@ namespace GameSystem.Presentation
         /// ライン成立時の処理を行う
         /// 複数ラインを 1 本ずつスコアへ分解する
         /// </summary>
-        private void HandleLineCompleted(in LineCompleteEvent e)
+        private void HandleLineCompleted(in IReadOnlyList<LineCompleteEvent> events)
         {
-            // プレイヤー ID
-            int playerId = e.Player;
-
-            // ライン配列
-            IReadOnlyList<BoardIndex>[] lines = e.LinePositions;
-
-            if (lines == null)
-            {
-                return;
-            }
-
             // --------------------------------------------------
-            // 各ラインを個別にスコアへ変換
+            // 各イベントを個別に処理
             // --------------------------------------------------
-            for (int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < events.Count; i++)
             {
-                // 現在のライン取得
-                IReadOnlyList<BoardIndex> line = lines[i];
+                // 現在処理中のライン成立イベント
+                LineCompleteEvent lineEvent = events[i];
 
-                if (line == null)
+                // プレイヤーID
+                int playerId = lineEvent.Player;
+
+                // ラインリスト
+                IReadOnlyList<IReadOnlyList<BoardIndex>> lines = lineEvent.LinePositions;
+
+                if (lines == null)
                 {
                     continue;
                 }
 
-                // ラインの長さ
-                int lineLength = line.Count;
+                // --------------------------------------------------
+                // 各ラインをスコアへ変換
+                // --------------------------------------------------
+                for (int j = 0; j < lines.Count; j++)
+                {
+                    IReadOnlyList<BoardIndex> line = lines[j];
 
-                // スコアイベント発火
-                _onScoreUpdated.OnNext(new ScoreEvent(playerId, lineLength));
+                    if (line == null)
+                    {
+                        continue;
+                    }
+
+                    // ラインの長さをスコアとして扱う
+                    int lineLength = line.Count;
+
+                    // スコア加算
+                    _scoreManager.AddLineScore(playerId, lineLength);
+
+                    // 最新スコア取得
+                    int currentScore = _scoreManager.GetScore(playerId);
+
+                    // スコアイベント通知
+                    _onScoreUpdated.OnNext(
+                        new ScoreEvent(playerId, currentScore));
+                }
             }
+        }
+
+        /// <summary>
+        /// ボード位置とライン中心座標から差分ベクトルを算出し、イベント通知する
+        /// </summary>
+        /// <param name="boardPresenter">対象ボード</param>
+        /// <param name="linePosition">成立ライン中心座標</param>
+        private void ProcessCenterOffset(in BoardPresenter boardPresenter, in Vector3 linePosition)
+        {
+            // ボードの現在位置を取得
+            Vector3 boardPosition = boardPresenter.gameObject.transform.position;
+
+            // --------------------------------------------------
+            // 辞書参照
+            // --------------------------------------------------
+            if (_boardPosition.ContainsKey(boardPresenter))
+            {
+                // 登録済みの場合はキャッシュ値を取得
+                boardPosition = _boardPosition[boardPresenter];
+            }
+            else
+            {
+                // 未登録の場合はキャッシュへ保存
+                _boardPosition.Add(boardPresenter, boardPosition);
+            }
+
+            // --------------------------------------------------
+            // 中心差分ベクトル算出
+            // --------------------------------------------------
+            Vector3 centerOffset = linePosition - boardPosition;
+
+            // --------------------------------------------------
+            // 正規化
+            // --------------------------------------------------
+            Vector3 normalizedCenterOffset = centerOffset.normalized;
+
+            // --------------------------------------------------
+            // イベント通知
+            // --------------------------------------------------
+            _onCenterOffsetCalculated.OnNext(normalizedCenterOffset);
         }
     }
 }

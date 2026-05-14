@@ -3272,21 +3272,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
+      propertyPath: _boardSizeType
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 5702725208033566626, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_Name
       value: GameOptionManager
       objectReference: {fileID: 0}
     - target: {fileID: 7056775974992423439, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 671.7319
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7056775974992423439, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 670.0944
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7056775974992423439, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 511.49213
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7056775974992423439, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3994,7 +3998,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
   _startPhase: 2
   _readyToChangePlayerWaitTime: 5
-  _playToFinishWaitTime: 360
   _changePlayerToPlayWaitTime: 2
 --- !u!1 &2146103288
 GameObject:
