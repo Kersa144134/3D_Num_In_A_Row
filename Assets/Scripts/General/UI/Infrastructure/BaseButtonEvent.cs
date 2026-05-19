@@ -2,12 +2,10 @@
 // BaseButtonEvent.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-09
-// 更新日時 : 2026-05-09
-// 概要     : UIボタン入力通知の共通処理を管理する基底クラス
+// 更新日時 : 2026-05-19
+// 概要     : UI ボタン入力通知の共通処理を管理する基底クラス
 // ======================================================
 
-using System;
-using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UniRx;
@@ -15,97 +13,44 @@ using UniRx;
 namespace UISystem.Infrastructure
 {
     /// <summary>
-    /// UIイベント通知を管理する基底クラス
+    /// UI ボタンイベント通知を管理する基底クラス
     /// </summary>
     public abstract class BaseButtonEvent :
-        MonoBehaviour,
-        IDisposable,
+        BaseUIEvent,
         IPointerClickHandler,
         IPointerEnterHandler,
         IPointerExitHandler,
         ISelectHandler,
-        IDeselectHandler,
-        ISubmitHandler
+        IDeselectHandler
     {
         // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>RectTransform キャッシュ</summary>
-        private RectTransform _rectTransform;
-
         /// <summary>Button キャッシュ</summary>
         private Button _button;
 
-        /// <summary>EventSystem ホバー中フラグ</summary>
+        /// <summary>ホバー中フラグ</summary>
         private bool _isHovered;
 
-        /// <summary>EventSystem 選択中フラグ</summary>
+        /// <summary>選択中フラグ</summary>
         private bool _isSelected;
-
-        /// <summary>Dispose 実行済みフラグ</summary>
-        private bool _isDisposed;
 
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>RectTransform キャッシュ</summary>
-        public RectTransform RectTransform => _rectTransform;
-
         /// <summary>Button キャッシュ</summary>
         public Button Button => _button;
         
         // ======================================================
-        // UniRx 変数
-        // ======================================================
-
-        // --------------------------------------------------
-        // クリック
-        // --------------------------------------------------
-        /// <summary>クリック通知用 Subject</summary>
-        protected readonly Subject<Unit> OnClickSubject = new Subject<Unit>();
-
-        /// <summary>クリックストリーム</summary>
-        public IObservable<Unit> OnClickAsObservable => OnClickSubject;
-
-        // --------------------------------------------------
-        // ホバー
-        // --------------------------------------------------
-        /// <summary>ホバー開始通知用 Subject</summary>
-        protected readonly Subject<Unit> OnHoverEnterSubject = new Subject<Unit>();
-
-        /// <summary>ホバー開始ストリーム</summary>
-        public IObservable<Unit> OnHoverEnterAsObservable => OnHoverEnterSubject;
-
-        /// <summary>ホバー終了通知用 Subject</summary>
-        protected readonly Subject<Unit> OnHoverExitSubject = new Subject<Unit>();
-
-        /// <summary>ホバー終了ストリーム</summary>
-        public IObservable<Unit> OnHoverExitAsObservable => OnHoverExitSubject;
-
-        // --------------------------------------------------
-        // 選択
-        // --------------------------------------------------
-        /// <summary>選択開始通知用 Subject</summary>
-        protected readonly Subject<Unit> OnSelectEnterSubject = new Subject<Unit>();
-
-        /// <summary>選択開始ストリーム</summary>
-        public IObservable<Unit> OnSelectEnterAsObservable => OnSelectEnterSubject;
-
-        /// <summary>選択終了通知用 Subject</summary>
-        protected readonly Subject<Unit> OnSelectExitSubject = new Subject<Unit>();
-
-        /// <summary>選択終了ストリーム</summary>
-        public IObservable<Unit> OnSelectExitAsObservable => OnSelectExitSubject;
-
-        // ======================================================
         // Unityイベント
         // ======================================================
 
-        protected virtual void Awake()
+        protected override void Awake()
         {
-            _rectTransform = transform as RectTransform;
+            base.Awake();
+            
             _button = GetComponent<Button>();
         }
 
@@ -118,7 +63,7 @@ namespace UISystem.Infrastructure
             OnSelectExitInternal();
         }
 
-        protected virtual void OnDestroy()
+        protected override void OnDestroy()
         {
             // ホバー終了通知
             OnHoverExitInternal();
@@ -127,30 +72,6 @@ namespace UISystem.Infrastructure
             OnSelectExitInternal();
 
             Dispose();
-        }
-
-        // ======================================================
-        // IDisposable
-        // ======================================================
-
-        /// <summary>
-        /// リソースを解放する
-        /// </summary>
-        public virtual void Dispose()
-        {
-            // 多重実行防止
-            if (_isDisposed)
-            {
-                return;
-            }
-
-            _isDisposed = true;
-
-            OnClickSubject.Dispose();
-            OnHoverEnterSubject.Dispose();
-            OnHoverExitSubject.Dispose();
-            OnSelectEnterSubject.Dispose();
-            OnSelectExitSubject.Dispose();
         }
 
         // ======================================================
@@ -164,7 +85,7 @@ namespace UISystem.Infrastructure
         /// クリック入力
         /// </summary>
         /// <param name="eventData">イベント情報</param>
-        public virtual void OnPointerClick(
+        public override void OnPointerClick(
             PointerEventData eventData)
         {
             // 左クリック以外は処理なし
@@ -173,18 +94,7 @@ namespace UISystem.Infrastructure
                 return;
             }
 
-            OnClickSubject.OnNext(Unit.Default);
-        }
-
-        /// <summary>
-        /// 決定入力
-        /// </summary>
-        /// <param name="eventData">イベント情報</param>
-        public virtual void OnSubmit(
-            BaseEventData eventData)
-        {
-            // クリック入力として扱う
-            OnClickSubject.OnNext(Unit.Default);
+            base.OnPointerClick(eventData);
         }
 
         // --------------------------------------------------
@@ -194,26 +104,26 @@ namespace UISystem.Infrastructure
         /// マウスホバー開始
         /// </summary>
         /// <param name="eventData">イベント情報</param>
-        public virtual void OnPointerEnter(
+        public override void OnPointerEnter(
             PointerEventData eventData)
         {
             // ホバー状態を有効化
             _isHovered = true;
 
-            OnHoverEnterSubject.OnNext(Unit.Default);
+            base.OnPointerEnter(eventData);
         }
 
         /// <summary>
         /// マウスホバー終了
         /// </summary>
         /// <param name="eventData">イベント情報</param>
-        public virtual void OnPointerExit(
+        public override void OnPointerExit(
             PointerEventData eventData)
         {
             // ホバー状態を解除
             _isHovered = false;
 
-            OnHoverExitSubject.OnNext(Unit.Default);
+            base.OnPointerExit(eventData);
         }
 
         // --------------------------------------------------
@@ -223,26 +133,26 @@ namespace UISystem.Infrastructure
         /// EventSystem 選択開始
         /// </summary>
         /// <param name="eventData">イベント情報</param>
-        public virtual void OnSelect(
+        public override void OnSelect(
             BaseEventData eventData)
         {
             // 選択状態を有効化
             _isSelected = true;
 
-            OnSelectEnterSubject.OnNext(Unit.Default);
+            base.OnSelect(eventData);
         }
 
         /// <summary>
         /// EventSystem 選択終了
         /// </summary>
         /// <param name="eventData">イベント情報</param>
-        public virtual void OnDeselect(
+        public override void OnDeselect(
             BaseEventData eventData)
         {
             // 選択状態を解除
             _isSelected = false;
 
-            OnSelectExitSubject.OnNext(Unit.Default);
+            base.OnDeselect(eventData);
         }
 
         // ======================================================
@@ -264,7 +174,7 @@ namespace UISystem.Infrastructure
             _isHovered = false;
 
             // ホバー終了通知
-            OnHoverExitSubject.OnNext(Unit.Default);
+            _onHoverExit?.OnNext(Unit.Default);
         }
 
         /// <summary>
@@ -282,7 +192,7 @@ namespace UISystem.Infrastructure
             _isSelected = false;
 
             // 選択終了通知
-            OnSelectExitSubject.OnNext(Unit.Default);
+            _onSelectExit?.OnNext(Unit.Default);
         }
     }
 }

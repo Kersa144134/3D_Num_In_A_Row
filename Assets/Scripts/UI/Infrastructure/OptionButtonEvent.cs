@@ -6,11 +6,11 @@
 // 概要     : オプションボタンの入力通知を担当するクラス
 // ======================================================
 
-using System;
-using UnityEngine;
-using UnityEngine.UI;
-using UniRx;
 using OptionSystem.Domain;
+using System;
+using UISystem.Domain;
+using UniRx;
+using UnityEngine;
 
 namespace UISystem.Infrastructure
 {
@@ -46,14 +46,14 @@ namespace UISystem.Infrastructure
         // ======================================================
 
         /// <summary>
-        /// Optionクリック通知用 Subject
+        /// オプションクリック通知用 Subject
         /// </summary>
-        private readonly Subject<OptionButtonData> _onOptionClick = new Subject<OptionButtonData>();
+        private readonly Subject<UIClickType> _onOptionClick = new Subject<UIClickType>();
 
         /// <summary>
-        /// Optionクリックイベントストリーム
+        /// オプションクリックイベントストリーム
         /// </summary>
-        public IObservable<OptionButtonData> OnOptionClickAsObservable => _onOptionClick;
+        public IObservable<UIClickType> OnOptionClick => _onOptionClick;
 
         // ======================================================
         // Unityイベント
@@ -95,11 +95,11 @@ namespace UISystem.Infrastructure
         /// </summary>
         private void SubscribeBaseEvents()
         {
-            // 基底クリックイベントを Option 用へ変換
-            OnClickAsObservable
-                .Subscribe(_ =>
+            // 基底クリックイベントをオプション用へ変換
+            OnClick
+                .Subscribe(type =>
                 {
-                    _onOptionClick.OnNext(_data);
+                    _onOptionClick.OnNext(type);
                 })
                 .AddTo(this);
         }

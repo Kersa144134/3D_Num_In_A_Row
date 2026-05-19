@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -758,7 +758,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &208103529
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -889,13 +889,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb3a2cb6b84db754fabde32dfb520398, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIPresentation::UISystem.Presentation.TitleUIPresenter
-  _dialogCanvas: {fileID: 1023710145}
+  _dialogCanvasArray:
+  - Type: 1
+    Canvas: {fileID: 1023710145}
+    Buttons:
+    - _type: 1
+      _button: {fileID: 1818665429}
+    - _type: 2
+      _button: {fileID: 1923632927}
+    Panels:
+    - {fileID: 247143298}
+    - {fileID: 328295091}
   _pointer: {fileID: 8161198212952549266}
-  _baseNormalButtons:
-  - _type: 1
-    _button: {fileID: 1818665429}
-  - _type: 2
-    _button: {fileID: 1923632927}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEnabled: 0
@@ -1091,6 +1096,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 216449496}
   m_CullTransparentMesh: 1
+--- !u!114 &247143298 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9035453878885448407, guid: fff690e474962b14b8734bb8de4ee1c5, type: 3}
+  m_PrefabInstance: {fileID: 6530777612971023024}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14dc32ba13f3c724cb65eff73f5dc188, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.NormalPanelEvent
 --- !u!1 &254447541
 GameObject:
   m_ObjectHideFlags: 0
@@ -1369,6 +1385,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 297450393}
   m_CullTransparentMesh: 1
+--- !u!114 &328295091 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5303898399260898692, guid: fff690e474962b14b8734bb8de4ee1c5, type: 3}
+  m_PrefabInstance: {fileID: 6530777612971023024}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0caae484bbd46942ba5fc46430dfabc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.DialogPanelEvent
 --- !u!1 &332828613
 GameObject:
   m_ObjectHideFlags: 0
@@ -10265,7 +10292,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 20
+  m_SortingOrder: 200
   m_TargetDisplay: 0
 --- !u!23 &5923470095495656498
 MeshRenderer:
@@ -10353,7 +10380,11 @@ PrefabInstance:
       objectReference: {fileID: 214943123}
     - target: {fileID: 5274676331155963025, guid: fff690e474962b14b8734bb8de4ee1c5, type: 3}
       propertyPath: m_Name
-      value: DialogCanvas
+      value: TitleDialogCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 5703870948801350968, guid: fff690e474962b14b8734bb8de4ee1c5, type: 3}
+      propertyPath: m_Color.a
+      value: 0.003921569
       objectReference: {fileID: 0}
     - target: {fileID: 7683039980670472286, guid: fff690e474962b14b8734bb8de4ee1c5, type: 3}
       propertyPath: m_Pivot.x

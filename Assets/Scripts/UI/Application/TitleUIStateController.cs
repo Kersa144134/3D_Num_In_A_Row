@@ -25,26 +25,26 @@ namespace UISystem.Application
         // --------------------------------------------------
         // キャンバス
         // --------------------------------------------------
+        /// <summary>ダイアログ UI キャンバス配列</summary>
+        private readonly DialogCanvasDefinition[] _dialogCanvasArray;
+
         /// <summary>スタート UI キャンバス</summary>
         private readonly GameObject _startCanvas;
 
         /// <summary>オプション UI キャンバス</summary>
         private readonly GameObject _optionCanvas;
 
-        /// <summary>ダイアログ UI キャンバス</summary>
-        private readonly GameObject _dialogCanvas;
-
         // --------------------------------------------------
         // 初期選択ボタン
         // --------------------------------------------------
+        /// <summary>ダイアログキャンバス初期選択ボタン</summary>
+        private readonly BaseButtonEvent _initialSelectedDialogCanvasButton;
+
         /// <summary>スタートキャンバス初期選択ボタン</summary>
         private readonly BaseButtonEvent _initialSelectedStartCanvasButton;
 
         /// <summary>オプションキャンバス初期選択ボタン</summary>
         private readonly BaseButtonEvent _initialSelectedOptionCanvasButton;
-
-        /// <summary>ダイアログキャンバス初期選択ボタン</summary>
-        private readonly BaseButtonEvent _initialSelectedDialogCanvasButton;
 
         // --------------------------------------------------
         // 状態
@@ -77,14 +77,14 @@ namespace UISystem.Application
         /// <param name="initialSelectedStartCanvasButton">スタートキャンバス初期選択ボタン</param>
         /// <param name="initialSelectedOptionCanvasButton">オプションキャンバス初期選択ボタン</param>
         public TitleUIStateController(
-            GameObject dialogCanvas,
+            DialogCanvasDefinition[] dialogCanvasArray,
             GameObject startCanvas,
             GameObject optionCanvas,
             BaseButtonEvent initialSelectedDialogCanvasButton,
             BaseButtonEvent initialSelectedStartCanvasButton,
             BaseButtonEvent initialSelectedOptionCanvasButton)
         {
-            _dialogCanvas = dialogCanvas;
+            _dialogCanvasArray = dialogCanvasArray;
             _startCanvas = startCanvas;
             _optionCanvas = optionCanvas;
             _initialSelectedDialogCanvasButton = initialSelectedDialogCanvasButton;
@@ -96,6 +96,9 @@ namespace UISystem.Application
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
         /// <summary>
         /// 現在アクティブなキャンバス状態を取得する
         /// </summary>
@@ -110,7 +113,16 @@ namespace UISystem.Application
         /// </summary>
         public void ShowStartCanvas()
         {
-            _dialogCanvas.SetActive(false);
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
+            {
+                if (_dialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                _dialogCanvasArray[i].Canvas.SetActive(false);
+            }
+            
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
 
@@ -123,7 +135,16 @@ namespace UISystem.Application
         /// </summary>
         public void ShowOptionCanvas()
         {
-            _dialogCanvas.SetActive(false);
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
+            {
+                if (_dialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                _dialogCanvasArray[i].Canvas.SetActive(false);
+            }
+
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
 
@@ -134,9 +155,36 @@ namespace UISystem.Application
         /// <summary>
         /// ダイアログキャンバスを表示する
         /// </summary>
-        public void ShowDialogCanvas()
+        /// <param name="dialogType">表示するダイアログ種別</param>
+        public void ShowDialogCanvas(in DialogType dialogType)
         {
-            _dialogCanvas.SetActive(true);
+            // 一度全ダイアログを非表示にする
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
+            {
+                if (_dialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                _dialogCanvasArray[i].Canvas.SetActive(false);
+            }
+
+            // 指定されたダイアログのみ表示
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
+            {
+                if (_dialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                if (_dialogCanvasArray[i].Type != dialogType)
+                {
+                    continue;
+                }
+
+                _dialogCanvasArray[i].Canvas.SetActive(true);
+            }
+
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(false);
 
@@ -163,6 +211,63 @@ namespace UISystem.Application
                     ShowOptionCanvas();
                     break;
             }
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// キャンバス状態と入力状態に応じて選択対象ボタンを解決する
+        /// </summary>
+        /// <param name="canvasType">現在のキャンバス種別</param>
+        /// <param name="isGamePadInput">ゲームパッド入力中かどうか</param>
+        /// <param name="overrideButtonEvent">外部から指定されたボタン</param>
+        /// <returns>選択対象のボタンイベント。該当なしの場合は null</returns>
+        public BaseButtonEvent ResolveSelection(
+            in CanvasType canvasType,
+            in bool isGamePadInput,
+            in BaseButtonEvent overrideButtonEvent = null)
+        {
+            // --------------------------------------------------
+            // ダイアログキャンバス優先処理
+            // --------------------------------------------------
+            if (canvasType == CanvasType.Dialog)
+            {
+                // ダイアログは常に初期選択ボタンを返す
+                return _initialSelectedDialogCanvasButton;
+            }
+
+            // --------------------------------------------------
+            // ゲームパッド入力時
+            // --------------------------------------------------
+            if (isGamePadInput)
+            {
+                // 明示的に指定されたボタンがある場合
+                if (overrideButtonEvent != null)
+                {
+                    return overrideButtonEvent;
+                }
+
+                // 初期選択ボタンを返す
+                return GetInitialSelectedButton();
+            }
+
+            // --------------------------------------------------
+            // マウス入力時
+            // --------------------------------------------------
+            BaseButtonEvent hoverButtonEvent =
+                GetLastHoveredButtonEvent(canvasType);
+
+            // ホバー入力状態が存在する場合
+            if (hoverButtonEvent != null)
+            {
+                return hoverButtonEvent;
+            }
+
+            // --------------------------------------------------
+            // フォールバック
+            // --------------------------------------------------
+            return null;
         }
 
         /// <summary>

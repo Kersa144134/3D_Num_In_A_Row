@@ -8,6 +8,7 @@
 
 using System;
 using UniRx;
+using UISystem.Domain;
 using UISystem.Infrastructure;
 
 namespace UISystem.Application
@@ -25,44 +26,53 @@ namespace UISystem.Application
         private readonly CompositeDisposable _disposable = new CompositeDisposable();
 
         /// <summary>通常ボタンクリック通知</summary>
-        private readonly Subject<NormalButtonEvent> _onNormalButtonClick = new Subject<NormalButtonEvent>();
+        private readonly Subject<(UIClickType, NormalButtonEvent)> _onNormalButtonClick
+            = new Subject<(UIClickType, NormalButtonEvent)>();
 
         /// <summary>オプションボタンクリック通知</summary>
-        private readonly Subject<OptionButtonEvent> _onOptionButtonClick = new Subject<OptionButtonEvent>();
+        private readonly Subject<(UIClickType, OptionButtonEvent)> _onOptionButtonClick
+            = new Subject<(UIClickType, OptionButtonEvent)>();
+
+        /// <summary>パネルクリック通知</summary>
+        private readonly Subject<(UIClickType, BasePanelEvent)> _onPanelClick
+            = new Subject<(UIClickType, BasePanelEvent)>();
 
         /// <summary>ホバー通知</summary>
-        private readonly Subject<BaseButtonEvent> _onHover = new Subject<BaseButtonEvent>();
+        private readonly Subject<BaseUIEvent> _onHover = new Subject<BaseUIEvent>();
 
         /// <summary>ホバー解除通知</summary>
-        private readonly Subject<BaseButtonEvent> _onUnHover = new Subject<BaseButtonEvent>();
+        private readonly Subject<BaseUIEvent> _onUnHover = new Subject<BaseUIEvent>();
 
         /// <summary>フォーカス通知</summary>
-        private readonly Subject<BaseButtonEvent> _onFocus = new Subject<BaseButtonEvent>();
+        private readonly Subject<BaseUIEvent> _onFocus = new Subject<BaseUIEvent>();
 
         /// <summary>フォーカス解除通知</summary>
-        private readonly Subject<BaseButtonEvent> _onUnFocus = new Subject<BaseButtonEvent>();
+        private readonly Subject<BaseUIEvent> _onUnFocus = new Subject<BaseUIEvent>();
 
         // ======================================================
         // プロパティ
         // ======================================================
 
         /// <summary>通常ボタンクリック通知</summary>
-        public IObservable<NormalButtonEvent> OnNormalButtonClick => _onNormalButtonClick;
+        public IObservable<(UIClickType, NormalButtonEvent)> OnNormalButtonClick => _onNormalButtonClick;
 
         /// <summary>オプションボタンクリック通知</summary>
-        public IObservable<OptionButtonEvent> OnOptionButtonClick => _onOptionButtonClick;
+        public IObservable<(UIClickType, OptionButtonEvent)> OnOptionButtonClick => _onOptionButtonClick;
+
+        /// <summary>パネルクリック通知</summary>
+        public IObservable<(UIClickType, BasePanelEvent)> OnPanelClick => _onPanelClick;
 
         /// <summary>ホバー通知</summary>
-        public IObservable<BaseButtonEvent> OnHover => _onHover;
+        public IObservable<BaseUIEvent> OnHover => _onHover;
 
         /// <summary>ホバー解除通知</summary>
-        public IObservable<BaseButtonEvent> OnUnHover => _onUnHover;
+        public IObservable<BaseUIEvent> OnUnHover => _onUnHover;
 
         /// <summary>フォーカス通知</summary>
-        public IObservable<BaseButtonEvent> OnFocus => _onFocus;
+        public IObservable<BaseUIEvent> OnFocus => _onFocus;
 
         /// <summary>フォーカス解除通知</summary>
-        public IObservable<BaseButtonEvent> OnUnFocus => _onUnFocus;
+        public IObservable<BaseUIEvent> OnUnFocus => _onUnFocus;
 
         // ======================================================
         // パブリックメソッド
@@ -83,8 +93,8 @@ namespace UISystem.Application
             RegisterCommonButton(buttonEvent);
 
             // クリック
-            buttonEvent.OnNormalClickAsObservable
-                .Subscribe(_ => _onNormalButtonClick.OnNext(buttonEvent))
+            buttonEvent.OnNormalClick
+                .Subscribe(type => _onNormalButtonClick.OnNext((type, buttonEvent)))
                 .AddTo(_disposable);
         }
 
@@ -110,10 +120,37 @@ namespace UISystem.Application
                 RegisterCommonButton(buttonEvent);
 
                 // クリック
-                buttonEvent.OnOptionClickAsObservable
-                    .Subscribe(_ => _onOptionButtonClick.OnNext(buttonEvent))
+                buttonEvent.OnOptionClick
+                    .Subscribe(type => _onOptionButtonClick.OnNext((type, buttonEvent)))
                     .AddTo(_disposable);
             }
+        }
+
+        /// <summary>
+        /// パネルイベント登録処理
+        /// </summary>
+        /// <param name="panelEvent">対象パネルイベント</param>
+        public void RegisterPanelEvent(BasePanelEvent panelEvent)
+        {
+            if (panelEvent == null)
+            {
+                return;
+            }
+
+            // クリック通知
+            panelEvent.OnClick
+                .Subscribe(type => _onPanelClick.OnNext((type, panelEvent)))
+                .AddTo(_disposable);
+
+            // ホバー開始
+            panelEvent.OnHoverEnter
+                .Subscribe(_ => _onHover.OnNext(panelEvent))
+                .AddTo(_disposable);
+
+            // ホバー終了
+            panelEvent.OnHoverExit
+                .Subscribe(_ => _onUnHover.OnNext(panelEvent))
+                .AddTo(_disposable);
         }
 
         /// <summary>
@@ -135,22 +172,22 @@ namespace UISystem.Application
         private void RegisterCommonButton(BaseButtonEvent buttonEvent)
         {
             // ホバー開始
-            buttonEvent.OnHoverEnterAsObservable
+            buttonEvent.OnHoverEnter
                 .Subscribe(_ => _onHover.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
             // ホバー終了
-            buttonEvent.OnHoverExitAsObservable
+            buttonEvent.OnHoverExit
                 .Subscribe(_ => _onUnHover.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
             // フォーカス開始
-            buttonEvent.OnSelectEnterAsObservable
+            buttonEvent.OnSelectEnter
                 .Subscribe(_ => _onFocus.OnNext(buttonEvent))
                 .AddTo(_disposable);
 
             // フォーカス終了
-            buttonEvent.OnSelectExitAsObservable
+            buttonEvent.OnSelectExit
                 .Subscribe(_ => _onUnFocus.OnNext(buttonEvent))
                 .AddTo(_disposable);
         }

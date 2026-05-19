@@ -182,9 +182,6 @@ namespace GameSystem.Presentation
         /// <summary>画面フェード完了ストリーム</summary>
         public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
 
-        /// <summary>ダイアログ画面での入力用 Subject</summary>
-        private readonly Subject<bool> _onDialogInputed = new Subject<bool>();
-
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------
@@ -356,25 +353,15 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _titleUIPresenter.BindBaseStreams(_onDialogInputed, _fadeInTrigger, _fadeOutTrigger);
+                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
 
                 _titleUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _titleUIPresenter.OnDialogVisibleChanged
-                    .Subscribe(isVisible =>
+                    .Subscribe(_ =>
                     {
-                        // ダイアログ表示時
-                        if (isVisible)
-                        {
-                            BindShowDialogInputCommands();
-                        }
-                        // ダイアログ非表示時
-                        else
-                        {
-                            // 入力購読解除
-                            UnbindInputCommands();
-                        }
+                        UnbindInputCommands();
                     })
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
@@ -399,25 +386,15 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _mainUIPresenter.BindBaseStreams(_onDialogInputed, _fadeInTrigger, _fadeOutTrigger);
+                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
 
                 _mainUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _mainUIPresenter.OnDialogVisibleChanged
-                    .Subscribe(isVisible =>
+                    .Subscribe(_ =>
                     {
-                        // ダイアログ表示時
-                        if (isVisible)
-                        {
-                            BindShowDialogInputCommands();
-                        }
-                        // ダイアログ非表示時
-                        else
-                        {
-                            // 入力購読解除
-                            UnbindInputCommands();
-                        }
+                        UnbindInputCommands();
                     })
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
@@ -888,54 +865,6 @@ namespace GameSystem.Presentation
                 default:
                     break;
             }
-        }
-
-        /// <summary>
-        /// ダイアログ表示時のマッピング変更処理を行う
-        /// </summary>
-        private void BindShowDialogInputCommands()
-        {
-            // 入力購読解除
-            UnbindInputCommands();
-
-            // CompositeDisposable 生成
-            _inputDisposables = new CompositeDisposable();
-
-            // ボタン A 押す
-            _inputManager.ButtonA.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面での決定入力として発火
-                    _onDialogInputed.OnNext(true);
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン B 押す
-            _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン X 押す
-            _inputManager.ButtonX.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
-
-            // ボタン Y 押す
-            _inputManager.ButtonY.OnDown
-                .Subscribe(_ =>
-                {
-                    // ダイアログ画面でのキャンセル入力として発火
-                    _onDialogInputed.OnNext(false);
-                })
-                .AddTo(_inputDisposables);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
@@ -29,12 +30,12 @@ namespace UISystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
-        // キャンバス
+        // ダイアログ
         // --------------------------------------------------
-        [Header("キャンバス")]
-        /// <summary>ダイアログ関連の UI を表示するキャンバス</summary>
+        [Header("ダイアログ")]
+        /// <summary>ダイアログ関連の UI を表示するキャンバス配列</summary>
         [SerializeField]
-        protected GameObject _dialogCanvas;
+        protected DialogCanvasDefinition[] _dialogCanvasArray;
 
         // --------------------------------------------------
         // ポインター
@@ -43,14 +44,6 @@ namespace UISystem.Presentation
         /// <summary>ポインターを表示する Image</summary>
         [SerializeField]
         protected GameObject _pointer;
-
-        // --------------------------------------------------
-        // ボタン
-        // --------------------------------------------------
-        [Header("ボタン")]
-        /// <summary>シーン共通の通常ボタン配列</summary>
-        [SerializeField]
-        protected NormalButton[] _baseNormalButtons;
 
         // --------------------------------------------------
         // 演出 <2 値化>
@@ -180,6 +173,21 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>ダイアログの通常ボタン配列</summary>
+        protected NormalButton[] _dialogButtons;
+
+        // --------------------------------------------------
+        // パネル
+        // --------------------------------------------------
+        /// <summary>ダイアログのパネルイベント配列</summary>
+        protected BasePanelEvent[] _dialogPanelEvents;
+
+        // --------------------------------------------------
+        // アニメーター
+        // --------------------------------------------------
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -229,7 +237,7 @@ namespace UISystem.Presentation
 
             if (_eventSystem == null ||
                 _fade == null ||
-                _dialogCanvas == null ||
+                _dialogCanvasArray == null ||
                 _pointer == null)
             {
                 Debug.LogError("[BaseUIPresenter] クラスの初期化に失敗しました。");
@@ -244,7 +252,6 @@ namespace UISystem.Presentation
             }
             
             // インスタンスからコンポーネント取得
-
             _view = new BaseUIView(
                 _binarizationFeature,
                 _binarizationMaterial,
@@ -257,6 +264,9 @@ namespace UISystem.Presentation
             // アニメーター取得
             _effectAnimator = GetComponent<Animator>();
             _pointerAnimator = _pointer.GetComponent<Animator>();
+
+            // ダイアログ UI コンポーネント取得
+            CollectDialogUI();
 
             SetAnimatorUnscaledTime(_effectAnimator);
             SetAnimatorUnscaledTime(_pointerAnimator);
@@ -322,12 +332,6 @@ namespace UISystem.Presentation
 
         protected virtual void OnExitInternal() { }
 
-        /// <summary>
-        /// ダイアログ入力時の処理を行う
-        /// </summary>
-        /// <param name="isDecide">決定入力かどうか</param>
-        protected virtual void HandleDialogInput(in bool isDecide) { }
-
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -344,17 +348,9 @@ namespace UISystem.Presentation
         /// 共通イベントストリームをまとめて購読する
         /// </summary>
         public void BindBaseStreams(
-            in IObservable<bool> dialogInput,
             in IObservable<float> fadeInSeconds,
             in IObservable<float> fadeOutSeconds)
         {
-            dialogInput
-                .Subscribe(isDecide =>
-                {
-                    HandleDialogInput(isDecide);
-                })
-                .AddTo(_disposables);
-
             fadeInSeconds
                 .Subscribe(time =>
                 {
@@ -373,6 +369,56 @@ namespace UISystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// ダイアログ UI のボタンとパネルを収集する
+        /// </summary>
+        private void CollectDialogUI()
+        {
+            // ボタン・パネルの一時リスト
+            List<NormalButton> buttonList = new List<NormalButton>();
+            List<BasePanelEvent> panelList = new List<BasePanelEvent>();
+
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
+            {
+                if (_dialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                // ボタンを収集
+                if (_dialogCanvasArray[i].Buttons != null)
+                {
+                    for (int j = 0; j < _dialogCanvasArray[i].Buttons.Length; j++)
+                    {
+                        if (_dialogCanvasArray[i].Buttons[j] == null)
+                        {
+                            continue;
+                        }
+
+                        buttonList.Add(_dialogCanvasArray[i].Buttons[j]);
+                    }
+                }
+
+                // パネルを収集
+                if (_dialogCanvasArray[i].Panels != null)
+                {
+                    for (int j = 0; j < _dialogCanvasArray[i].Panels.Length; j++)
+                    {
+                        if (_dialogCanvasArray[i].Panels[j] == null)
+                        {
+                            continue;
+                        }
+
+                        panelList.Add(_dialogCanvasArray[i].Panels[j]);
+                    }
+                }
+            }
+
+            // 配列へ変換
+            _dialogButtons = buttonList.ToArray();
+            _dialogPanelEvents = panelList.ToArray();
+        }
 
         /// <summary>
         /// フェードイン処理

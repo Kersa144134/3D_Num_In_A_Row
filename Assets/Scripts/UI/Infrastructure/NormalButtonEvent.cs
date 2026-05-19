@@ -8,6 +8,7 @@
 
 using System;
 using UniRx;
+using UISystem.Domain;
 
 namespace UISystem.Infrastructure
 {
@@ -23,12 +24,12 @@ namespace UISystem.Infrastructure
         /// <summary>
         /// Normal クリック通知用 Subject
         /// </summary>
-        private readonly Subject<Unit> _onNormalClick = new Subject<Unit>();
+        private readonly Subject<UIClickType> _onNormalClick = new Subject<UIClickType>();
 
         /// <summary>
         /// Normal クリックイベントストリーム
         /// </summary>
-        public IObservable<Unit> OnNormalClickAsObservable => _onNormalClick;
+        public IObservable<UIClickType> OnNormalClick => _onNormalClick;
 
         // ======================================================
         // Unityイベント
@@ -67,11 +68,11 @@ namespace UISystem.Infrastructure
         /// </summary>
         private void SubscribeBaseEvents()
         {
-            // 基底クリックイベントを Normal 用へ変換
-            OnClickAsObservable
-                .Subscribe(_ =>
+            // 基底クリックイベントを通常用へ変換
+            OnClick
+                .Subscribe(type =>
                 {
-                    _onNormalClick.OnNext(Unit.Default);
+                    _onNormalClick.OnNext(type);
                 })
                 .AddTo(this);
         }

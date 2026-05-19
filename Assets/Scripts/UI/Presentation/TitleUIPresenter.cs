@@ -229,7 +229,7 @@ namespace UISystem.Presentation
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
-                _baseNormalButtons == null ||
+                _dialogButtons == null ||
                 _titleNormalButtons == null ||
                 _titleOptionButtons == null ||
                 _initialSelectedStartCanvasButton == null ||
@@ -318,11 +318,16 @@ namespace UISystem.Presentation
             InitializeOptionButtons();
 
             // --------------------------------------------------
+            // パネル初期化
+            // --------------------------------------------------
+            InitializePanelEvents();
+            
+            // --------------------------------------------------
             // キャンバス初期化
             // --------------------------------------------------
             // キャンバス状態管理クラス生成
             _titleUIStateController = new TitleUIStateController(
-                _dialogCanvas,
+                _dialogCanvasArray,
                 _startCanvas,
                 _optionCanvas,
                 _normalButtonResolver.GetButton(UIActionType.DialogYes),
@@ -427,10 +432,21 @@ namespace UISystem.Presentation
                 .Subscribe(buttonEvent => OnOptionButtonClick(buttonEvent))
                 .AddTo(_routerDisposables);
 
+            // パネルクリック
+            _eventRouter.OnPanelClick
+                .Subscribe(panelEvent => OnPanelClick(panelEvent))
+                .AddTo(_routerDisposables);
+
             // ホバー通知
             _eventRouter.OnHover
-                .Subscribe(buttonEvent =>
+                .Subscribe(uiEvent =>
                 {
+                    // ボタンイベント判定
+                    if (uiEvent is not BaseButtonEvent buttonEvent)
+                    {
+                        return;
+                    }
+
                     // 現在アクティブなキャンバス状態を取得
                     CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
 
@@ -443,8 +459,14 @@ namespace UISystem.Presentation
 
             // ホバー解除通知
             _eventRouter.OnUnHover
-                .Subscribe(buttonEvent =>
+                .Subscribe(uiEvent =>
                 {
+                    // ボタンイベント判定
+                    if (uiEvent is not BaseButtonEvent buttonEvent)
+                    {
+                        return;
+                    }
+
                     // 現在アクティブなキャンバス状態を取得
                     CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
 
@@ -458,12 +480,30 @@ namespace UISystem.Presentation
 
             // フォーカス通知
             _eventRouter.OnFocus
-                .Subscribe(buttonEvent => OnFocusButton(buttonEvent))
+                .Subscribe(uiEvent =>
+                {
+                    // ボタンイベント判定
+                    if (uiEvent is not BaseButtonEvent buttonEvent)
+                    {
+                        return;
+                    }
+
+                    OnFocusButton(buttonEvent);
+                })
                 .AddTo(_routerDisposables);
 
             // フォーカス解除通知
             _eventRouter.OnUnFocus
-                .Subscribe(buttonEvent => OnUnFocusButton(buttonEvent))
+                .Subscribe(uiEvent =>
+                {
+                    // ボタンイベント判定
+                    if (uiEvent is not BaseButtonEvent buttonEvent)
+                    {
+                        return;
+                    }
+
+                    OnUnFocusButton(buttonEvent);
+                })
                 .AddTo(_routerDisposables);
         }
 
@@ -487,13 +527,13 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // NormalButton 配列生成
             // --------------------------------------------------
-            NormalButton[] normalButtons = new NormalButton[_baseNormalButtons.Length + _titleNormalButtons.Length];
+            NormalButton[] normalButtons = new NormalButton[_dialogButtons.Length + _titleNormalButtons.Length];
 
-            // ベースボタン配列コピー
-            Array.Copy(_baseNormalButtons, 0,  normalButtons, 0, _baseNormalButtons.Length);
+            // ダイアログボタン配列コピー
+            Array.Copy(_dialogButtons, 0,  normalButtons, 0, _dialogButtons.Length);
 
             // タイトルボタン配列コピー
-            Array.Copy( _titleNormalButtons, 0, normalButtons, _baseNormalButtons.Length, _titleNormalButtons.Length);
+            Array.Copy( _titleNormalButtons, 0, normalButtons, _dialogButtons.Length, _titleNormalButtons.Length);
 
             // --------------------------------------------------
             // 辞書生成
@@ -529,10 +569,24 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// パネルイベントを初期化する
+        /// </summary>
+        private void InitializePanelEvents()
+        {
+            // --------------------------------------------------
+            // イベント登録
+            // --------------------------------------------------
+            foreach (BasePanelEvent panelEvent in _dialogPanelEvents)
+            {
+                _eventRouter.RegisterPanelEvent(panelEvent);
+            }
+        }
+
+        /// <summary>
         /// キャンバスと入力状態に応じて選択状態を更新する
         /// </summary>
         /// <param name="canvasType">対象キャンバス</param>
-        /// <param name="cachedButtonEvent">対象ボタンイベント</param>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
         private void SetSelectionState(
             in CanvasType canvasType,
             in BaseButtonEvent buttonEvent = null)
@@ -540,56 +594,19 @@ namespace UISystem.Presentation
             // 選択状態をリセット
             OnUnSelectButton();
 
-            // --------------------------------------------------
-            // ゲームパッド入力時
-            // --------------------------------------------------
-            if (_isGamePadInput)
-            {
-                // --------------------------------------------------
-                // ダイアログキャンバス処理
-                // --------------------------------------------------
-                if (canvasType == CanvasType.Dialog)
-                {
-                    // ダイアログ Yes ボタンを適用
-                    OnSelectButton(_normalButtonResolver.GetButton(UIActionType.DialogYes));
-                    return;
-                }
+            // 選択対象を解決
+            BaseButtonEvent targetButton = _titleUIStateController.ResolveSelection(
+                canvasType,
+                _isGamePadInput,
+                buttonEvent);
 
-                // --------------------------------------------------
-                // 通常キャンバス処理
-                // --------------------------------------------------
-                // 対象ボタンイベントが存在しない場合は初期選択
-                if (buttonEvent == null)
-                {
-                    // 初期選択ボタンを取得
-                    BaseButtonEvent initialButtonEvent =
-                        _titleUIStateController.GetInitialSelectedButton();
-
-                    // 初期選択を適用
-                    OnSelectButton(initialButtonEvent);
-
-                    return;
-                }
-
-                // 対象ボタンを適用
-                OnSelectButton(buttonEvent);
-            }
-
-            // --------------------------------------------------
-            // マウス入力時
-            // --------------------------------------------------
-            // 現在キャンバスで最後にホバーしたボタンを取得
-            BaseButtonEvent hoverButtonEvent =
-                _titleUIStateController.GetLastHoveredButtonEvent(canvasType);
-
-            // ホバー対象が存在しない場合は処理なし
-            if (hoverButtonEvent == null)
+            if (targetButton == null)
             {
                 return;
             }
 
-            // ホバー中のボタンを適用
-            OnSelectButton(hoverButtonEvent);
+            // 選択状態を適用
+            OnSelectButton(targetButton);
         }
 
         /// <summary>
@@ -659,16 +676,10 @@ namespace UISystem.Presentation
         /// <summary>
         /// NormalButton クリック時
         /// </summary>
+        /// <param name="clickType">対象クリック入力</param>
         /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnNormalButtonClick(NormalButtonEvent buttonEvent)
+        private void OnNormalButtonClick(UIClickType clickType, NormalButtonEvent buttonEvent)
         {
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
-
-            // 最後に選択していたボタンを取得
-            BaseButtonEvent selectedButtonEvent =
-                _titleUIStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
             // --------------------------------------------------
             // ダイアログ Yes ボタン
             // --------------------------------------------------
@@ -676,7 +687,7 @@ namespace UISystem.Presentation
                 && typeDialogYes == UIActionType.DialogYes)
             {
                 // ダイアログボタン非表示
-                buttonEvent.gameObject.SetActive(false);
+                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(false);
                 _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(false);
 
                 return;
@@ -691,8 +702,15 @@ namespace UISystem.Presentation
                 // ダイアログキャンバス非表示
                 _titleUIStateController.HideDialogCanvas();
 
-                // 最後に選択していたボタンを適用
-                SetSelectionState(activeCanvasType, selectedButtonEvent);
+                // 遷移先のキャンバス状態を取得
+                CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+                // 最後に選択していたボタンを取得
+                BaseButtonEvent selectedButtonEvent =
+                    _titleUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                // 遷移先のキャンバスで最後に選択していたボタンを適用
+                SetSelectionState(nextCanvasType, selectedButtonEvent);
 
                 // ダイアログ非表示を通知
                 _onDialogVisibleChanged.OnNext(false);
@@ -706,15 +724,18 @@ namespace UISystem.Presentation
             if (_normalButtonResolver.TryGetType(buttonEvent, out UIActionType typeStart)
                 && typeStart == UIActionType.TitleStart)
             {
-                // ダイアログキャンバス表示
-                _titleUIStateController.ShowDialogCanvas();
+                // 確認ダイアログキャンバス表示
+                _titleUIStateController.ShowDialogCanvas(DialogType.Confirm);
+
+                // 遷移先のキャンバス状態を取得
+                CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
 
                 // ダイアログボタン表示
                 _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
                 _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
 
                 // ダイアログ YES ボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
+                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
 
                 // ダイアログ表示を通知
                 _onDialogVisibleChanged.OnNext(true);
@@ -731,16 +752,23 @@ namespace UISystem.Presentation
                 // オプションキャンバス表示
                 _titleUIStateController.ShowOptionCanvas();
 
+                // 遷移先のキャンバス状態を取得
+                CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+                // 最後に選択していたボタンを取得
+                BaseButtonEvent selectedButtonEvent =
+                    _titleUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
                 // 最後に選択したボタンが OptionButton の場合
                 if (selectedButtonEvent is OptionButtonEvent optionButton)
                 {
                     // 最後に選択したオプションボタンを適用
-                    SetSelectionState(activeCanvasType, optionButton);
+                    SetSelectionState(nextCanvasType, optionButton);
                 }
                 else
                 {
                     // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType);
+                    SetSelectionState(nextCanvasType);
                 }
 
                 // --------------------------------------------------
@@ -781,8 +809,11 @@ namespace UISystem.Presentation
                 // スタートキャンバス表示
                 _titleUIStateController.ShowStartCanvas();
 
+                // 遷移先のキャンバス状態を取得
+                CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
+
                 // オプションボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleOption));
+                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleOption));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -809,8 +840,11 @@ namespace UISystem.Presentation
                     _repository.Save(binder.Key, currentIndex);
                 }
 
+                // 遷移先のキャンバス状態を取得
+                CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
+
                 // スタートボタンを適用
-                SetSelectionState(activeCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleStart));
+                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleStart));
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
@@ -862,23 +896,75 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// パネルクリック時
+        /// </summary>
+        /// <param name="panelEvent">対象パネルイベント</param>
+        private void OnPanelClick(BasePanelEvent panelEvent)
+        {
+            if (panelEvent == null)
+            {
+                return;
+            }
+
+            if (panelEvent is NormalPanelEvent)
+            {
+                // 現在アクティブなキャンバス状態を取得
+                CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+                // ダイアログの場合
+                if (activeCanvasType == CanvasType.Dialog)
+                {
+                    // ダイアログキャンバス非表示
+                    _titleUIStateController.HideDialogCanvas();
+
+                    // 遷移先のキャンバス状態を取得
+                    CanvasType nextCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _titleUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                    // 遷移先のキャンバスで最後に選択していたボタンを適用
+                    SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+                    // ダイアログ非表示を通知
+                    _onDialogVisibleChanged.OnNext(false);
+                }
+
+                return;
+            }
+        }
+
+        /// <summary>
         /// ボタンへフォーカス状態を適用し、フォーカス座標を通知する
         /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnFocusButton(BaseButtonEvent buttonEvent)
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnFocusButton(BaseUIEvent uiEvent)
         {
-            if (buttonEvent == null ||
-                buttonEvent.RectTransform == null)
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
             {
                 return;
             }
 
             // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType =
-                _titleUIStateController.GetActiveCanvasType();
+            CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
 
-            // 選択対象のボタンイベントをキャッシュ
-            _titleUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
+            // オプションキャンバスの場合
+            if (activeCanvasType == CanvasType.Option)
+            {
+                // 対象ボタンが OptionButton の場合
+                if (buttonEvent is OptionButtonEvent optionButton)
+                {
+                    // 選択対象のボタンイベントをキャッシュ
+                    _titleUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
+                }
+            }
+            else
+            {
+                // 選択対象のボタンイベントをキャッシュ
+                _titleUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
+            }
 
             // フォーカス状態表示
             SetFocusState(buttonEvent, true);
@@ -898,10 +984,11 @@ namespace UISystem.Presentation
         /// <summary>
         /// ボタンのフォーカス状態を解除する
         /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnUnFocusButton(BaseButtonEvent buttonEvent)
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnUnFocusButton(BaseUIEvent uiEvent)
         {
-            if (buttonEvent == null)
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
             {
                 return;
             }
@@ -916,10 +1003,11 @@ namespace UISystem.Presentation
         /// <summary>
         /// EventSystem の選択状態を変更する
         /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnSelectButton(BaseButtonEvent buttonEvent)
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnSelectButton(BaseUIEvent uiEvent)
         {
-            if (buttonEvent == null)
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
             {
                 return;
             }
@@ -944,30 +1032,6 @@ namespace UISystem.Presentation
         {
             // 選択解除
             _eventSystem.SetSelectedGameObject(null);
-        }
-
-        /// <summary>
-        /// ダイアログ入力時の処理を行う
-        /// </summary>
-        /// <param name="isDecide">決定入力かどうか</param>
-        protected override void HandleDialogInput(in bool isDecide)
-        {
-            if (!isDecide)
-            {
-                // ダイアログキャンバス非表示
-                _titleUIStateController.HideDialogCanvas();
-
-                // 現在アクティブなキャンバス状態を取得
-                CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
-
-                // 入力状態に応じて初期選択を適用
-                SetSelectionState(activeCanvasType);
-
-                // ダイアログ非表示を通知
-                _onDialogVisibleChanged.OnNext(false);
-
-                return;
-            }
         }
 
         // ======================================================
