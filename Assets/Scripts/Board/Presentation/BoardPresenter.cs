@@ -190,6 +190,9 @@ namespace BoardSystem.Presentation
         /// <summary>ライン成立ストリーム</summary>
         public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _onLineComplete;
 
+        /// <summary>中心座標算出ストリーム</summary>
+        public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
+
         /// <summary>プレイヤー行動終了通知用 Subject</summary>
         private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
 
@@ -204,9 +207,6 @@ namespace BoardSystem.Presentation
 
         /// <summary>回転入力購読管理</summary>
         private IDisposable _rotateInputDisposables;
-
-        /// <summary>中心座標算出ストリーム</summary>
-        public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
 
         // ======================================================
         // IUpdatable イベント

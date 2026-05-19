@@ -77,124 +77,153 @@ namespace BoardSystem.Application
         /// <summary>
         /// ライン削除処理を実行
         /// </summary>
-        /// <param name="lineEvents">成立したラインイベント一覧（複数ライン・複数プレイヤー対応）</param>
+        /// <param name="lineEvents">成立したラインイベント一覧</param>
         /// <returns>再配置対象となる列情報をまとめた結果</returns>
         public async UniTask<LineDeleteResult> HandleLineDeleteAsync(
             IReadOnlyList<LineCompleteEvent> lineEvents)
         {
-            // 全イベントを通して再配置対象となる列
+            // 全ライン共通の削除対象一覧
+            HashSet<BoardIndex> allDeleteSet = new HashSet<BoardIndex>();
+
+            // 全ライン共通の再配置対象列一覧
             HashSet<(int x, int z)> allColumns = new HashSet<(int, int)>();
 
+            // ライン単位で保持する削除リスト
+            List<List<BoardIndex>> lineDeleteLists = new List<List<BoardIndex>>();
+
+            // ======================================================
+            // 全ラインのデータ収集
+            // ======================================================
             for (int i = 0; i < lineEvents.Count; i++)
             {
-                // 現在処理中のライン成立イベントを取得
+                // 現在処理中のラインイベント
                 LineCompleteEvent lineEvent = lineEvents[i];
 
-                // 現在イベント内で削除対象となるピース座標集合
-                // 重複削除防止のためHashSetで管理
-                HashSet<BoardIndex> deleteSet = new HashSet<BoardIndex>();
-
-                // 現在イベント内で再配置対象となる列情報
-                HashSet<(int x, int z)> columnSet = new HashSet<(int, int)>();
+                // 現在ライン専用の削除対象
+                HashSet<BoardIndex> lineDeleteSet = new HashSet<BoardIndex>();
 
                 // --------------------------------------------------
-                // データ取得
+                // ライン構成セル走査
                 // --------------------------------------------------
                 for (int j = 0; j < lineEvent.LinePositions.Count; j++)
                 {
-                    IReadOnlyList<BoardIndex> line = lineEvent.LinePositions[j];
+                    // ライン座標一覧取得
+                    IReadOnlyList<BoardIndex> line =
+                        lineEvent.LinePositions[j];
 
                     for (int k = 0; k < line.Count; k++)
                     {
-                        // 対象セルのインデックスを取得
+                        // 対象インデックス取得
                         BoardIndex index = line[k];
 
-                        // 既に削除対象に含まれている場合はスキップ
-                        if (deleteSet.Contains(index))
+                        // 既に現在ラインへ登録済みの場合はスキップ
+                        if (lineDeleteSet.Contains(index))
                         {
                             continue;
                         }
 
-                        // ビュー上に存在するピースを取得
+                        // ピース存在確認
                         if (_view.TryGetPiece(index, out PieceData piece) == false)
                         {
-                            // ピースが存在しない場合は処理対象外
+                            // 存在しない場合は対象外
                             continue;
                         }
 
-                        // 中心座標計算用にワールド座標を登録
+                        // 中心座標計算用にTransform登録
                         _centerPositionCalculator.AddPosition(piece.Transform);
 
-                        // 削除対象として登録
-                        deleteSet.Add(index);
+                        // ライン削除対象へ追加
+                        lineDeleteSet.Add(index);
 
-                        // 再配置対象列として登録
-                        columnSet.Add((index.X, index.Z));
+                        // 全体削除対象へ追加
+                        allDeleteSet.Add(index);
+
+                        // 再配置対象列登録
+                        allColumns.Add((index.X, index.Z));
                     }
                 }
 
                 // --------------------------------------------------
-                // 中心座標計算
+                // 中心座標通知
                 // --------------------------------------------------
-                // 削除対象ピース群の中心位置を算出
+                // ライン中心座標計算
                 Vector3 centerPosition =
                     _centerPositionCalculator.CalculateCenterPosition();
 
                 // 中心座標通知
                 _onCenterPositionCalculated.OnNext(centerPosition);
 
-                // --------------------------------------------------
-                // 発光演出
-                // --------------------------------------------------
-                // List へ変換してインデックスを参照
-                List<BoardIndex> deleteList = new List<BoardIndex>(deleteSet);
-
-                for (int j = 0; j < deleteList.Count; j++)
-                {
-                    BoardIndex index = deleteList[j];
-
-                    // 発光エフェクト適用
-                    _view.SetPieceEmissionColor(index);
-
-                    // 1 ピース単位の演出待機
-                    await UniTask.Delay(TimeSpan.FromSeconds(PIECE_DELETE_DELAY));
-                }
-
-                // ライン単位の演出待機
-                await UniTask.Delay(TimeSpan.FromSeconds(LINE_DELETE_DELAY));
-
-                // --------------------------------------------------
-                // 削除処理
-                // --------------------------------------------------
-                for (int j = 0; j < deleteList.Count; j++)
-                {
-                    BoardIndex index = deleteList[j];
-
-                    // ビュー上に存在しない場合はスキップ
-                    if (_view.TryGetPiece(index, out _) == false)
-                    {
-                        continue;
-                    }
-
-                    // ビュー上のオブジェクト削除
-                    _view.DestroyPieceObject(index);
-
-                    // ビューからデータ削除
-                    _view.RemovePiece(index);
-
-                    // モデルのセル削除
-                    _model.ClearCell(index);
-                }
-
-                // 現在イベントで発生した列情報を全体集合へ統合
-                foreach ((int x, int z) c in columnSet)
-                {
-                    allColumns.Add(c);
-                }
+                // ライン単位削除リストとして保持
+                lineDeleteLists.Add(new List<BoardIndex>(lineDeleteSet));
             }
 
-            // 再配置対象列情報をリスト化して結果として返却
-            return new LineDeleteResult(new List<(int x, int z)>(allColumns));
+            // ======================================================
+            // 発光演出
+            // ======================================================
+            for (int i = 0; i < lineDeleteLists.Count; i++)
+            {
+                // 現在ラインの削除一覧取得
+                List<BoardIndex> deleteList = lineDeleteLists[i];
+
+                // --------------------------------------------------
+                // ピース単位発光演出
+                // --------------------------------------------------
+                for (int j = 0; j < deleteList.Count; j++)
+                {
+                    // 対象インデックス取得
+                    BoardIndex index = deleteList[j];
+
+                    // 発光演出適用
+                    _view.SetPieceEmissionColor(index);
+
+                    // ピース単位待機
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(PIECE_DELETE_DELAY));
+                }
+
+                // --------------------------------------------------
+                // ライン単位待機
+                // --------------------------------------------------
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(LINE_DELETE_DELAY));
+            }
+
+            // ======================================================
+            // 全削除処理
+            // ======================================================
+            // 同一フレーム削除を保証するため1回だけ待機
+            await UniTask.Yield(PlayerLoopTiming.Update);
+
+            // 全削除対象をリスト化
+            List<BoardIndex> allDeleteList =
+                new List<BoardIndex>(allDeleteSet);
+
+            for (int i = 0; i < allDeleteList.Count; i++)
+            {
+                // 対象インデックス取得
+                BoardIndex index = allDeleteList[i];
+
+                // ビュー上に存在しない場合はスキップ
+                if (_view.TryGetPiece(index, out _) == false)
+                {
+                    continue;
+                }
+
+                // ビューオブジェクト削除
+                _view.DestroyPieceObject(index);
+
+                // ビューデータ削除
+                _view.RemovePiece(index);
+
+                // モデルセル削除
+                _model.ClearCell(index);
+            }
+
+            // ======================================================
+            // 結果返却
+            // ======================================================
+            return new LineDeleteResult(
+                new List<(int x, int z)>(allColumns));
         }
 
         /// <summary>

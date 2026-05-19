@@ -2,7 +2,7 @@
 // CameraPresenter.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-08
-// 更新日時 : 2026-04-20
+// 更新日時 : 2026-05-18
 // 概要     : カメラ入力・状態更新・描画反映を管理するプレゼンター
 // ======================================================
 
@@ -69,6 +69,9 @@ namespace CameraSystem.Presentation
         /// <summary>投影補間サービス</summary>
         private CameraProjectionService _projectionService;
 
+        /// <summary>距離ユースケース</summary>
+        private CameraDistanceUseCase _distanceUseCase;
+
         /// <summary>回転ユースケース</summary>
         private CameraRotationUseCase _rotationUseCase;
 
@@ -85,6 +88,9 @@ namespace CameraSystem.Presentation
         /// <summary>カメラ参照</summary>
         private Camera _camera;
 
+        /// <summary>カメラ Transform 参照</summary>
+        private Transform _cameraTransform;
+
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
         
@@ -100,8 +106,14 @@ namespace CameraSystem.Presentation
         /// <summary>ロック前の Y 回転キャッシュ</summary>
         private float _cachedRotationY;
 
+        /// <summary>成立ライン中心座標</summary>
+        private Vector3 _centerPosition = Vector3.zero;
+
         /// <summary>成立ライン中心差分ベクトル</summary>
-        private Vector3 _centerOffset = Vector3.zero;
+        private Vector3 _centerOffsetVector = Vector3.zero;
+
+        /// <summary>成立ライン中心座標からの目標 Z 距離</summary>
+        private float _targetCenterZDistance = DEFAULT_CAMERA_Z_DISTANCE;
 
         // ======================================================
         // 定数
@@ -116,6 +128,22 @@ namespace CameraSystem.Presentation
         /// イベント用回転収束時間
         /// </summary>
         private const float EVENT_SMOOTH_TIME = 0.2f;
+
+        /// <summary>
+        /// カメラ Z 座標距離の基準値
+        /// </summary>
+        private const float DEFAULT_CAMERA_Z_DISTANCE = 2f;
+        
+        /// <summary>
+        /// ライン成立時のカメラ Z 座標距離
+        /// </summary>
+        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.25f;
+
+        /// <summary>
+        /// 成立ライン中心差分の基準ベクトル
+        /// </summary>
+        private static readonly Vector3 DEFAULT_CENTER_OFFSET_VECTOR =
+            new Vector3(1.0f, 0.0f, 0f);
 
         // ======================================================
         // UniRx 変数
@@ -136,8 +164,12 @@ namespace CameraSystem.Presentation
 
             // カメラ取得
             _camera = Camera.main;
+            _cameraTransform = _camera.transform;
 
-            if (_gameOptionManager == null || _inputManager == null || _camera == null)
+            if (_gameOptionManager == null ||
+                _inputManager == null ||
+                _camera == null ||
+                _cameraTransform == null)
             {
                 Debug.LogError("[CameraPresenter] クラスの初期化に失敗しました。");
 
@@ -167,10 +199,11 @@ namespace CameraSystem.Presentation
             _cameraModel = new CameraModel(
                 initialRotationX,
                 initialRotationY,
+                DEFAULT_CAMERA_Z_DISTANCE,
                 _minRotationX,
                 _maxRotationX
             );
-            _cameraView = new CameraView(transform);
+            _cameraView = new CameraView(transform, _cameraTransform);
 
             // 初期化
             _projectionService = new CameraProjectionService(
@@ -178,6 +211,10 @@ namespace CameraSystem.Presentation
                 _orthographicSize,
                 _nearClip,
                 _farClip
+            );
+            _distanceUseCase = new CameraDistanceUseCase(
+                _cameraModel,
+                EVENT_SMOOTH_TIME
             );
             _rotationUseCase = new CameraRotationUseCase(
                 _cameraModel,
@@ -190,27 +227,26 @@ namespace CameraSystem.Presentation
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
             // --------------------------------------------------
-            // 入力取得
+            // 距離
             // --------------------------------------------------
-            // 左右入力を取得する
-            float inputHorizontal = _inputManager.LeftStick.Angle.x;
-
-            // 上下入力を取得する
-            float inputVertical = _inputManager.LeftStick.Angle.y;
-
-            // 入力値を Vector2 としてまとめる
-            Vector2 input = new Vector2(inputHorizontal, inputVertical);
-
+            UpdateDistance(_targetCenterZDistance, unscaledDeltaTime);
+            
             // --------------------------------------------------
-            // 回転処理
+            // 回転
             // --------------------------------------------------
-            // 入力ロック中は処理なし
+            // 入力ロック中はイベントによる回転
             if (_isInputLock)
             {
-                UpdateEventRotation(_centerOffset, unscaledDeltaTime);
+                UpdateEventRotation(_centerOffsetVector, unscaledDeltaTime);
                 return;
             }
 
+            // 入力取得
+            float inputHorizontal = _inputManager.LeftStick.Angle.x;
+            float inputVertical = _inputManager.LeftStick.Angle.y;
+            Vector2 input = new Vector2(inputHorizontal, inputVertical);
+
+            // 入力による回転
             UpdateInputRotation(input, unscaledDeltaTime);
         }
 
@@ -225,14 +261,17 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力ロックおよびボード回転準備ストリームをまとめて購読する
+        /// 入力ロック状態およびボード回転準備関連ストリームをまとめて購読する
         /// </summary>
-        /// <param name="inputLock">入力ロック状態ストリーム　true:ロック / false:解除</param>
-        /// <param name="rotationPreparation">ボード回転準備トリガーストリーム</param>
+        /// <param name="inputLock">入力ロック状態通知ストリーム</param>
+        /// <param name="rotationPreparation">ボード回転準備状態通知ストリーム</param>
+        /// <param name="centerPosition">成立ライン中心座標通知ストリーム</param>
+        /// <param name="centerOffsetVector">成立ライン中心との差分ベクトル通知ストリーム</param>
         public void BindStreams(
             IObservable<bool> inputLock,
             IObservable<bool> rotationPreparation,
-            IObservable<Vector3> centerOffset)
+            IObservable<Vector3> centerPosition,
+            IObservable<Vector3> centerOffsetVector)
         {
             inputLock
                 .Subscribe(isLock =>
@@ -246,7 +285,7 @@ namespace CameraSystem.Presentation
                     if (_isInputLock)
                     {
                         // 回転速度を初期化
-                        _rotationUseCase.ResetRotationVelocity();
+                        _rotationUseCase.ResetVelocity();
 
                         return;
                     }
@@ -254,8 +293,10 @@ namespace CameraSystem.Presentation
                     // --------------------------------------------------
                     // ロック解除時
                     // --------------------------------------------------
-                    // イベント回転の目標値をリセット
-                    _centerOffset = Vector3.zero;
+                    // 目標値をリセット
+                    _centerPosition = Vector3.zero;
+                    _centerOffsetVector = Vector3.zero;
+                    _targetCenterZDistance = DEFAULT_CAMERA_Z_DISTANCE;
                 })
                 .AddTo(_disposables);
 
@@ -309,10 +350,23 @@ namespace CameraSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            centerOffset
-                .Subscribe(centerOffset =>
+            centerPosition
+                .Subscribe(centerPosition =>
                 {
-                    _centerOffset = centerOffset;
+                    _centerPosition = centerPosition;
+                    _targetCenterZDistance = LINE_COMPLETE_CAMERA_Z_DISTANCE;
+                })
+                .AddTo(_disposables);
+
+            centerOffsetVector
+                .Subscribe(centerOffsetVector =>
+                {
+                    _centerOffsetVector = centerOffsetVector;
+
+                    if (_centerOffsetVector == Vector3.zero)
+                    {
+                        _centerOffsetVector = DEFAULT_CENTER_OFFSET_VECTOR;
+                    }
                 })
                 .AddTo(_disposables);
         }
@@ -345,6 +399,38 @@ namespace CameraSystem.Presentation
 
             // ビュー反映
             _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+        }
+
+        /// <summary>
+        /// カメラ距離更新処理
+        /// </summary>
+        /// <param name="targetDistanceZ">目標 Z 距離</param>
+        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
+        private void UpdateDistance(
+            in float targetDistanceZ,
+            in float unscaledDeltaTime)
+        {
+            // カメラと成立ライン中心座標間の距離を算出
+            float currentDistance = Vector3.Distance(
+                _cameraTransform.position,
+                _centerPosition);
+
+            // --------------------------------------------------
+            // 距離補正量算出
+            // --------------------------------------------------
+            // 現在距離と目標距離との差分を算出
+            float distanceDifference = currentDistance - targetDistanceZ;
+
+            // 現在のモデル距離から差分を減算
+            float correctedDistanceZ = Mathf.Abs(_cameraModel.DistanceZ) - distanceDifference;
+
+            // 距離更新
+            _distanceUseCase.UpdateDistance(
+                correctedDistanceZ,
+                unscaledDeltaTime);
+
+            // ビューへ距離反映
+            _cameraView.ApplyDistanceZ(_cameraModel.DistanceZ);
         }
     }
 }

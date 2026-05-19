@@ -200,8 +200,11 @@ namespace GameSystem.Presentation
         /// <summary>ボード回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
 
+        /// <summary>中心座標算出ストリーム</summary>
+        private readonly Subject<Vector3> _onCenterPositionCalculated = new Subject<Vector3>();
+
         /// <summary>成立ライン中心差分ベクトル算出通知用 Subject</summary>
-        private readonly Subject<Vector3> _onCenterOffsetCalculated = new Subject<Vector3>();
+        private readonly Subject<Vector3> _onCenterOffsetVectorCalculated = new Subject<Vector3>();
 
         // ======================================================
         // 定数
@@ -436,17 +439,15 @@ namespace GameSystem.Presentation
                         _currentBoardInputType,
                         (phase, inputType) =>
                         {
-                            // Play フェーズ状態
                             bool isPlay = phase == PhaseType.Play;
-
-                            // Rotate 入力状態
                             bool isRotate = inputType == BoardInputType.Rotate;
 
                             // Play フェーズでないまたは Rotate 中に有効
                             return !isPlay || isRotate;
                         }),
                     _mainUIPresenter.OnSwitchProjection,
-                    _onCenterOffsetCalculated
+                    _onCenterPositionCalculated,
+                    _onCenterOffsetVectorCalculated
                 );
             }
 
@@ -1160,13 +1161,16 @@ namespace GameSystem.Presentation
                     // スコア加算
                     _scoreManager.AddLineScore(playerId, lineLength);
 
-                    // 最新スコア取得
-                    int currentScore = _scoreManager.GetScore(playerId);
+                    Debug.Log($"playerId {playerId}");
 
-                    // スコアイベント通知
-                    _onScoreUpdated.OnNext(
-                        new ScoreEvent(playerId, currentScore));
+                    Debug.Log($"lineLength {lineLength}");
                 }
+
+                // 最新スコア取得
+                int currentScore = _scoreManager.GetScore(playerId);
+
+                // スコアイベント通知
+                _onScoreUpdated.OnNext(new ScoreEvent(playerId, currentScore));
             }
         }
 
@@ -1177,7 +1181,7 @@ namespace GameSystem.Presentation
         /// <param name="linePosition">成立ライン中心座標</param>
         private void ProcessCenterOffset(in BoardPresenter boardPresenter, in Vector3 linePosition)
         {
-            // ボードの現在位置を取得
+            // ボードの現在位置
             Vector3 boardPosition = boardPresenter.gameObject.transform.position;
 
             // --------------------------------------------------
@@ -1199,15 +1203,14 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             Vector3 centerOffset = linePosition - boardPosition;
 
-            // --------------------------------------------------
             // 正規化
-            // --------------------------------------------------
             Vector3 normalizedCenterOffset = centerOffset.normalized;
 
             // --------------------------------------------------
             // イベント通知
             // --------------------------------------------------
-            _onCenterOffsetCalculated.OnNext(normalizedCenterOffset);
+            _onCenterPositionCalculated.OnNext(linePosition);
+            _onCenterOffsetVectorCalculated.OnNext(normalizedCenterOffset);
         }
     }
 }

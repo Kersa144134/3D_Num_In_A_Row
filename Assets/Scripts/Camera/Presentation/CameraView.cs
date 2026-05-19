@@ -2,7 +2,7 @@
 // CameraView.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-08
-// 更新日時 : 2026-04-08
+// 更新日時 : 2026-05-18
 // 概要     : カメラの Transform 操作を担当するビュー
 // ======================================================
 
@@ -20,7 +20,12 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// カメラのTransform
+        /// カメラの親 Transform
+        /// </summary>
+        private readonly Transform _parentTransform;
+
+        /// <summary>
+        /// カメラの Transform
         /// </summary>
         private readonly Transform _cameraTransform;
 
@@ -31,9 +36,11 @@ namespace CameraSystem.Presentation
         /// <summary>
         /// 初期化
         /// </summary>
-        /// <param name="transform">カメラ Transform</param>
-        public CameraView(in Transform cameraTransform)
+        /// <param name="parentTransform">カメラの親 Transform</param>
+        /// <param name="cameraTransform">カメラ Transform</param>
+        public CameraView(in Transform parentTransform, in Transform cameraTransform)
         {
+            _parentTransform = parentTransform;
             _cameraTransform = cameraTransform;
         }
 
@@ -42,17 +49,32 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 回転を適用する
+        /// カメラのワールド X, Y 回転を適用する
         /// </summary>
         /// <param name="rotationX">X 回転</param>
         /// <param name="rotationY">Y 回転</param>
         public void ApplyRotation(in float rotationX, in float rotationY)
         {
-            // Euler角を生成する
+            // Euler 角を生成
             Vector3 euler = new Vector3(rotationX, rotationY, 0.0f);
 
-            // Transformに回転を反映する
-            _cameraTransform.rotation = Quaternion.Euler(euler);
+            // 親 Transform に回転を反映する
+            _parentTransform.rotation = Quaternion.Euler(euler);
+        }
+
+        /// <summary>
+        /// カメラのローカル Z 距離を適用する
+        /// </summary>
+        /// <param name="distanceZ">適用する Z 距離</param>
+        public void ApplyDistanceZ(in float distanceZ)
+        {
+            Vector3 localPosition = _cameraTransform.localPosition;
+
+            // Z 座標を Unity 用に反転して更新
+            localPosition.z = -distanceZ;
+
+            // ローカル座標を反映
+            _cameraTransform.localPosition = localPosition;
         }
     }
 }

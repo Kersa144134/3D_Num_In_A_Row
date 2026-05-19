@@ -1,6 +1,7 @@
 // ======================================================
 // CameraRotationUseCase.cs
 // 作成者   : 高橋一翔
+// 作成日時 : 2026-04-08
 // 更新日時 : 2026-05-14
 // 概要     : カメラ回転の入力計算 + 補間処理を行うユースケース
 // ======================================================
@@ -45,7 +46,7 @@ namespace CameraSystem.Application
         private const float INPUT_THRESHOLD = 0.01f;
 
         /// <summary>Pitch 角の最小絶対値</summary>
-        private const float MIN_PITCH_ANGLE = 30f;
+        private const float MIN_PITCH_ANGLE = 15f;
 
         /// <summary>Pitch 角の最大絶対値</summary>
         private const float MAX_PITCH_ANGLE = 60f;
@@ -95,19 +96,18 @@ namespace CameraSystem.Application
 
             if (isNoInput)
             {
-                // 目標速度停止
-                targetVelocityX = 0.0f;
-                targetVelocityY = 0.0f;
-
-                return;
+                targetVelocityX = 0;
+                targetVelocityY = 0;
             }
+            else
+            {
+                // 入力方向を正規化
+                Vector2 inputDirection = input.normalized;
 
-            // 入力方向を正規化
-            Vector2 inputDirection = input.normalized;
-
-            // 目標速度算出
-            targetVelocityX = inputDirection.y * _maxSpeed * inputMagnitude;
-            targetVelocityY = inputDirection.x * _maxSpeed * inputMagnitude;
+                // 目標速度算出
+                targetVelocityX = inputDirection.y * _maxSpeed * inputMagnitude;
+                targetVelocityY = inputDirection.x * _maxSpeed * inputMagnitude;
+            }
 
             // --------------------------------------------------
             // 速度補間
@@ -139,19 +139,24 @@ namespace CameraSystem.Application
         /// <summary>
         /// イベント用回転を計算しモデルへ反映する
         /// </summary>
-        public void UpdateEventRotation(in Vector3 input, in float deltaTime)
+        public void UpdateEventRotation(in Vector3 angle, in float deltaTime)
         {
             // --------------------------------------------------
             // 方向取得
             // --------------------------------------------------
-            // 入力ベクトルが 0 の場合は処理なし
-            if (input == Vector3.zero)
+            // 正規化して方向取得
+            Vector3 direction = angle.normalized;
+
+            // 入力ベクトルの長さを取得
+            float angleMagnitude = angle.magnitude;
+
+            // 入力無効判定
+            bool isNoInput = angleMagnitude < INPUT_THRESHOLD;
+
+            if (isNoInput)
             {
                 return;
             }
-
-            // 正規化して方向取得
-            Vector3 direction = input.normalized;
 
             // --------------------------------------------------
             // 目標回転生成
@@ -175,23 +180,15 @@ namespace CameraSystem.Application
             // --------------------------------------------------
             // Pitch 角度制限
             // --------------------------------------------------
-            // 符号情報を保持したまま絶対値を取得
-            float pitchAbs = Mathf.Abs(targetRotationX);
-
-            // 絶対値が最小角未満の場合は最小角として扱う
-            if (pitchAbs < MIN_PITCH_ANGLE)
+            if (targetRotationX < MIN_PITCH_ANGLE)
             {
-                pitchAbs = MIN_PITCH_ANGLE;
+                targetRotationX = MIN_PITCH_ANGLE;
             }
 
-            // 絶対値が最大角を超える場合は最大角として扱う
-            if (pitchAbs > MAX_PITCH_ANGLE)
+            if (targetRotationX > MAX_PITCH_ANGLE)
             {
-                pitchAbs = MAX_PITCH_ANGLE;
+                targetRotationX = MAX_PITCH_ANGLE;
             }
-
-            // 元の符号を保持したまま制限後の値を再適用
-            targetRotationX = Mathf.Sign(targetRotationX) * pitchAbs;
 
             // --------------------------------------------------
             // 回転反映
@@ -225,7 +222,7 @@ namespace CameraSystem.Application
         /// <summary>
         /// 回転速度を即座にリセットする
         /// </summary>
-        public void ResetRotationVelocity()
+        public void ResetVelocity()
         {
             _velocityX = 0.0f;
             _velocityY = 0.0f;
