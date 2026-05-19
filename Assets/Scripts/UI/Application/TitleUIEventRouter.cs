@@ -7,9 +7,9 @@
 // ======================================================
 
 using System;
-using UniRx;
 using UISystem.Domain;
 using UISystem.Infrastructure;
+using UniRx;
 
 namespace UISystem.Application
 {
@@ -25,17 +25,8 @@ namespace UISystem.Application
         /// <summary>購読管理</summary>
         private readonly CompositeDisposable _disposable = new CompositeDisposable();
 
-        /// <summary>通常ボタンクリック通知</summary>
-        private readonly Subject<(UIClickType, NormalButtonEvent)> _onNormalButtonClick
-            = new Subject<(UIClickType, NormalButtonEvent)>();
-
-        /// <summary>オプションボタンクリック通知</summary>
-        private readonly Subject<(UIClickType, OptionButtonEvent)> _onOptionButtonClick
-            = new Subject<(UIClickType, OptionButtonEvent)>();
-
-        /// <summary>パネルクリック通知</summary>
-        private readonly Subject<(UIClickType, BasePanelEvent)> _onPanelClick
-            = new Subject<(UIClickType, BasePanelEvent)>();
+        /// <summary>クリック通知</summary>
+        private readonly Subject<UIClickEvent> _onClick = new Subject<UIClickEvent>();
 
         /// <summary>ホバー通知</summary>
         private readonly Subject<BaseUIEvent> _onHover = new Subject<BaseUIEvent>();
@@ -53,14 +44,8 @@ namespace UISystem.Application
         // プロパティ
         // ======================================================
 
-        /// <summary>通常ボタンクリック通知</summary>
-        public IObservable<(UIClickType, NormalButtonEvent)> OnNormalButtonClick => _onNormalButtonClick;
-
-        /// <summary>オプションボタンクリック通知</summary>
-        public IObservable<(UIClickType, OptionButtonEvent)> OnOptionButtonClick => _onOptionButtonClick;
-
-        /// <summary>パネルクリック通知</summary>
-        public IObservable<(UIClickType, BasePanelEvent)> OnPanelClick => _onPanelClick;
+        /// <summary>クリック通知</summary>
+        public IObservable<UIClickEvent> OnClick => _onClick;
 
         /// <summary>ホバー通知</summary>
         public IObservable<BaseUIEvent> OnHover => _onHover;
@@ -78,10 +63,24 @@ namespace UISystem.Application
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
         /// <summary>
-        /// NormalButton 登録処理
+        /// イベント購読を解除する
         /// </summary>
-        /// <param name="buttonEvent">対象 NormalButton イベント</param>
+        public void Dispose()
+        {
+            _disposable?.Dispose();
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// 通常ボタンイベント登録処理
+        /// </summary>
+        /// <param name="buttonEvent">対象通常ボタンイベント</param>
         public void RegisterNormalButton(NormalButtonEvent buttonEvent)
         {
             if (buttonEvent == null)
@@ -94,14 +93,14 @@ namespace UISystem.Application
 
             // クリック
             buttonEvent.OnNormalClick
-                .Subscribe(type => _onNormalButtonClick.OnNext((type, buttonEvent)))
+                .Subscribe(clickType => _onClick.OnNext(new UIClickEvent(clickType, buttonEvent)))
                 .AddTo(_disposable);
         }
 
         /// <summary>
-        /// OptionButton 登録処理
+        /// オプションボタンイベント登録処理
         /// </summary>
-        /// <param name="buttonEvents">対象 OptionButton イベント配列</param>
+        /// <param name="buttonEvents">対象オプションボタンイベント配列</param>
         public void RegisterOptionButtons(OptionButtonEvent[] buttonEvents)
         {
             if (buttonEvents == null)
@@ -121,11 +120,14 @@ namespace UISystem.Application
 
                 // クリック
                 buttonEvent.OnOptionClick
-                    .Subscribe(type => _onOptionButtonClick.OnNext((type, buttonEvent)))
+                    .Subscribe(clickType => _onClick.OnNext(new UIClickEvent(clickType, buttonEvent)))
                     .AddTo(_disposable);
             }
         }
 
+        // --------------------------------------------------
+        // パネル
+        // --------------------------------------------------
         /// <summary>
         /// パネルイベント登録処理
         /// </summary>
@@ -139,7 +141,7 @@ namespace UISystem.Application
 
             // クリック通知
             panelEvent.OnClick
-                .Subscribe(type => _onPanelClick.OnNext((type, panelEvent)))
+                .Subscribe(clickType => _onClick.OnNext(new UIClickEvent(clickType, panelEvent)))
                 .AddTo(_disposable);
 
             // ホバー開始
@@ -153,18 +155,13 @@ namespace UISystem.Application
                 .AddTo(_disposable);
         }
 
-        /// <summary>
-        /// イベント購読を解除する
-        /// </summary>
-        public void Dispose()
-        {
-            _disposable?.Dispose();
-        }
-
         // ======================================================
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
         /// <summary>
         /// ボタンの共通登録処理
         /// </summary>

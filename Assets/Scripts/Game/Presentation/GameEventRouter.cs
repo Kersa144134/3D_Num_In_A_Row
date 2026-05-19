@@ -298,7 +298,7 @@ namespace GameSystem.Presentation
             // フェーズ
             // --------------------------------------------------
             _currentPhase
-                .DistinctUntilChanged()
+            .DistinctUntilChanged()
                 .Skip(1)
                 .Subscribe(phase =>
                 {
@@ -320,16 +320,18 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // 入力
             // --------------------------------------------------
-            _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
+            if (_inputManager != null)
+            {
+                _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
 
-            // スタートボタン押す
-            _inputManager.StartButton.OnDown
-                .Subscribe(e => TogglePausePhase(_currentPhase.Value))
-                .AddTo(_disposables);
-            // アクティブコントローラー変更
-            _inputManager.ActiveDeviceType
-                .Subscribe(e => NotifyActiveControllerChanged(e))
-                .AddTo(_disposables);
+                // スタートボタン押す
+                _inputManager.StartButton.OnDown
+                    .Subscribe(e => TogglePausePhase(_currentPhase.Value))
+                    .AddTo(_disposables);
+                _inputManager.ActiveDeviceType
+                    .Subscribe(e => NotifyActiveControllerChanged(e))
+                    .AddTo(_disposables);
+            }
 
             // --------------------------------------------------
             // UI
@@ -1089,10 +1091,6 @@ namespace GameSystem.Presentation
 
                     // スコア加算
                     _scoreManager.AddLineScore(playerId, lineLength);
-
-                    Debug.Log($"playerId {playerId}");
-
-                    Debug.Log($"lineLength {lineLength}");
                 }
 
                 // 最新スコア取得

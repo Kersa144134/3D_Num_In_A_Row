@@ -323,6 +323,14 @@ namespace BoardSystem.Presentation
             );
         }
 
+        /// <summary>
+        /// ヒットしたワールド座標から列位置を算出し、選択表示の位置を更新する
+        /// </summary>
+        public void UpdateColumnSelectPosition(in Vector3 hitPos)
+        {
+            _columnSelectView.UpdatePosition(hitPos);
+        }
+
         // --------------------------------------------------
         // アニメーション
         // --------------------------------------------------
@@ -410,34 +418,35 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // ワールド基準回転パラメータ生成
             // --------------------------------------------------
+            // 回転角度を方向に応じて決定する
             float angle =
                 direction == RotationDirection.Positive
                 ? 90f
                 : -90f;
 
+            // 列挙型からベクトルへ変換
             Vector3 worldAxis = ConvertAxis(axis);
 
-            // Unityの回転仕様に合わせて角度を反転
+            // Unity の回転処理に合わせて符号を反転
             Quaternion deltaRotation = Quaternion.AngleAxis(-angle, worldAxis);
 
             // --------------------------------------------------
-            // 補間準備
+            // 補間用初期値設定
             // --------------------------------------------------
-
+            // 経過時間
             float elapsed = 0f;
 
-            Quaternion startRotation =
-                target.rotation;
+            // 開始状態を保持
+            Quaternion startRotation = target.rotation;
 
-            // ワールド回転として適用
-            Quaternion endRotation =
-                deltaRotation * startRotation;
+            // 終了状態を算出
+            Quaternion endRotation = deltaRotation * startRotation;
 
+            // --------------------------------------------------
+            // 補間処理
+            // --------------------------------------------------
             try
             {
-                // --------------------------------------------------
-                // 補間処理
-                // --------------------------------------------------
                 while (elapsed < _rotationDuration)
                 {
                     if (target == null)
@@ -445,10 +454,13 @@ namespace BoardSystem.Presentation
                         return;
                     }
 
+                    // 経過時間を加算
                     elapsed += Time.deltaTime;
 
+                    // 0 ～ 1 の補間係数に変換
                     float t = Mathf.Clamp01(elapsed / _rotationDuration);
 
+                    // 回転を線形補間で更新する
                     target.rotation =
                         Quaternion.Lerp(
                             startRotation,
@@ -456,6 +468,7 @@ namespace BoardSystem.Presentation
                             t
                         );
 
+                    // 次フレームまで待機
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
             }
@@ -463,6 +476,7 @@ namespace BoardSystem.Presentation
             {
                 if (target != null)
                 {
+                    // 終了状態を適用
                     target.rotation = endRotation;
                 }
             }
@@ -509,14 +523,6 @@ namespace BoardSystem.Presentation
             _columnSelectView.SetVisible(isVisible);
         }
 
-        /// <summary>
-        /// ヒットしたワールド座標から列位置を算出し、選択表示の位置を更新する
-        /// </summary>
-        public void UpdateColumnSelectPosition(in Vector3 hitPos)
-        {
-            _columnSelectView.UpdatePosition(hitPos);
-        }
-
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -525,7 +531,7 @@ namespace BoardSystem.Presentation
         /// 駒の移動計画を生成
         /// </summary>
         private List<MovePlanData> CreateMovePlans(
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+            in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // スナップショットを作成
             Dictionary<BoardIndex, PieceData> snapshot =
@@ -551,8 +557,7 @@ namespace BoardSystem.Presentation
                 }
 
                 // 現在の開始位置を取得
-                Vector3 startPosition =
-                    piece.Transform.position;
+                Vector3 startPosition = piece.Transform.position;
 
                 // 移動目標座標
                 float targetX;
@@ -616,7 +621,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ワールド軸 enum → Vector3変換
         /// </summary>
-        private Vector3 ConvertAxis(RotationAxis axis)
+        private Vector3 ConvertAxis(in RotationAxis axis)
         {
             switch (axis)
             {

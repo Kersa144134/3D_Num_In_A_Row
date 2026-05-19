@@ -8,7 +8,6 @@
 
 using UnityEngine.EventSystems;
 using UniRx;
-using System.Diagnostics;
 
 namespace UISystem.Infrastructure
 {
@@ -50,15 +49,6 @@ namespace UISystem.Infrastructure
         // ======================================================
         // EventSystem 入力イベント
         // ======================================================
-
-        /// <summary>
-        /// クリック入力
-        /// </summary>
-        /// <param name="eventData">イベント情報</param>
-        public override void OnPointerClick(
-            PointerEventData eventData)
-        {
-        }
 
         /// <summary>
         /// マウスホバー開始

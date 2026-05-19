@@ -150,6 +150,11 @@ namespace BoardSystem.Presentation
         private const string TAG_PLANE = "Plane";
 
         /// <summary>
+        /// ボードの回転アニメーション時間（秒）
+        /// </summary>
+        private const float ROTATION_DURATION = 0.5f;
+
+        /// <summary>
         /// 駒削除後、落下処理を開始するまでの待機時間（秒）
         /// </summary>
         private const float PIECE_DROP_DELAY = 0.5f;
@@ -158,11 +163,6 @@ namespace BoardSystem.Presentation
         /// ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（秒）
         /// </summary>
         private const float FINISH_LINE_CHECK_DELAY = 1.0f;
-
-        /// <summary>
-        /// ボードの回転アニメーション時間（秒）
-        /// </summary>
-        private const float ROTATION_DURATION = 0.5f;
 
         // ======================================================
         // UniRx 変数
