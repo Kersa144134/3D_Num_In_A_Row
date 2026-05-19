@@ -188,6 +188,9 @@ namespace UISystem.Presentation
         /// <summary>IsTarget パラメータ名</summary>
         private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
 
+        /// <summary>ボードアニメーション無効値</summary>
+        private const int BOARD_ANIMATION_DISABLED = -1;
+
         /// <summary>3 x 3 ボードサイズ</summary>
         private const int BOARD_SIZE_THREE = 3;
 
@@ -708,10 +711,7 @@ namespace UISystem.Presentation
         /// <param name="buttonEvent">対象ボタンイベント</param>
         private void OnNormalButtonClick(NormalButtonEvent buttonEvent)
         {
-            // --------------------------------------------------
-            // UIアクション種別の解決
-            // --------------------------------------------------
-            // ボタンイベントから UI アクション種別を取得
+            // UI アクション種別へ変換できない場合は処理なし
             if (!_normalButtonResolver.TryGetType(buttonEvent, out UIActionType actionType))
             {
                 return;
@@ -725,6 +725,9 @@ namespace UISystem.Presentation
                 // ダイアログボタンを非表示にする
                 _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(false);
                 _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(false);
+
+                // シーン遷移リクエストを通知する
+                RequestSceneChange();
 
                 return;
             }
@@ -846,7 +849,7 @@ namespace UISystem.Presentation
                 SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleOption));
 
                 // ボードアニメーションをリセットする
-                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, BOARD_ANIMATION_DISABLED);
 
                 return;
             }
@@ -876,7 +879,7 @@ namespace UISystem.Presentation
                 }
 
                 // ボードアニメーションをリセットする
-                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, -1);
+                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, BOARD_ANIMATION_DISABLED);
             }
         }
 
@@ -1061,18 +1064,6 @@ namespace UISystem.Presentation
         {
             // 選択解除
             _eventSystem.SetSelectedGameObject(null);
-        }
-
-        // ======================================================
-        // ボタンイベント
-        // ======================================================
-
-        /// <summary>
-        /// シーン遷移リクエストを通知する
-        /// </summary>
-        public override void RequestSceneChange()
-        {
-            base.RequestSceneChange();
         }
 
         // ======================================================

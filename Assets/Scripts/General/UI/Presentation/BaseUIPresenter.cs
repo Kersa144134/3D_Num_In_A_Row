@@ -337,14 +337,6 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// シーン遷移リクエストを通知する
-        /// </summary>
-        public virtual void RequestSceneChange()
-        {
-            _onSceneChangeRequested.OnNext(Unit.Default);
-        }
-
-        /// <summary>
         /// 共通イベントストリームをまとめて購読する
         /// </summary>
         public void BindBaseStreams(
@@ -369,6 +361,14 @@ namespace UISystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// シーン遷移リクエストを通知する
+        /// </summary>
+        protected virtual void RequestSceneChange()
+        {
+            _onSceneChangeRequested.OnNext(Unit.Default);
+        }
 
         /// <summary>
         /// ダイアログ UI のボタンとパネルを収集する
