@@ -13,6 +13,7 @@ using UniRx;
 using InputSystem.Application;
 using InputSystem.Domain;
 using OptionSystem.Presentation;
+using InputSystem.Infrastructure;
 
 namespace InputSystem.Presentation
 {
@@ -61,6 +62,9 @@ namespace InputSystem.Presentation
         // フィールド
         // ======================================================
 
+        /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
+        private int _currentMappingIndex = 0;
+
         /// <summary>
         /// ボタン状態配列
         /// GamepadInputType の順序で固定
@@ -84,7 +88,7 @@ namespace InputSystem.Presentation
         // ======================================================
 
         /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
-        public int CurrentMappingIndex { get; private set; } = 0;
+        public int CurrentMappingIndex => _currentMappingIndex;
 
         /// <summary>ボタン A の状態</summary>
         public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
@@ -257,6 +261,13 @@ namespace InputSystem.Presentation
                 _dPad
             );
 
+            // インゲーム以外の入力マッピングかつアクティブ入力がゲームパッドの場合はポインター更新処理なし
+            if (_currentMappingIndex != 0 &&
+                _deviceSwitchService.ActiveDeviceType.Value == InputDeviceType.Gamepad)
+            {
+                return;
+            }
+
             // ポインター状態更新
             _pointerStateUpdateService.UpdatePointer(controller, ref _pointer, _gameOptionManager.PointerSpeed);
         }
@@ -316,7 +327,7 @@ namespace InputSystem.Presentation
             _deviceSwitchService.SetMapping(index);
 
             // 適用中のインデックスを更新
-            CurrentMappingIndex = index;
+            _currentMappingIndex = index;
         }
     }
 }
