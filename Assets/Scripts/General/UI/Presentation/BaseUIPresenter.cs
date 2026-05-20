@@ -6,16 +6,17 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
+using PhaseSystem.Domain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UISystem.Application;
+using UISystem.Domain;
+using UISystem.Infrastructure;
+using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
-using UniRx;
-using PhaseSystem.Domain;
-using UISystem.Application;
-using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -174,14 +175,14 @@ namespace UISystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
-        // ボタン
+        // ダイアログ
         // --------------------------------------------------
+        /// <summary>ダイアログイベント配列</summary>
+        protected DialogEvent[] _dialogEvents;
+
         /// <summary>ダイアログの通常ボタン配列</summary>
         protected NormalButton[] _dialogButtons;
 
-        // --------------------------------------------------
-        // パネル
-        // --------------------------------------------------
         /// <summary>ダイアログのパネルイベント配列</summary>
         protected BasePanelEvent[] _dialogPanelEvents;
 
@@ -201,12 +202,6 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>シーン遷移リクエスト通知用 Subject</summary>
-        private readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
-
-        /// <summary>シーン遷移リクエスト通知ストリーム</summary>
-        public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
-        
         /// <summary>ダイアログ表示状態通知用 Subject</summary>
         protected readonly Subject<bool> _onDialogVisibleChanged = new Subject<bool>();
 
@@ -224,6 +219,15 @@ namespace UISystem.Presentation
 
         /// <summary>フェードアウト完了通知ストリーム</summary>
         public IObservable<Unit> OnFadeOutCompletedStream => _onFadeOutCompleted;
+
+        // --------------------------------------------------
+        // ダイアログイベント
+        // --------------------------------------------------
+        /// <summary>シーン遷移リクエスト通知用 Subject</summary>
+        private readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
+
+        /// <summary>シーン遷移リクエスト通知ストリーム</summary>
+        public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
 
         // ======================================================
         // IUpdatable イベント
@@ -318,7 +322,7 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
-        // 継承メソッド
+        // IUpdatable 継承イベント
         // ======================================================
 
         protected virtual void OnEnterInternal() { }
@@ -370,20 +374,30 @@ namespace UISystem.Presentation
         // プライベートメソッド
         // ======================================================
 
-        /// <summary>
-        /// シーン遷移リクエストを通知する
-        /// </summary>
-        protected virtual void RequestSceneChange()
-        {
-            _onSceneChangeRequested.OnNext(Unit.Default);
-        }
-
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
         /// <summary>
         /// イベント購読
         /// </summary>
         protected virtual void Subscribe()
         {
+            // --------------------------------------------------
+            // ダイアログイベント購読
+            // --------------------------------------------------
+            for (int i = 0; i < _dialogEvents.Length; i++)
+            {
+                DialogEvent dialogEvent = _dialogEvents[i];
 
+                if (dialogEvent == null)
+                {
+                    continue;
+                }
+
+                dialogEvent.OnEvent
+                    .Subscribe(HandleDialogEventReceived)
+                    .AddTo(_disposables);
+            }
         }
 
         /// <summary>
@@ -395,12 +409,32 @@ namespace UISystem.Presentation
             _disposables?.Dispose();
         }
 
+        // --------------------------------------------------
+        // イベントハンドラ
+        // --------------------------------------------------
+        /// <summary>
+        /// ダイアログイベント実行時の処理を行う
+        /// </summary>
+        private void HandleDialogEventReceived(DialogEventType eventType)
+        {
+            // シーン遷移
+            if (eventType == DialogEventType.RequestSceneChange)
+            {
+                _onSceneChangeRequested.OnNext(Unit.Default);
+
+                return;
+            }
+        }
+
+        // --------------------------------------------------
+        // ダイアログ
+        // --------------------------------------------------
         /// <summary>
         /// ダイアログ UI のボタンとパネルを収集する
         /// </summary>
         private void CollectDialogUI()
         {
-            // ボタン・パネルの一時リスト
+            List<DialogEvent> dialogEventList = new List<DialogEvent>();
             List<NormalButton> buttonList = new List<NormalButton>();
             List<BasePanelEvent> panelList = new List<BasePanelEvent>();
 
@@ -411,7 +445,15 @@ namespace UISystem.Presentation
                     continue;
                 }
 
-                // ボタンを収集
+                // ダイアログイベント
+                DialogEvent dialogEvent = _dialogCanvasArray[i].Canvas.GetComponent<DialogEvent>();
+
+                if (dialogEvent != null)
+                {
+                    dialogEventList.Add(dialogEvent);
+                }
+
+                // ボタン
                 if (_dialogCanvasArray[i].Buttons != null)
                 {
                     for (int j = 0; j < _dialogCanvasArray[i].Buttons.Length; j++)
@@ -425,7 +467,7 @@ namespace UISystem.Presentation
                     }
                 }
 
-                // パネルを収集
+                // パネル
                 if (_dialogCanvasArray[i].Panels != null)
                 {
                     for (int j = 0; j < _dialogCanvasArray[i].Panels.Length; j++)
@@ -441,10 +483,14 @@ namespace UISystem.Presentation
             }
 
             // 配列へ変換
+            _dialogEvents = dialogEventList.ToArray();
             _dialogButtons = buttonList.ToArray();
             _dialogPanelEvents = panelList.ToArray();
         }
 
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
         /// <summary>
         /// フェードイン処理
         /// </summary>

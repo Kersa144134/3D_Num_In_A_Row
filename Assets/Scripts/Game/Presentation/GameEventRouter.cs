@@ -383,9 +383,6 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
-                _titleUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneChangeRequested())
-                    .AddTo(_disposables);
                 _titleUIPresenter.OnDialogVisibleChanged
                     .Subscribe(_ =>
                     {
@@ -397,6 +394,9 @@ namespace GameSystem.Presentation
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
             }
 
@@ -416,9 +416,6 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
-                _mainUIPresenter.OnSceneChangeRequested
-                    .Subscribe(_ => NotifySceneChangeRequested())
-                    .AddTo(_disposables);
                 _mainUIPresenter.OnDialogVisibleChanged
                     .Subscribe(_ =>
                     {
@@ -430,6 +427,9 @@ namespace GameSystem.Presentation
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
             }
 
@@ -1077,7 +1077,6 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         /// <summary>
         /// ライン成立時の処理を行う
-        /// 複数ラインを 1 本ずつスコアへ分解する
         /// </summary>
         private void HandleLineCompleted(in IReadOnlyList<LineCompleteEvent> events)
         {

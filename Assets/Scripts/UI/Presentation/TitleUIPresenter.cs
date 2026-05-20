@@ -6,18 +6,17 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UniRx;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
-using System;
-using System.Collections.Generic;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.UIElements;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -722,8 +721,14 @@ namespace UISystem.Presentation
                 _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(false);
                 _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(false);
 
-                // シーン遷移リクエストを通知する
-                RequestSceneChange();
+                // ダイアログデータ取得
+                DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
+
+                if (dialogEvent != null)
+                {
+                    // ダイアログイベント発火
+                    dialogEvent.InvokeEvent();
+                }
 
                 return;
             }
