@@ -145,8 +145,9 @@ namespace PhaseSystem.Application
             _currentState.OnLateUpdateState(unscaledDeltaTime);
 
             // 遷移判定
-            PhaseType nextPhase = _transitionRule.Resolve(_currentState);
+            PhaseType nextPhase = _transitionRule.ResolveTimeTransition(_currentState);
 
+            // 現在フェーズと同一ならフェーズ遷移なし
             if (nextPhase == _currentPhaseType.Value)
             {
                 return;
@@ -157,9 +158,25 @@ namespace PhaseSystem.Application
         }
 
         /// <summary>
+        /// 外部からのフェーズ遷移リクエストを処理する
+        /// </summary>
+        /// <param name="nextPhaseType">要求された遷移先フェーズ</param>
+        public void RequestChangePhase(in PhaseType nextPhaseType)
+        {
+            // 実際に遷移するフェーズを決定
+            PhaseType resolvedPhaseType = _transitionRule.ResolveRequestedPhase(nextPhaseType);
+
+            ChangePhase(resolvedPhaseType);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
         /// フェーズ切替を行う
         /// </summary>
-        public void ChangePhase(in PhaseType nextPhaseType)
+        private void ChangePhase(in PhaseType nextPhaseType)
         {
             // 遷移前フェーズを保持
             PhaseType previousPhaseType = _currentPhaseType.Value;
@@ -191,10 +208,6 @@ namespace PhaseSystem.Application
                 NextPlayer();
             }
         }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
 
         /// <summary>
         /// 現在のフェーズ定義に基づき、実行対象となるUpdatable配列を解決する

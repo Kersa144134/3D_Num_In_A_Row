@@ -3904,8 +3904,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
   _startPhase: 2
-  _readyToChangePlayerWaitTime: 5
+  _readyToChangePlayerWaitTime: 10
   _changePlayerToPlayWaitTime: 2
+  _changePlayerToFinishWaitCount: 5
 --- !u!1 &2146103288
 GameObject:
   m_ObjectHideFlags: 0

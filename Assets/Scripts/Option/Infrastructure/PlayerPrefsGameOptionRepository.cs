@@ -29,6 +29,9 @@ namespace OptionSystem.Infrastructure
         /// <summary>プレイヤー人数の保存キー</summary>
         private const string KEY_PLAYER_COUNT = "GAME_OPTION_PLAYER_COUNT";
 
+        /// <summary>ターン数の保存キー</summary>
+        private const string KEY_TURN_COUNT = "GAME_OPTION_TURN_COUNT";
+
         /// <summary>制限時間の保存キー</summary>
         private const string KEY_LIMIT_TIME = "GAME_OPTION_LIMIT_TIME";
 
@@ -50,8 +53,11 @@ namespace OptionSystem.Infrastructure
         /// <summary>プレイヤー人数 デフォルト値</summary>
         private const int DEFAULT_PLAYER_COUNT = 2;
 
+        /// <summary>ターン数 デフォルト値</summary>
+        private const int DEFAULT_TURN_COUNT = 5;
+
         /// <summary>制限時間 デフォルト値</summary>
-        private const float DEFAULT_LIMIT_TIME = 15f;
+        private const float DEFAULT_LIMIT_TIME = 30f;
 
         /// <summary>盤面サイズ デフォルト値</summary>
         private const GameRules.BoardSizeType DEFAULT_BOARD_SIZE = GameRules.BoardSizeType.Size5;
@@ -89,6 +95,7 @@ namespace OptionSystem.Infrastructure
         public void Save(GameRules rules)
         {
             PlayerPrefs.SetInt(KEY_PLAYER_COUNT, rules.PlayerCount);
+            PlayerPrefs.SetInt(KEY_TURN_COUNT, rules.TurnCount);
             PlayerPrefs.SetFloat(KEY_LIMIT_TIME, rules.PerPlayerLimitTime);
             PlayerPrefs.SetInt(KEY_BOARD_SIZE, (int)rules.BoardSize);
             PlayerPrefs.SetInt(KEY_CONNECT_COUNT, rules.ConnectCount);
@@ -111,6 +118,7 @@ namespace OptionSystem.Infrastructure
 
             // 保存値を取得
             rules.PlayerCount = PlayerPrefs.GetInt(KEY_PLAYER_COUNT, DEFAULT_PLAYER_COUNT);
+            rules.TurnCount = PlayerPrefs.GetInt(KEY_TURN_COUNT, DEFAULT_TURN_COUNT);
             rules.PerPlayerLimitTime = PlayerPrefs.GetFloat(KEY_LIMIT_TIME, DEFAULT_LIMIT_TIME);
             rules.BoardSize = (GameRules.BoardSizeType)PlayerPrefs.GetInt(KEY_BOARD_SIZE, (int)DEFAULT_BOARD_SIZE);
             rules.ConnectCount = PlayerPrefs.GetInt(KEY_CONNECT_COUNT, DEFAULT_CONNECT_COUNT);
@@ -126,6 +134,7 @@ namespace OptionSystem.Infrastructure
         public void Delete()
         {
             PlayerPrefs.DeleteKey(KEY_PLAYER_COUNT);
+            PlayerPrefs.DeleteKey(KEY_TURN_COUNT);
             PlayerPrefs.DeleteKey(KEY_LIMIT_TIME);
             PlayerPrefs.DeleteKey(KEY_BOARD_SIZE);
             PlayerPrefs.DeleteKey(KEY_CONNECT_COUNT);

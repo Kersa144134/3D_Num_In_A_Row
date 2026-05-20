@@ -32,13 +32,6 @@ namespace GameSystem.Presentation
         /// <summary>シーン読み込み時の初期フェーズ</summary>
         [SerializeField] private PhaseType _startPhase;
 
-        [Header("フェーズ遷移設定")]
-        /// <summary>Ready フェーズから ChangePlayer フェーズへ遷移するまでの時間（秒）</summary>
-        [SerializeField, Min(0f)] private float _readyToChangePlayerWaitTime = 3.0f;
-
-        /// <summary>ChangePlayer フェーズから Play フェーズへ遷移するまでの時間（秒）</summary>
-        [SerializeField, Min(0f)] private float _changePlayerToPlayWaitTime = 2.0f;
-
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -108,13 +101,28 @@ namespace GameSystem.Presentation
         /// <summary>アプリケーション全体で固定する目標 FPS</summary>
         private const int TARGET_FRAME_RATE = 120;
 
-        /// <summary>最低保証ロード時間</summary>
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
+        /// <summary>シーンロードの最低保証時間</summary>
         private const float MIN_LOAD_TIME_SECONDS = 1.0f;
 
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
+        /// <summary>Ready フェーズから ChangePlayer フェーズへ遷移するまでの待機時間（秒）</summary>
+        private const float READY_TO_CHANGE_PLAYER_WAIT_TIME_SECONDS = 3.0f;
+
+        /// <summary>ChangePlayer フェーズから Play フェーズへ遷移するまでの待機時間（秒）</summary>
+        private const float CHANGE_PLAYER_TO_PLAY_WAIT_TIME_SECONDS = 2.0f;
+
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
         /// <summary>画面フェード時間</summary>
         private const float SCREEN_FADE_DURATION_SECONDS = 0.5f;
 
-        /// <summary>フェード中の最低待機時間</summary>
+        /// <summary>画面フェードの最低待機時間</summary>
         private const float SCREEN_FADE_HOLD_TIME_SECONDS = 1.0f;
 
         // ======================================================
@@ -215,9 +223,10 @@ namespace GameSystem.Presentation
             // フェーズ遷移設定
             _phaseTransitionConfig = new PhaseTransitionConfig(
                 _gameOptionManager.PlayerCount,
+                _gameOptionManager.TurnCount,
                 _gameOptionManager.LimitTime,
-                _readyToChangePlayerWaitTime,
-                _changePlayerToPlayWaitTime
+                READY_TO_CHANGE_PLAYER_WAIT_TIME_SECONDS,
+                CHANGE_PLAYER_TO_PLAY_WAIT_TIME_SECONDS
             );
 
             // フェーズ管理マシン初期化
@@ -316,7 +325,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             if (CurrentPhase.Value != _targetPhase)
             {
-                ChangePhase(_targetPhase);
+                RequestChangePhase(_targetPhase);
             }
         }
 
@@ -467,17 +476,16 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// フェーズ遷移を行う
+        /// フェーズ遷移リクエストをする
         /// </summary>
-        private void ChangePhase(in PhaseType nextPhase)
+        private void RequestChangePhase(in PhaseType nextPhase)
         {
-            // 同一フェーズでないなら処理なし
             if (CurrentPhase.Value == nextPhase)
             {
                 return;
             }
 
-            _phaseMachine.ChangePhase(nextPhase);
+            _phaseMachine.RequestChangePhase(nextPhase);
         }
     }
 }

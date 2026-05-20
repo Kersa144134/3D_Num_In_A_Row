@@ -7419,7 +7419,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GeneralGamePresentation::GameSystem.Presentation.GameManager
   _startPhase: 1
-  _readyToChangePlayerWaitTime: 3
+  _readyToChangePlayerWaitTime: 10
   _changePlayerToPlayWaitTime: 2
 --- !u!4 &1575469516
 Transform:
@@ -8834,10 +8834,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
-      propertyPath: _limitTime
-      value: 30
-      objectReference: {fileID: 0}
     - target: {fileID: 5702725208033566626, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_Name
       value: GameOptionManager

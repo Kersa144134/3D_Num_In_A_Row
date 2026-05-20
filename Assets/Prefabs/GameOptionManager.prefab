@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GameApplication::GameSystem.Application.GameOptionService
   _playerCount: 2
-  _limitTime: 15
+  _limitTime: 30
   _boardSizeType: 5
   _connectCount: 3
   _cameraRotationSpeed: 360

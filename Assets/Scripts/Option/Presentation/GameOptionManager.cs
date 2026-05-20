@@ -38,9 +38,12 @@ namespace OptionSystem.Presentation
         private int _playerCount = 2;
 
         // --------------------------------------------------
-        // タイマー
+        // ゲーム進行
         // --------------------------------------------------
-        [Header("制限時間")]
+        [Header("ゲーム進行")]
+        [SerializeField, Range(1, 30)]
+        private int _turnCount = 5;
+
         [SerializeField, Range(0f, 60f)]
         private float _limitTime = 30f;
 
@@ -88,6 +91,11 @@ namespace OptionSystem.Presentation
         /// プレイヤー人数
         /// </summary>
         public int PlayerCount => _currentRules.PlayerCount;
+
+        /// <summary>
+        /// 総ターン数
+        /// </summary>
+        public int TurnCount => _currentRules.TurnCount;
 
         /// <summary>
         /// 1 プレイヤーあたりの制限時間
@@ -138,6 +146,7 @@ namespace OptionSystem.Presentation
             _currentRules = new GameRules
             {
                 PlayerCount = _playerCount,
+                TurnCount = _turnCount,
                 PerPlayerLimitTime = _limitTime,
                 BoardSize = _boardSizeType,
                 ConnectCount = _connectCount,

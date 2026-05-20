@@ -37,8 +37,11 @@ namespace OptionSystem.Domain
         public int PlayerCount;
 
         // --------------------------------------------------
-        // タイマー
+        // ゲーム進行
         // --------------------------------------------------
+        /// <summary>総ターン数</summary>
+        public int TurnCount;
+
         /// <summary>1 プレイヤーあたりの制限時間（秒）</summary>
         public float PerPlayerLimitTime;
 

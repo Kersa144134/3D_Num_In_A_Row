@@ -23,6 +23,16 @@ namespace PhaseSystem.Application
         private readonly PhaseTransitionConfig _transitionConfig;
 
         // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>Play フェーズへ遷移した回数</summary>
+        private int _playEnterCount = 0;
+
+        /// <summary>Finish フェーズへ遷移するまでの Play フェーズ開始可能回数</summary>
+        private int _finishTransitionCount = 0;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -35,6 +45,10 @@ namespace PhaseSystem.Application
         {
             _stateRepository = stateRepository;
             _transitionConfig = config;
+
+            // Play フェーズ開始可能回数を算出
+            _finishTransitionCount
+                = _transitionConfig.PlayerCount * _transitionConfig.TurnCount;
         }
 
         // ======================================================
@@ -45,9 +59,8 @@ namespace PhaseSystem.Application
         /// 現在のフェーズ状態と経過時間をもとに遷移先フェーズを決定する
         /// </summary>
         /// <param name="currentState">現在のフェーズ状態</param>
-        /// <param name="deltaTime">フレーム経過時間</param>
         /// <returns>遷移先フェーズ種別</returns>
-        public PhaseType Resolve(in IPhaseState currentState)
+        public PhaseType ResolveTimeTransition(in IPhaseState currentState)
         {
             // --------------------------------------------------
             // Ready
@@ -79,6 +92,32 @@ namespace PhaseSystem.Application
             return _stateRepository.GetPhaseType(currentState);
         }
 
+        /// <summary>
+        /// 外部からリクエストされたフェーズ遷移を確定する
+        /// </summary>
+        /// <param name="nextPhaseType">要求された遷移先フェーズ</param>
+        /// <returns>実際に遷移するフェーズ</returns>
+        public PhaseType ResolveRequestedPhase(in PhaseType nextPhaseType)
+        {
+            // --------------------------------------------------
+            // ChangePlayer
+            // --------------------------------------------------
+            if (nextPhaseType is PhaseType.ChangePlayer)
+            {
+                // Play フェーズ開始回数を加算
+                _playEnterCount++;
+
+                // Play フェーズ開始回数が指定回数を超えた場合
+                if (_playEnterCount > _finishTransitionCount)
+                {
+                    return PhaseType.Finish;
+                }
+            }
+
+            // 指定フェーズをそのまま返却
+            return nextPhaseType;
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -90,6 +129,7 @@ namespace PhaseSystem.Application
         /// <returns>遷移先フェーズ種別</returns>
         private PhaseType ResolveReady(in ReadyPhaseState state)
         {
+            // 指定遷移時間を超えた場合
             if (state.ElapsedTime >= _transitionConfig.ReadyToChangePlayerWaitTime)
             {
                 return PhaseType.ChangePlayer;
@@ -105,8 +145,18 @@ namespace PhaseSystem.Application
         /// <returns>遷移先フェーズ種別</returns>
         private PhaseType ResolvePlay(in PlayPhaseState state)
         {
+            // 指定遷移時間を超えた場合
             if (state.PlayElapsedTime >= _transitionConfig.PerPlayerLimitTime)
             {
+                // Play フェーズ開始回数を加算
+                _playEnterCount++;
+
+                // Play フェーズ開始回数が指定回数を超えた場合
+                if (_playEnterCount > _finishTransitionCount)
+                {
+                    return PhaseType.Finish;
+                }
+
                 return PhaseType.ChangePlayer;
             }
 
@@ -114,12 +164,13 @@ namespace PhaseSystem.Application
         }
 
         /// <summary>
-        /// Ready フェーズの遷移判定を行う
+        /// ChangePlayer フェーズの遷移判定を行う
         /// </summary>
         /// <param name="state">ChangePlayer フェーズ状態</param>
         /// <returns>遷移先フェーズ種別</returns>
         private PhaseType ResolveChangePlayer(in ChangePlayerPhaseState state)
         {
+            // 指定遷移時間を超えた場合
             if (state.ElapsedTime >= _transitionConfig.ChangePlayerToPlayWaitTime)
             {
                 return PhaseType.Play;

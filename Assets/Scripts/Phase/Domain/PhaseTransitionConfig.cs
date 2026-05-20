@@ -6,6 +6,8 @@
 // 概要     : フェーズ遷移およびプレイ進行設定
 // ======================================================
 
+using UnityEngine;
+
 namespace PhaseSystem.Domain
 {
     /// <summary>
@@ -19,6 +21,9 @@ namespace PhaseSystem.Domain
 
         /// <summary>プレイヤー人数</summary>
         public int PlayerCount { get; }
+
+        /// <summary>総ターン数</summary>
+        public int TurnCount { get; }
 
         /// <summary>1 プレイヤーあたりの制限時間</summary>
         public float PerPlayerLimitTime { get; }
@@ -38,11 +43,13 @@ namespace PhaseSystem.Domain
         /// </summary>
         public PhaseTransitionConfig(
             in int playerCount,
+            in int turnCount,
             in float perPlayerLimitTime,
             in float readyToChangePlayerWaitTime,
             in float changePlayerToPlayWaitTime)
         {
             PlayerCount = playerCount;
+            TurnCount = turnCount;
             PerPlayerLimitTime = perPlayerLimitTime;
             ReadyToChangePlayerWaitTime = readyToChangePlayerWaitTime;
             ChangePlayerToPlayWaitTime = changePlayerToPlayWaitTime;
