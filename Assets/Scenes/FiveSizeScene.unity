@@ -131,10 +131,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pointer
       objectReference: {fileID: 0}
-    - target: {fileID: 3977456849550658369, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 7436380128807994146, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -2428,16 +2424,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UIManager::UISystem.Manager.MainUIManager
   _dialogCanvasArray:
-  - Type: 1
-    Canvas: {fileID: 9040206411591447947}
+  - Canvas: {fileID: 9040206411591447947}
+    Type: 1
     Buttons:
     - _type: 1
       _button: {fileID: 3116120016426225550}
     - _type: 2
       _button: {fileID: 6269229279123222295}
-    Panels:
-    - {fileID: 5269854327350997965}
-    - {fileID: 9069425593478462622}
   _pointer: {fileID: 214436002}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
@@ -3895,8 +3888,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SceneManager::SceneSystem.Manager.SceneManager
   _startPhase: 2
-  _readyToChangePlayerWaitTime: 10
-  _changePlayerToPlayWaitTime: 2
 --- !u!1 &2146103288
 GameObject:
   m_ObjectHideFlags: 0
@@ -4322,17 +4313,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3ce301cea9b90a949b8614e80e80e123, type: 3}
---- !u!114 &5269854327350997965 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1846501585394236924, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
-  m_PrefabInstance: {fileID: 8901975305569929040}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14dc32ba13f3c724cb65eff73f5dc188, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.NormalPanelEvent
 --- !u!1001 &5281146724075930659
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4616,17 +4596,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3046512216835001843, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
   m_PrefabInstance: {fileID: 8901975305569929040}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9069425593478462622 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1890213530946040257, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
-  m_PrefabInstance: {fileID: 8901975305569929040}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0caae484bbd46942ba5fc46430dfabc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.DialogPanelEvent
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

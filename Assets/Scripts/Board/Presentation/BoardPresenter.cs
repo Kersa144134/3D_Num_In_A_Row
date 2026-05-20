@@ -30,47 +30,33 @@ namespace BoardSystem.Presentation
         // インスペクタ設定
         // ======================================================
 
-        /// <summary>
-        /// ボードの列選択表示ルート
-        /// </summary>
+        /// <summary>ボードの列選択表示ルート</summary>
         [SerializeField]
         private GameObject _columnSelectRoot;
 
         [Header("駒")]
-        /// <summary>
-        /// 駒の Prefab
-        /// </summary>
+        /// <summary>駒の Prefab</summary>
         [SerializeField]
         private GameObject _piecePrefab;
 
-        /// <summary>
-        /// 駒のマテリアル配列
-        /// </summary>
+        /// <summary>駒のマテリアル配列</summary>
         [SerializeField]
         private Material[] _pieceMaterials;
 
-        /// <summary>
-        /// 駒削除時に再生するパーティクル
-        /// </summary>
+        /// <summary>駒削除時に再生するパーティクル</summary>
         [SerializeField]
         private GameObject _deleteParticle;
 
-        /// <summary>
-        /// 駒のスケール倍率
-        /// </summary>
+        /// <summary>駒のスケール倍率</summary>
         [SerializeField, Range(0.5f, 1.0f)]
         private float _pieceScaleFactor;
 
         [Header("ヒット判定")]
-        /// <summary>
-        /// ボードのクリック判定用 Collider
-        /// </summary>
+        /// <summary>ボードのクリック判定用 Collider</summary>
         [SerializeField]
         private Collider _boardCollider;
 
-        /// <summary>
-        /// Ray 判定用レイヤー
-        /// </summary>
+        /// <summary>Ray 判定用レイヤー</summary>
         [SerializeField]
         private LayerMask _raycastLayerMask;
 
@@ -112,7 +98,7 @@ namespace BoardSystem.Presentation
         /// <summary>カメラ</summary>
         private Camera _camera;
 
-        // RaycastHit配列
+        /// <summary>RaycastHit 配列</summary>
         private readonly RaycastHit[] _raycastHits = new RaycastHit[1];
 
         /// <summary>ボードの列選択表示プレーン</summary>
@@ -127,16 +113,10 @@ namespace BoardSystem.Presentation
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
-        /// <summary>
-        /// 落下実行中フラグ
-        /// 入力制限状態で初期化時
-        /// </summary>
+        /// <summary>落下実行可能フラグ</summary>
         private bool _canDrop = false;
 
-        /// <summary>
-        /// 回転実行中フラグ
-        /// 入力制限状態で初期化時
-        /// </summary>
+        /// <summary>回転実行可能フラグ</summary>
         private bool _canRotate = false;
 
         // ======================================================
@@ -149,19 +129,13 @@ namespace BoardSystem.Presentation
         /// <summary>Planeタグ</summary>
         private const string TAG_PLANE = "Plane";
 
-        /// <summary>
-        /// ボードの回転アニメーション時間（秒）
-        /// </summary>
+        /// <summary>ボードの回転アニメーション時間（秒）</summary>
         private const float ROTATION_DURATION = 0.5f;
 
-        /// <summary>
-        /// 駒削除後、落下処理を開始するまでの待機時間（秒）
-        /// </summary>
+        /// <summary>駒削除後、落下処理を開始するまでの待機時間（秒）</summary>
         private const float PIECE_DROP_DELAY = 0.5f;
 
-        /// <summary>
-        /// ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（秒）
-        /// </summary>
+        /// <summary>ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（秒）</summary>
         private const float FINISH_LINE_CHECK_DELAY = 1.0f;
 
         // ======================================================
@@ -207,6 +181,10 @@ namespace BoardSystem.Presentation
 
         /// <summary>回転入力購読管理</summary>
         private IDisposable _rotateInputDisposables;
+
+        /// <summary>列選択表示の表示状態</summary>
+        public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible
+            => _view.IsColumnSelectVisible;
 
         // ======================================================
         // IUpdatable イベント
@@ -287,6 +265,7 @@ namespace BoardSystem.Presentation
             if (!_canDrop || _currentPlayer == PLAYER_NONE)
             {
                 _view.SeteColumnSelectVisible(false);
+
                 return;
             }
 
@@ -304,6 +283,7 @@ namespace BoardSystem.Presentation
             if (hitCount == 0)
             {
                 _view.SeteColumnSelectVisible(false);
+
                 return;
             }
 
@@ -314,6 +294,7 @@ namespace BoardSystem.Presentation
             if (hit.collider != _boardCollider)
             {
                 _view.SeteColumnSelectVisible(false);
+
                 return;
             }
 
@@ -470,7 +451,7 @@ namespace BoardSystem.Presentation
         private void HandleDropColumn()
         {
             // 列未選択状態なら処理なし
-            if (!_view.IsColumnSelectVisible)
+            if (!_view.IsColumnSelectVisible.Value)
             {
                 return;
             }

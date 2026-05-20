@@ -7,6 +7,7 @@
 // ======================================================
 
 using UnityEngine;
+using UniRx;
 using BoardSystem.Application;
 
 namespace BoardSystem.Presentation
@@ -41,18 +42,8 @@ namespace BoardSystem.Presentation
         /// <summary>描画切替対象の Renderer 配列</summary>
         private Renderer[] _renderers;
 
-        /// <summary>現在の表示状態</summary>
-        private bool _isVisible;
-
         /// <summary>位置計算用キャッシュ</summary>
         private Vector3 _cachedPosition;
-
-        // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>現在の表示状態</summary>
-        public bool IsVisible => _isVisible;
 
         // ======================================================
         // 定数
@@ -66,6 +57,16 @@ namespace BoardSystem.Presentation
 
         /// <summary>FrameNone タグ</summary>
         private const string TAG_FRAME_NONE = "FrameNone";
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>列選択表示の表示状態</summary>
+        private readonly ReactiveProperty<bool> _isColumnSelectVisible = new ReactiveProperty<bool>(false);
+
+        /// <summary>列選択表示の表示状態</summary>
+        public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible => _isColumnSelectVisible;
 
         // ======================================================
         // コンストラクタ
@@ -106,13 +107,13 @@ namespace BoardSystem.Presentation
         public void SetVisible(in bool isVisible)
         {
             // 既に同じ状態の場合は処理しない
-            if (_isVisible == isVisible)
+            if (_isColumnSelectVisible.Value == isVisible)
             {
                 return;
             }
 
             // 表示状態を更新する
-            _isVisible = isVisible;
+            _isColumnSelectVisible.Value = isVisible;
 
             if (_renderers == null)
             {

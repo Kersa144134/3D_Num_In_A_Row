@@ -184,9 +184,6 @@ namespace UISystem.Presentation
         /// <summary>BoardSize パラメータ名</summary>
         private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
 
-        /// <summary>IsTarget パラメータ名</summary>
-        private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
-
         /// <summary>ボードアニメーション無効値</summary>
         private const int BOARD_ANIMATION_DISABLED = -1;
 
@@ -1030,7 +1027,7 @@ namespace UISystem.Presentation
             _onFocusPosition.OnNext(screenPosition);
 
             // ターゲット検出状態を有効化
-            _pointerAnimator?.SetBool(IS_TARGET_HASH, true);
+            UpdatePointerTargetAnimation(true);
         }
 
         /// <summary>
@@ -1049,7 +1046,7 @@ namespace UISystem.Presentation
             SetFocusState(buttonEvent, false);
 
             // ターゲット検出状態を解除
-            _pointerAnimator?.SetBool(IS_TARGET_HASH, false);
+            UpdatePointerTargetAnimation(false);
         }
 
         /// <summary>

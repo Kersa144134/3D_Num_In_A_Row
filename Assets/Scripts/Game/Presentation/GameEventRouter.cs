@@ -141,7 +141,8 @@ namespace GameSystem.Presentation
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
         /// <summary>現在ボード入力種別ストリーム</summary>
-        private readonly ReactiveProperty<BoardInputType> _currentBoardInputType = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
+        private readonly ReactiveProperty<BoardInputType> _currentBoardInputType
+            = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
 
         /// <summary>フェーズ変更通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
@@ -209,6 +210,9 @@ namespace GameSystem.Presentation
         /// <summary>成立ライン中心差分ベクトル算出通知用 Subject</summary>
         private readonly Subject<Vector3> _onCenterOffsetVectorCalculated = new Subject<Vector3>();
 
+        /// <summary>列選択表示の表示状態通知用 Subject</summary>
+        private readonly Subject<bool> _onColumnSelectVisibleChanged = new Subject<bool>();
+
         // ======================================================
         // 定数
         // ======================================================
@@ -227,12 +231,6 @@ namespace GameSystem.Presentation
 
         /// <summary>リザルトシーン名</summary>
         private const string RESULT_SCENE_NAME = "ResultScene";
-
-        // --------------------------------------------------
-        // 入力
-        // --------------------------------------------------
-        /// <summary>入力待機時間(秒)</summary>
-        private const float INPUT_WAIT_TIME = 2.0f;
 
         // --------------------------------------------------
         // オプション
@@ -317,7 +315,7 @@ namespace GameSystem.Presentation
             // フェーズ
             // --------------------------------------------------
             _currentPhase
-            .DistinctUntilChanged()
+                .DistinctUntilChanged()
                 .Skip(1)
                 .Subscribe(phase =>
                 {
@@ -407,6 +405,7 @@ namespace GameSystem.Presentation
                     _onPlayerChanged,
                     _onScoreUpdated,
                     _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _onColumnSelectVisibleChanged,
                     _onDropRequested,
                     _onRotateRequested,
                     _phaseMachine.LimitTime);
@@ -484,6 +483,10 @@ namespace GameSystem.Presentation
                         .AddTo(_disposables);
                     boardPresenter.OnCenterPositionCalculated
                         .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
+                        .AddTo(_disposables);
+                    boardPresenter.IsColumnSelectVisible
+                        .DistinctUntilChanged()
+                        .Subscribe(isVisible => _onColumnSelectVisibleChanged.OnNext(isVisible))
                         .AddTo(_disposables);
                 }
             }
@@ -575,7 +578,7 @@ namespace GameSystem.Presentation
                 {
                     // スキップ入力時に指定イベントを発火
                     subject.OnNext(eventValue);
-
+                    Debug.Log("skip");
                     // 即時購読解除
                     UnbindEventSkipStream();
                 });
@@ -829,21 +832,15 @@ namespace GameSystem.Presentation
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
-                    // 待機時間経過後に購読開始
-                    Observable.Timer(TimeSpan.FromSeconds(INPUT_WAIT_TIME))
-                        .Subscribe(_ =>
-                        {
-                            // スキップ入力
-                            // ChangePlayer へフェーズ遷移通知
-                            BindEventSkipStream(
-                                _onPhaseChanged,
-                                new PhaseChangeEvent(
-                                    _currentPhase.Value,
-                                    PhaseType.ChangePlayer
-                                )
-                            );
-                        })
-                        .AddTo(_disposables);
+                    // スキップ入力
+                    // ChangePlayer へフェーズ遷移通知
+                    BindEventSkipStream(
+                        _onPhaseChanged,
+                        new PhaseChangeEvent(
+                            _currentPhase.Value,
+                            PhaseType.ChangePlayer
+                        )
+                    );
 
                     break;
 

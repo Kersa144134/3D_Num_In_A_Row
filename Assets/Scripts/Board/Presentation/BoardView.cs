@@ -6,11 +6,12 @@
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
-using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
 using BoardSystem.Application;
 using BoardSystem.Domain;
+using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
+using UniRx;
+using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -105,13 +106,6 @@ namespace BoardSystem.Presentation
         private readonly Dictionary<BoardIndex, PieceData> _pieces;
 
         // ======================================================
-        // プロパティ
-        // ======================================================
-
-        /// <summary>現在の列選択表示の可視状態</summary>
-        public bool IsColumnSelectVisible => _columnSelectView.IsVisible;
-
-        // ======================================================
         // 定数
         // ======================================================
 
@@ -124,7 +118,15 @@ namespace BoardSystem.Presentation
         /// HDR 強度
         /// </summary>
         private const float ALBEDO_INTENSITY = 3.0f;
-        
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>列選択表示の表示状態</summary>
+        public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible
+            => _columnSelectView.IsColumnSelectVisible;
+
         // ======================================================
         // コンストラクタ
         // ======================================================

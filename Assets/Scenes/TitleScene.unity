@@ -892,13 +892,11 @@ MonoBehaviour:
   _dialogCanvasArray:
   - Canvas: {fileID: 1023710145}
     Type: 1
-    Event: {fileID: 0}
     Buttons:
     - _type: 1
       _button: {fileID: 1818665429}
     - _type: 2
       _button: {fileID: 1923632927}
-    Panels: []
   _pointer: {fileID: 8161198212952549266}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
@@ -10832,57 +10830,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8449544345372127329}
     m_Modifications:
-    - target: {fileID: 287279513682699235, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 287279513682699235, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 287279513682699235, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.5
-      objectReference: {fileID: 0}
     - target: {fileID: 3977456849550658369, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
       propertyPath: m_Name
       value: Pointer
-      objectReference: {fileID: 0}
-    - target: {fileID: 5100765739856993766, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5100765739856993766, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5100765739856993766, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5458929841466310353, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5458929841466310353, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5458929841466310353, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6231879058539073438, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6231879058539073438, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6231879058539073438, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7436380128807994146, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
       propertyPath: m_Pivot.x

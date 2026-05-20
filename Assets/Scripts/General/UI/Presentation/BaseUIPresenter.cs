@@ -221,6 +221,13 @@ namespace UISystem.Presentation
         public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>IsTarget パラメータ名</summary>
+        protected static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
+
+        // ======================================================
         // IUpdatable イベント
         // ======================================================
 
@@ -246,7 +253,7 @@ namespace UISystem.Presentation
                 return;
             }
             
-            // インスタンスからコンポーネント取得
+            // ビュー生成
             _view = new BaseUIView(
                 _binarizationFeature,
                 _binarizationMaterial,
@@ -373,9 +380,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected virtual void Subscribe()
         {
-            // --------------------------------------------------
-            // ダイアログイベント購読
-            // --------------------------------------------------
+            // ダイアログイベント
             for (int i = 0; i < _dialogUICollector.Events.Length; i++)
             {
                 DialogEvent dialogEvent = _dialogUICollector.Events[i];
@@ -415,6 +420,17 @@ namespace UISystem.Presentation
 
                 return;
             }
+        }
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        /// <summary>
+        /// ポインターのターゲット検出状態アニメーションを更新する
+        /// </summary>
+        protected void UpdatePointerTargetAnimation(in bool isTarget)
+        {
+            _pointerAnimator?.SetBool(IS_TARGET_HASH, isTarget);
         }
 
         // --------------------------------------------------

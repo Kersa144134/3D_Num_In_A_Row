@@ -6,14 +6,13 @@
 // 概要     : メインシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using UnityEngine;
+using TMPro;
+using UniRx;
 using InputSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
-using System;
-using TMPro;
-using UISystem.Application;
-using UniRx;
-using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -78,6 +77,9 @@ namespace UISystem.Presentation
 
         /// <summary>入力ロックフラグ</summary>
         private bool _isInputLock = true;
+
+        /// <summary>ポインターターゲット検出中フラグ</summary>
+        private bool _isPointerTarget = false;
 
         // ======================================================
         // 定数
@@ -182,6 +184,7 @@ namespace UISystem.Presentation
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="lineComplete">ライン成立結果を通知するストリーム</param>
         /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
+        /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
         /// <param name="drop">落下入力を通知するストリーム</param>
         /// <param name="rotate">回転入力を通知するストリーム</param>
         /// <param name="limitTime">制限時間の残り時間を通知するストリーム</param>
@@ -190,6 +193,7 @@ namespace UISystem.Presentation
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> lineComplete,
             in IObservable<bool> inputLock,
+            in IObservable<bool> columnSelectVisibleChanged,
             in IObservable<Unit> drop,
             in IObservable<Unit> rotate,
             in IObservable<float> limitTime)
@@ -213,22 +217,37 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             playerChange
-                .Subscribe(playerIndex => SetChangePlayerState(playerIndex));
+                .Subscribe(playerIndex => SetChangePlayerState(playerIndex))
+                .AddTo(_disposables);
 
             lineComplete
-                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength));
+                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
 
             inputLock
-                .Subscribe(isLock => _isInputLock = isLock);
+                .Subscribe(isLock => _isInputLock = isLock)
+                .AddTo(_disposables);
+
+            columnSelectVisibleChanged
+                .Subscribe(isVisible =>
+                {
+                    _isPointerTarget = isVisible;
+
+                    UpdatePointerTargetAnimation(isVisible);
+                })
+                .AddTo(_disposables);
 
             drop
-                .Subscribe(_ => SetSwitchProjection(false));
+                .Subscribe(_ => SetSwitchProjection(false))
+                .AddTo(_disposables);
 
             rotate
-                .Subscribe(_ => SetSwitchProjection(true));
+                .Subscribe(_ => SetSwitchProjection(true))
+                .AddTo(_disposables);
 
             limitTime
-                .Subscribe(time => UpdateLimitTimeDisplay(time));
+                .Subscribe(time => UpdateLimitTimeDisplay(time))
+                .AddTo(_disposables);
         }
 
         // ======================================================
@@ -292,6 +311,8 @@ namespace UISystem.Presentation
         private void SetPointerVisible(in bool isVisible)
         {
             _mainUIView.SetPointerVisible(isVisible);
+
+            UpdatePointerTargetAnimation(_isPointerTarget);
         }
 
         // --------------------------------------------------
