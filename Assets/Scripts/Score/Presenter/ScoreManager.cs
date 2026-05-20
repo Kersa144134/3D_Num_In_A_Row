@@ -152,7 +152,7 @@ namespace ScoreSystem.Presentation
             }
 
             // ライン長をスケーリング値に変換
-            int scaledLineLength = (int)Mathf.Pow(LINE_LENGTH_SCALE_BASE, lineLength - LINE_LENGTH_BASE);
+            int scaledLineLength = ConvertLineLengthToScale(lineLength);
 
             // 累積スコア加算量を計算する
             int delta = _calculateService.AddCumulativeScore(
@@ -313,6 +313,23 @@ namespace ScoreSystem.Presentation
         }
 
         /// <summary>
+        /// ライン長をスケーリング値に変換する
+        /// </summary>
+        private int ConvertLineLengthToScale(int lineLength)
+        {
+            // 基準値未満は最低倍率を返す
+            if (lineLength <= LINE_LENGTH_BASE)
+            {
+                return 1;
+            }
+
+            // 指数計算によりライン長をスケーリング値へ変換
+            int scaledLineLength = (int)Mathf.Pow(LINE_LENGTH_SCALE_BASE, lineLength - LINE_LENGTH_BASE);
+
+            return scaledLineLength;
+        }
+
+        /// <summary>
         /// スコア加算を総スコアへ反映し通知する
         /// </summary>
         /// <param name="playerIndex">プレイヤー Index</param>
@@ -342,7 +359,6 @@ namespace ScoreSystem.Presentation
                 nextScore = _maxScore;
             }
 
-            // 確定値を代入
             _totalScores[playerIndex].Value = nextScore;
         }
     }
