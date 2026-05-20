@@ -6,13 +6,14 @@
 // 概要     : メインシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using System;
-using UnityEngine;
-using TMPro;
-using UniRx;
 using InputSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using System;
+using TMPro;
+using UISystem.Application;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -155,16 +156,19 @@ namespace UISystem.Presentation
             _mainUIView.UpdatePointer(screenPos);
         }
 
-        protected override void OnPhaseEnterInternal(in PhaseType phase) { }
+        protected override void OnPhaseEnterInternal(in PhaseType phase)
+        {
+            base.OnPhaseEnterInternal(phase);
+        }
 
-        protected override void OnPhaseExitInternal(in PhaseType phase) { }
+        protected override void OnPhaseExitInternal(in PhaseType phase)
+        {
+            base.OnPhaseExitInternal(phase);
+        }
 
         protected override void OnExitInternal()
         {
             base.OnExitInternal();
-
-            // イベント購読解除
-            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -231,6 +235,19 @@ namespace UISystem.Presentation
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        protected override void Dispose()
+        {
+            base.Dispose();
+
+            _disposables?.Dispose();
+        }
+        
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------

@@ -83,8 +83,14 @@ namespace GameSystem.Presentation
         /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
         private PhaseType _cachedActivePhase = PhaseType.None;
 
+        /// <summary>フェード待機中に来たフェーズキャッシュ</summary>
+        private PhaseType? _pendingPhase;
+
         /// <summary>現在の入力マッピング番号</summary>
         private int _currentMappingIndex = -1;
+
+        /// <summary>フェード完了フラグ</summary>
+        private bool _isFadeCompleted;
 
         // ======================================================
         // 辞書
@@ -293,6 +299,19 @@ namespace GameSystem.Presentation
                     _onSkipRequested.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
+            _onFadeCompleted
+                .Subscribe(_ =>
+                {
+                    _isFadeCompleted = true;
+
+                    // 入力購読処理の保留があれば即実行
+                    if (_pendingPhase.HasValue)
+                    {
+                        HandlePhaseInputSwitch(_pendingPhase.Value);
+                        _pendingPhase = null;
+                    }
+                })
+                .AddTo(_disposables);
 
             // --------------------------------------------------
             // フェーズ
@@ -302,13 +321,20 @@ namespace GameSystem.Presentation
                 .Skip(1)
                 .Subscribe(phase =>
                 {
-                    HandlePhaseInputSwitch(phase);
-
                     if (phase == PhaseType.Ready)
                     {
                         // スコア計算クラス初期化
                         _scoreManager.Initialize(_gameOptionManager.PlayerCount);
                     }
+
+                    // フェード未完了なら入力購読処理を保留
+                    if (!_isFadeCompleted)
+                    {
+                        _pendingPhase = phase;
+                        return;
+                    }
+
+                    HandlePhaseInputSwitch(phase);
                 })
                 .AddTo(_disposables);
             _phaseMachine.CurrentPlayerIndex
@@ -355,7 +381,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
                 _titleUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
@@ -388,7 +414,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger);
+                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
                 _mainUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
@@ -773,7 +799,7 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// フェーズ変更時の入力切替処理を行う
+        /// フェーズ変更時の入力購読切替処理を行う
         /// </summary>
         /// <param name="phase">変更後のフェーズ</param>
         private void HandlePhaseInputSwitch(in PhaseType phase)

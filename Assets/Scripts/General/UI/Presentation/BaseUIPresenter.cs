@@ -312,9 +312,8 @@ namespace UISystem.Presentation
 
         public void OnExit()
         {
-            // イベント購読解除
-            _disposables?.Dispose();
-
+            Dispose();
+            
             OnExitInternal();
         }
 
@@ -341,7 +340,8 @@ namespace UISystem.Presentation
         /// </summary>
         public void BindBaseStreams(
             in IObservable<float> fadeInSeconds,
-            in IObservable<float> fadeOutSeconds)
+            in IObservable<float> fadeOutSeconds,
+            in IObservable<Unit> fadeCompleted)
         {
             fadeInSeconds
                 .Subscribe(time =>
@@ -356,6 +356,14 @@ namespace UISystem.Presentation
                     StartCoroutine(FadeOutRoutine(time));
                 })
                 .AddTo(_disposables);
+
+            fadeCompleted
+                .Subscribe(time =>
+                {
+                    // UI のイベント購読は画面フェード完了後に実行
+                    Subscribe();
+                })
+                .AddTo(_disposables);
         }
 
         // ======================================================
@@ -368,6 +376,23 @@ namespace UISystem.Presentation
         protected virtual void RequestSceneChange()
         {
             _onSceneChangeRequested.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        protected virtual void Subscribe()
+        {
+
+        }
+
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        protected virtual void Dispose()
+        {
+            // イベント購読解除
+            _disposables?.Dispose();
         }
 
         /// <summary>

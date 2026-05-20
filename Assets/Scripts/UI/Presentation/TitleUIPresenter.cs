@@ -341,11 +341,6 @@ namespace UISystem.Presentation
 
             // スタートキャンバスを表示
             _titleUIStateController.ShowStartCanvas();
-
-            // --------------------------------------------------
-            // イベント購読
-            // --------------------------------------------------
-            Subscribe();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -367,10 +362,6 @@ namespace UISystem.Presentation
         protected override void OnExitInternal()
         {
             base.OnExitInternal();
-
-            // イベント購読解除
-            Dispose();
-            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -424,8 +415,10 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベント購読
         /// </summary>
-        private void Subscribe()
+        protected override void Subscribe()
         {
+            base.Subscribe();
+            
             // クリック通知
             _eventRouter.OnClick
                 .Subscribe(clickEvent =>
@@ -541,8 +534,11 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベント購読解除
         /// </summary>
-        private void Dispose()
+        protected override void Dispose()
         {
+            base.Dispose();
+
+            _disposables?.Dispose();
             _routerDisposables?.Dispose();
             _eventRouter?.Dispose();
         }
