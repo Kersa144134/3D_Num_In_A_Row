@@ -67,6 +67,12 @@ namespace ScoreSystem.Presentation
         /// <summary>連続ライン成立時ボーナス倍率の上限値</summary>
         private const float INSPECTOR_MAX_BONUS = 100f;
 
+        /// <summary>スコア倍率計算の基準となるライン長</summary>
+        private const int LINE_LENGTH_BASE = 3;
+
+        /// <summary>ライン長に応じたスコア倍率を指数的に増加させるための基準値</summary>
+        private const int LINE_LENGTH_SCALE_BASE = 2;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -145,10 +151,13 @@ namespace ScoreSystem.Presentation
                 return;
             }
 
-            // サービスで累積スコア加算量を計算する
+            // ライン長をスケーリング値に変換
+            int scaledLineLength = (int)Mathf.Pow(LINE_LENGTH_SCALE_BASE, lineLength - LINE_LENGTH_BASE);
+
+            // 累積スコア加算量を計算する
             int delta = _calculateService.AddCumulativeScore(
                 ref _playerScores[playerIndex],
-                _baseScore * lineLength,
+                _baseScore * scaledLineLength,
                 _lineComleteChainBonus
             );
 

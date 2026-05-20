@@ -45,6 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GeneralScorePresenter::ScoreSystem.Presentation.ScoreManager
   _maxScore: 999999
-  _baseScore: 1
-  _bonusType: 2
-  _lineComleteChainBonus: 10
+  _baseScore: 10
+  _bonusType: 1
+  _lineComleteChainBonus: 2

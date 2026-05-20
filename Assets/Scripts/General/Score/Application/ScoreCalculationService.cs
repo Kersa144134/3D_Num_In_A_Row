@@ -25,19 +25,13 @@ namespace ScoreSystem.Application
         /// </summary>
         public enum BonusCalcType
         {
-            /// <summary>
-            /// 線形加算
-            /// </summary>
+            /// <summary>線形加算</summary>
             Linear,
 
-            /// <summary>
-            /// 加速加算
-            /// </summary>
+            /// <summary>加速加算</summary>
             Accelerate,
 
-            /// <summary>
-            /// 減速加算
-            /// </summary>
+            /// <summary>減速加算</summary>
             Decelerate
         }
         
@@ -45,15 +39,18 @@ namespace ScoreSystem.Application
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// スコア最大値
-        /// </summary>
+        /// <summary>スコア最大値</summary>
         private readonly int _maxScore;
 
-        /// <summary>
-        /// 累積ボーナス計算方式
-        /// </summary>
+        /// <summary>累積ボーナス計算方式</summary>
         private readonly BonusCalcType _bonusType;
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>減衰収束の速度係数</summary>
+        private const float DECELERATE_CONVERGENCE_RATE = 1.5f;
 
         // ======================================================
         // コンストラクタ
@@ -264,7 +261,7 @@ namespace ScoreSystem.Application
                         }
 
                         // addCount が増えるほど値が小さくなる逆数減衰係数
-                        float decay = 1f / (1f + (addCount - 1f));
+                        float decay = 1f / (1f + (addCount - 1f) * DECELERATE_CONVERGENCE_RATE);
 
                         result = 1f + (bonusMultiplier - 1f) * decay;
 
