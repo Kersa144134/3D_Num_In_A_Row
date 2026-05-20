@@ -164,6 +164,9 @@ namespace UISystem.Presentation
         /// <summary>ボタンの辞書およびバインダー構築を行うクラス</summary>
         protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
 
+        /// <summary>ダイアログ UI のイベント購読対象を収集するクラス</summary>
+        protected readonly DialogUICollector _dialogUICollector = new DialogUICollector();
+
         /// <summary>フェードシステム</summary>
         protected Fade _fade;
 
@@ -173,18 +176,6 @@ namespace UISystem.Presentation
         // ======================================================
         // フィールド
         // ======================================================
-
-        // --------------------------------------------------
-        // ダイアログ
-        // --------------------------------------------------
-        /// <summary>ダイアログイベント配列</summary>
-        protected DialogEvent[] _dialogEvents;
-
-        /// <summary>ダイアログの通常ボタン配列</summary>
-        protected NormalButton[] _dialogButtons;
-
-        /// <summary>ダイアログのパネルイベント配列</summary>
-        protected BasePanelEvent[] _dialogPanelEvents;
 
         // --------------------------------------------------
         // アニメーター
@@ -270,7 +261,7 @@ namespace UISystem.Presentation
             _pointerAnimator = _pointer.GetComponent<Animator>();
 
             // ダイアログ UI コンポーネント取得
-            CollectDialogUI();
+            _dialogUICollector.Collect(_dialogCanvasArray);
 
             SetAnimatorUnscaledTime(_effectAnimator);
             SetAnimatorUnscaledTime(_pointerAnimator);
@@ -385,9 +376,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ダイアログイベント購読
             // --------------------------------------------------
-            for (int i = 0; i < _dialogEvents.Length; i++)
+            for (int i = 0; i < _dialogUICollector.Events.Length; i++)
             {
-                DialogEvent dialogEvent = _dialogEvents[i];
+                DialogEvent dialogEvent = _dialogUICollector.Events[i];
 
                 if (dialogEvent == null)
                 {
@@ -424,68 +415,6 @@ namespace UISystem.Presentation
 
                 return;
             }
-        }
-
-        // --------------------------------------------------
-        // ダイアログ
-        // --------------------------------------------------
-        /// <summary>
-        /// ダイアログ UI のボタンとパネルを収集する
-        /// </summary>
-        private void CollectDialogUI()
-        {
-            List<DialogEvent> dialogEventList = new List<DialogEvent>();
-            List<NormalButton> buttonList = new List<NormalButton>();
-            List<BasePanelEvent> panelList = new List<BasePanelEvent>();
-
-            for (int i = 0; i < _dialogCanvasArray.Length; i++)
-            {
-                if (_dialogCanvasArray[i] == null)
-                {
-                    continue;
-                }
-
-                // ダイアログイベント
-                DialogEvent dialogEvent = _dialogCanvasArray[i].Canvas.GetComponent<DialogEvent>();
-
-                if (dialogEvent != null)
-                {
-                    dialogEventList.Add(dialogEvent);
-                }
-
-                // ボタン
-                if (_dialogCanvasArray[i].Buttons != null)
-                {
-                    for (int j = 0; j < _dialogCanvasArray[i].Buttons.Length; j++)
-                    {
-                        if (_dialogCanvasArray[i].Buttons[j] == null)
-                        {
-                            continue;
-                        }
-
-                        buttonList.Add(_dialogCanvasArray[i].Buttons[j]);
-                    }
-                }
-
-                // パネル
-                if (_dialogCanvasArray[i].Panels != null)
-                {
-                    for (int j = 0; j < _dialogCanvasArray[i].Panels.Length; j++)
-                    {
-                        if (_dialogCanvasArray[i].Panels[j] == null)
-                        {
-                            continue;
-                        }
-
-                        panelList.Add(_dialogCanvasArray[i].Panels[j]);
-                    }
-                }
-            }
-
-            // 配列へ変換
-            _dialogEvents = dialogEventList.ToArray();
-            _dialogButtons = buttonList.ToArray();
-            _dialogPanelEvents = panelList.ToArray();
         }
 
         // --------------------------------------------------

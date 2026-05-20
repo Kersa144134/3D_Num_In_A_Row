@@ -274,6 +274,11 @@ namespace InputSystem.Presentation
 
         private void OnDestroy()
         {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
             // ƒCƒxƒ“ƒgw“Ç‰ğœ
             _disposables?.Dispose();
         }

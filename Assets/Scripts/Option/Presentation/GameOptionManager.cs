@@ -127,9 +127,6 @@ namespace OptionSystem.Presentation
         // Unity ƒCƒxƒ“ƒg
         // ======================================================
 
-        /// <summary>
-        /// ‰Šú‰»ˆ—
-        /// </summary>
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -168,6 +165,14 @@ namespace OptionSystem.Presentation
             else
             {
                 Save();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
             }
         }
 

@@ -232,7 +232,7 @@ namespace UISystem.Presentation
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
-                _dialogButtons == null ||
+                _dialogUICollector == null ||
                 _titleNormalButtons == null ||
                 _titleOptionButtons == null ||
                 _initialSelectedStartCanvasButton == null ||
@@ -553,13 +553,32 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // NormalButton 配列生成
             // --------------------------------------------------
-            NormalButton[] normalButtons = new NormalButton[_dialogButtons.Length + _titleNormalButtons.Length];
+            // ダイアログ側ボタン数
+            int dialogCount = _dialogUICollector.Buttons != null
+                ? _dialogUICollector.Buttons.Length
+                : 0;
+            // タイトル側ボタン数
+            int titleCount = _titleNormalButtons != null
+                ? _titleNormalButtons.Length
+                : 0;
 
-            // ダイアログボタン配列コピー
-            Array.Copy(_dialogButtons, 0,  normalButtons, 0, _dialogButtons.Length);
+            NormalButton[] normalButtons = new NormalButton[dialogCount + titleCount];
 
-            // タイトルボタン配列コピー
-            Array.Copy( _titleNormalButtons, 0, normalButtons, _dialogButtons.Length, _titleNormalButtons.Length);
+            // --------------------------------------------------
+            // ダイアログボタンコピー
+            // --------------------------------------------------
+            for (int i = 0; i < dialogCount; i++)
+            {
+                normalButtons[i] = _dialogUICollector.Buttons[i];
+            }
+
+            // --------------------------------------------------
+            // タイトルボタンコピー
+            // --------------------------------------------------
+            for (int i = 0; i < titleCount; i++)
+            {
+                normalButtons[dialogCount + i] = _titleNormalButtons[i];
+            }
 
             // --------------------------------------------------
             // 辞書生成
@@ -602,7 +621,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // イベント登録
             // --------------------------------------------------
-            foreach (BasePanelEvent panelEvent in _dialogPanelEvents)
+            foreach (BasePanelEvent panelEvent in _dialogUICollector.Panels)
             {
                 _eventRouter.RegisterPanelEvent(panelEvent);
             }

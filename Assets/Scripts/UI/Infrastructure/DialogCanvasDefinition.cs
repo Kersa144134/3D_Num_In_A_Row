@@ -18,16 +18,13 @@ namespace UISystem.Infrastructure
     [Serializable]
     public class DialogCanvasDefinition
     {
-        /// <summary>ダイアログ種別</summary>
-        public DialogType Type;
-
         /// <summary>対象 Canvas</summary>
         public GameObject Canvas;
 
+        /// <summary>ダイアログ種別</summary>
+        public DialogType Type;
+
         /// <summary>対象ボタンイベント</summary>
         public NormalButton[] Buttons;
-
-        /// <summary>対象パネルイベント</summary>
-        public BasePanelEvent[] Panels;
     }
 }
