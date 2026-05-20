@@ -103,7 +103,7 @@ namespace BoardSystem.Domain
                     allConsecutiveLines.Add(
                         new LineCompleteEvent(
                             lineInfo.Player,
-                            new IReadOnlyList<BoardIndex>[] { lineInfo.Cells }
+                            lineInfo.Cells
                         )
                     );
                 }

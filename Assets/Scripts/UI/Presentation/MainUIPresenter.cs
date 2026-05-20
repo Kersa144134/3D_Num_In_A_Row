@@ -182,7 +182,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="phase">フェーズ状態を通知するストリーム</param>
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
-        /// <param name="lineComplete">ライン成立結果を通知するストリーム</param>
+        /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
         /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
         /// <param name="drop">落下入力を通知するストリーム</param>
@@ -191,7 +191,7 @@ namespace UISystem.Presentation
         public void BindStreams(
             in IObservable<PhaseType> phase,
             in IObservable<int> playerChange,
-            in IObservable<ScoreEvent> lineComplete,
+            in IObservable<ScoreEvent> scoreUpdated,
             in IObservable<bool> inputLock,
             in IObservable<bool> columnSelectVisibleChanged,
             in IObservable<Unit> drop,
@@ -220,7 +220,7 @@ namespace UISystem.Presentation
                 .Subscribe(playerIndex => SetChangePlayerState(playerIndex))
                 .AddTo(_disposables);
 
-            lineComplete
+            scoreUpdated
                 .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
                 .AddTo(_disposables);
 

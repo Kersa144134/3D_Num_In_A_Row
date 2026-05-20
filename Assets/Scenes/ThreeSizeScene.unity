@@ -3173,8 +3173,8 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
-      propertyPath: _boardSizeType
-      value: 3
+      propertyPath: _turnCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5702725208033566626, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: m_Name
@@ -4526,14 +4526,6 @@ PrefabInstance:
     - target: {fileID: 3166044029748996114, guid: ae22c53d5614c71478da1303240fec34, type: 3}
       propertyPath: m_Name
       value: ScoreManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 4494019329376986852, guid: ae22c53d5614c71478da1303240fec34, type: 3}
-      propertyPath: _maxScore
-      value: 999999
-      objectReference: {fileID: 0}
-    - target: {fileID: 4494019329376986852, guid: ae22c53d5614c71478da1303240fec34, type: 3}
-      propertyPath: _baseScore
-      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7597203223872819720, guid: ae22c53d5614c71478da1303240fec34, type: 3}
       propertyPath: m_LocalPosition.x

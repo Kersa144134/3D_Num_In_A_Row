@@ -20,6 +20,7 @@ namespace OptionSystem.Domain
         // —ñ‹“‘Ì
         // ======================================================
 
+        /// <summary>”Õ–ÊƒTƒCƒYŽí•Ê</summary>
         public enum BoardSizeType
         {
             Size3 = 3,

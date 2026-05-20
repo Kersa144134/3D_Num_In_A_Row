@@ -6,13 +6,13 @@
 // 概要     : ライン成立時の削除表示処理を担当するクラス
 // ======================================================
 
-using BoardSystem.Domain;
-using BoardSystem.Presentation;
-using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
-using UniRx;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UniRx;
+using BoardSystem.Domain;
+using BoardSystem.Presentation;
 
 namespace BoardSystem.Application
 {
@@ -82,116 +82,84 @@ namespace BoardSystem.Application
         public async UniTask<LineDeleteResult> HandleLineDeleteAsync(
             IReadOnlyList<LineCompleteEvent> lineEvents)
         {
-            // 全ライン共通の削除対象一覧
+            // 削除対象ハッシュセット
             HashSet<BoardIndex> allDeleteSet = new HashSet<BoardIndex>();
 
-            // 全ライン共通の再配置対象列一覧
+            // 再配置対象列ハッシュセット
             HashSet<(int x, int z)> allColumns = new HashSet<(int, int)>();
 
-            // ライン単位で保持する削除リスト
-            List<List<BoardIndex>> lineDeleteLists = new List<List<BoardIndex>>();
-
             // ======================================================
-            // 全ラインのデータ収集
+            // 発光演出
             // ======================================================
             for (int i = 0; i < lineEvents.Count; i++)
             {
                 // 現在処理中のラインイベント
                 LineCompleteEvent lineEvent = lineEvents[i];
 
-                // 現在ライン専用の削除対象
-                HashSet<BoardIndex> lineDeleteSet = new HashSet<BoardIndex>();
+                /// 発光対象リスト
+                List<BoardIndex> lineEmissionList = new List<BoardIndex>();
+                /// 重複チェック用ハッシュセット
+                HashSet<BoardIndex> lineEmissionSet = new HashSet<BoardIndex>();
 
                 // --------------------------------------------------
                 // ライン構成セル走査
                 // --------------------------------------------------
                 for (int j = 0; j < lineEvent.LinePositions.Count; j++)
                 {
-                    // ライン座標一覧取得
-                    IReadOnlyList<BoardIndex> line =
-                        lineEvent.LinePositions[j];
+                    BoardIndex index = lineEvent.LinePositions[j];
 
-                    for (int k = 0; k < line.Count; k++)
+                    // 既に登録済みの場合はスキップ
+                    if (lineEmissionSet.Contains(index))
                     {
-                        // 対象インデックス取得
-                        BoardIndex index = line[k];
-
-                        // 既に現在ラインへ登録済みの場合はスキップ
-                        if (lineDeleteSet.Contains(index))
-                        {
-                            continue;
-                        }
-
-                        // ピース存在確認
-                        if (_view.TryGetPiece(index, out PieceData piece) == false)
-                        {
-                            // 存在しない場合は対象外
-                            continue;
-                        }
-
-                        // 中心座標計算用にTransform登録
-                        _centerPositionCalculator.AddPosition(piece.Transform);
-
-                        // ライン削除対象へ追加
-                        lineDeleteSet.Add(index);
-
-                        // 全体削除対象へ追加
-                        allDeleteSet.Add(index);
-
-                        // 再配置対象列登録
-                        allColumns.Add((index.X, index.Z));
+                        continue;
                     }
+
+                    // 駒存在確認
+                    if (_view.TryGetPiece(index, out PieceData piece) == false)
+                    {
+                        continue;
+                    }
+
+                    // 中心座標計算用に Transform 登録
+                    _centerPositionCalculator.AddPosition(piece.Transform);
+
+                    // 発光対象へ追加
+                    lineEmissionList.Add(index);
+                    lineEmissionSet.Add(index);
+
+                    // 削除対象へ追加
+                    allDeleteSet.Add(index);
+
+                    // 再配置対象列登録
+                    allColumns.Add((index.X, index.Z));
                 }
 
                 // --------------------------------------------------
                 // 中心座標通知
                 // --------------------------------------------------
-                // ライン中心座標計算
-                Vector3 centerPosition =
-                    _centerPositionCalculator.CalculateCenterPosition();
+                Vector3 centerPosition = _centerPositionCalculator.CalculateCenterPosition();
 
-                // 中心座標通知
                 _onCenterPositionCalculated.OnNext(centerPosition);
 
-                // ライン単位削除リストとして保持
-                lineDeleteLists.Add(new List<BoardIndex>(lineDeleteSet));
-            }
-
-            // ======================================================
-            // 発光演出
-            // ======================================================
-            for (int i = 0; i < lineDeleteLists.Count; i++)
-            {
-                // 現在ラインの削除一覧取得
-                List<BoardIndex> deleteList = lineDeleteLists[i];
-
                 // --------------------------------------------------
-                // ピース単位発光演出
+                // 発光演出
                 // --------------------------------------------------
-                for (int j = 0; j < deleteList.Count; j++)
+                foreach (BoardIndex index in lineEmissionList)
                 {
-                    // 対象インデックス取得
-                    BoardIndex index = deleteList[j];
-
-                    // 発光演出適用
                     _view.SetPieceEmissionColor(index);
 
-                    // ピース単位待機
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(PIECE_DELETE_DELAY));
+                    // 駒単位で待機
+                    await UniTask.Delay(TimeSpan.FromSeconds(PIECE_DELETE_DELAY));
                 }
 
-                // --------------------------------------------------
-                // ライン単位待機
-                // --------------------------------------------------
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(LINE_DELETE_DELAY));
+                // ラインイベント単位で待機
+                await UniTask.Delay(TimeSpan.FromSeconds(LINE_DELETE_DELAY));
             }
 
             // ======================================================
-            // 全削除処理
+            // 削除処理
             // ======================================================
-            // 同一フレーム削除を保証するため1回だけ待機
+            // 1 フレーム待機
             await UniTask.Yield(PlayerLoopTiming.Update);
 
             // 全削除対象をリスト化
@@ -222,8 +190,7 @@ namespace BoardSystem.Application
             // ======================================================
             // 結果返却
             // ======================================================
-            return new LineDeleteResult(
-                new List<(int x, int z)>(allColumns));
+            return new LineDeleteResult(new List<(int x, int z)>(allColumns));
         }
 
         /// <summary>

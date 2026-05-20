@@ -17,6 +17,31 @@ namespace ScoreSystem.Application
     public sealed class ScoreCalculateService
     {
         // ======================================================
+        // 列挙体
+        // ======================================================
+
+        /// <summary>
+        /// 累積ボーナス計算方式
+        /// </summary>
+        public enum BonusCalcType
+        {
+            /// <summary>
+            /// 線形加算
+            /// </summary>
+            Linear,
+
+            /// <summary>
+            /// 加速加算
+            /// </summary>
+            Accelerate,
+
+            /// <summary>
+            /// 減速加算
+            /// </summary>
+            Decelerate
+        }
+        
+        // ======================================================
         // フィールド
         // ======================================================
 
@@ -24,6 +49,11 @@ namespace ScoreSystem.Application
         /// スコア最大値
         /// </summary>
         private readonly int _maxScore;
+
+        /// <summary>
+        /// 累積ボーナス計算方式
+        /// </summary>
+        private readonly BonusCalcType _bonusType;
 
         // ======================================================
         // コンストラクタ
@@ -33,9 +63,10 @@ namespace ScoreSystem.Application
         /// ScoreCalculateService を生成する
         /// </summary>
         /// <param name="maxScore">スコア最大値</param>
-        public ScoreCalculateService(int maxScore)
+        public ScoreCalculateService(int maxScore, in BonusCalcType bonusType)
         {
             _maxScore = maxScore;
+            _bonusType = bonusType;
         }
 
         // ======================================================
@@ -90,14 +121,19 @@ namespace ScoreSystem.Application
             // 加算前スコアを保持
             int previousScore = scoreData.TotalScore;
 
-            // 基準スコアが 0 なら加算しない
+            // 基準スコアが 0 なら処理なし
             if (baseScore == 0)
             {
                 return 0;
             }
 
             // 累積倍率を計算
-            float multiplier = 1f + (scoreData.AddCount - 1) * bonusMultiplier;
+            float multiplier = CalculateMultiplier(
+                scoreData.AddCount,
+                bonusMultiplier,
+                _bonusType);
+
+            Debug.Log(multiplier);
 
             // スコア加算量を算出
             int scoreToAdd = Mathf.FloorToInt(baseScore * multiplier);
@@ -119,7 +155,6 @@ namespace ScoreSystem.Application
         /// </summary>
         public void AddCumulativeCount(ref ScoreData scoreData)
         {
-            // 累積回数のみ進める
             scoreData.AddCount++;
         }
 
@@ -163,6 +198,90 @@ namespace ScoreSystem.Application
             }
 
             return score;
+        }
+
+        /// <summary>
+        /// 累積倍率を計算する
+        /// </summary>
+        private float CalculateMultiplier(
+            in int addCount,
+            in float bonusMultiplier,
+            in BonusCalcType bonusType)
+        {
+            float result;
+
+            switch (bonusType)
+            {
+                // --------------------------------------------------
+                // 線形加算
+                // --------------------------------------------------
+                case BonusCalcType.Linear:
+                    {
+                        // 1 回目は必ず 1
+                        if (addCount <= 1)
+                        {
+                            result = 1f;
+                            break;
+                        }
+
+                        result = bonusMultiplier * (addCount - 1);
+
+                        break;
+                    }
+
+                // --------------------------------------------------
+                // 加速加算
+                // --------------------------------------------------
+                case BonusCalcType.Accelerate:
+                    {
+                        // 1 回目は必ず 1
+                        if (addCount <= 1)
+                        {
+                            result = 1f;
+                            break;
+                        }
+
+                        float n = addCount - 1;
+
+                        // 1 から n までの整数の合計を使用した累積加算
+                        float triangular = n * (n + 1f) * 0.5f;
+
+                        result = 1f + bonusMultiplier * triangular;
+
+                        break;
+                    }
+
+                // --------------------------------------------------
+                // 減速加算
+                // --------------------------------------------------
+                case BonusCalcType.Decelerate:
+                    {
+                        // 1 回目は初期値
+                        if (addCount <= 1)
+                        {
+                            result = bonusMultiplier;
+                            break;
+                        }
+
+                        // addCount が増えるほど値が小さくなる逆数減衰係数
+                        float decay = 1f / (1f + (addCount - 1f));
+
+                        result = 1f + (bonusMultiplier - 1f) * decay;
+
+                        break;
+                    }
+
+                default:
+                    {
+                        result = 1f;
+                        break;
+                    }
+            }
+
+            // --------------------------------------------------
+            // 小数第4位以降を切り捨て
+            // --------------------------------------------------
+            return Mathf.Floor(result * 1000f) / 1000f;
         }
     }
 }

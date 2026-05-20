@@ -6,12 +6,12 @@
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Application;
 using BoardSystem.Domain;
-using Cysharp.Threading.Tasks;
-using System.Collections.Generic;
-using UniRx;
-using UnityEngine;
 
 namespace BoardSystem.Presentation
 {

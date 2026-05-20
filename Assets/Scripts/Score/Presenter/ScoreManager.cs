@@ -29,7 +29,7 @@ namespace ScoreSystem.Presentation
         // インスペクタ設定
         // ======================================================
 
-        [Header("スコア設定")]
+        [Header("スコア基準設定")]
         /// <summary>最大スコア</summary>
         [SerializeField, Range(1, DEFAULT_MAX_SCORE)]
         private int _maxScore = 999999;
@@ -38,8 +38,13 @@ namespace ScoreSystem.Presentation
         [SerializeField, Range(1, DEFAULT_MAX_SCORE)]
         private int _baseScore = 10;
 
+        [Header("スコア加算設定")]
+        /// <summary>累積ボーナス計算方式</summary>
+        [SerializeField]
+        private ScoreCalculateService.BonusCalcType _bonusType;
+
         /// <summary>連続ライン成立時のボーナス倍率</summary>
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField, Range(0f, INSPECTOR_MAX_BONUS)]
         private float _lineComleteChainBonus = 0.1f;
 
         // ======================================================
@@ -58,30 +63,18 @@ namespace ScoreSystem.Presentation
 
         /// <summary>スコア上限のデフォルト値</summary>
         private const int DEFAULT_MAX_SCORE = 999999;
-        
+
+        /// <summary>連続ライン成立時ボーナス倍率の上限値</summary>
+        private const float INSPECTOR_MAX_BONUS = 100f;
+
         // ======================================================
         // UniRx 変数
         // ======================================================
 
         /// <summary>
-        /// プレイヤー別累計スコア
+        /// プレイヤー別累計スコア配列
         /// </summary>
         private ReactiveProperty<int>[] _totalScores;
-
-        /// <summary>
-        /// プレイヤー別累計スコア
-        /// </summary>
-        public IReadOnlyReactiveProperty<int> GetTotalScore(int index)
-        {
-            if (_totalScores == null ||
-                index < 0 ||
-                index >= _totalScores.Length)
-            {
-                return null;
-            }
-            
-            return _totalScores[index];
-        }
 
         // ======================================================
         // Unity イベント
@@ -146,20 +139,21 @@ namespace ScoreSystem.Presentation
                 return;
             }
 
-            if (playerId < 0 || playerId >= _playerScores.Length)
+            // インデックス変換
+            if (!TryConvertPlayerIndex(playerId, out int playerIndex))
             {
                 return;
             }
 
             // サービスで累積スコア加算量を計算する
             int delta = _calculateService.AddCumulativeScore(
-                ref _playerScores[playerId],
+                ref _playerScores[playerIndex],
                 _baseScore * lineLength,
                 _lineComleteChainBonus
             );
 
             // 対象プレイヤーのスコアへ反映し通知する
-            ApplyScore(playerId, delta);
+            ApplyScore(playerIndex, delta);
         }
 
         /// <summary>
@@ -214,27 +208,6 @@ namespace ScoreSystem.Presentation
                 _calculateService.ResetScore(ref _playerScores[i]);
             }
         }
-
-        /// <summary>
-        /// プレイヤー別累計スコアを取得する
-        /// </summary>
-        /// <param name="playerId">プレイヤーID</param>
-        /// <returns>現在スコア</returns>
-        public int GetScore(int playerId)
-        {
-            if (_totalScores == null)
-            {
-                return 0;
-            }
-
-            // 範囲外チェック
-            if (playerId < 0 || playerId >= _totalScores.Length)
-            {
-                return 0;
-            }
-
-            return _totalScores[playerId].Value;
-        }
         
         /// <summary>
         /// スコア関連リソースを破棄する
@@ -253,6 +226,25 @@ namespace ScoreSystem.Presentation
             _playerScores = null;
         }
 
+        /// <summary>
+        /// プレイヤー別累計スコアを取得する
+        /// </summary>
+        public IReadOnlyReactiveProperty<int> GetTotalScore(int playerId)
+        {
+            if (_totalScores == null)
+            {
+                return null;
+            }
+
+            // インデックス変換
+            if (!TryConvertPlayerIndex(playerId, out int playerIndex))
+            {
+                return null;
+            }
+
+            return _totalScores[playerIndex];
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -267,7 +259,7 @@ namespace ScoreSystem.Presentation
             _playerScores = new ScoreData[playerCount];
 
             // スコア計算サービスを生成
-            _calculateService = new ScoreCalculateService(_maxScore);
+            _calculateService = new ScoreCalculateService(_maxScore, _bonusType);
 
             for (int i = 0; i < playerCount; i++)
             {
@@ -286,8 +278,36 @@ namespace ScoreSystem.Presentation
         }
 
         /// <summary>
+        /// 1 ベースの ID を 0 ベースのインデックスへ変換する
+        /// </summary>
+        /// <param name="playerId">プレイヤー ID</param>
+        /// <param name="playerIndex">プレイヤーインデックス</param>
+        /// <returns>変換成功時:true / 範囲外:false</returns>
+        private bool TryConvertPlayerIndex(int playerId, out int playerIndex)
+        {
+            // 1 ベース ID を0 ベースインデックスへ変換
+            playerIndex = playerId - 1;
+
+            // スコア配列未生成の場合は失敗
+            if (_totalScores == null)
+            {
+                return false;
+            }
+
+            // 範囲外チェック
+            if (playerIndex < 0 || playerIndex >= _totalScores.Length)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// スコア加算を総スコアへ反映し通知する
         /// </summary>
+        /// <param name="playerIndex">プレイヤー Index</param>
+        /// <param name="delta">スコア加算量</param>
         private void ApplyScore(int playerIndex, int delta)
         {
             if (_totalScores == null)
@@ -295,11 +315,7 @@ namespace ScoreSystem.Presentation
                 return;
             }
 
-            if (playerIndex < 0 || playerIndex >= _totalScores.Length)
-            {
-                return;
-            }
-            
+            // 加算値が 0 なら処理なし
             if (delta == 0)
             {
                 return;

@@ -41,10 +41,10 @@ namespace OptionSystem.Presentation
         // ゲーム進行
         // --------------------------------------------------
         [Header("ゲーム進行")]
-        [SerializeField, Range(1, 30)]
-        private int _turnCount = 5;
+        [SerializeField, Range(1, 100)]
+        private int _turnCount = 10;
 
-        [SerializeField, Range(0f, 60f)]
+        [SerializeField, Range(0f, 300f)]
         private float _limitTime = 30f;
 
         // --------------------------------------------------
@@ -55,7 +55,7 @@ namespace OptionSystem.Presentation
         private GameRules.BoardSizeType _boardSizeType = GameRules.BoardSizeType.Size3;
 
         [Header("ライン成立条件")]
-        [SerializeField, Range(3, 5)]
+        [SerializeField, Range((int)GameRules.BoardSizeType.Size3, (int)GameRules.BoardSizeType.Size5)]
         private int _connectCount = 3;
 
         // --------------------------------------------------

@@ -329,10 +329,17 @@ namespace GameSystem.Presentation
                     if (!_isFadeCompleted)
                     {
                         _pendingPhase = phase;
+
                         return;
                     }
 
                     HandlePhaseInputSwitch(phase);
+
+                    if (phase == PhaseType.ChangePlayer)
+                    {
+                        // スコア累積カウントリセット
+                        _scoreManager.ResetAllCumulativeCount();
+                    }
                 })
                 .AddTo(_disposables);
             _phaseMachine.CurrentPlayerIndex
@@ -578,7 +585,7 @@ namespace GameSystem.Presentation
                 {
                     // スキップ入力時に指定イベントを発火
                     subject.OnNext(eventValue);
-                    Debug.Log("skip");
+
                     // 即時購読解除
                     UnbindEventSkipStream();
                 });
@@ -598,6 +605,36 @@ namespace GameSystem.Presentation
         {
             _skipInputSubscription?.Dispose();
             _skipInputSubscription = null;
+        }
+
+        /// <summary>
+        /// スコア更新監視購読
+        /// </summary>
+        private void BindScoreUpdateStream()
+        {
+            if (_scoreManager == null)
+            {
+                return;
+            }
+
+            // プレイヤー人数取得
+            int playerCount = _gameOptionManager.PlayerCount;
+
+            // 1 ベースでループ
+            for (int playerId = 1; playerId <= playerCount; playerId++)
+            {
+                int currentPlayerId = playerId;
+
+                _scoreManager.GetTotalScore(currentPlayerId)
+                    .Skip(1)
+                    .Subscribe(score =>
+                    {
+                        _onScoreUpdated.OnNext(
+                            new ScoreEvent(currentPlayerId, score)
+                        );
+                    })
+                    .AddTo(_disposables);
+            }
         }
 
         // --------------------------------------------------
@@ -841,6 +878,9 @@ namespace GameSystem.Presentation
                             PhaseType.ChangePlayer
                         )
                     );
+
+                    // スコア更新購読
+                    BindScoreUpdateStream();
 
                     break;
 
@@ -1088,38 +1128,19 @@ namespace GameSystem.Presentation
                 // プレイヤーID
                 int playerId = lineEvent.Player;
 
-                // ラインリスト
-                IReadOnlyList<IReadOnlyList<BoardIndex>> lines = lineEvent.LinePositions;
+                // ライン座標リスト
+                IReadOnlyList<BoardIndex> line = lineEvent.LinePositions;
 
-                if (lines == null)
+                if (line == null)
                 {
                     continue;
                 }
 
-                // --------------------------------------------------
-                // 各ラインをスコアへ変換
-                // --------------------------------------------------
-                for (int j = 0; j < lines.Count; j++)
-                {
-                    IReadOnlyList<BoardIndex> line = lines[j];
+                // スコア累積カウント加算
+                _scoreManager.AddAllCumulativeCount();
 
-                    if (line == null)
-                    {
-                        continue;
-                    }
-
-                    // ラインの長さをスコアとして扱う
-                    int lineLength = line.Count;
-
-                    // スコア加算
-                    _scoreManager.AddLineScore(playerId, lineLength);
-                }
-
-                // 最新スコア取得
-                int currentScore = _scoreManager.GetScore(playerId);
-
-                // スコアイベント通知
-                _onScoreUpdated.OnNext(new ScoreEvent(playerId, currentScore));
+                // 1ライン分のスコア加算
+                _scoreManager.AddLineScore(playerId, line.Count);
             }
         }
 

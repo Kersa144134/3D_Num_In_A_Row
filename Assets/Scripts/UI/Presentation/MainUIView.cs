@@ -155,6 +155,7 @@ namespace UISystem.Presentation
         /// <param name="score">スコア</param>
         public void UpdateScore(in int playerId, in int score)
         {
+            Debug.Log($"playerId {playerId}, score {score}");
             // --------------------------------------------------
             // インデックス変換（1 ベース → 0 ベース）
             // --------------------------------------------------

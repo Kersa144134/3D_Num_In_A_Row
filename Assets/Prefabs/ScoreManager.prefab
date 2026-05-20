@@ -44,3 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89e47ce82461d5240b62636865a8d490, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GeneralScorePresenter::ScoreSystem.Presentation.ScoreManager
+  _maxScore: 999999
+  _baseScore: 1
+  _bonusType: 2
+  _lineComleteChainBonus: 10
