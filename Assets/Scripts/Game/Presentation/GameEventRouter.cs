@@ -456,6 +456,7 @@ namespace GameSystem.Presentation
                             // Play フェーズでないまたは Rotate 中に有効
                             return !isPlay || isRotate;
                         }),
+                    _onGamepadUsed,
                     _mainUIPresenter.OnSwitchProjection,
                     _onCenterPositionCalculated,
                     _onCenterOffsetVectorCalculated
@@ -794,8 +795,8 @@ namespace GameSystem.Presentation
                     _gameOptionManager.SetConnectCount(data.IntValue);
                     break;
 
-                case OptionType.CameraRotationSpeed:
-                    _gameOptionManager.SetCameraRotationSpeed(data.FloatValue);
+                case OptionType.CameraSpeed:
+                    _gameOptionManager.SetCameraSpeed(data.FloatValue);
                     break;
 
                 case OptionType.PointerSpeed:

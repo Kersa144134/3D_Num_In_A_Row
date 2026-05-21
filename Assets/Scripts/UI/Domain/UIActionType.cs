@@ -59,7 +59,7 @@ namespace UISystem.Domain
         OptionConnectCount,
 
         /// <summary>カメラ回転速度オプション</summary>
-        OptionCameraRotationSpeed,
+        OptionCameraSpeed,
 
         /// <summary>ポインター速度オプション</summary>
         OptionPointerSpeed

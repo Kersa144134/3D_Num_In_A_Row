@@ -61,11 +61,11 @@ namespace OptionSystem.Presentation
         // --------------------------------------------------
         // 操作
         // --------------------------------------------------
-        [Header("カメラ回転速度")]
+        [Header("カメラ速度")]
         [SerializeField, Range(180f, 1800f)]
-        private float _cameraRotationSpeed = 360f;
+        private float _cameraSpeed = 360f;
 
-        [Header("ポインター感度")]
+        [Header("ポインター速度")]
         [SerializeField, Range(500f, 5000f)]
         private float _pointerSpeed = 1000f;
         
@@ -114,9 +114,9 @@ namespace OptionSystem.Presentation
         public int ConnectCount => _currentRules.ConnectCount;
 
         /// <summary>
-        /// カメラ回転速度
+        /// カメラ速度
         /// </summary>
-        public float CameraRotationSpeed => _currentRules.CameraRotationSpeed;
+        public float CameraSpeed => _currentRules.CameraSpeed;
 
         /// <summary>
         /// ポインター速度
@@ -147,7 +147,7 @@ namespace OptionSystem.Presentation
                 PerPlayerLimitTime = _limitTime,
                 BoardSize = _boardSizeType,
                 ConnectCount = _connectCount,
-                CameraRotationSpeed = _cameraRotationSpeed,
+                CameraSpeed = _cameraSpeed,
                 PointerSpeed = _pointerSpeed
             };
 
@@ -240,12 +240,12 @@ namespace OptionSystem.Presentation
         }
 
         /// <summary>
-        /// カメラ回転速度を更新する
+        /// カメラ速度を更新する
         /// </summary>
-        /// <param name="speed">回転速度</param>
-        public void SetCameraRotationSpeed(in float speed)
+        /// <param name="speed">カメラ速度</param>
+        public void SetCameraSpeed(in float speed)
         {
-            _currentRules.CameraRotationSpeed = speed;
+            _currentRules.CameraSpeed = speed;
         }
 
         /// <summary>

@@ -29,8 +29,8 @@ namespace OptionSystem.Domain
         /// <summary>ライン成立条件</summary>
         ConnectCount,
 
-        /// <summary>カメラ回転速度</summary>
-        CameraRotationSpeed,
+        /// <summary>カメラ速度</summary>
+        CameraSpeed,
 
         /// <summary>ポインター速度</summary>
         PointerSpeed

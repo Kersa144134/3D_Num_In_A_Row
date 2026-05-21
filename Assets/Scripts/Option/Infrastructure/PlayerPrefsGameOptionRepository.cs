@@ -41,8 +41,8 @@ namespace OptionSystem.Infrastructure
         /// <summary>ライン成立条件の保存キー</summary>
         private const string KEY_CONNECT_COUNT = "GAME_OPTION_CONNECT_COUNT";
 
-        /// <summary>カメラ回転速度の保存キー</summary>
-        private const string KEY_CAMERA_ROTATION_SPEED = "GAME_OPTION_CAMERA_ROTATION_SPEED";
+        /// <summary>カメラ速度の保存キー</summary>
+        private const string KEY_CAMERA_SPEED = "GAME_OPTION_CAMERA_SPEED";
 
         /// <summary>ポインター速度の保存キー</summary>
         private const string KEY_POINTER_SPEED = "GAME_OPTION_POINTER_SPEED";
@@ -99,7 +99,7 @@ namespace OptionSystem.Infrastructure
             PlayerPrefs.SetFloat(KEY_LIMIT_TIME, rules.PerPlayerLimitTime);
             PlayerPrefs.SetInt(KEY_BOARD_SIZE, (int)rules.BoardSize);
             PlayerPrefs.SetInt(KEY_CONNECT_COUNT, rules.ConnectCount);
-            PlayerPrefs.SetFloat(KEY_CAMERA_ROTATION_SPEED, rules.CameraRotationSpeed);
+            PlayerPrefs.SetFloat(KEY_CAMERA_SPEED, rules.CameraSpeed);
             PlayerPrefs.SetFloat(KEY_POINTER_SPEED, rules.PointerSpeed);
 
             // セーブ済みフラグを立てる
@@ -122,7 +122,7 @@ namespace OptionSystem.Infrastructure
             rules.PerPlayerLimitTime = PlayerPrefs.GetFloat(KEY_LIMIT_TIME, DEFAULT_LIMIT_TIME);
             rules.BoardSize = (GameRules.BoardSizeType)PlayerPrefs.GetInt(KEY_BOARD_SIZE, (int)DEFAULT_BOARD_SIZE);
             rules.ConnectCount = PlayerPrefs.GetInt(KEY_CONNECT_COUNT, DEFAULT_CONNECT_COUNT);
-            rules.CameraRotationSpeed = PlayerPrefs.GetFloat(KEY_CAMERA_ROTATION_SPEED, DEFAULT_CAMERA_ROTATION_SPEED);
+            rules.CameraSpeed = PlayerPrefs.GetFloat(KEY_CAMERA_SPEED, DEFAULT_CAMERA_ROTATION_SPEED);
             rules.PointerSpeed = PlayerPrefs.GetFloat(KEY_POINTER_SPEED, DEFAULT_POINTER_SPEED);
 
             return rules;
@@ -138,7 +138,7 @@ namespace OptionSystem.Infrastructure
             PlayerPrefs.DeleteKey(KEY_LIMIT_TIME);
             PlayerPrefs.DeleteKey(KEY_BOARD_SIZE);
             PlayerPrefs.DeleteKey(KEY_CONNECT_COUNT);
-            PlayerPrefs.DeleteKey(KEY_CAMERA_ROTATION_SPEED);
+            PlayerPrefs.DeleteKey(KEY_CAMERA_SPEED);
             PlayerPrefs.DeleteKey(KEY_POINTER_SPEED);
 
             // セーブ存在フラグも削除

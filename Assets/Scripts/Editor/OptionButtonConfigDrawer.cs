@@ -101,7 +101,7 @@ namespace EditorSystem.PropertyDrawers
                     }
 
                 case OptionType.LimitTime:
-                case OptionType.CameraRotationSpeed:
+                case OptionType.CameraSpeed:
                 case OptionType.PointerSpeed:
                     {
                         EditorGUI.PropertyField(valueRect, floatValueProp);

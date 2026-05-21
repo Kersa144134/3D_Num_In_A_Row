@@ -58,10 +58,10 @@ namespace OptionSystem.Domain
         // --------------------------------------------------
         // 操作
         // --------------------------------------------------
-        /// <summary>カメラ回転速度（度/秒）</summary>
-        public float CameraRotationSpeed;
+        /// <summary>カメラ速度</summary>
+        public float CameraSpeed;
 
-        /// <summary>ポインター移動速度</summary>
+        /// <summary>ポインター速度</summary>
         public float PointerSpeed;
     }
 }

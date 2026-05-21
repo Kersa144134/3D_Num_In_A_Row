@@ -131,7 +131,7 @@ namespace CameraSystem.Application
             float nextX = _cameraModel.RotationX + _velocityX * deltaTime;
             float nextY = _cameraModel.RotationY + _velocityY * deltaTime;
 
-            // 計算結果をモデルへ適用
+            // モデルへ適用
             _cameraModel.SetRotationX(nextX);
             _cameraModel.SetRotationY(nextY);
         }
@@ -139,16 +139,16 @@ namespace CameraSystem.Application
         /// <summary>
         /// イベント用回転を計算しモデルへ反映する
         /// </summary>
-        public void UpdateEventRotation(in Vector3 angle, in float deltaTime)
+        public void UpdateEventRotation(in Vector3 targetAngle, in float deltaTime)
         {
             // --------------------------------------------------
             // 方向取得
             // --------------------------------------------------
             // 正規化して方向取得
-            Vector3 direction = angle.normalized;
+            Vector3 direction = targetAngle.normalized;
 
             // 入力ベクトルの長さを取得
-            float angleMagnitude = angle.magnitude;
+            float angleMagnitude = targetAngle.magnitude;
 
             // 入力無効判定
             bool isNoInput = angleMagnitude < INPUT_THRESHOLD;
@@ -211,10 +211,7 @@ namespace CameraSystem.Application
                 Mathf.Infinity,
                 deltaTime);
 
-            // --------------------------------------------------
-            // モデル反映
-            // --------------------------------------------------
-            // 計算結果をモデルへ適用
+            // モデルへ適用
             _cameraModel.SetRotationX(nextX);
             _cameraModel.SetRotationY(nextY);
         }

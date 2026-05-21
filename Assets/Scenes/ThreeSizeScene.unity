@@ -326,7 +326,7 @@ Camera:
   far clip plane: 100
   field of view: 60
   orthographic: 1
-  orthographic size: 0.75
+  orthographic size: 1
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -1747,10 +1747,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95c0688ec020a424aa15ba7949aeb3f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CameraPresentation::CameraSystem.Presentation.CameraPresenter
+  _minDistanceZ: 1
+  _maxDistanceZ: 2
   _minRotationX: -90
   _maxRotationX: 90
   _perspectiveFov: 60
-  _orthographicSize: 0.75
+  _orthographicSizeMin: 0.5
+  _orthographicSizeMax: 1
   _nearClip: 0.1
   _farClip: 100
 --- !u!1 &965059132

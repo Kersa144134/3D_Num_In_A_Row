@@ -65,8 +65,10 @@ namespace CameraSystem.Presentation
         /// <summary>
         /// カメラのローカル Z 距離を適用する
         /// </summary>
+        /// <param name="camera">適用対象カメラ</param>
         /// <param name="distanceZ">適用する Z 距離</param>
-        public void ApplyDistanceZ(in float distanceZ)
+        /// <param name="orthographicSize">適用する OrthographicSize</param>
+        public void ApplyDistanceZ(in Camera camera, in float distanceZ, in float orthographicSize)
         {
             Vector3 localPosition = _cameraTransform.localPosition;
 
@@ -75,6 +77,8 @@ namespace CameraSystem.Presentation
 
             // ローカル座標を反映
             _cameraTransform.localPosition = localPosition;
+
+            camera.orthographicSize = orthographicSize;
         }
     }
 }

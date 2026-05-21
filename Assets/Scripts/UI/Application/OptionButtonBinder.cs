@@ -112,7 +112,7 @@ namespace UISystem.Application
                 OptionType.LimitTime => UIActionType.OptionLimitTime,
                 OptionType.BoardSize => UIActionType.OptionBoardSize,
                 OptionType.ConnectCount => UIActionType.OptionConnectCount,
-                OptionType.CameraRotationSpeed => UIActionType.OptionCameraRotationSpeed,
+                OptionType.CameraSpeed => UIActionType.OptionCameraSpeed,
                 OptionType.PointerSpeed => UIActionType.OptionPointerSpeed,
                 _ => UIActionType.None
             };

@@ -68,8 +68,8 @@ namespace OptionSystem.Domain
                 case OptionType.ConnectCount:
                     return new OptionButtonData(button, OptionType.ConnectCount, _intValue);
 
-                case OptionType.CameraRotationSpeed:
-                    return new OptionButtonData(button, OptionType.CameraRotationSpeed, _floatValue);
+                case OptionType.CameraSpeed:
+                    return new OptionButtonData(button, OptionType.CameraSpeed, _floatValue);
 
                 case OptionType.PointerSpeed:
                     return new OptionButtonData(button, OptionType.PointerSpeed, _floatValue);
