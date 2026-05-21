@@ -12,7 +12,6 @@ using UniRx;
 using CameraSystem.Application;
 using CameraSystem.Domain;
 using OptionSystem.Presentation;
-using InputSystem.Domain;
 using InputSystem.Presentation;
 using UpdateSystem.Domain;
 
@@ -28,7 +27,7 @@ namespace CameraSystem.Presentation
         // インスペクタ設定
         // ======================================================
 
-        [Header("回転制限設定")]
+        [Header("移動範囲設定")]
         /// <summary>Z 距離の最小値</summary>
         [SerializeField]
         private float _minDistanceZ = 1.0f;
@@ -50,11 +49,11 @@ namespace CameraSystem.Presentation
         [SerializeField]
         private float _perspectiveFov = 60.0f;
 
-        /// <summary>OrthographicSizeの最小値</summary>
+        /// <summary>OrthographicSize の最小値</summary>
         [SerializeField]
         private float _orthographicSizeMin = 0.5f;
 
-        /// <summary>OrthographicSizeの最大値</summary>
+        /// <summary>OrthographicSize の最大値</summary>
         [SerializeField]
         private float _orthographicSizeMax = 1.0f;
 
@@ -145,10 +144,10 @@ namespace CameraSystem.Presentation
         // 距離
         // --------------------------------------------------
         /// <summary>入力用 Z 距離基準速度倍率</summary>
-        private const float INPUT_DISTANCE_BASE_SPEED_MULTIPLIER = 0.005f;
+        private const float INPUT_DISTANCE_BASE_SPEED_MULTIPLIER = 0.01f;
 
         /// <summary>入力用 Z 距離加速度倍率</summary>
-        private const float INPUT_DISTANCE_ACCELERATION_MULTIPLIER = 10f;
+        private const float INPUT_DISTANCE_ACCELERATION_MULTIPLIER = 4f;
 
         /// <summary>カメラ Z 座標距離の基準値</summary>
         private const float DEFAULT_CAMERA_Z_DISTANCE = 2f;

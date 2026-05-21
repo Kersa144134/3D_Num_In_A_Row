@@ -40,7 +40,7 @@ namespace CameraSystem.Application
         // ======================================================
 
         /// <summary>仮想パッド用入力倍率</summary>
-        private const float VIRTUAL_PAD_INPUT_MULTIPLIER = 10.0f;
+        private const float VIRTUAL_PAD_INPUT_MULTIPLIER = 15.0f;
         
         // ======================================================
         // コンストラクタ
