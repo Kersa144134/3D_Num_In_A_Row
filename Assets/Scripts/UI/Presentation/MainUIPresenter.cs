@@ -8,13 +8,16 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
+using OptionSystem.Presentation;
 
 namespace UISystem.Presentation
 {
@@ -43,6 +46,26 @@ namespace UISystem.Presentation
         private GameObject _outgameCanvas;
 
         // --------------------------------------------------
+        // プレイヤー情報
+        // --------------------------------------------------
+        [Header("プレイヤー情報")]
+        /// <summary>プレイヤー情報を表示する GameObject 配列</summary>
+        [SerializeField]
+        private GameObject[] _playerInfoArray;
+
+        // --------------------------------------------------
+        // 入力情報
+        // --------------------------------------------------
+        [Header("入力情報")]
+        /// <summary>駒落下時の入力情報を表示する GameObject 配列</summary>
+        [SerializeField]
+        private GameObject _inputInfoPieceDrop;
+
+        /// <summary>ボード回転時の入力情報を表示する GameObject 配列</summary>
+        [SerializeField]
+        private GameObject _inputInfoBoardRotation;
+
+        // --------------------------------------------------
         // スコア
         // --------------------------------------------------
         [Header("スコア")]
@@ -57,6 +80,10 @@ namespace UISystem.Presentation
         /// <summary>制限時間を表示するテキスト</summary>
         [SerializeField]
         private TextMeshProUGUI[] _limitTimeTexts;
+
+        /// <summary>警告開始タイミング（秒）</summary>
+        [SerializeField]
+        private float _warningLimitTime = 5f;
 
         // --------------------------------------------------
         // アニメーター
@@ -76,6 +103,11 @@ namespace UISystem.Presentation
         /// <summary>断続更新対象のキャンバスのアニメーションイベント通知クラス</summary>
         private AnimationEventNotifier _intermittentCanvasAnimationEventNotifier;
 
+        private InputIconCollector _inputIconCollector = new InputIconCollector();
+
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
+
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -94,6 +126,15 @@ namespace UISystem.Presentation
 
         /// <summary>警告アニメーション表示中フラグ</summary>
         private bool _isWarning;
+
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
+        /// <summary>ゲームパッド入力アイコン群</summary>
+        private Image[] _gamepadInputIcons;
+
+        /// <summary>仮想パッド入力アイコン群</summary>
+        private Image[] _virtualpadInputIcons;
 
         // --------------------------------------------------
         // アニメーター
@@ -151,9 +192,11 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
 
-            if (_inputManager == null ||
+            if (_gameOptionManager == null ||
+                _inputManager == null ||
                 _intermittentCanvas == null ||
                 _outgameCanvas == null)
             {
@@ -185,6 +228,20 @@ namespace UISystem.Presentation
 
             // アニメーションイベント通知クラス取得
             _intermittentCanvasAnimationEventNotifier = _intermittentCanvas.GetComponent<AnimationEventNotifier>();
+
+            // プレイヤー情報の非表示処理
+            for (int i = _gameOptionManager.PlayerCount; i < _playerInfoArray.Length; i++)
+            {
+                _playerInfoArray[i].SetActive(false);
+            }
+
+            // 入力アイコンの取得
+            _inputIconCollector.CollectInputIcons(
+                _intermittentCanvas,
+                _outgameCanvas,
+                out _gamepadInputIcons,
+                out _virtualpadInputIcons
+            );
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -229,18 +286,20 @@ namespace UISystem.Presentation
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
         /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
-        /// <param name="drop">落下入力を通知するストリーム</param>
-        /// <param name="rotate">回転入力を通知するストリーム</param>
+        /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
+        /// <param name="rotateRequested">回転入力予約を通知するストリーム</param>
         /// <param name="limitTime">制限時間の残り時間を通知するストリーム</param>
         public void BindStreams(
             in IObservable<PhaseType> phase,
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> scoreUpdated,
             in IObservable<bool> inputLock,
+            in IObservable<bool> gamepadUsed,
             in IObservable<bool> columnSelectVisibleChanged,
-            in IObservable<Unit> drop,
-            in IObservable<Unit> rotate,
+            in IObservable<Unit> dropRequested,
+            in IObservable<Unit> rotateRequested,
             in IObservable<float> limitTime)
         {
             phase
@@ -255,9 +314,21 @@ namespace UISystem.Presentation
                     SetLimitTimeVisible(isPlay);
                     SetPointerVisible(isPlay);
 
+                    // Event
+                    bool isEvent = type == PhaseType.Event;
+
                     // Pause
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
+
+                    // ChangePlayer
+                    bool isChangePlayer = type == PhaseType.ChangePlayer;
+
+                    // 入力情報 UI 更新
+                    if (isChangePlayer)
+                    {
+                        SetInputInfoActive(_inputInfoPieceDrop);
+                    }
                 })
                 .AddTo(_disposables);
 
@@ -273,6 +344,10 @@ namespace UISystem.Presentation
                 .Subscribe(isLock => _isInputLock = isLock)
                 .AddTo(_disposables);
 
+            gamepadUsed
+                .Subscribe(isUsed => SetInputIconVisible(isUsed))
+                .AddTo(_disposables);
+
             columnSelectVisibleChanged
                 .Subscribe(isVisible =>
                 {
@@ -282,12 +357,17 @@ namespace UISystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            drop
+            dropRequested
                 .Subscribe(_ => SetSwitchProjection(false))
                 .AddTo(_disposables);
 
-            rotate
-                .Subscribe(_ => SetSwitchProjection(true))
+            rotateRequested
+                .Subscribe(_ =>
+                {
+                    SetSwitchProjection(true);
+
+                    SetInputInfoActive(_inputInfoBoardRotation);
+                })
                 .AddTo(_disposables);
 
             limitTime
@@ -359,39 +439,57 @@ namespace UISystem.Presentation
         /// <param name="limitTime">残り時間（秒）</param>
         private void UpdateLimitTimeDisplay(in float limitTime)
         {
-            // 制限時間非表示時は処理なし
+            // 非表示時は処理なし
             if (!_isLimitTimeVisible)
             {
-                // 警告アニメーション表示中なら解除
-                if (_isWarning)
-                {
-                    _isWarning = false;
-
-                    _limitTimeAnimator?.SetBool(IS_WARNING_HASH, false);
-                }
-                
                 return;
             }
 
             _mainUIView.UpdateLimitTime(limitTime);
 
-            // アニメーション状態判定
-            bool isWarning = limitTime > 0f && limitTime <= 5f;
+            // アニメーション更新
+            UpdateWarningAnimation(limitTime);
+        }
 
-            // 同じ値なら更新なし
+        /// <summary>
+        /// 警告アニメーションの状態を更新する
+        /// </summary>
+        /// <param name="limitTime">残り時間（秒）</param>
+        private void UpdateWarningAnimation(in float limitTime)
+        {
+            // 非表示時は強制解除
+            if (!_isLimitTimeVisible)
+            {
+                SetWarningState(false);
+
+                return;
+            }
+
+            // 警告判定
+            bool isWarning = limitTime > 0f && limitTime <= _warningLimitTime;
+
+            // 状態変化なし時は処理なし
             if (_isWarning == isWarning)
             {
                 return;
             }
 
+            SetWarningState(isWarning);
+        }
+
+        /// <summary>
+        /// 警告状態を更新する
+        /// </summary>
+        /// <param name="isWarning">警告状態</param>
+        private void SetWarningState(bool isWarning)
+        {
             _isWarning = isWarning;
 
-            // アニメーション更新
             _limitTimeAnimator?.SetBool(IS_WARNING_HASH, isWarning);
         }
 
         // --------------------------------------------------
-        // ポインター
+        // 入力
         // --------------------------------------------------
         /// <summary>
         /// ポインターの表示状態を更新する
@@ -402,6 +500,68 @@ namespace UISystem.Presentation
             _mainUIView.SetPointerVisible(isVisible);
 
             UpdatePointerTargetAnimation(_isPointerTarget);
+        }
+
+        /// <summary>
+        /// 入力情報 UI の表示を切り替える
+        /// 指定されたオブジェクトのみ表示し、それ以外は非表示にする
+        /// null の場合は全て非表示
+        /// </summary>
+        /// <param name="target">表示対象の入力情報UI</param>
+        private void SetInputInfoActive(in GameObject target)
+        {
+            if (target == null)
+            {
+                if (_inputInfoPieceDrop != null)
+                {
+                    _inputInfoPieceDrop.SetActive(false);
+                }
+
+                if (_inputInfoBoardRotation != null)
+                {
+                    _inputInfoBoardRotation.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (_inputInfoPieceDrop != null)
+            {
+                _inputInfoPieceDrop.SetActive(_inputInfoPieceDrop == target);
+            }
+
+            if (_inputInfoBoardRotation != null)
+            {
+                _inputInfoBoardRotation.SetActive(_inputInfoBoardRotation == target);
+            }
+        }
+
+        /// <summary>
+        /// 入力アイコンの表示切り替え
+        /// </summary>
+        /// <param name="isGamepadUsed">
+        /// true: Gamepad 表示 / Virtualpad 非表示
+        /// false: Virtualpad 表示 / Gamepad 非表示
+        /// </param>
+        private void SetInputIconVisible(in bool isGamepadUsed)
+        {
+            // Gamepad
+            if (_gamepadInputIcons != null)
+            {
+                for (int i = 0; i < _gamepadInputIcons.Length; i++)
+                {
+                    _gamepadInputIcons[i].enabled = isGamepadUsed;
+                }
+            }
+
+            // Virtualpad
+            if (_virtualpadInputIcons != null)
+            {
+                for (int i = 0; i < _virtualpadInputIcons.Length; i++)
+                {
+                    _virtualpadInputIcons[i].enabled = !isGamepadUsed;
+                }
+            }
         }
 
         // --------------------------------------------------

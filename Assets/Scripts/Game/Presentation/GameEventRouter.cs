@@ -435,6 +435,7 @@ namespace GameSystem.Presentation
                     _onPlayerChanged,
                     _onScoreUpdated,
                     _currentPhase.Select(phase => phase != PhaseType.Play),
+                    _onGamepadUsed,
                     _onColumnSelectVisibleChanged,
                     _onDropRequested,
                     _onRotateRequested,
