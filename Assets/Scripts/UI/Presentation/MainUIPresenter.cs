@@ -314,21 +314,9 @@ namespace UISystem.Presentation
                     SetLimitTimeVisible(isPlay);
                     SetPointerVisible(isPlay);
 
-                    // Event
-                    bool isEvent = type == PhaseType.Event;
-
                     // Pause
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
-
-                    // ChangePlayer
-                    bool isChangePlayer = type == PhaseType.ChangePlayer;
-
-                    // 入力情報 UI 更新
-                    if (isChangePlayer)
-                    {
-                        SetInputInfoActive(_inputInfoPieceDrop);
-                    }
                 })
                 .AddTo(_disposables);
 
@@ -358,7 +346,12 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             dropRequested
-                .Subscribe(_ => SetSwitchProjection(false))
+                .Subscribe(_ =>
+                {
+                    SetSwitchProjection(false);
+
+                    SetInputInfoActive(_inputInfoPieceDrop);
+                })
                 .AddTo(_disposables);
 
             rotateRequested
