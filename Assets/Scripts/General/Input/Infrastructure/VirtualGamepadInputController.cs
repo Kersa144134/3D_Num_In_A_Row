@@ -427,7 +427,7 @@ namespace InputSystem.Infrastructure
                 case GamepadInputType.Select:
                     selectButton = true; break;
             }
-
+            
             // スティック系入力を反映
             switch (type)
             {

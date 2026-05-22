@@ -7,8 +7,9 @@
 //            キーボード入力を取得するコントローラークラス
 // ======================================================
 
-using UnityEngine;
 using InputSystem.Domain;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace InputSystem.Infrastructure
 {
@@ -24,6 +25,10 @@ namespace InputSystem.Infrastructure
         /// <summary>入力マッピング情報</summary>
         private readonly InputMapping[] _mappings;
 
+        /// <summary>GamepadInputType に対応する KeyCode の対応表</summary>
+        private readonly Dictionary<GamepadInputType, KeyCode> _keyMap
+            = new Dictionary<GamepadInputType, KeyCode>();
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -35,6 +40,8 @@ namespace InputSystem.Infrastructure
         public KeyboardInputController(in InputMapping[] mappings)
         {
             _mappings = mappings ?? new InputMapping[0];
+
+            BuildDictionary();
         }
 
         // ======================================================
@@ -46,27 +53,40 @@ namespace InputSystem.Infrastructure
         /// </summary>
         public bool GetButton(in GamepadInputType inputType)
         {
-            InputMapping map = default;
-            bool found = false;
-
-            // ループで対応するマッピングを検索
-            foreach (InputMapping m in _mappings)
-            {
-                if (m.gamepadInput == inputType)
-                {
-                    map = m;
-                    found = true;
-                    break;
-                }
-            }
-
-            // 見つからなければ false
-            if (!found || map.keyCode == KeyCode.None)
+            // 未登録なら false
+            if (!_keyMap.TryGetValue(inputType, out KeyCode key))
             {
                 return false;
             }
 
-            return Input.GetKey(map.keyCode);
+            return Input.GetKey(key);
         }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// InputMapping を辞書化
+        /// </summary>
+        private void BuildDictionary()
+        {
+            _keyMap.Clear();
+
+            for (int i = 0; i < _mappings.Length; i++)
+            {
+                InputMapping map = _mappings[i];
+
+                if (map.keyCode == KeyCode.None)
+                {
+                    continue;
+                }
+
+                // 既に登録済みなら上書き
+                _keyMap[map.gamepadInput] = map.keyCode;
+            }
+        }
+
+
     }
 }

@@ -50,6 +50,7 @@ namespace InputSystem.Domain
         /// <param name="current">Œ»İ‚Ì‰Ÿ‚µ‚Ä‚¢‚éó‘Ô</param>
         public void Update(in bool current)
         {
+
             // ‰Ÿ‚·
             if (current && !_wasPressed)
             {

@@ -13,7 +13,6 @@ using UniRx;
 using InputSystem.Application;
 using InputSystem.Domain;
 using OptionSystem.Presentation;
-using InputSystem.Infrastructure;
 
 namespace InputSystem.Presentation
 {

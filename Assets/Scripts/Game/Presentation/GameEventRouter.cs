@@ -340,6 +340,12 @@ namespace GameSystem.Presentation
                         _scoreManager.Initialize(_gameOptionManager.PlayerCount);
                     }
 
+                    if (phase == PhaseType.ChangePlayer)
+                    {
+                        // スコア累積カウントリセット
+                        _scoreManager.ResetAllCumulativeCount();
+                    }
+
                     // フェード未完了なら入力購読処理を保留
                     if (!_isFadeCompleted)
                     {
@@ -349,12 +355,6 @@ namespace GameSystem.Presentation
                     }
 
                     HandlePhaseInputSwitch(phase);
-
-                    if (phase == PhaseType.ChangePlayer)
-                    {
-                        // スコア累積カウントリセット
-                        _scoreManager.ResetAllCumulativeCount();
-                    }
                 })
                 .AddTo(_disposables);
             _phaseMachine.CurrentPlayerIndex
@@ -1098,17 +1098,25 @@ namespace GameSystem.Presentation
             switch (phase)
             {
                 // --------------------------------------------------
-                // Title, Event, Pause, Result
+                // Title, Result
                 // --------------------------------------------------
                 case PhaseType.Title:
-                case PhaseType.Event:
-                case PhaseType.Pause:
                 case PhaseType.Result:
                     // 入力マッピングを UI 用に変更
                     NotifyMappingChanged(1);
 
                     break;
-                
+
+                // --------------------------------------------------
+                // Event, Pause
+                // --------------------------------------------------
+                case PhaseType.Event:
+                case PhaseType.Pause:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    break;
+
                 // --------------------------------------------------
                 // Ready
                 // --------------------------------------------------

@@ -136,7 +136,7 @@ namespace BoardSystem.Presentation
         private const float PIECE_DROP_DELAY = 0.5f;
 
         /// <summary>ライン成立終了後、プレイヤー切り替えを開始するまでの待機時間（秒）</summary>
-        private const float FINISH_LINE_CHECK_DELAY = 0.5f;
+        private const float FINISH_LINE_CHECK_DELAY = 0.75f;
 
         // ======================================================
         // UniRx 変数
@@ -591,7 +591,11 @@ namespace BoardSystem.Presentation
             }
 
             // 演出待機
-            await UniTask.Delay(TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY));
+            // タイムスケールを無視する
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY),
+                ignoreTimeScale: true
+            );
 
             // フェーズ終了通知
             _onPlayerEnd.OnNext(Unit.Default);
