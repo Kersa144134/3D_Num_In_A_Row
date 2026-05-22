@@ -108,15 +108,6 @@ namespace GameSystem.Presentation
         private const float MIN_LOAD_TIME_SECONDS = 1.0f;
 
         // --------------------------------------------------
-        // フェーズ
-        // --------------------------------------------------
-        /// <summary>Ready フェーズから ChangePlayer フェーズへ遷移するまでの待機時間（秒）</summary>
-        private const float READY_TO_CHANGE_PLAYER_WAIT_TIME_SECONDS = 3.0f;
-
-        /// <summary>ChangePlayer フェーズから Play フェーズへ遷移するまでの待機時間（秒）</summary>
-        private const float CHANGE_PLAYER_TO_PLAY_WAIT_TIME_SECONDS = 2.0f;
-
-        // --------------------------------------------------
         // アニメーション
         // --------------------------------------------------
         /// <summary>画面フェード時間</summary>
@@ -224,9 +215,7 @@ namespace GameSystem.Presentation
             _phaseTransitionConfig = new PhaseTransitionConfig(
                 _gameOptionManager.PlayerCount,
                 _gameOptionManager.TurnCount,
-                _gameOptionManager.LimitTime,
-                READY_TO_CHANGE_PLAYER_WAIT_TIME_SECONDS,
-                CHANGE_PLAYER_TO_PLAY_WAIT_TIME_SECONDS
+                _gameOptionManager.LimitTime
             );
 
             // フェーズ管理マシン初期化

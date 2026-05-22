@@ -337,6 +337,9 @@ namespace UISystem.Presentation
 
             // スタートキャンバスを表示
             _titleUIStateController.ShowStartCanvas();
+
+            // アニメーター速度をタイムスケール非依存に設定
+            SetAnimatorUnscaledTime(_boardAnimator);
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)

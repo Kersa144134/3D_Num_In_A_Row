@@ -180,7 +180,7 @@ namespace BoardSystem.Presentation
         private IDisposable _dropInputSubscription;
 
         /// <summary>‰ñ“]“ü—Íw“ÇŠÇ—</summary>
-        private IDisposable _rotateInputDisposables;
+        private IDisposable _rotateInputSubscription;
 
         /// <summary>—ñ‘I‘ğ•\¦‚Ì•\¦ó‘Ô</summary>
         public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible
@@ -410,11 +410,11 @@ namespace BoardSystem.Presentation
         public void BindRotateInputStream(in IObservable<RotationCommand> rotateStream)
         {
             // ‘½dw“Ç–h~
-            _rotateInputDisposables?.Dispose();
+            _rotateInputSubscription?.Dispose();
 
-            _rotateInputDisposables = new CompositeDisposable();
+            _rotateInputSubscription = new CompositeDisposable();
 
-            _rotateInputDisposables = rotateStream
+            _rotateInputSubscription = rotateStream
                 .Subscribe(cmd =>
                 {
                     // ‰ñ“]’†‚È‚ç–³Œø
@@ -435,8 +435,8 @@ namespace BoardSystem.Presentation
         /// </summary>
         public void UnbindRotateInputStream()
         {
-            _rotateInputDisposables?.Dispose();
-            _rotateInputDisposables = null;
+            _rotateInputSubscription?.Dispose();
+            _rotateInputSubscription = null;
 
             _canRotate = false;
         }

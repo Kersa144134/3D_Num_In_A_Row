@@ -63,14 +63,6 @@ namespace PhaseSystem.Application
         public PhaseType ResolveTimeTransition(in IPhaseState currentState)
         {
             // --------------------------------------------------
-            // Ready
-            // --------------------------------------------------
-            if (currentState is ReadyPhaseState ready)
-            {
-                return ResolveReady(ready);
-            }
-
-            // --------------------------------------------------
             // Play
             // --------------------------------------------------
             if (currentState is PlayPhaseState play)
@@ -78,14 +70,6 @@ namespace PhaseSystem.Application
                 return ResolvePlay(play);
             }
 
-            // --------------------------------------------------
-            // ChangePlayer
-            // --------------------------------------------------
-            if (currentState is ChangePlayerPhaseState changePlayer)
-            {
-                return ResolveChangePlayer(changePlayer);
-            }
-            
             // --------------------------------------------------
             // デフォルト
             // --------------------------------------------------
@@ -123,22 +107,6 @@ namespace PhaseSystem.Application
         // ======================================================
 
         /// <summary>
-        /// Ready フェーズの遷移判定を行う
-        /// </summary>
-        /// <param name="state">Ready フェーズ状態</param>
-        /// <returns>遷移先フェーズ種別</returns>
-        private PhaseType ResolveReady(in ReadyPhaseState state)
-        {
-            // 指定遷移時間を超えた場合
-            if (state.ElapsedTime >= _transitionConfig.ReadyToChangePlayerWaitTime)
-            {
-                return PhaseType.ChangePlayer;
-            }
-
-            return PhaseType.Ready;
-        }
-
-        /// <summary>
         /// Play フェーズの遷移および内部進行判定を行う
         /// </summary>
         /// <param name="state">Play フェーズ状態</param>
@@ -161,22 +129,6 @@ namespace PhaseSystem.Application
             }
 
             return PhaseType.Play;
-        }
-
-        /// <summary>
-        /// ChangePlayer フェーズの遷移判定を行う
-        /// </summary>
-        /// <param name="state">ChangePlayer フェーズ状態</param>
-        /// <returns>遷移先フェーズ種別</returns>
-        private PhaseType ResolveChangePlayer(in ChangePlayerPhaseState state)
-        {
-            // 指定遷移時間を超えた場合
-            if (state.ElapsedTime >= _transitionConfig.ChangePlayerToPlayWaitTime)
-            {
-                return PhaseType.Play;
-            }
-
-            return PhaseType.ChangePlayer;
         }
     }
 }

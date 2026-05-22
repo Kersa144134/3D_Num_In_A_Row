@@ -10,6 +10,7 @@ using System;
 using UnityEngine;
 using TMPro;
 using UniRx;
+using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
@@ -30,6 +31,18 @@ namespace UISystem.Presentation
         [Header("メインシーン固有インスペクタ")]
 
         // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
+        [Header("キャンバス")]
+        /// <summary>断続更新対象のキャンバス</summary>
+        [SerializeField]
+        private GameObject _intermittentCanvas;
+
+        /// <summary>アウトゲーム関連のキャンバス</summary>
+        [SerializeField]
+        private GameObject _outgameCanvas;
+
+        // --------------------------------------------------
         // スコア
         // --------------------------------------------------
         [Header("スコア")]
@@ -43,23 +56,15 @@ namespace UISystem.Presentation
         [Header("タイマー")]
         /// <summary>制限時間を表示するテキスト</summary>
         [SerializeField]
-        private TextMeshProUGUI _limitTimeText;
+        private TextMeshProUGUI[] _limitTimeTexts;
 
         // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
         [Header("アニメーター")]
-        /// <summary>連続更新対象のキャンバス</summary>
+        /// <summary>制限時間のアニメーター</summary>
         [SerializeField]
-        private Animator _continuousCanvasAnimator;
-
-        /// <summary>断続更新対象のキャンバス</summary>
-        [SerializeField]
-        private Animator _intermittentCanvasAnimator;
-
-        /// <summary>アウトゲーム関連のキャンバス</summary>
-        [SerializeField]
-        private Animator _outgameCanvasAnimator;
+        private Animator _limitTimeAnimator;
 
         // ======================================================
         // コンポーネント参照
@@ -67,6 +72,9 @@ namespace UISystem.Presentation
 
         /// <summary>ビュー</summary>
         private MainUIView _mainUIView;
+
+        /// <summary>断続更新対象のキャンバスのアニメーションイベント通知クラス</summary>
+        private AnimationEventNotifier _intermittentCanvasAnimationEventNotifier;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
@@ -81,6 +89,21 @@ namespace UISystem.Presentation
         /// <summary>ポインターターゲット検出中フラグ</summary>
         private bool _isPointerTarget = false;
 
+        /// <summary>制限時間表示中フラグ</summary>
+        private bool _isLimitTimeVisible = false;
+
+        /// <summary>警告アニメーション表示中フラグ</summary>
+        private bool _isWarning;
+
+        // --------------------------------------------------
+        // アニメーター
+        // --------------------------------------------------
+        /// <summary>断続更新対象のキャンバス</summary>
+        private Animator _intermittentCanvasAnimator;
+
+        /// <summary>アウトゲーム関連のキャンバス</summary>
+        private Animator _outgameCanvasAnimator;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -88,11 +111,14 @@ namespace UISystem.Presentation
         /// <summary>Ready パラメータ名</summary>
         private static readonly int IS_READY_HASH = Animator.StringToHash("IsReady");
 
+        /// <summary>Pause パラメータ名</summary>
+        private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
+
         /// <summary>PlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
 
-        /// <summary>Pause パラメータ名</summary>
-        private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
+        /// <summary>IsWarning パラメータ名</summary>
+        private static readonly int IS_WARNING_HASH = Animator.StringToHash("IsWarning");
 
         /// <summary>SwitchProjection パラメータ名</summary>
         private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
@@ -104,6 +130,12 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
+        /// <summary>ChangePlayerアニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onChangePlayerAnimationEnd = new Subject<Unit>();
+
+        /// <summary>ChangePlayerアニメーション終了通知ストリーム</summary>
+        public IObservable<Unit> OnChangePlayerAnimationEnd => _onChangePlayerAnimationEnd;
+        
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
@@ -121,7 +153,9 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
 
-            if (_inputManager == null)
+            if (_inputManager == null ||
+                _intermittentCanvas == null ||
+                _outgameCanvas == null)
             {
                 Debug.LogError("[MainUIPresenter] クラスの初期化に失敗しました。");
 
@@ -138,8 +172,19 @@ namespace UISystem.Presentation
             _mainUIView =
                 new MainUIView(
                     _scoreTexts,
-                    _limitTimeText,
+                    _limitTimeTexts,
                     _pointer);
+
+            // アニメーター取得
+            _intermittentCanvasAnimator = _intermittentCanvas.GetComponent<Animator>();
+            _outgameCanvasAnimator = _outgameCanvas.GetComponent<Animator>();
+
+            // アニメーター速度をタイムスケール非依存に設定
+            SetAnimatorUnscaledTime(_outgameCanvasAnimator);
+            SetAnimatorUnscaledTime(_limitTimeAnimator);
+
+            // アニメーションイベント通知クラス取得
+            _intermittentCanvasAnimationEventNotifier = _intermittentCanvas.GetComponent<AnimationEventNotifier>();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -258,6 +303,20 @@ namespace UISystem.Presentation
         // イベント購読
         // --------------------------------------------------
         /// <summary>
+        /// イベント購読
+        /// </summary>
+        protected override void Subscribe()
+        {
+            // アニメーション終了通知
+            _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    _onChangePlayerAnimationEnd.OnNext(Unit.Default);
+                })
+                .AddTo(_disposables);
+        }
+        
+        /// <summary>
         /// イベント購読解除
         /// </summary>
         protected override void Dispose()
@@ -266,18 +325,18 @@ namespace UISystem.Presentation
 
             _disposables?.Dispose();
         }
-        
+
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------
         /// <summary>
         /// スコア表示更新
         /// </summary>
-        /// <param name="playerId">プレイヤーID（1 ベース）</param>
-        /// <param name="lineLength">ラインの長さ</param>
-        private void UpdateScore(in int playerId, in int lineLength)
+        /// <param name="playerId">プレイヤー ID（1 ベース）</param>
+        /// <param name="score">スコア</param>
+        private void UpdateScore(in int playerId, in int score)
         {
-            _mainUIView.UpdateScore(playerId, lineLength);
+            _mainUIView.UpdateScore(playerId, score);
         }
         
         // --------------------------------------------------
@@ -290,6 +349,8 @@ namespace UISystem.Presentation
         private void SetLimitTimeVisible(in bool isVisible)
         {
             _mainUIView.SetLimitTimeVisible(isVisible);
+
+            _isLimitTimeVisible = isVisible;
         }
 
         /// <summary>
@@ -298,7 +359,35 @@ namespace UISystem.Presentation
         /// <param name="limitTime">残り時間（秒）</param>
         private void UpdateLimitTimeDisplay(in float limitTime)
         {
+            // 制限時間非表示時は処理なし
+            if (!_isLimitTimeVisible)
+            {
+                // 警告アニメーション表示中なら解除
+                if (_isWarning)
+                {
+                    _isWarning = false;
+
+                    _limitTimeAnimator?.SetBool(IS_WARNING_HASH, false);
+                }
+                
+                return;
+            }
+
             _mainUIView.UpdateLimitTime(limitTime);
+
+            // アニメーション状態判定
+            bool isWarning = limitTime > 0f && limitTime <= 5f;
+
+            // 同じ値なら更新なし
+            if (_isWarning == isWarning)
+            {
+                return;
+            }
+
+            _isWarning = isWarning;
+
+            // アニメーション更新
+            _limitTimeAnimator?.SetBool(IS_WARNING_HASH, isWarning);
         }
 
         // --------------------------------------------------

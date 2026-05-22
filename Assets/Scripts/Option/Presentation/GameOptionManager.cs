@@ -6,9 +6,11 @@
 // 概要     : ゲームオプション制御・適用クラス
 // ======================================================
 
-using UnityEngine;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
+using System;
+using UniRx;
+using UnityEngine;
 
 namespace OptionSystem.Presentation
 {
@@ -73,33 +75,23 @@ namespace OptionSystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>
-        /// ゲーム設定の永続化を担当するリポジトリ
-        /// </summary>
+        /// <summary>ゲーム設定の永続化を担当するリポジトリ</summary>
         private IGameOptionRepository _repository;
 
-        /// <summary>
-        /// 現在のゲームルール
-        /// </summary>
+        /// <summary>現在のゲームルール</summary>
         private GameRules _currentRules;
 
         // ======================================================
         // プロパティ
         // ======================================================
 
-        /// <summary>
-        /// プレイヤー人数
-        /// </summary>
+        /// <summary>プレイヤー人数</summary>
         public int PlayerCount => _currentRules.PlayerCount;
 
-        /// <summary>
-        /// 総ターン数
-        /// </summary>
+        /// <summary>総ターン数</summary>
         public int TurnCount => _currentRules.TurnCount;
 
-        /// <summary>
-        /// 1 プレイヤーあたりの制限時間
-        /// </summary>
+        /// <summary>1 プレイヤーあたりの制限時間</summary>
         public float LimitTime => _currentRules.PerPlayerLimitTime;
 
         /// <summary>
@@ -108,21 +100,22 @@ namespace OptionSystem.Presentation
         /// </summary>
         public int BoardSize => (int)_currentRules.BoardSize;
 
-        /// <summary>
-        /// ライン成立条件
-        /// </summary>
+        /// <summary>ライン成立条件</summary>
         public int ConnectCount => _currentRules.ConnectCount;
 
-        /// <summary>
-        /// カメラ速度
-        /// </summary>
+        /// <summary>カメラ速度</summary>
         public float CameraSpeed => _currentRules.CameraSpeed;
 
-        /// <summary>
-        /// ポインター速度
-        /// </summary>
+        /// <summary>ポインター速度</summary>
         public float PointerSpeed => _currentRules.PointerSpeed;
 
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>ゲームスピード変更購読</summary>
+        private IDisposable _onGameSpeedChangeSubscription;
+        
         // ======================================================
         // Unity イベント
         // ======================================================
@@ -166,6 +159,9 @@ namespace OptionSystem.Presentation
             {
                 Save();
             }
+
+            // タイムスケール初期化
+            SetTimeScale(1f);
         }
 
         private void OnDestroy()
@@ -174,12 +170,32 @@ namespace OptionSystem.Presentation
             {
                 Instance = null;
             }
+
+            // イベント購読解除
+            _onGameSpeedChangeSubscription?.Dispose();
         }
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベントストリームを購読する
+        /// </summary>
+        public void BindStream(IObservable<float> onGameSpeedChangeRequested)
+        {
+            _onGameSpeedChangeSubscription = onGameSpeedChangeRequested
+                .Subscribe(timeScale =>
+                {
+                    // タイムスケール変更
+                    SetTimeScale(timeScale);
+                })
+                .AddTo(this);
+        }
+        
         // --------------------------------------------------
         // セーブ・ロード
         // --------------------------------------------------
@@ -255,6 +271,24 @@ namespace OptionSystem.Presentation
         public void SetPointerSpeed(in float speed)
         {
             _currentRules.PointerSpeed = speed;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 時間スケールを任意の値に設定する
+        /// </summary>
+        /// <param name="timeScale">設定する時間スケール</param>
+        private void SetTimeScale(float timeScale)
+        {
+            if (timeScale < 0f)
+            {
+                timeScale = 0f;
+            }
+
+            Time.timeScale = timeScale;
         }
     }
 }

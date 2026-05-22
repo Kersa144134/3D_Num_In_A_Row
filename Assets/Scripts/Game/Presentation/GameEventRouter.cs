@@ -119,6 +119,9 @@ namespace GameSystem.Presentation
         /// <summary>スキップ入力用購読管理</summary>
         private IDisposable _skipInputSubscription;
 
+        /// <summary>ゲームスピード変更用購読管理</summary>
+        private CompositeDisposable _gameSpeedChangeDisposables = new CompositeDisposable();
+
         // --------------------------------------------------
         // シーン
         // --------------------------------------------------
@@ -152,6 +155,12 @@ namespace GameSystem.Presentation
 
         /// <summary>プレイヤー変更用 Subject</summary>
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>ゲームスピード変更用 Subject</summary>
+        private readonly Subject<float> _onGameSpeedChangeRequested = new Subject<float>();
 
         // --------------------------------------------------
         // スコア
@@ -235,6 +244,12 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // オプション
         // --------------------------------------------------
+        /// <summary>通常ゲームスピード</summary>
+        private const float GAME_SPEED_NORMAL = 1.0f;
+
+        /// <summary>高速ゲームスピード</summary>
+        private const float GAME_SPEED_FAST = 2.0f;
+
         /// <summary>3 x 3 ボードサイズ</summary>
         private const int BOARD_SIZE_THREE = 3;
 
@@ -349,6 +364,14 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             // --------------------------------------------------
+            // オプション
+            // --------------------------------------------------
+            if (_gameOptionManager != null)
+            {
+                _gameOptionManager.BindStream(_onGameSpeedChangeRequested);
+            }
+
+            // --------------------------------------------------
             // 入力
             // --------------------------------------------------
             if (_inputManager != null)
@@ -416,6 +439,10 @@ namespace GameSystem.Presentation
                     _onDropRequested,
                     _onRotateRequested,
                     _phaseMachine.LimitTime);
+
+                _mainUIPresenter.OnChangePlayerAnimationEnd
+                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.Play))
+                    .AddTo(_disposables);
 
                 // --------------------------------------------------
                 // 共通
@@ -570,13 +597,20 @@ namespace GameSystem.Presentation
             _sceneLoadSubscription = null;
         }
 
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
         /// <summary>
         /// イベントスキップストリームを購読する
         /// </summary>
         /// <typeparam name="TEvent">発火イベント型</typeparam>
         /// <param name="subject">発火対象 Subject</param>
         /// <param name="eventValue">発火時に送信する値</param>
-        public void BindEventSkipStream<TEvent>(Subject<TEvent> subject, TEvent eventValue)
+        private void BindEventSkipStream<TEvent>(Subject<TEvent> subject, TEvent eventValue)
         {
             // 多重購読防止
             _skipInputSubscription?.Dispose();
@@ -592,13 +626,6 @@ namespace GameSystem.Presentation
                 });
         }
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        // --------------------------------------------------
-        // イベント購読
-        // --------------------------------------------------
         /// <summary>
         /// イベントスキップストリームの購読を解除する
         /// </summary>
@@ -609,7 +636,50 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// スコア更新監視購読
+        /// ゲームスピード変更ストリームを購読する
+        /// </summary>
+        private void BindGameSpeedChangeStream()
+        {
+            // 多重購読防止
+            _gameSpeedChangeDisposables?.Dispose();
+
+            // CompositeDisposable 生成
+            _gameSpeedChangeDisposables = new CompositeDisposable();
+
+            // ボタン X 押す
+            _inputManager.ButtonX.OnDown
+                .Subscribe(_ =>
+                {
+                    // 高速状態へ変更
+                    _onGameSpeedChangeRequested.OnNext(GAME_SPEED_FAST);
+                })
+                .AddTo(_gameSpeedChangeDisposables);
+
+            // ボタン X 離す
+            _inputManager.ButtonX.OnUp
+                .Subscribe(_ =>
+                {
+                    // 通常状態へ変更
+                    _onGameSpeedChangeRequested.OnNext(GAME_SPEED_NORMAL);
+                })
+                .AddTo(_gameSpeedChangeDisposables);
+        }
+
+        /// <summary>
+        /// ゲームスピード変更ストリームの購読を解除する
+        /// </summary>
+        private void UnbindGameSpeedChangeStream()
+        {
+            // 通常速度へリセット
+            _onGameSpeedChangeRequested.OnNext(1.0f);
+
+            // イベント購読解除
+            _gameSpeedChangeDisposables?.Dispose();
+            _gameSpeedChangeDisposables = null;
+        }
+
+        /// <summary>
+        /// スコア更新ストリームを購読する
         /// </summary>
         private void BindScoreUpdateStream()
         {
@@ -635,301 +705,6 @@ namespace GameSystem.Presentation
                         );
                     })
                     .AddTo(_disposables);
-            }
-        }
-
-        // --------------------------------------------------
-        // シーン
-        // --------------------------------------------------
-        /// <summary>
-        /// シーン遷移予約を通知する
-        /// </summary>
-        private void NotifySceneChangeRequested()
-        {
-            switch (_currentPhase.Value)
-            {
-                case PhaseType.Title:
-                    // 3 x 3 ボードシーンへ遷移
-                    if (_gameOptionManager.BoardSize == BOARD_SIZE_THREE)
-                    {
-                        _onSceneChangeRequested.OnNext(THREE_SIZE_SCENE_NAME);
-                        break;
-                    }
-
-                    // 5 x 5 ボードシーンへ遷移
-                    if (_gameOptionManager.BoardSize == BOARD_SIZE_FIVE)
-                    {
-                        _onSceneChangeRequested.OnNext(FIVE_SIZE_SCENE_NAME);
-                    }
-
-                    break;
-
-                case PhaseType.Finish:
-                    // リザルトシーンへ遷移
-                    _onSceneChangeRequested.OnNext(RESULT_SCENE_NAME);
-
-                    break;
-
-                case PhaseType.Pause:
-                case PhaseType.Result:
-                    // タイトルシーンへ遷移
-                    _onSceneChangeRequested.OnNext(TITLE_SCENE_NAME);
-
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// シーンロード準備開始時の処理を行う
-        /// </summary>
-        /// <param name="sceneName">現在のシーン名</param>
-        private void HandleLoadPrepareStart(in string sceneName)
-        {
-            switch (sceneName)
-            {
-                case TITLE_SCENE_NAME:
-                    // スキップ入力
-                    // シーン遷移実行通知
-                    BindEventSkipStream(_onSceneChangeExecuted, Unit.Default);
-
-                    break;
-
-                case THREE_SIZE_SCENE_NAME:
-                    break;
-
-                case FIVE_SIZE_SCENE_NAME:
-                    break;
-
-                case RESULT_SCENE_NAME:
-                    break;
-                
-                default:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// シーンロード準備開始時の処理を行う
-        /// </summary>
-        private void HandleLoadPrepareEnd(in float fadeTime)
-        {
-            // 購読解除
-            _sceneLoadSubscription?.Dispose();
-            _sceneLoadSubscription = null;
-            
-            // フェードイン時間を通知
-            _fadeInTrigger.OnNext(fadeTime);
-        }
-
-        // --------------------------------------------------
-        // フェーズ
-        // --------------------------------------------------
-        /// <summary>
-        /// フェーズ変更を通知する
-        /// </summary>
-        private void NotifyPhaseChanged(in PhaseType nextPhase)
-        {
-            _onPhaseChanged.OnNext(
-                new PhaseChangeEvent(
-                    _currentPhase.Value,
-                    nextPhase
-                )
-            );
-        }
-
-        /// <summary>
-        /// ポーズ用のフェーズトグル処理を行う
-        /// </summary>
-        private void TogglePausePhase(in PhaseType phase)
-        {
-            // フェーズ遷移先を決定する
-            PhaseType nextPhase;
-
-            if (phase == PhaseType.Play)
-            {
-                nextPhase = PhaseType.Pause;
-
-                // 現在のアクティブ状態フェーズをキャッシュ
-                _cachedActivePhase = phase;
-            }
-            else if (phase == PhaseType.Pause)
-            {
-                // キャッシュしていたアクティブ状態フェーズへ復帰
-                nextPhase = _cachedActivePhase;
-            }
-            else
-            {
-                return;
-            }
-
-            NotifyPhaseChanged(nextPhase);
-        }
-
-
-        // --------------------------------------------------
-        // オプション
-        // --------------------------------------------------
-        /// <summary>
-        /// ゲームオプション更新時の処理を行う
-        /// </summary>
-        private void HandleGameOptionUpdated(in OptionButtonData data)
-        {
-            switch (data.Type)
-            {
-                case OptionType.PlayerCount:
-                    _gameOptionManager.SetPlayerCount(data.IntValue);
-                    break;
-
-                case OptionType.LimitTime:
-                    _gameOptionManager.SetLimitTime(data.FloatValue);
-                    break;
-
-                case OptionType.BoardSize:
-                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
-                    break;
-
-                case OptionType.ConnectCount:
-                    _gameOptionManager.SetConnectCount(data.IntValue);
-                    break;
-
-                case OptionType.CameraSpeed:
-                    _gameOptionManager.SetCameraSpeed(data.FloatValue);
-                    break;
-
-                case OptionType.PointerSpeed:
-                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
-                    break;
-            }
-        }
-
-        // --------------------------------------------------
-        // 入力
-        // --------------------------------------------------
-        /// <summary>
-        /// 入力マッピング変更を通知する
-        /// </summary>
-        private void NotifyMappingChanged(in int mappingIndex)
-        {
-            // 現在のマッピング番号と一致している場合は処理なし
-            if (_currentMappingIndex == mappingIndex)
-            {
-                return;
-            }
-
-            _currentMappingIndex = mappingIndex;
-
-            _onMappingChanged.OnNext(mappingIndex);
-        }
-
-        /// <summary>
-        /// デバイス変更を通知する
-        /// </summary>
-        private void NotifyActiveControllerChanged(in InputDeviceType device)
-        {
-            if (device == InputDeviceType.Gamepad)
-            {
-                _onGamepadUsed.OnNext(true);
-            }
-            else
-            {
-                _onGamepadUsed.OnNext(false);
-            }
-        }
-
-        /// <summary>
-        /// フェーズ変更時の入力購読切替処理を行う
-        /// </summary>
-        /// <param name="phase">変更後のフェーズ</param>
-        private void HandlePhaseInputSwitch(in PhaseType phase)
-        {
-            // 入力購読解除
-            UnbindInputCommands();
-
-            switch (phase)
-            {
-                // --------------------------------------------------
-                // Title, Event, Pause, Finish, Result
-                // --------------------------------------------------
-                case PhaseType.Title:
-                case PhaseType.Event:
-                case PhaseType.Pause:
-                case PhaseType.Finish:
-                case PhaseType.Result:
-                    // 入力マッピングを UI 用に変更
-                    NotifyMappingChanged(1);
-
-                    break;
-                
-                // --------------------------------------------------
-                // Ready
-                // --------------------------------------------------
-                case PhaseType.Ready:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
-                    // スキップ入力
-                    // ChangePlayer へフェーズ遷移通知
-                    BindEventSkipStream(
-                        _onPhaseChanged,
-                        new PhaseChangeEvent(
-                            _currentPhase.Value,
-                            PhaseType.ChangePlayer
-                        )
-                    );
-
-                    // スコア更新購読
-                    BindScoreUpdateStream();
-
-                    break;
-
-                // --------------------------------------------------
-                // Play
-                // --------------------------------------------------
-                case PhaseType.Play:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
-                    // --------------------------------------------------
-                    // 直前の入力種別に応じて入力コマンドを登録
-                    // --------------------------------------------------
-                    switch (_currentBoardInputType.Value)
-                    {
-                        // 駒落下入力コマンドを登録
-                        case BoardInputType.Drop:
-                            BindDropInputCommands();
-                            break;
-
-                        // ボード回転入力コマンドを登録
-                        case BoardInputType.Rotate:
-                            BindRotateInputCommands();
-                            break;
-                    }
-
-                    break;
-
-                // --------------------------------------------------
-                // ChangePlayer
-                // --------------------------------------------------
-                case PhaseType.ChangePlayer:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
-                    // ボード入力種別キャッシュをリセット
-                    _currentBoardInputType.Value = BoardInputType.Drop;
-
-                    // ボード回転準備イベント発火
-                    _onDropRequested.OnNext(Unit.Default);
-
-                    // スキップ入力購読解除
-                    UnbindEventSkipStream();
-
-                    break;
-
-                default:
-                    break;
             }
         }
 
@@ -1107,6 +882,314 @@ namespace GameSystem.Presentation
 
                 boardPresenter.UnbindDropInputStream();
                 boardPresenter.UnbindRotateInputStream();
+            }
+        }
+
+        // --------------------------------------------------
+        // シーン
+        // --------------------------------------------------
+        /// <summary>
+        /// シーン遷移予約を通知する
+        /// </summary>
+        private void NotifySceneChangeRequested()
+        {
+            switch (_currentPhase.Value)
+            {
+                case PhaseType.Title:
+                    // 3 x 3 ボードシーンへ遷移
+                    if (_gameOptionManager.BoardSize == BOARD_SIZE_THREE)
+                    {
+                        _onSceneChangeRequested.OnNext(THREE_SIZE_SCENE_NAME);
+                        break;
+                    }
+
+                    // 5 x 5 ボードシーンへ遷移
+                    if (_gameOptionManager.BoardSize == BOARD_SIZE_FIVE)
+                    {
+                        _onSceneChangeRequested.OnNext(FIVE_SIZE_SCENE_NAME);
+                    }
+
+                    break;
+
+                case PhaseType.Finish:
+                    // リザルトシーンへ遷移
+                    _onSceneChangeRequested.OnNext(RESULT_SCENE_NAME);
+
+                    break;
+
+                case PhaseType.Pause:
+                case PhaseType.Result:
+                    // タイトルシーンへ遷移
+                    _onSceneChangeRequested.OnNext(TITLE_SCENE_NAME);
+
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// シーンロード準備開始時の処理を行う
+        /// </summary>
+        /// <param name="sceneName">現在のシーン名</param>
+        private void HandleLoadPrepareStart(in string sceneName)
+        {
+            switch (sceneName)
+            {
+                case TITLE_SCENE_NAME:
+                    // スキップ入力
+                    // シーン遷移実行通知
+                    BindEventSkipStream(_onSceneChangeExecuted, Unit.Default);
+
+                    break;
+
+                case THREE_SIZE_SCENE_NAME:
+                    break;
+
+                case FIVE_SIZE_SCENE_NAME:
+                    break;
+
+                case RESULT_SCENE_NAME:
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// シーンロード準備開始時の処理を行う
+        /// </summary>
+        private void HandleLoadPrepareEnd(in float fadeTime)
+        {
+            // 購読解除
+            _sceneLoadSubscription?.Dispose();
+            _sceneLoadSubscription = null;
+            
+            // フェードイン時間を通知
+            _fadeInTrigger.OnNext(fadeTime);
+        }
+
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
+        /// <summary>
+        /// フェーズ変更を通知する
+        /// </summary>
+        private void NotifyPhaseChanged(in PhaseType nextPhase)
+        {
+            _onPhaseChanged.OnNext(
+                new PhaseChangeEvent(
+                    _currentPhase.Value,
+                    nextPhase
+                )
+            );
+        }
+
+        /// <summary>
+        /// ポーズ用のフェーズトグル処理を行う
+        /// </summary>
+        private void TogglePausePhase(in PhaseType phase)
+        {
+            // フェーズ遷移先を決定する
+            PhaseType nextPhase;
+
+            if (phase == PhaseType.Play)
+            {
+                nextPhase = PhaseType.Pause;
+
+                // 現在のアクティブ状態フェーズをキャッシュ
+                _cachedActivePhase = phase;
+            }
+            else if (phase == PhaseType.Pause)
+            {
+                // キャッシュしていたアクティブ状態フェーズへ復帰
+                nextPhase = _cachedActivePhase;
+            }
+            else
+            {
+                return;
+            }
+
+            NotifyPhaseChanged(nextPhase);
+        }
+
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>
+        /// ゲームオプション更新時の処理を行う
+        /// </summary>
+        private void HandleGameOptionUpdated(in OptionButtonData data)
+        {
+            switch (data.Type)
+            {
+                case OptionType.PlayerCount:
+                    _gameOptionManager.SetPlayerCount(data.IntValue);
+                    break;
+
+                case OptionType.LimitTime:
+                    _gameOptionManager.SetLimitTime(data.FloatValue);
+                    break;
+
+                case OptionType.BoardSize:
+                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
+                    break;
+
+                case OptionType.ConnectCount:
+                    _gameOptionManager.SetConnectCount(data.IntValue);
+                    break;
+
+                case OptionType.CameraSpeed:
+                    _gameOptionManager.SetCameraSpeed(data.FloatValue);
+                    break;
+
+                case OptionType.PointerSpeed:
+                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
+                    break;
+            }
+        }
+
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
+        /// <summary>
+        /// 入力マッピング変更を通知する
+        /// </summary>
+        private void NotifyMappingChanged(in int mappingIndex)
+        {
+            // 現在のマッピング番号と一致している場合は処理なし
+            if (_currentMappingIndex == mappingIndex)
+            {
+                return;
+            }
+
+            _currentMappingIndex = mappingIndex;
+
+            _onMappingChanged.OnNext(mappingIndex);
+        }
+
+        /// <summary>
+        /// デバイス変更を通知する
+        /// </summary>
+        private void NotifyActiveControllerChanged(in InputDeviceType device)
+        {
+            if (device == InputDeviceType.Gamepad)
+            {
+                _onGamepadUsed.OnNext(true);
+            }
+            else
+            {
+                _onGamepadUsed.OnNext(false);
+            }
+        }
+
+        /// <summary>
+        /// フェーズ変更時の入力購読切替処理を行う
+        /// </summary>
+        /// <param name="phase">変更後のフェーズ</param>
+        private void HandlePhaseInputSwitch(in PhaseType phase)
+        {
+            // 入力購読解除
+            UnbindInputCommands();
+
+            switch (phase)
+            {
+                // --------------------------------------------------
+                // Title, Event, Pause, Result
+                // --------------------------------------------------
+                case PhaseType.Title:
+                case PhaseType.Event:
+                case PhaseType.Pause:
+                case PhaseType.Result:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
+
+                    break;
+                
+                // --------------------------------------------------
+                // Ready
+                // --------------------------------------------------
+                case PhaseType.Ready:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    // スキップ入力
+                    // ChangePlayer へフェーズ遷移通知
+                    BindEventSkipStream(
+                        _onPhaseChanged,
+                        new PhaseChangeEvent(
+                            _currentPhase.Value,
+                            PhaseType.ChangePlayer
+                        )
+                    );
+
+                    // ゲームスピード変更購読
+                    BindGameSpeedChangeStream();
+
+                    // スコア更新購読
+                    BindScoreUpdateStream();
+
+                    break;
+
+                // --------------------------------------------------
+                // Play
+                // --------------------------------------------------
+                case PhaseType.Play:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    // --------------------------------------------------
+                    // 直前の入力種別に応じて入力コマンドを登録
+                    // --------------------------------------------------
+                    switch (_currentBoardInputType.Value)
+                    {
+                        // 駒落下入力コマンドを登録
+                        case BoardInputType.Drop:
+                            BindDropInputCommands();
+                            break;
+
+                        // ボード回転入力コマンドを登録
+                        case BoardInputType.Rotate:
+                            BindRotateInputCommands();
+                            break;
+                    }
+
+                    break;
+
+                // --------------------------------------------------
+                // ChangePlayer
+                // --------------------------------------------------
+                case PhaseType.ChangePlayer:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    // ボード入力種別キャッシュをリセット
+                    _currentBoardInputType.Value = BoardInputType.Drop;
+
+                    // ボード回転準備イベント発火
+                    _onDropRequested.OnNext(Unit.Default);
+
+                    // スキップ入力購読解除
+                    UnbindEventSkipStream();
+
+                    break;
+
+                // --------------------------------------------------
+                // Finish
+                // --------------------------------------------------
+                case PhaseType.Finish:
+                    // 入力マッピングを UI 用に変更
+                    NotifyMappingChanged(1);
+
+                    // ゲームスピード変更購読解除
+                    UnbindGameSpeedChangeStream();
+
+                    break;
+
+                default:
+                    break;
             }
         }
 

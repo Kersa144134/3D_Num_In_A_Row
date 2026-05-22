@@ -263,13 +263,14 @@ namespace UISystem.Presentation
                 _distortionMaterial
             );
 
+            // ダイアログ UI コンポーネント取得
+            _dialogUICollector.Collect(_dialogCanvasArray);
+
             // アニメーター取得
             _effectAnimator = GetComponent<Animator>();
             _pointerAnimator = _pointer.GetComponent<Animator>();
 
-            // ダイアログ UI コンポーネント取得
-            _dialogUICollector.Collect(_dialogCanvasArray);
-
+            // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_effectAnimator);
             SetAnimatorUnscaledTime(_pointerAnimator);
 
@@ -437,6 +438,19 @@ namespace UISystem.Presentation
         // アニメーション
         // --------------------------------------------------
         /// <summary>
+        /// アニメーターをタイムスケール非依存に設定する
+        /// </summary>
+        protected void SetAnimatorUnscaledTime(in Animator animator)
+        {
+            if (animator == null)
+            {
+                return;
+            }
+
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+        }
+
+        /// <summary>
         /// フェードイン処理
         /// </summary>
         private IEnumerator FadeInRoutine(float time)
@@ -482,19 +496,6 @@ namespace UISystem.Presentation
 
             // 完了通知
             _onFadeOutCompleted.OnNext(Unit.Default);
-        }
-
-        /// <summary>
-        /// アニメーターをタイムスケール非依存に設定する
-        /// </summary>
-        private void SetAnimatorUnscaledTime(in Animator animator)
-        {
-            if (animator == null)
-            {
-                return;
-            }
-
-            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
         }
     }
 }

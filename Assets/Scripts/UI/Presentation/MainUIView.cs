@@ -34,8 +34,11 @@ namespace UISystem.Presentation
         /// <summary>スコア表示テキスト</summary>
         private readonly TextMeshProUGUI[] _scoreTexts;
 
-        /// <summary>制限時間表示テキスト</summary>
-        private readonly TextMeshProUGUI _limitTimeText;
+        /// <summary>
+        /// 制限時間表示テキスト
+        /// インデックス 1 以降はエフェクト用とする
+        /// </summary>
+        private readonly TextMeshProUGUI[] _limitTimeTexts;
 
         /// <summary>ポインター</summary>
         private readonly GameObject _pointer;
@@ -80,11 +83,11 @@ namespace UISystem.Presentation
         /// </summary>
         public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
-            in TextMeshProUGUI limitTimeText,
+            in TextMeshProUGUI[] limitTimeTexts,
             in GameObject pointer)
         {
             _scoreTexts = scoreTexts;
-            _limitTimeText = limitTimeText;
+            _limitTimeTexts = limitTimeTexts;
 
             _pointer = pointer;
 
@@ -114,7 +117,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // タイマー初期化
             // --------------------------------------------------
-            if (_limitTimeText != null)
+            if (_limitTimeTexts != null)
             {
                 _timeFormatter =
                     new TextFormatter(
@@ -205,12 +208,26 @@ namespace UISystem.Presentation
         /// <param name="isVisible">表示する場合はtrue</param>
         public void SetLimitTimeVisible(in bool isVisible)
         {
-            if (_limitTimeText == null)
+            if (_limitTimeTexts == null)
             {
                 return;
             }
 
-            _limitTimeText.enabled = isVisible;
+            for (int i = 0; i < _limitTimeTexts.Length; i++)
+            {
+                if (i == 0)
+                {
+                    _limitTimeTexts[i].enabled = isVisible;
+
+                    continue;
+                }
+
+                // エフェクト用テキストは非表示時のみ制御対象とする
+                if (!isVisible)
+                {
+                    _limitTimeTexts[i].enabled = false;
+                }
+            }
         }
 
         /// <summary>
@@ -218,7 +235,7 @@ namespace UISystem.Presentation
         /// </summary>
         public void UpdateLimitTime(in float limitTime)
         {
-            if (_limitTimeText == null)
+            if (_limitTimeTexts == null)
             {
                 return;
             }
@@ -254,7 +271,10 @@ namespace UISystem.Presentation
             char[] buffer = _timeFormatter.Format(_timeValues);
 
             // TextMeshPro に反映
-            _limitTimeText.SetCharArray(buffer);
+            for (int i = 0; i < _limitTimeTexts.Length; i++)
+            {
+                _limitTimeTexts[i].SetCharArray(buffer);
+            }
         }
 
         // --------------------------------------------------

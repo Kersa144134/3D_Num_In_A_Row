@@ -1,10 +1,8 @@
 {
-    "name": "OptionPresentation",
+    "name": "GeneralAnimationInfrastructure",
     "rootNamespace": "",
     "references": [
-        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
-        "GUID:c10cae77fa46ffe4fb4f66d4c9f86441",
-        "GUID:dde19a067369b844ca1e8065869cffa2"
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

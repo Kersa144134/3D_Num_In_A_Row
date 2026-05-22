@@ -28,12 +28,6 @@ namespace PhaseSystem.Domain
         /// <summary>1 プレイヤーあたりの制限時間</summary>
         public float PerPlayerLimitTime { get; }
 
-        /// <summary>Ready → ChangePlayer 遷移時間</summary>
-        public float ReadyToChangePlayerWaitTime { get; }
-
-        /// <summary>ChangePlayer → Play 遷移時間</summary>
-        public float ChangePlayerToPlayWaitTime { get; }
-
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -44,15 +38,11 @@ namespace PhaseSystem.Domain
         public PhaseTransitionConfig(
             in int playerCount,
             in int turnCount,
-            in float perPlayerLimitTime,
-            in float readyToChangePlayerWaitTime,
-            in float changePlayerToPlayWaitTime)
+            in float perPlayerLimitTime)
         {
             PlayerCount = playerCount;
             TurnCount = turnCount;
             PerPlayerLimitTime = perPlayerLimitTime;
-            ReadyToChangePlayerWaitTime = readyToChangePlayerWaitTime;
-            ChangePlayerToPlayWaitTime = changePlayerToPlayWaitTime;
         }
     }
 }

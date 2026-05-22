@@ -47,7 +47,7 @@ MonoBehaviour:
   _playerCount: 2
   _turnCount: 10
   _limitTime: 30
-  _boardSizeType: 3
+  _boardSizeType: 5
   _connectCount: 3
-  _cameraRotationSpeed: 360
+  _cameraSpeed: 360
   _pointerSpeed: 1000
