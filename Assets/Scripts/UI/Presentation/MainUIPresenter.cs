@@ -103,6 +103,7 @@ namespace UISystem.Presentation
         /// <summary>断続更新対象のキャンバスのアニメーションイベント通知クラス</summary>
         private AnimationEventNotifier _intermittentCanvasAnimationEventNotifier;
 
+        /// <summary>入力アイコン収集クラス</summary>
         private InputIconCollector _inputIconCollector = new InputIconCollector();
 
         /// <summary>GameOptionManager キャッシュ</summary>
