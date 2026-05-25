@@ -647,8 +647,8 @@ namespace GameSystem.Presentation
             // CompositeDisposable 生成
             _gameSpeedChangeDisposables = new CompositeDisposable();
 
-            // ボタン X 押す
-            _inputManager.ButtonX.OnDown
+            // R ショルダー 押す
+            _inputManager.RightShoulder.OnDown
                 .Subscribe(_ =>
                 {
                     // 高速状態へ変更
@@ -656,8 +656,8 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_gameSpeedChangeDisposables);
 
-            // ボタン X 離す
-            _inputManager.ButtonX.OnUp
+            // R ショルダー 離す
+            _inputManager.RightShoulder.OnUp
                 .Subscribe(_ =>
                 {
                     // 通常状態へ変更
@@ -1218,7 +1218,7 @@ namespace GameSystem.Presentation
                 // 現在処理中のライン成立イベント
                 LineCompleteEvent lineEvent = events[i];
 
-                // プレイヤーID
+                // プレイヤー ID
                 int playerId = lineEvent.Player;
 
                 // ライン座標リスト
@@ -1232,7 +1232,7 @@ namespace GameSystem.Presentation
                 // スコア累積カウント加算
                 _scoreManager.AddAllCumulativeCount();
 
-                // 1ライン分のスコア加算
+                // 1 ライン分のスコア加算
                 _scoreManager.AddLineScore(playerId, line.Count);
             }
         }
@@ -1244,20 +1244,21 @@ namespace GameSystem.Presentation
         /// <param name="linePosition">成立ライン中心座標</param>
         private void ProcessCenterOffset(in BoardPresenter boardPresenter, in Vector3 linePosition)
         {
-            // ボードの現在位置
-            Vector3 boardPosition = boardPresenter.gameObject.transform.position;
+            // --------------------------------------------------
+            // ボード位置取得
+            // --------------------------------------------------
+            Vector3 boardPosition;
 
-            // --------------------------------------------------
-            // 辞書参照
-            // --------------------------------------------------
+            // 辞書に登録済かどうか
             if (_boardPosition.ContainsKey(boardPresenter))
             {
-                // 登録済みの場合はキャッシュ値を取得
                 boardPosition = _boardPosition[boardPresenter];
             }
             else
             {
-                // 未登録の場合はキャッシュへ保存
+                boardPosition = boardPresenter.gameObject.transform.position;
+
+                // 辞書登録
                 _boardPosition.Add(boardPresenter, boardPosition);
             }
 
