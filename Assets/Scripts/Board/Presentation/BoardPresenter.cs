@@ -164,6 +164,12 @@ namespace BoardSystem.Presentation
         /// <summary>ライン成立ストリーム</summary>
         public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _onLineComplete;
 
+        /// <summary>ライン削除通知用 Subject</summary>
+        private readonly Subject<Unit> _onLineDelete = new();
+
+        /// <summary>ライン削除通知ストリーム</summary>
+        public IObservable<Unit> OnLineDelete => _onLineDelete;
+
         /// <summary>中心座標算出ストリーム</summary>
         public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
 
@@ -536,9 +542,11 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleLineDeleteAsync(IReadOnlyList<LineCompleteEvent> lineEvents)
         {
-            LineDeleteResult result = 
-                await _deleteHandler.HandleLineDeleteAsync(lineEvents);
+            LineDeleteResult result = await _deleteHandler.HandleLineDeleteAsync(lineEvents);
 
+            // ライン削除実行通知
+            _onLineDelete.OnNext(Unit.Default);
+            
             // --------------------------------------------------
             // 再配置処理
             //// --------------------------------------------------

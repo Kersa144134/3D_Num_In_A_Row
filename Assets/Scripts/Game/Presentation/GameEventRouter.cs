@@ -6,15 +6,10 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
+using Cysharp.Threading.Tasks;
 using InputSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
@@ -23,7 +18,14 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UISystem.Presentation;
+using UniRx;
+using Unity.Multiplayer.PlayMode;
+using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -86,6 +88,12 @@ namespace GameSystem.Presentation
 
         /// <summary>フェード待機中に来たフェーズキャッシュ</summary>
         private PhaseType? _pendingPhase;
+
+        /// <summary>スコア更新の保留フラグ</summary>
+        private bool _hasPendingScoreEvent;
+
+        /// <summary>保留中のスコアイベント</summary>
+        private ScoreEvent _pendingScoreEvent;
 
         /// <summary>現在の入力マッピング番号</summary>
         private int _currentMappingIndex = -1;
@@ -529,6 +537,21 @@ namespace GameSystem.Presentation
                     boardPresenter.OnLineComplete
                         .Subscribe(e => HandleLineCompleted(e))
                         .AddTo(_disposables);
+                    boardPresenter.OnLineDelete
+                        .Subscribe(_ =>
+                        {
+                            if (!_hasPendingScoreEvent)
+                            {
+                                return;
+                            }
+
+                            // スコア更新通知
+                            _onScoreUpdated.OnNext(_pendingScoreEvent);
+
+                            // リセット
+                            _hasPendingScoreEvent = false;
+                        })
+                        .AddTo(_disposables);
                     boardPresenter.OnCenterPositionCalculated
                         .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
                         .AddTo(_disposables);
@@ -713,9 +736,10 @@ namespace GameSystem.Presentation
                     .Skip(1)
                     .Subscribe(score =>
                     {
-                        _onScoreUpdated.OnNext(
-                            new ScoreEvent(currentPlayerId, score)
-                        );
+                        // 最新スコアを保留イベントとして保持する
+                        _pendingScoreEvent = new ScoreEvent(currentPlayerId, score);
+
+                        _hasPendingScoreEvent = true;
                     })
                     .AddTo(_disposables);
             }
