@@ -343,9 +343,9 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// プレイヤー変更ストリームを購読し、現在のプレイヤーインデックスを更新する
+        /// プレイヤー変更ストリームを購読する
         /// </summary>
-        /// <param name="player">プレイヤーインデックスを通知するストリーム</param>
+        /// <param name="player">プレイヤー ID 通知ストリーム</param>
         public void BindPlayerChangeStream(in IObservable<int> player)
         {
             // 多重購読防止
@@ -356,15 +356,6 @@ namespace BoardSystem.Presentation
                 {
                     _currentPlayer = player;
                 });
-        }
-
-        /// <summary>
-        /// プレイヤー変更ストリームの購読を解除する
-        /// </summary>
-        public void UnbindPlayerChangeStream()
-        {
-            _playerIndexSubscription?.Dispose();
-            _playerIndexSubscription = null;
         }
 
         /// <summary>
@@ -436,6 +427,15 @@ namespace BoardSystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// プレイヤー変更ストリームの購読を解除する
+        /// </summary>
+        private void UnbindPlayerChangeStream()
+        {
+            _playerIndexSubscription?.Dispose();
+            _playerIndexSubscription = null;
+        }
 
         /// <summary>
         /// クリック座標から駒落下処理を開始
@@ -524,17 +524,18 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask HandleLineDeleteAsync(IReadOnlyList<LineCompleteEvent> lineEvents)
         {
+            // 再配置対象となる列の算出
             LineDeleteResult result = await _deleteHandler.HandleLineDeleteAsync(lineEvents);
 
             // ライン削除実行通知
             _onLineDelete.OnNext(Unit.Default);
-            
-            // --------------------------------------------------
-            // 再配置処理
-            //// --------------------------------------------------
+
             // 演出待機
             await UniTask.Delay(TimeSpan.FromSeconds(PIECE_DROP_DELAY));
 
+            // --------------------------------------------------
+            // 再配置処理
+            //// --------------------------------------------------
             await PiecesRepositionAsync(result.RepositionColumns);
 
             // ライン成立チェック
