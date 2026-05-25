@@ -7,6 +7,7 @@
 // ======================================================
 
 using PhaseSystem.Domain;
+using UniRx;
 
 namespace PhaseSystem.Application
 {
@@ -26,11 +27,19 @@ namespace PhaseSystem.Application
         // フィールド
         // ======================================================
 
-        /// <summary>Play フェーズへ遷移した回数</summary>
-        private int _playEnterCount = 0;
-
         /// <summary>Finish フェーズへ遷移するまでの Play フェーズ開始可能回数</summary>
         private int _finishTransitionCount = 0;
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>Play フェーズへ遷移した回数</summary>
+        private readonly ReactiveProperty<int> _playEnterCount =
+            new ReactiveProperty<int>(0);
+
+        /// <summary>Play フェーズへ遷移した回数</summary>
+        public IReadOnlyReactiveProperty<int> PlayEnterCount => _playEnterCount;
 
         // ======================================================
         // コンストラクタ
@@ -89,16 +98,18 @@ namespace PhaseSystem.Application
             if (nextPhaseType is PhaseType.ChangePlayer)
             {
                 // Play フェーズ開始回数を加算
-                _playEnterCount++;
+                _playEnterCount.Value++;
 
-                // Play フェーズ開始回数が指定回数を超えた場合
-                if (_playEnterCount > _finishTransitionCount)
+                // Finish 遷移条件を満たしている場合
+                if (IsFinishTransition())
                 {
                     return PhaseType.Finish;
                 }
             }
 
-            // 指定フェーズをそのまま返却
+            // --------------------------------------------------
+            // デフォルト
+            // --------------------------------------------------
             return nextPhaseType;
         }
 
@@ -107,7 +118,7 @@ namespace PhaseSystem.Application
         // ======================================================
 
         /// <summary>
-        /// Play フェーズの遷移および内部進行判定を行う
+        /// Play フェーズ時の遷移判定を行う
         /// </summary>
         /// <param name="state">Play フェーズ状態</param>
         /// <returns>遷移先フェーズ種別</returns>
@@ -117,10 +128,10 @@ namespace PhaseSystem.Application
             if (state.PlayElapsedTime >= _transitionConfig.PerPlayerLimitTime)
             {
                 // Play フェーズ開始回数を加算
-                _playEnterCount++;
+                _playEnterCount.Value++;
 
-                // Play フェーズ開始回数が指定回数を超えた場合
-                if (_playEnterCount > _finishTransitionCount)
+                // Finish 遷移条件を満たしている場合
+                if (IsFinishTransition())
                 {
                     return PhaseType.Finish;
                 }
@@ -129,6 +140,19 @@ namespace PhaseSystem.Application
             }
 
             return PhaseType.Play;
+        }
+
+        /// <summary>
+        /// Finish フェーズへ遷移すべきかを判定する
+        /// </summary>
+        /// <returns>Finish へ遷移する場合 true</returns>
+        private bool IsFinishTransition()
+        {
+            // 現在の Play フェーズ進行回数が閾値を超えているか判定
+            bool isOverThreshold = _playEnterCount.Value > _finishTransitionCount;
+
+            // Finish 条件を満たしているか返却
+            return isOverThreshold;
         }
     }
 }

@@ -73,6 +73,9 @@ namespace PhaseSystem.Application
         /// <summary>現在プレイヤーインデックスストリーム</summary>
         public IReadOnlyReactiveProperty<int> CurrentPlayerIndex => _currentPlayerIndex;
 
+        /// <summary>Play フェーズへ遷移した回数</summary>
+        public IReadOnlyReactiveProperty<int> PlayEnterCount => _transitionRule.PlayEnterCount;
+
         // ======================================================
         // コンストラクタ
         // ======================================================

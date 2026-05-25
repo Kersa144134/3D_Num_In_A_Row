@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UniRx;
 using BoardSystem.Domain;
@@ -256,6 +257,12 @@ namespace GameSystem.Presentation
         /// <summary>5 x 5 ボードサイズ</summary>
         private const int BOARD_SIZE_FIVE = 5;
 
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
+        /// <summary>入力バインド切替時の遅延時間（秒）</summary>
+        private const float INPUT_BIND_DELAY_SECONDS = 0.5f;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -361,6 +368,11 @@ namespace GameSystem.Presentation
                 .DistinctUntilChanged()
                 .Skip(1)
                 .Subscribe(player => _onPlayerChanged.OnNext(player))
+                .AddTo(_disposables);
+            _phaseMachine.PlayEnterCount
+                .DistinctUntilChanged()
+                .Skip(1)
+                .Subscribe(turn => Debug.Log(turn))
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -731,18 +743,19 @@ namespace GameSystem.Presentation
 
             // ボタン B 押す
             _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
+                .Subscribe(async _ =>
                 {
                     // ボード回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
 
-                    // 入力購読解除
-                    UnbindInputCommands();
+                    // 入力切替遅延
+                    // タイムスケールを無視する
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(INPUT_BIND_DELAY_SECONDS),
+                        DelayType.UnscaledDeltaTime
+                    );
 
-                    // CompositeDisposable 生成
-                    _inputDisposables = new CompositeDisposable();
-
-                    // 駒落下時の入力コマンド登録
+                    // 回転入力コマンド再登録
                     BindRotateInputCommands();
                 })
                 .AddTo(_inputDisposables);
@@ -835,16 +848,17 @@ namespace GameSystem.Presentation
 
             // ボタン B 押す
             _inputManager.ButtonB.OnDown
-                .Subscribe(_ =>
+                .Subscribe(async _ =>
                 {
                     // 駒落下準備イベント発火
                     _onDropRequested.OnNext(Unit.Default);
 
-                    // 入力購読解除
-                    UnbindInputCommands();
-
-                    // CompositeDisposable 生成
-                    _inputDisposables = new CompositeDisposable();
+                    // 入力切替遅延
+                    // タイムスケールを無視する
+                    await UniTask.Delay(
+                        TimeSpan.FromSeconds(INPUT_BIND_DELAY_SECONDS),
+                        DelayType.UnscaledDeltaTime
+                    );
 
                     // 駒落下時の入力コマンド登録
                     BindDropInputCommands();
