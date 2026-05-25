@@ -772,6 +772,12 @@ namespace GameSystem.Presentation
                     // ボード回転準備イベント発火
                     _onRotateRequested.OnNext(Unit.Default);
 
+                    // 入力購読解除
+                    UnbindInputCommands();
+
+                    // CompositeDisposable 生成
+                    _inputDisposables = new CompositeDisposable();
+
                     // 入力切替遅延
                     // タイムスケールを無視する
                     await UniTask.Delay(
@@ -876,6 +882,12 @@ namespace GameSystem.Presentation
                 {
                     // 駒落下準備イベント発火
                     _onDropRequested.OnNext(Unit.Default);
+
+                    // 入力購読解除
+                    UnbindInputCommands();
+
+                    // CompositeDisposable 生成
+                    _inputDisposables = new CompositeDisposable();
 
                     // 入力切替遅延
                     // タイムスケールを無視する
