@@ -113,12 +113,6 @@ namespace BoardSystem.Presentation
         /// <summary>現在のプレイヤーID</summary>
         private int _currentPlayer;
 
-        /// <summary>落下実行可能フラグ</summary>
-        private bool _canDrop = false;
-
-        /// <summary>回転実行可能フラグ</summary>
-        private bool _canRotate = false;
-
         // ======================================================
         // 定数
         // ======================================================
@@ -267,8 +261,8 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 駒落下中、またはプレイヤー番号が不正なら非表示
-            if (!_canDrop || _currentPlayer == PLAYER_NONE)
+            // 駒配置入力が未購読、またはプレイヤー ID が不正なら非表示
+            if (_dropInputSubscription == null || _currentPlayer == PLAYER_NONE)
             {
                 _view.SeteColumnSelectVisible(false);
 
@@ -385,17 +379,18 @@ namespace BoardSystem.Presentation
             _dropInputSubscription = dropStream
                 .Subscribe(_ =>
                 {
-                    // ドロップ中、またはプレイヤー未設定なら無効
-                    if (!_canDrop || _currentPlayer == PLAYER_NONE)
+                    // プレイヤー ID 未設定なら無効
+                    if (_currentPlayer == PLAYER_NONE)
                     {
                         return;
                     }
 
+                    // 駒配置入力購読解除
+                    UnbindDropInputStream();
+
                     // 駒配置処理
                     HandleDropColumn();
                 });
-
-            _canDrop = true;
         }
 
         /// <summary>
@@ -405,8 +400,6 @@ namespace BoardSystem.Presentation
         {
             _dropInputSubscription?.Dispose();
             _dropInputSubscription = null;
-
-            _canDrop = false;
         }
 
         /// <summary>
@@ -423,17 +416,12 @@ namespace BoardSystem.Presentation
             _rotateInputSubscription = rotateStream
                 .Subscribe(cmd =>
                 {
-                    // 回転中なら無効
-                    if (!_canRotate)
-                    {
-                        return;
-                    }
+                    // 回転入力購読解除
+                    UnbindRotateInputStream();
 
                     // ボード回転処理
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 });
-
-            _canRotate = true;
         }
         
         /// <summary>
@@ -443,8 +431,6 @@ namespace BoardSystem.Presentation
         {
             _rotateInputSubscription?.Dispose();
             _rotateInputSubscription = null;
-
-            _canRotate = false;
         }
 
         // ======================================================
@@ -489,8 +475,6 @@ namespace BoardSystem.Presentation
             // 入力通知
             _onDropInputted.OnNext(Unit.Default);
 
-            _canDrop = false;
-
             // ユースケース実行
             await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
 
@@ -507,8 +491,6 @@ namespace BoardSystem.Presentation
         {
             // 入力通知
             _onRotateInputted.OnNext(Unit.Default);
-
-            _canRotate = false;
 
             // --------------------------------------------------
             // 回転ユースケース実行
