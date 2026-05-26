@@ -427,112 +427,6 @@ namespace UISystem.Presentation
         }
 
         // --------------------------------------------------
-        // ボタン
-        // --------------------------------------------------
-        /// <summary>
-        /// GridLayoutGroup 配下のオプションボタンのイベント登録する
-        /// </summary>
-        private void RegisterOptionButtons()
-        {
-            // 辞書生成
-            _optionBinders = _buttonDictionaryBuilder.BuildOptionButtons(_optionButtonBinderFactory, _titleOptionButtons);
-
-            // イベント登録
-            foreach (OptionButtonBinder binder in _optionBinders.Values)
-            {
-                _eventRouter.RegisterOptionButtons(binder.Events);
-            }
-        }
-
-        /// <summary>
-        /// キャンバスと入力状態に応じて選択状態を更新する
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス</param>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        protected override void SetSelectionState(
-            in CanvasType canvasType,
-            in BaseButtonEvent buttonEvent = null)
-        {
-            // 選択状態をリセット
-            OnUnSelectButton();
-
-            // 選択対象を解決
-            BaseButtonEvent targetButton = _titleUIStateController.ResolveSelection(
-                canvasType,
-                _isGamePadInput,
-                buttonEvent);
-
-            if (targetButton == null)
-            {
-                return;
-            }
-
-            // 選択状態を適用
-            OnSelectButton(targetButton);
-        }
-
-        /// <summary>
-        /// ボタンイベントに応じてフォーカス状態を設定する
-        /// </summary>
-        /// <param name="buttonEvent">対象のボタンイベント</param>
-        /// <param name="isFocus">フォーカス状態かどうか</param>
-        protected override void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
-        {
-            // 通常ボタンイベント
-            if (buttonEvent is NormalButtonEvent normalButton)
-            {
-                // 通常ボタンのフォーカス状態を有効化
-                _titleUIView.SetNormalFocus(normalButton.Button, isFocus);
-
-                return;
-            }
-
-            // オプションボタンイベント
-            if (buttonEvent is OptionButtonEvent optionButton)
-            {
-                // オプションボタンのフォーカス状態を有効化
-                _titleUIView.SetOptionFocus(optionButton.Button, isFocus);
-
-                return;
-            }
-        }
-
-        /// <summary>
-        /// ボードサイズに応じて ConnectCount の表示状態と初期選択を制御する
-        /// </summary>
-        private void ApplyBoardSizeDependentConnectCount(in int boardSize)
-        {
-            // ConnectCount バインダー取得
-            if (!_optionBinders.TryGetValue(OptionType.ConnectCount, out OptionButtonBinder connectCountBinder))
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // 3 x 3 判定
-            // --------------------------------------------------
-            bool isThreeSize = (boardSize == BOARD_SIZE_THREE);
-
-            // 3 x 3 の場合は強制的に先頭を選択状態にする
-            if (isThreeSize)
-            {
-                // インデックス 0 を選択
-                connectCountBinder.SelectByIndex(0);
-
-                // ビューへ選択状態を反映
-                _titleUIView.ApplyButtonSelectionState(
-                    connectCountBinder.Buttons,
-                    connectCountBinder.SelectStateArray);
-            }
-
-            for (int i = 1; i < connectCountBinder.Buttons.Length; i++)
-            {
-                // インデックス 1 以降のボタンオブジェクト非表示
-                connectCountBinder.Events[i].gameObject.SetActive(!isThreeSize);
-            }
-        }
-
-        // --------------------------------------------------
         // イベントハンドラ
         // --------------------------------------------------
         /// <summary>
@@ -652,7 +546,7 @@ namespace UISystem.Presentation
 
             OnUnFocusButton(buttonEvent);
         }
-        
+
         /// <summary>
         /// NormalButton クリック時の処理
         /// UIActionType に応じて各UI遷移・状態更新を実行する
@@ -1019,6 +913,112 @@ namespace UISystem.Presentation
         {
             // 選択解除
             _eventSystem.SetSelectedGameObject(null);
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// GridLayoutGroup 配下のオプションボタンのイベント登録する
+        /// </summary>
+        private void RegisterOptionButtons()
+        {
+            // 辞書生成
+            _optionBinders = _buttonDictionaryBuilder.BuildOptionButtons(_optionButtonBinderFactory, _titleOptionButtons);
+
+            // イベント登録
+            foreach (OptionButtonBinder binder in _optionBinders.Values)
+            {
+                _eventRouter.RegisterOptionButtons(binder.Events);
+            }
+        }
+
+        /// <summary>
+        /// キャンバスと入力状態に応じて選択状態を更新する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス</param>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected override void SetSelectionState(
+            in CanvasType canvasType,
+            in BaseButtonEvent buttonEvent = null)
+        {
+            // 選択状態をリセット
+            OnUnSelectButton();
+
+            // 選択対象を解決
+            BaseButtonEvent targetButton = _titleUIStateController.ResolveSelection(
+                canvasType,
+                _isGamePadInput,
+                buttonEvent);
+
+            if (targetButton == null)
+            {
+                return;
+            }
+
+            // 選択状態を適用
+            OnSelectButton(targetButton);
+        }
+
+        /// <summary>
+        /// ボタンイベントに応じてフォーカス状態を設定する
+        /// </summary>
+        /// <param name="buttonEvent">対象のボタンイベント</param>
+        /// <param name="isFocus">フォーカス状態かどうか</param>
+        protected override void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
+        {
+            // 通常ボタンイベント
+            if (buttonEvent is NormalButtonEvent normalButton)
+            {
+                // 通常ボタンのフォーカス状態を有効化
+                _titleUIView.SetNormalFocus(normalButton.Button, isFocus);
+
+                return;
+            }
+
+            // オプションボタンイベント
+            if (buttonEvent is OptionButtonEvent optionButton)
+            {
+                // オプションボタンのフォーカス状態を有効化
+                _titleUIView.SetOptionFocus(optionButton.Button, isFocus);
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// ボードサイズに応じて ConnectCount の表示状態と初期選択を制御する
+        /// </summary>
+        private void ApplyBoardSizeDependentConnectCount(in int boardSize)
+        {
+            // ConnectCount バインダー取得
+            if (!_optionBinders.TryGetValue(OptionType.ConnectCount, out OptionButtonBinder connectCountBinder))
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 3 x 3 判定
+            // --------------------------------------------------
+            bool isThreeSize = (boardSize == BOARD_SIZE_THREE);
+
+            // 3 x 3 の場合は強制的に先頭を選択状態にする
+            if (isThreeSize)
+            {
+                // インデックス 0 を選択
+                connectCountBinder.SelectByIndex(0);
+
+                // ビューへ選択状態を反映
+                _titleUIView.ApplyButtonSelectionState(
+                    connectCountBinder.Buttons,
+                    connectCountBinder.SelectStateArray);
+            }
+
+            for (int i = 1; i < connectCountBinder.Buttons.Length; i++)
+            {
+                // インデックス 1 以降のボタンオブジェクト非表示
+                connectCountBinder.Events[i].gameObject.SetActive(!isThreeSize);
+            }
         }
 
         // ======================================================

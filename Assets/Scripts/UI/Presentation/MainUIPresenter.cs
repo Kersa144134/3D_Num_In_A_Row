@@ -518,6 +518,344 @@ namespace UISystem.Presentation
         }
 
         // --------------------------------------------------
+        // イベントハンドラ
+        // --------------------------------------------------
+        /// <summary>
+        /// クリックイベント受信時
+        /// </summary>
+        /// <param name="clickEvent">クリックイベント</param>
+        protected override void OnClickEventInternal(UIClickEvent clickEvent)
+        {
+            // --------------------------------------------------
+            // 通常ボタン
+            // --------------------------------------------------
+            if (clickEvent.UIEvent is NormalButtonEvent normalButton)
+            {
+                // 左クリックのみ処理
+                if (clickEvent.ClickType == UIClickType.Left)
+                {
+                    OnNormalButtonClick(normalButton);
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // パネル
+            // --------------------------------------------------
+            if (clickEvent.UIEvent is BasePanelEvent panelEvent)
+            {
+                OnPanelClick(panelEvent);
+            }
+        }
+
+        /// <summary>
+        /// ホバーイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+            // 選択対象のボタンイベントをキャッシュ
+            _mainUIStateController.SetLastHoveredButtonEvent(
+                activeCanvasType,
+                buttonEvent);
+
+            OnSelectButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// ホバー解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+            // 選択対象のボタンイベントをクリア
+            _mainUIStateController.ClearLastHoveredButtonEvent(activeCanvasType);
+
+            // ホバー解除処理
+            OnUnSelectButton();
+        }
+
+        /// <summary>
+        /// フォーカスイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnFocusButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// フォーカス解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnUnFocusButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// NormalButton クリック時の処理
+        /// UIActionType に応じて各UI遷移・状態更新を実行する
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        private void OnNormalButtonClick(NormalButtonEvent buttonEvent)
+        {
+            // UI アクション種別へ変換できない場合は処理なし
+            if (!_normalButtonResolver.TryGetType(buttonEvent, out UIActionType actionType))
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // ダイアログ：YES
+            // --------------------------------------------------
+            if (actionType == UIActionType.DialogYes)
+            {
+                // ダイアログキャンバスを非表示にする
+                _mainUIStateController.HideDialogCanvas();
+
+                // ダイアログデータ取得
+                DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
+
+                if (dialogEvent != null)
+                {
+                    // ダイアログイベント発火
+                    dialogEvent.InvokeEvent();
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // ダイアログ：NO
+            // --------------------------------------------------
+            if (actionType == UIActionType.DialogNo)
+            {
+                // ダイアログキャンバスを非表示にする
+                _mainUIStateController.HideDialogCanvas();
+
+                // 次のキャンバス状態を取得する
+                CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+                // 最後に選択されていたボタンを取得する
+                BaseButtonEvent selectedButtonEvent =
+                    _mainUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                // 入力状態に応じて初期選択を適用する
+                SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+                // ダイアログ非表示を通知する
+                _onDialogVisibleChanged.OnNext(false);
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // メインに戻るボタン
+            // --------------------------------------------------
+            // タイトルスタートボタン押下時の処理
+            if (actionType == UIActionType.ReturnToMain)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // タイトルに戻るボタン
+            // --------------------------------------------------
+            // タイトルスタートボタン押下時の処理
+            if (actionType == UIActionType.ReturnToTitle)
+            {
+                // ダイアログキャンバスを表示する
+                _mainUIStateController.ShowDialogCanvas(DialogType.Confirm);
+
+                // 次のキャンバス状態を取得する
+                CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+                // ダイアログ用ボタンを表示する
+                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
+                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
+
+                // 初期フォーカスを Yes ボタンに設定する
+                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
+
+                // ダイアログ表示を通知する
+                _onDialogVisibleChanged.OnNext(true);
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// パネルクリック時
+        /// </summary>
+        /// <param name="panelEvent">対象パネルイベント</param>
+        private void OnPanelClick(BasePanelEvent panelEvent)
+        {
+            if (panelEvent == null)
+            {
+                return;
+            }
+
+            if (panelEvent is NormalPanelEvent)
+            {
+                // 現在アクティブなキャンバス状態を取得
+                CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+                // ダイアログの場合
+                if (activeCanvasType == CanvasType.Dialog)
+                {
+                    // ダイアログキャンバス非表示
+                    _mainUIStateController.HideDialogCanvas();
+
+                    // 遷移先のキャンバス状態を取得
+                    CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _mainUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                    // 遷移先のキャンバスで最後に選択していたボタンを適用
+                    SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+                    // ダイアログ非表示を通知
+                    _onDialogVisibleChanged.OnNext(false);
+                }
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// ボタンへフォーカス状態を適用し、フォーカス座標を通知する
+        /// </summary>
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnFocusButton(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
+
+            // オプションキャンバスの場合
+            if (activeCanvasType == CanvasType.Option)
+            {
+                // 対象ボタンが OptionButton の場合
+                if (buttonEvent is OptionButtonEvent optionButton)
+                {
+                    // 選択対象のボタンイベントをキャッシュ
+                    _mainUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
+                }
+            }
+            else
+            {
+                // 選択対象のボタンイベントをキャッシュ
+                _mainUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
+            }
+
+            // フォーカス状態表示
+            SetFocusState(buttonEvent, true);
+
+            // スクリーン座標変換
+            Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(
+                null,
+                buttonEvent.RectTransform.position);
+
+            // フォーカス通知
+            _onFocusPosition.OnNext(screenPosition);
+
+            // ターゲット検出状態を有効化
+            UpdatePointerTargetAnimation(true);
+        }
+
+        /// <summary>
+        /// ボタンのフォーカス状態を解除する
+        /// </summary>
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnUnFocusButton(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // フォーカス状態非表示
+            SetFocusState(buttonEvent, false);
+
+            // ターゲット検出状態を解除
+            UpdatePointerTargetAnimation(false);
+        }
+
+        /// <summary>
+        /// EventSystem の選択状態を変更する
+        /// </summary>
+        /// <param name="uiEvent">対象イベント</param>
+        private void OnSelectButton(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在選択中のオブジェクト取得
+            GameObject currentSelectedObject = _eventSystem.currentSelectedGameObject;
+
+            // 同一オブジェクトが選択されている場合
+            if (currentSelectedObject == buttonEvent.gameObject)
+            {
+                return;
+            }
+
+            // 選択状態を更新
+            _eventSystem.SetSelectedGameObject(buttonEvent.gameObject);
+        }
+
+        /// <summary>
+        /// EventSystem の選択状態を解除する
+        /// </summary>
+        private void OnUnSelectButton()
+        {
+            // 選択解除
+            _eventSystem.SetSelectedGameObject(null);
+        }
+
+        // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
         /// <summary>
@@ -779,344 +1117,6 @@ namespace UISystem.Presentation
             }
 
             _effectAnimator.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
-        }
-
-        // --------------------------------------------------
-        // イベントハンドラ
-        // --------------------------------------------------
-        /// <summary>
-        /// クリックイベント受信時
-        /// </summary>
-        /// <param name="clickEvent">クリックイベント</param>
-        protected override void OnClickEventInternal(UIClickEvent clickEvent)
-        {
-            // --------------------------------------------------
-            // 通常ボタン
-            // --------------------------------------------------
-            if (clickEvent.UIEvent is NormalButtonEvent normalButton)
-            {
-                // 左クリックのみ処理
-                if (clickEvent.ClickType == UIClickType.Left)
-                {
-                    OnNormalButtonClick(normalButton);
-                }
-
-                return;
-            }
-
-            // --------------------------------------------------
-            // パネル
-            // --------------------------------------------------
-            if (clickEvent.UIEvent is BasePanelEvent panelEvent)
-            {
-                OnPanelClick(panelEvent);
-            }
-        }
-
-        /// <summary>
-        /// ホバーイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-            // 選択対象のボタンイベントをキャッシュ
-            _mainUIStateController.SetLastHoveredButtonEvent(
-                activeCanvasType,
-                buttonEvent);
-
-            OnSelectButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// ホバー解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-            // 選択対象のボタンイベントをクリア
-            _mainUIStateController.ClearLastHoveredButtonEvent(activeCanvasType);
-
-            // ホバー解除処理
-            OnUnSelectButton();
-        }
-
-        /// <summary>
-        /// フォーカスイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnFocusButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// フォーカス解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnUnFocusButton(buttonEvent);
-        }
-        
-        /// <summary>
-        /// NormalButton クリック時の処理
-        /// UIActionType に応じて各UI遷移・状態更新を実行する
-        /// </summary>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void OnNormalButtonClick(NormalButtonEvent buttonEvent)
-        {
-            // UI アクション種別へ変換できない場合は処理なし
-            if (!_normalButtonResolver.TryGetType(buttonEvent, out UIActionType actionType))
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // ダイアログ：YES
-            // --------------------------------------------------
-            if (actionType == UIActionType.DialogYes)
-            {
-                // ダイアログキャンバスを非表示にする
-                _mainUIStateController.HideDialogCanvas();
-
-                // ダイアログデータ取得
-                DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
-
-                if (dialogEvent != null)
-                {
-                    // ダイアログイベント発火
-                    dialogEvent.InvokeEvent();
-                }
-
-                return;
-            }
-
-            // --------------------------------------------------
-            // ダイアログ：NO
-            // --------------------------------------------------
-            if (actionType == UIActionType.DialogNo)
-            {
-                // ダイアログキャンバスを非表示にする
-                _mainUIStateController.HideDialogCanvas();
-
-                // 次のキャンバス状態を取得する
-                CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-                // 最後に選択されていたボタンを取得する
-                BaseButtonEvent selectedButtonEvent =
-                    _mainUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
-
-                // 入力状態に応じて初期選択を適用する
-                SetSelectionState(nextCanvasType, selectedButtonEvent);
-
-                // ダイアログ非表示を通知する
-                _onDialogVisibleChanged.OnNext(false);
-
-                return;
-            }
-
-            // --------------------------------------------------
-            // メインに戻るボタン
-            // --------------------------------------------------
-            // タイトルスタートボタン押下時の処理
-            if (actionType == UIActionType.ReturnToMain)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // タイトルに戻るボタン
-            // --------------------------------------------------
-            // タイトルスタートボタン押下時の処理
-            if (actionType == UIActionType.ReturnToTitle)
-            {
-                // ダイアログキャンバスを表示する
-                _mainUIStateController.ShowDialogCanvas(DialogType.Confirm);
-
-                // 次のキャンバス状態を取得する
-                CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-                // ダイアログ用ボタンを表示する
-                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
-                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
-
-                // 初期フォーカスを Yes ボタンに設定する
-                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
-
-                // ダイアログ表示を通知する
-                _onDialogVisibleChanged.OnNext(true);
-
-                return;
-            }
-        }
-
-        /// <summary>
-        /// パネルクリック時
-        /// </summary>
-        /// <param name="panelEvent">対象パネルイベント</param>
-        private void OnPanelClick(BasePanelEvent panelEvent)
-        {
-            if (panelEvent == null)
-            {
-                return;
-            }
-
-            if (panelEvent is NormalPanelEvent)
-            {
-                // 現在アクティブなキャンバス状態を取得
-                CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-                // ダイアログの場合
-                if (activeCanvasType == CanvasType.Dialog)
-                {
-                    // ダイアログキャンバス非表示
-                    _mainUIStateController.HideDialogCanvas();
-
-                    // 遷移先のキャンバス状態を取得
-                    CanvasType nextCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _mainUIStateController.GetLastSelectedButtonEvent(nextCanvasType);
-
-                    // 遷移先のキャンバスで最後に選択していたボタンを適用
-                    SetSelectionState(nextCanvasType, selectedButtonEvent);
-
-                    // ダイアログ非表示を通知
-                    _onDialogVisibleChanged.OnNext(false);
-                }
-
-                return;
-            }
-        }
-
-        /// <summary>
-        /// ボタンへフォーカス状態を適用し、フォーカス座標を通知する
-        /// </summary>
-        /// <param name="uiEvent">対象イベント</param>
-        private void OnFocusButton(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _mainUIStateController.GetActiveCanvasType();
-
-            // オプションキャンバスの場合
-            if (activeCanvasType == CanvasType.Option)
-            {
-                // 対象ボタンが OptionButton の場合
-                if (buttonEvent is OptionButtonEvent optionButton)
-                {
-                    // 選択対象のボタンイベントをキャッシュ
-                    _mainUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
-                }
-            }
-            else
-            {
-                // 選択対象のボタンイベントをキャッシュ
-                _mainUIStateController.SetLastSelectedButtonEvent(activeCanvasType, buttonEvent);
-            }
-
-            // フォーカス状態表示
-            SetFocusState(buttonEvent, true);
-
-            // スクリーン座標変換
-            Vector2 screenPosition = RectTransformUtility.WorldToScreenPoint(
-                null,
-                buttonEvent.RectTransform.position);
-
-            // フォーカス通知
-            _onFocusPosition.OnNext(screenPosition);
-
-            // ターゲット検出状態を有効化
-            UpdatePointerTargetAnimation(true);
-        }
-
-        /// <summary>
-        /// ボタンのフォーカス状態を解除する
-        /// </summary>
-        /// <param name="uiEvent">対象イベント</param>
-        private void OnUnFocusButton(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // フォーカス状態非表示
-            SetFocusState(buttonEvent, false);
-
-            // ターゲット検出状態を解除
-            UpdatePointerTargetAnimation(false);
-        }
-
-        /// <summary>
-        /// EventSystem の選択状態を変更する
-        /// </summary>
-        /// <param name="uiEvent">対象イベント</param>
-        private void OnSelectButton(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在選択中のオブジェクト取得
-            GameObject currentSelectedObject = _eventSystem.currentSelectedGameObject;
-
-            // 同一オブジェクトが選択されている場合
-            if (currentSelectedObject == buttonEvent.gameObject)
-            {
-                return;
-            }
-
-            // 選択状態を更新
-            _eventSystem.SetSelectedGameObject(buttonEvent.gameObject);
-        }
-
-        /// <summary>
-        /// EventSystem の選択状態を解除する
-        /// </summary>
-        private void OnUnSelectButton()
-        {
-            // 選択解除
-            _eventSystem.SetSelectedGameObject(null);
         }
 
         // ======================================================
