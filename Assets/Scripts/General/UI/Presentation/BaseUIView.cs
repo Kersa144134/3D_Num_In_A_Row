@@ -39,35 +39,53 @@ namespace UISystem.Presentation
         /// <summary>ポインター</summary>
         protected GameObject _pointer;
 
-        /// <summary>ポインター Rect</summary>
+        /// <summary>ポインター RectTransform</summary>
         protected RectTransform _pointerRect;
 
-        /// <summary>Canvas Rect</summary>
+        /// <summary>Canvas RectTransform</summary>
         protected RectTransform _canvasRect;
-
-        // ======================================================
-        // コンストラクタ
-        // ======================================================
-
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        public void InitializeBase(
-            ScriptableRendererFeature binFeature,
-            Material binMaterial,
-            ScriptableRendererFeature greyFeature,
-            Material greyMaterial,
-            ScriptableRendererFeature disFeature,
-            Material disMaterial)
-        {
-            _binarization = new BinarizationPostProcessController(binFeature, binMaterial);
-            _greyScale = new GreyScalePostProcessController(greyFeature, greyMaterial);
-            _distortion = new DistortionPostProcessController(disFeature, disMaterial);
-        }
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        /// <summary>
+        /// 基底クラスの初期化
+        /// </summary>
+        public void InitializeBase(
+            in ScriptableRendererFeature binFeature,
+            in Material binMaterial,
+            in ScriptableRendererFeature greyFeature,
+            in Material greyMaterial,
+            in ScriptableRendererFeature disFeature,
+            in Material disMaterial,
+            in GameObject pointer)
+        {
+            _pointer = pointer;
+
+            // --------------------------------------------------
+            // エフェクト初期化
+            // --------------------------------------------------
+            _binarization = new BinarizationPostProcessController(binFeature, binMaterial);
+            _greyScale = new GreyScalePostProcessController(greyFeature, greyMaterial);
+            _distortion = new DistortionPostProcessController(disFeature, disMaterial);
+
+            // --------------------------------------------------
+            // ポインター初期化
+            // --------------------------------------------------
+            if (_pointer != null)
+            {
+                _pointerRect = _pointer.GetComponent<RectTransform>();
+
+                // 親 Canvas を取得
+                Canvas canvas = _pointer.GetComponentInParent<Canvas>();
+
+                if (canvas != null)
+                {
+                    _canvasRect = canvas.transform as RectTransform;
+                }
+            }
+        }
 
         // --------------------------------------------------
         // エフェクト

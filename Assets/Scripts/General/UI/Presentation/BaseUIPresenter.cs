@@ -6,17 +6,19 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
+using PhaseSystem.Domain;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using UISystem.Application;
+using UISystem.Domain;
+using UISystem.Infrastructure;
 using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
-using PhaseSystem.Domain;
+using UnityEngine.UIElements;
 using UpdateSystem.Domain;
-using UISystem.Application;
-using UISystem.Domain;
-using UISystem.Infrastructure;
 
 namespace UISystem.Presentation
 {
@@ -38,6 +40,46 @@ namespace UISystem.Presentation
         protected DialogCanvasDefinition[] _dialogCanvasArray;
 
         // --------------------------------------------------
+        // 演出 <2 値化>
+        // --------------------------------------------------
+        [Header("演出 <2 値化>")]
+        /// <summary>2 値化エフェクトのRenderFeature</summary>
+        [SerializeField]
+        protected ScriptableRendererFeature _binarizationFeature;
+
+        /// <summary>2 値化エフェクト用マテリアル</summary>
+        [SerializeField]
+        protected Material _binarizationMaterial;
+
+        /// <summary>2 値化エフェクトの有効状態</summary>
+        [SerializeField]
+        protected bool _isBinarizationEnabled;
+
+        /// <summary>歪み中心座標</summary>
+        [SerializeField]
+        protected Vector2 _binarizationDistortionCenter;
+
+        /// <summary>歪み強度</summary>
+        [SerializeField]
+        protected float _binarizationDistortionStrength;
+
+        /// <summary>ノイズ強度</summary>
+        [SerializeField]
+        protected float _binarizationNoise;
+
+        /// <summary>ポスタライズ閾値</summary>
+        [SerializeField]
+        protected float _binarizationThreshold;
+
+        /// <summary>明部カラー</summary>
+        [SerializeField]
+        protected Color _binarizationLight;
+
+        /// <summary>暗部カラー</summary>
+        [SerializeField]
+        protected Color _binarizationDark;
+
+        // --------------------------------------------------
         // ポインター
         // --------------------------------------------------
         [Header("ポインター")]
@@ -46,84 +88,44 @@ namespace UISystem.Presentation
         protected GameObject _pointer;
 
         // --------------------------------------------------
-        // 演出 <2 値化>
-        // --------------------------------------------------
-        [Header("演出 <2 値化>")]
-        /// <summary>2 値化エフェクトのRenderFeature</summary>
-        [SerializeField]
-        private ScriptableRendererFeature _binarizationFeature;
-
-        /// <summary>2 値化エフェクト用マテリアル</summary>
-        [SerializeField]
-        private Material _binarizationMaterial;
-
-        /// <summary>2 値化エフェクトの有効状態</summary>
-        [SerializeField]
-        private bool _isBinarizationEnabled;
-
-        /// <summary>歪み中心座標</summary>
-        [SerializeField]
-        private Vector2 _binarizationDistortionCenter;
-
-        /// <summary>歪み強度</summary>
-        [SerializeField]
-        private float _binarizationDistortionStrength;
-
-        /// <summary>ノイズ強度</summary>
-        [SerializeField]
-        private float _binarizationNoise;
-
-        /// <summary>ポスタライズ閾値</summary>
-        [SerializeField]
-        private float _binarizationThreshold;
-
-        /// <summary>明部カラー</summary>
-        [SerializeField]
-        private Color _binarizationLight;
-
-        /// <summary>暗部カラー</summary>
-        [SerializeField]
-        private Color _binarizationDark;
-
-        // --------------------------------------------------
         // 演出 <グレースケール>
         // --------------------------------------------------
         [Header("演出 <グレースケール>")]
         /// <summary>グレースケールのRenderFeature</summary>
         [SerializeField]
-        private ScriptableRendererFeature _greyScaleFeature;
+        protected ScriptableRendererFeature _greyScaleFeature;
 
         /// <summary>グレースケール用マテリアル</summary>
         [SerializeField]
-        private Material _greyScaleMaterial;
+        protected Material _greyScaleMaterial;
 
         /// <summary>グレースケールの有効状態</summary>
         [SerializeField]
-        private bool _isGreyScaleEnabled;
+        protected bool _isGreyScaleEnabled;
 
         /// <summary>グレースケール強度</summary>
         [SerializeField]
-        private Vector3 _greyScaleStrength;
+        protected Vector3 _greyScaleStrength;
 
         /// <summary>歪み中心</summary>
         [SerializeField]
-        private Vector2 _greyScaleDistortionCenter;
+        protected Vector2 _greyScaleDistortionCenter;
 
         /// <summary>歪み強度</summary>
         [SerializeField]
-        private float _greyScaleDistortionStrength;
+        protected float _greyScaleDistortionStrength;
 
         /// <summary>ノイズ強度</summary>
         [SerializeField]
-        private float _greyScaleNoise;
+        protected float _greyScaleNoise;
 
         /// <summary>明部カラー</summary>
         [SerializeField]
-        private Color _greyScaleLight;
+        protected Color _greyScaleLight;
 
         /// <summary>暗部カラー</summary>
         [SerializeField]
-        private Color _greyScaleDark;
+        protected Color _greyScaleDark;
 
         // --------------------------------------------------
         // 演出 <歪み>
@@ -131,37 +133,40 @@ namespace UISystem.Presentation
         [Header("演出 <歪み>")]
         /// <summary>歪みのRenderFeature</summary>
         [SerializeField]
-        private ScriptableRendererFeature _distortionFeature;
+        protected ScriptableRendererFeature _distortionFeature;
 
         /// <summary>歪み用マテリアル</summary>
         [SerializeField]
-        private Material _distortionMaterial;
+        protected Material _distortionMaterial;
 
         /// <summary>歪みの有効状態</summary>
         [SerializeField]
-        private bool _isDistortionEnabled;
+        protected bool _isDistortionEnabled;
 
         /// <summary>歪み中心</summary>
         [SerializeField]
-        private Vector2 _distortionCenter;
+        protected Vector2 _distortionCenter;
 
         /// <summary>歪み強度</summary>
         [SerializeField]
-        private float _distortionStrength;
+        protected float _distortionStrength;
 
         /// <summary>ノイズ強度</summary>
         [SerializeField]
-        private float _distortionNoise;
+        protected float _distortionNoise;
 
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>ビュー</summary>
-        private BaseUIView _view;
+        /// <summary>イベントを仲介するクラス</summary>
+        protected readonly UIEventRouter _eventRouter = new UIEventRouter();
 
         /// <summary>ボタンの辞書およびバインダー構築を行うクラス</summary>
         protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
+
+        /// <summary>通常ボタンの参照解決クラス</summary>
+        protected NormalButtonResolver _normalButtonResolver;
 
         /// <summary>ダイアログ UI のイベント購読対象を収集するクラス</summary>
         protected readonly DialogUICollector _dialogUICollector = new DialogUICollector();
@@ -176,9 +181,12 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
-        // --------------------------------------------------
-        // アニメーター
-        // --------------------------------------------------
+        /// <summary>入力ロックフラグ</summary>
+        protected bool _isInputLock = true;
+
+        /// <summary>ゲームパッド入力状態フラグ</summary>
+        protected bool _isGamePadInput = false;
+
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -186,11 +194,24 @@ namespace UISystem.Presentation
         protected Animator _pointerAnimator;
 
         // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// 通常ボタンイベント辞書
+        /// </summary>
+        protected Dictionary<UIActionType, NormalButtonEvent> _normalButtonEventTable
+            = new Dictionary<UIActionType, NormalButtonEvent>();
+
+        // ======================================================
         // UniRx 変数
         // ======================================================
 
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>ルーター用購読管理</summary>
+        protected readonly CompositeDisposable _routerDisposables = new CompositeDisposable();
 
         /// <summary>ダイアログ表示状態通知用 Subject</summary>
         protected readonly Subject<bool> _onDialogVisibleChanged = new Subject<bool>();
@@ -252,16 +273,6 @@ namespace UISystem.Presentation
                 return;
             }
             
-            // ビュー生成
-            _view.InitializeBase(
-                _binarizationFeature,
-                _binarizationMaterial,
-                _greyScaleFeature,
-                _greyScaleMaterial,
-                _distortionFeature,
-                _distortionMaterial
-            );
-
             // ダイアログ UI コンポーネント取得
             _dialogUICollector.Collect(_dialogCanvasArray);
 
@@ -278,27 +289,6 @@ namespace UISystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
-            _view.UpdateEffect(
-                _isBinarizationEnabled,
-                _binarizationDistortionCenter,
-                _binarizationDistortionStrength,
-                _binarizationNoise,
-                _binarizationThreshold,
-                _binarizationLight,
-                _binarizationDark,
-                _isGreyScaleEnabled,
-                _greyScaleStrength,
-                _greyScaleDistortionCenter,
-                _greyScaleDistortionStrength,
-                _greyScaleNoise,
-                _greyScaleLight,
-                _greyScaleDark,
-                _isDistortionEnabled,
-                _distortionCenter,
-                _distortionStrength,
-                _distortionNoise
-            );
-            
             OnLateUpdateInternal(unscaledDeltaTime);
         }
 
@@ -332,6 +322,25 @@ namespace UISystem.Presentation
         protected virtual void OnPhaseExitInternal(in PhaseType phase) { }
 
         protected virtual void OnExitInternal() { }
+
+        // ======================================================
+        // ボタン継承イベント
+        // ======================================================
+
+        /// <summary>クリックイベント受信時</summary>
+        protected virtual void OnClickEventInternal(UIClickEvent clickEvent) { }
+
+        /// <summary>ホバーイベント受信時</summary>
+        protected virtual void OnHoverEventInternal(BaseUIEvent uiEvent) { }
+
+        /// <summary>ホバー解除イベント受信時</summary>
+        protected virtual void OnUnHoverEventInternal(BaseUIEvent uiEvent) { }
+
+        /// <summary>フォーカスイベント受信時</summary>
+        protected virtual void OnFocusEventInternal(BaseUIEvent uiEvent) { }
+
+        /// <summary>フォーカス解除イベント受信時</summary>
+        protected virtual void OnUnFocusEventInternal(BaseUIEvent uiEvent) { }
 
         // ======================================================
         // パブリックメソッド
@@ -394,6 +403,46 @@ namespace UISystem.Presentation
                     .Subscribe(HandleDialogEventReceived)
                     .AddTo(_disposables);
             }
+
+            // クリック通知
+            _eventRouter.OnClick
+                .Subscribe(clickEvent =>
+                {
+                    OnClickEventInternal(clickEvent);
+                })
+                .AddTo(_routerDisposables);
+
+            // ホバー通知
+            _eventRouter.OnHover
+                .Subscribe(uiEvent =>
+                {
+                    OnHoverEventInternal(uiEvent);
+                })
+                .AddTo(_routerDisposables);
+
+            // ホバー解除通知
+            _eventRouter.OnUnHover
+                .Subscribe(uiEvent =>
+                {
+                    OnUnHoverEventInternal(uiEvent);
+                })
+                .AddTo(_routerDisposables);
+
+            // フォーカス通知
+            _eventRouter.OnFocus
+                .Subscribe(uiEvent =>
+                {
+                    OnFocusEventInternal(uiEvent);
+                })
+                .AddTo(_routerDisposables);
+
+            // フォーカス解除通知
+            _eventRouter.OnUnFocus
+                .Subscribe(uiEvent =>
+                {
+                    OnUnFocusEventInternal(uiEvent);
+                })
+                .AddTo(_routerDisposables);
         }
 
         /// <summary>
@@ -401,8 +450,84 @@ namespace UISystem.Presentation
         /// </summary>
         protected virtual void Dispose()
         {
-            // イベント購読解除
             _disposables?.Dispose();
+            _routerDisposables?.Dispose();
+
+            _eventRouter?.Dispose();
+        }
+
+        /// <summary>
+        /// 通常ボタンイベントを登録する
+        /// </summary>
+        protected void RegisterNormalButtons(in NormalButton[] argumentButtons)
+        {
+            // ダイアログボタン数
+            int dialogCount = _dialogUICollector.Buttons != null
+                ? _dialogUICollector.Buttons.Length
+                : 0;
+            // 引数ボタン数
+            int argumentCount = argumentButtons != null
+                ? argumentButtons.Length
+                : 0;
+
+            // NormalButton 配列生成
+            NormalButton[] normalButtons = new NormalButton[dialogCount + argumentCount];
+
+            // ダイアログボタンコピー
+            for (int i = 0; i < dialogCount; i++)
+            {
+                normalButtons[i] = _dialogUICollector.Buttons[i];
+            }
+
+            // 引数ボタンコピー
+            for (int i = 0; i < argumentCount; i++)
+            {
+                normalButtons[dialogCount + i] = argumentButtons[i];
+            }
+
+            // 辞書生成
+            _normalButtonEventTable = _buttonDictionaryBuilder.BuildNormalButtons(normalButtons);
+
+            // イベント登録
+            foreach (NormalButtonEvent buttonEvent in _normalButtonEventTable.Values)
+            {
+                _eventRouter.RegisterNormalButton(buttonEvent);
+            }
+        }
+
+        /// <summary>
+        /// パネルイベントを登録する
+        /// </summary>
+        protected void RegisterPanelEvents()
+        {
+            // イベント登録
+            foreach (BasePanelEvent panelEvent in _dialogUICollector.Panels)
+            {
+                _eventRouter.RegisterPanelEvent(panelEvent);
+            }
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// キャンバスと入力状態に応じて選択状態を更新する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス</param>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected virtual void SetSelectionState(
+            in CanvasType canvasType,
+            in BaseButtonEvent buttonEvent = null)
+        {
+        }
+
+        /// <summary>
+        /// ボタンイベントに応じてフォーカス状態を設定する
+        /// </summary>
+        /// <param name="buttonEvent">対象のボタンイベント</param>
+        /// <param name="isFocus">フォーカス状態かどうか</param>
+        protected virtual void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
+        {
         }
 
         // --------------------------------------------------

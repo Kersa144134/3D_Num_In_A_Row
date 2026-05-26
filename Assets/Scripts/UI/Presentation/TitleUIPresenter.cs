@@ -122,13 +122,7 @@ namespace UISystem.Presentation
         // UI 管理
         // --------------------------------------------------
         /// <summary>ビュー</summary>
-        private TitleUIView _titleUIView;
-
-        /// <summary>イベントを仲介するクラス</summary>
-        private readonly UIEventRouter _eventRouter = new UIEventRouter();
-
-        /// <summary>通常ボタンの参照解決クラス</summary>
-        private NormalButtonResolver _normalButtonResolver;
+        private readonly TitleUIView _titleUIView = new TitleUIView();
 
         /// <summary>OptionButtonBinder 生成クラス</summary>
         private OptionButtonBinderFactory _optionButtonBinderFactory;
@@ -139,37 +133,19 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // システム参照
         // --------------------------------------------------
+        /// <summary>オプション選択状態リポジトリ</summary>
+        private readonly PlayerPrefsOptionSelectionRepository _repository
+            = new PlayerPrefsOptionSelectionRepository();
+
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
-        /// <summary>
-        /// オプション選択状態リポジトリ
-        /// </summary>
-        private readonly PlayerPrefsOptionSelectionRepository _repository
-            = new PlayerPrefsOptionSelectionRepository();
-
-        // ======================================================
-        // フィールド
-        // ======================================================
-
-        /// <summary>入力ロックフラグ</summary>
-        private bool _isInputLock = true;
-
-        /// <summary>ゲームパッド入力状態フラグ</summary>
-        private bool _isGamePadInput = false;
-
         // ======================================================
         // 辞書
         // ======================================================
-
-        /// <summary>
-        /// 通常ボタンイベント辞書
-        /// </summary>
-        private Dictionary<UIActionType, NormalButtonEvent> _normalButtonEventTable
-            = new Dictionary<UIActionType, NormalButtonEvent>();
 
         /// <summary>
         /// オプション UI バインダー辞書
@@ -196,9 +172,6 @@ namespace UISystem.Presentation
 
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
-
-        /// <summary>ルーター用購読管理</summary>
-        private readonly CompositeDisposable _routerDisposables = new CompositeDisposable();
 
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
@@ -249,8 +222,16 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ビュー生成
             // --------------------------------------------------
+            _titleUIView.InitializeBase(
+                _binarizationFeature,
+                _binarizationMaterial,
+                _greyScaleFeature,
+                _greyScaleMaterial,
+                _distortionFeature,
+                _distortionMaterial,
+                _pointer
+            );
             _titleUIView.Initialize(
-                _pointer,
                 _normalFocusOnColor,
                 _normalFocusOffColor,
                 _optionSelectOnColor,
@@ -262,8 +243,8 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // 通常ボタン初期化
             // --------------------------------------------------
-            // 通常ボタン初期化
-            InitializeNormalButtons();
+            // 通常ボタンイベント登録
+            RegisterNormalButtons(_titleNormalButtons);
 
             // 通常ボタンの参照解決クラス生成
             _normalButtonResolver = new NormalButtonResolver(_normalButtonEventTable);
@@ -315,12 +296,13 @@ namespace UISystem.Presentation
             _optionButtonBinderFactory = new OptionButtonBinderFactory(reader);
 
             // オプションボタン初期化
-            InitializeOptionButtons();
+            RegisterOptionButtons();
 
             // --------------------------------------------------
             // パネル初期化
             // --------------------------------------------------
-            InitializePanelEvents();
+            // パネルイベント登録
+            RegisterPanelEvents();
             
             // --------------------------------------------------
             // キャンバス初期化
@@ -346,6 +328,28 @@ namespace UISystem.Presentation
         {
             base.OnLateUpdateInternal(unscaledDeltaTime);
 
+            // エフェクト更新
+            _titleUIView.UpdateEffect(
+                _isBinarizationEnabled,
+                _binarizationDistortionCenter,
+                _binarizationDistortionStrength,
+                _binarizationNoise,
+                _binarizationThreshold,
+                _binarizationLight,
+                _binarizationDark,
+                _isGreyScaleEnabled,
+                _greyScaleStrength,
+                _greyScaleDistortionCenter,
+                _greyScaleDistortionStrength,
+                _greyScaleNoise,
+                _greyScaleLight,
+                _greyScaleDark,
+                _isDistortionEnabled,
+                _distortionCenter,
+                _distortionStrength,
+                _distortionNoise
+            );
+                
             if (_isInputLock)
             {
                 return;
@@ -371,12 +375,13 @@ namespace UISystem.Presentation
         /// イベントストリームをまとめて購読する
         /// </summary>
         /// <param name="inputLock">入力ロック状態ストリーム</param>
-        /// <param name="gamePadInput">ゲームパッド入力状態ストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         public void BindStreams(
             in IObservable<bool> inputLock,
-            in IObservable<bool> gamePadInput)
+            in IObservable<bool> gamepadUsed)
         {
             inputLock
+                .DistinctUntilChanged()
                 .Subscribe(isLock =>
                 {
                     _isInputLock = isLock;
@@ -384,12 +389,12 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
 
-            gamePadInput
+            gamepadUsed
                 .DistinctUntilChanged()
-                .Subscribe(isGamePadInput =>
+                .Subscribe(isUsed =>
                 {
                     // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isGamePadInput;
+                    _isGamePadInput = isUsed;
 
                     // 現在アクティブなキャンバス状態を取得
                     CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
@@ -412,125 +417,6 @@ namespace UISystem.Presentation
         // イベント購読
         // --------------------------------------------------
         /// <summary>
-        /// イベント購読
-        /// </summary>
-        protected override void Subscribe()
-        {
-            base.Subscribe();
-            
-            // クリック通知
-            _eventRouter.OnClick
-                .Subscribe(clickEvent =>
-                {
-                    // --------------------------------------------------
-                    // 通常ボタン
-                    // --------------------------------------------------
-                    if (clickEvent.UIEvent is NormalButtonEvent normalButton)
-                    {
-                        // 左クリックのみ処理
-                        if (clickEvent.ClickType == UIClickType.Left)
-                        {
-                            OnNormalButtonClick(normalButton);
-                        }
-
-                        return;
-                    }
-
-                    // --------------------------------------------------
-                    // オプションボタン
-                    // --------------------------------------------------
-                    if (clickEvent.UIEvent is OptionButtonEvent optionButton)
-                    {
-                        // 左クリックのみ処理
-                        if (clickEvent.ClickType == UIClickType.Left)
-                        {
-                            OnOptionButtonClick(optionButton);
-                        }
-
-                        return;
-                    }
-
-                    // --------------------------------------------------
-                    // パネル
-                    // --------------------------------------------------
-                    if (clickEvent.UIEvent is BasePanelEvent panelEvent)
-                    {
-                        OnPanelClick(panelEvent);
-                    }
-                })
-                .AddTo(_routerDisposables);
-
-            // ホバー通知
-            _eventRouter.OnHover
-                .Subscribe(uiEvent =>
-                {
-                    // ボタンイベント判定
-                    if (uiEvent is not BaseButtonEvent buttonEvent)
-                    {
-                        return;
-                    }
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
-
-                    // 選択対象のボタンイベントをキャッシュ
-                    _titleUIStateController.SetLastHoveredButtonEvent(activeCanvasType, buttonEvent);
-
-                    OnSelectButton(buttonEvent);
-                })
-                .AddTo(_routerDisposables);
-
-            // ホバー解除通知
-            _eventRouter.OnUnHover
-                .Subscribe(uiEvent =>
-                {
-                    // ボタンイベント判定
-                    if (uiEvent is not BaseButtonEvent buttonEvent)
-                    {
-                        return;
-                    }
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
-
-                    // 選択対象のボタンイベントをクリア
-                    _titleUIStateController.ClearLastHoveredButtonEvent(activeCanvasType);
-
-                    // ホバー対象を選択
-                    OnUnSelectButton();
-                })
-                .AddTo(_routerDisposables);
-
-            // フォーカス通知
-            _eventRouter.OnFocus
-                .Subscribe(uiEvent =>
-                {
-                    // ボタンイベント判定
-                    if (uiEvent is not BaseButtonEvent buttonEvent)
-                    {
-                        return;
-                    }
-
-                    OnFocusButton(buttonEvent);
-                })
-                .AddTo(_routerDisposables);
-
-            // フォーカス解除通知
-            _eventRouter.OnUnFocus
-                .Subscribe(uiEvent =>
-                {
-                    // ボタンイベント判定
-                    if (uiEvent is not BaseButtonEvent buttonEvent)
-                    {
-                        return;
-                    }
-
-                    OnUnFocusButton(buttonEvent);
-                })
-                .AddTo(_routerDisposables);
-        }
-
-        /// <summary>
         /// イベント購読解除
         /// </summary>
         protected override void Dispose()
@@ -538,92 +424,23 @@ namespace UISystem.Presentation
             base.Dispose();
 
             _disposables?.Dispose();
-            _routerDisposables?.Dispose();
-            _eventRouter?.Dispose();
         }
 
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
         /// <summary>
-        /// 通常ボタンイベントを初期化する
+        /// GridLayoutGroup 配下のオプションボタンのイベント登録する
         /// </summary>
-        private void InitializeNormalButtons()
+        private void RegisterOptionButtons()
         {
-            // --------------------------------------------------
-            // NormalButton 配列生成
-            // --------------------------------------------------
-            // ダイアログ側ボタン数
-            int dialogCount = _dialogUICollector.Buttons != null
-                ? _dialogUICollector.Buttons.Length
-                : 0;
-            // タイトル側ボタン数
-            int titleCount = _titleNormalButtons != null
-                ? _titleNormalButtons.Length
-                : 0;
-
-            NormalButton[] normalButtons = new NormalButton[dialogCount + titleCount];
-
-            // --------------------------------------------------
-            // ダイアログボタンコピー
-            // --------------------------------------------------
-            for (int i = 0; i < dialogCount; i++)
-            {
-                normalButtons[i] = _dialogUICollector.Buttons[i];
-            }
-
-            // --------------------------------------------------
-            // タイトルボタンコピー
-            // --------------------------------------------------
-            for (int i = 0; i < titleCount; i++)
-            {
-                normalButtons[dialogCount + i] = _titleNormalButtons[i];
-            }
-
-            // --------------------------------------------------
             // 辞書生成
-            // --------------------------------------------------
-            _normalButtonEventTable = _buttonDictionaryBuilder.BuildNormalButtons(normalButtons);
-
-            // --------------------------------------------------
-            // イベント登録
-            // --------------------------------------------------
-            foreach (NormalButtonEvent buttonEvent in _normalButtonEventTable.Values)
-            {
-                _eventRouter.RegisterNormalButton(buttonEvent);
-            }
-        }
-
-        /// <summary>
-        /// Grid Layout Group 配下のオプションボタンを初期化する
-        /// </summary>
-        private void InitializeOptionButtons()
-        {
-            // --------------------------------------------------
-            // 辞書生成
-            // --------------------------------------------------
             _optionBinders = _buttonDictionaryBuilder.BuildOptionButtons(_optionButtonBinderFactory, _titleOptionButtons);
 
-            // --------------------------------------------------
             // イベント登録
-            // --------------------------------------------------
             foreach (OptionButtonBinder binder in _optionBinders.Values)
             {
                 _eventRouter.RegisterOptionButtons(binder.Events);
-            }
-        }
-
-        /// <summary>
-        /// パネルイベントを初期化する
-        /// </summary>
-        private void InitializePanelEvents()
-        {
-            // --------------------------------------------------
-            // イベント登録
-            // --------------------------------------------------
-            foreach (BasePanelEvent panelEvent in _dialogUICollector.Panels)
-            {
-                _eventRouter.RegisterPanelEvent(panelEvent);
             }
         }
 
@@ -632,7 +449,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="canvasType">対象キャンバス</param>
         /// <param name="buttonEvent">対象ボタンイベント</param>
-        private void SetSelectionState(
+        protected override void SetSelectionState(
             in CanvasType canvasType,
             in BaseButtonEvent buttonEvent = null)
         {
@@ -659,7 +476,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="buttonEvent">対象のボタンイベント</param>
         /// <param name="isFocus">フォーカス状態かどうか</param>
-        private void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
+        protected override void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
         {
             // 通常ボタンイベント
             if (buttonEvent is NormalButtonEvent normalButton)
@@ -718,6 +535,124 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // イベントハンドラ
         // --------------------------------------------------
+        /// <summary>
+        /// クリックイベント受信時
+        /// </summary>
+        /// <param name="clickEvent">クリックイベント</param>
+        protected override void OnClickEventInternal(UIClickEvent clickEvent)
+        {
+            // --------------------------------------------------
+            // 通常ボタン
+            // --------------------------------------------------
+            if (clickEvent.UIEvent is NormalButtonEvent normalButton)
+            {
+                // 左クリックのみ処理
+                if (clickEvent.ClickType == UIClickType.Left)
+                {
+                    OnNormalButtonClick(normalButton);
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // オプションボタン
+            // --------------------------------------------------
+            if (clickEvent.UIEvent is OptionButtonEvent optionButton)
+            {
+                // 左クリックのみ処理
+                if (clickEvent.ClickType == UIClickType.Left)
+                {
+                    OnOptionButtonClick(optionButton);
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // パネル
+            // --------------------------------------------------
+            if (clickEvent.UIEvent is BasePanelEvent panelEvent)
+            {
+                OnPanelClick(panelEvent);
+            }
+        }
+
+        /// <summary>
+        /// ホバーイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+            // 選択対象のボタンイベントをキャッシュ
+            _titleUIStateController.SetLastHoveredButtonEvent(
+                activeCanvasType,
+                buttonEvent);
+
+            OnSelectButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// ホバー解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _titleUIStateController.GetActiveCanvasType();
+
+            // 選択対象のボタンイベントをクリア
+            _titleUIStateController.ClearLastHoveredButtonEvent(activeCanvasType);
+
+            // ホバー解除処理
+            OnUnSelectButton();
+        }
+
+        /// <summary>
+        /// フォーカスイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnFocusButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// フォーカス解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnUnFocusButton(buttonEvent);
+        }
+        
         /// <summary>
         /// NormalButton クリック時の処理
         /// UIActionType に応じて各UI遷移・状態更新を実行する

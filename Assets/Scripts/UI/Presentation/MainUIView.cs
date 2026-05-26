@@ -84,7 +84,7 @@ namespace UISystem.Presentation
         private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
-        // コンストラクタ
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
@@ -93,13 +93,11 @@ namespace UISystem.Presentation
         public void Initialize(
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI[] limitTimeTexts,
-            in GameObject pointer,
             in Color normalFocusOnColor,
             in Color normalfocusOffColor)
         {
             _scoreTexts = scoreTexts;
             _limitTimeTexts = limitTimeTexts;
-            _pointer = pointer;
             _normalFocusOnColor = normalFocusOnColor;
             _normalFocusOffColor = normalfocusOffColor;
 
@@ -136,29 +134,7 @@ namespace UISystem.Presentation
                         LIMIT_TIME_FORMAT,
                         LIMIT_TIME_DIGITS);
             }
-
-            // --------------------------------------------------
-            // ポインター初期化
-            // --------------------------------------------------
-            if (_pointer != null)
-            {
-                // RectTransform を取得
-                _pointerRect = _pointer.GetComponent<RectTransform>();
-
-                // 親 Canvas を取得
-                Canvas canvas = _pointer.GetComponentInParent<Canvas>();
-
-                if (canvas != null)
-                {
-                    // Canvas の RectTransform をキャッシュ
-                    _canvasRect = canvas.transform as RectTransform;
-                }
-            }
         }
-
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
 
         // --------------------------------------------------
         // ボタン
@@ -171,9 +147,7 @@ namespace UISystem.Presentation
         public void SetNormalFocus(in Button button, in bool isFocus)
         {
             // 通常ボタン辞書へ登録
-            RegisterButtonImageCache(
-                button,
-                _normalButtonImageCache);
+            RegisterButtonImageCache(button, _normalButtonImageCache);
 
             SetFocusState(
                 button,
@@ -193,7 +167,6 @@ namespace UISystem.Presentation
         /// <param name="score">スコア</param>
         public void UpdateScore(in int playerId, in int score)
         {
-            Debug.Log($"playerId {playerId}, score {score}");
             // --------------------------------------------------
             // インデックス変換（1 ベース → 0 ベース）
             // --------------------------------------------------

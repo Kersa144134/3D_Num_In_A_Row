@@ -63,14 +63,13 @@ namespace UISystem.Presentation
             new Dictionary<Button, Image>();
 
         // ======================================================
-        // コンストラクタ
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
         /// 初期化
         /// </summary>
         public void Initialize(
-            in GameObject pointer,
             in Color normalFocusOnColor,
             in Color normalfocusOffColor,
             in Color optionSelectOnColor,
@@ -78,36 +77,13 @@ namespace UISystem.Presentation
             in Color optionFocusOnColor,
             in Color optionFocusOffColor)
         {
-            _pointer = pointer;
             _normalFocusOnColor = normalFocusOnColor;
             _normalFocusOffColor = normalfocusOffColor;
             _optionSelectOnColor = optionSelectOnColor;
             _optionSelectOffColor = optionSelectOffColor;
             _optionFocusOnColor = optionFocusOnColor;
             _optionFocusOffColor = optionFocusOffColor;
-
-            // --------------------------------------------------
-            // ポインター初期化
-            // --------------------------------------------------
-            if (_pointer != null)
-            {
-                // RectTransform を取得
-                _pointerRect = _pointer.GetComponent<RectTransform>();
-
-                // 親 Canvas を取得
-                Canvas canvas = _pointer.GetComponentInParent<Canvas>();
-
-                if (canvas != null)
-                {
-                    // Canvas の RectTransform をキャッシュ
-                    _canvasRect = canvas.transform as RectTransform;
-                }
-            }
         }
-
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
 
         // --------------------------------------------------
         // ボタン
@@ -170,9 +146,7 @@ namespace UISystem.Presentation
         public void SetNormalFocus(in Button button, in bool isFocus)
         {
             // 通常ボタン辞書へ登録
-            RegisterButtonImageCache(
-                button,
-                _normalButtonImageCache);
+            RegisterButtonImageCache(button, _normalButtonImageCache);
 
             SetFocusState(
                 button,

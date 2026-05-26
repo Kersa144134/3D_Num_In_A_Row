@@ -741,45 +741,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 833623157421589268, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 2200
-      objectReference: {fileID: 0}
-    - target: {fileID: 835089361814091822, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_text
-      value: "\u3064\u3065\u3051\u308B"
-      objectReference: {fileID: 0}
-    - target: {fileID: 835089361814091822, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_fontSize
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 835089361814091822, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_fontSizeBase
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 1641466130683363980, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_text
-      value: "\u30BF\u30A4\u30C8\u30EB\u306B\u623B\u308B"
-      objectReference: {fileID: 0}
-    - target: {fileID: 1641466130683363980, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_fontSize
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 1641466130683363980, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_fontSizeBase
-      value: 80
-      objectReference: {fileID: 0}
     - target: {fileID: 3293744753317407296, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
       propertyPath: m_Name
       value: OutgameCanvas
-      objectReference: {fileID: 0}
-    - target: {fileID: 4995241897344691947, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 1600
-      objectReference: {fileID: 0}
-    - target: {fileID: 6342150109063910473, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 1800
       objectReference: {fileID: 0}
     - target: {fileID: 6440202992338872309, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
       propertyPath: m_Pivot.x
@@ -861,14 +825,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7146039636231583058, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_Name
-      value: ReturnToTitle
-      objectReference: {fileID: 0}
-    - target: {fileID: 9113782433901481968, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
-      propertyPath: m_Name
-      value: ReturnToMain
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -879,6 +835,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3293744753317407296, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
   m_PrefabInstance: {fileID: 1552572316}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1552572318 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5154244788757176849, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+  m_PrefabInstance: {fileID: 1552572316}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39bddc7509462fe46b39573b6e047c92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.NormalButtonEvent
 --- !u!1 &1594460766
 GameObject:
   m_ObjectHideFlags: 0
@@ -1676,7 +1643,7 @@ MonoBehaviour:
     _button: {fileID: 1918507087}
   _normalFocusOnColor: {r: 0.7529412, g: 0.7529412, b: 0.7529412, a: 1}
   _normalFocusOffColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  _initialSelectedPauseCanvasButton: {fileID: 0}
+  _initialSelectedPauseCanvasButton: {fileID: 1552572318}
   _limitTimeAnimator: {fileID: 1640972097}
 --- !u!1001 &4851169573257154343
 PrefabInstance:

@@ -119,6 +119,28 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!114 &10328055 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5154244788757176849, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+  m_PrefabInstance: {fileID: 7888282558615229474}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39bddc7509462fe46b39573b6e047c92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.NormalButtonEvent
+--- !u!114 &10328056 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7493149526676084416, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+  m_PrefabInstance: {fileID: 7888282558615229474}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1001 &20419169
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -186,6 +208,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 5265205945639400021, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
   m_PrefabInstance: {fileID: 1308190363228619896}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &146070868 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8839578902155193442, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+  m_PrefabInstance: {fileID: 7888282558615229474}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &214436002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5532509059127665710, guid: bc59f92d9379a324487c735d005fce27, type: 3}
@@ -1064,6 +1097,14 @@ MonoBehaviour:
   - {fileID: 86523971652887636}
   - {fileID: 1605613824}
   _warningLimitTime: 5
+  _mainNormalButtons:
+  - _type: 13
+    _button: {fileID: 10328056}
+  - _type: 14
+    _button: {fileID: 146070868}
+  _normalFocusOnColor: {r: 0.7529412, g: 0.7529412, b: 0.7529412, a: 1}
+  _normalFocusOffColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  _initialSelectedPauseCanvasButton: {fileID: 10328055}
   _limitTimeAnimator: {fileID: 1605613826}
 --- !u!1001 &5281146724075930659
 PrefabInstance:
