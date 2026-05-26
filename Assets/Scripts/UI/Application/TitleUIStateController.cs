@@ -70,7 +70,7 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="dialogCanvas">ダイアログキャンバス</param>
+        /// <param name="dialogCanvasArray">ダイアログキャンバス配列</param>
         /// <param name="startCanvas">スタートキャンバス</param>
         /// <param name="optionCanvas">オプションキャンバス</param>
         /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>

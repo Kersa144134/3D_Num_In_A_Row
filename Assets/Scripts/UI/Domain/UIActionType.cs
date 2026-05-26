@@ -62,6 +62,16 @@ namespace UISystem.Domain
         OptionCameraSpeed,
 
         /// <summary>ポインター速度オプション</summary>
-        OptionPointerSpeed
+        OptionPointerSpeed,
+
+        // ======================================================
+        // ポーズ
+        // ======================================================
+
+        /// <summary>メインシーンに戻るボタン</summary>
+        ReturnToMain,
+
+        /// <summary>タイトルシーンに戻るボタン</summary>
+        ReturnToTitle
     }
 }

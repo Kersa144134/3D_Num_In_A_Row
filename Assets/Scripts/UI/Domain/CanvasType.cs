@@ -27,6 +27,9 @@ namespace UISystem.Domain
         Start = 2,
 
         /// <summary>オプションキャンバス</summary>
-        Option = 3
+        Option = 3,
+
+        /// <summary>ポーズキャンバス</summary>
+        Pause = 4
     }
 }

@@ -1,0 +1,17 @@
+{
+    "name": "GeneralSoundApplication",
+    "rootNamespace": "",
+    "references": [
+        "GUID:d84e3ddb75a4122409d43e6d13595141",
+        "GUID:3528ad3c0b8da9a4582a7fdea156fac7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -6,7 +6,9 @@
 // 概要     : メイン UI の描画処理を担当するビュー
 // ======================================================
 
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using UISystem.Application;
 
@@ -49,6 +51,12 @@ namespace UISystem.Presentation
         /// <summary>Canvas Rect</summary>
         private readonly RectTransform _canvasRect;
 
+        /// <summary>通常フォーカス時カラー</summary>
+        private Color _normalFocusOnColor;
+
+        /// <summary>通常非フォーカス時カラー</summary>
+        private Color _normalFocusOffColor;
+
         /// <summary>前回表示スコア</summary>
         private int[] _previousDisplayScores;
 
@@ -57,6 +65,16 @@ namespace UISystem.Presentation
 
         /// <summary>時間表示用の数値配列（分・秒）</summary>
         private int[] _timeValues = new int[2];
+
+        // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// 通常ボタン に紐づく Image キャッシュ
+        /// </summary>
+        private readonly Dictionary<Button, Image> _normalButtonImageCache =
+            new Dictionary<Button, Image>();
 
         // ======================================================
         // 定数
@@ -84,12 +102,15 @@ namespace UISystem.Presentation
         public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI[] limitTimeTexts,
-            in GameObject pointer)
+            in GameObject pointer,
+            in Color normalFocusOnColor,
+            in Color normalfocusOffColor)
         {
             _scoreTexts = scoreTexts;
             _limitTimeTexts = limitTimeTexts;
-
             _pointer = pointer;
+            _normalFocusOnColor = normalFocusOnColor;
+            _normalFocusOffColor = normalfocusOffColor;
 
             _previousDisplayTotalSeconds = -1;
 
@@ -147,6 +168,29 @@ namespace UISystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// 通常ボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        public void SetNormalFocus(in Button button, in bool isFocus)
+        {
+            // 通常ボタン辞書へ登録
+            RegisterButtonImageCache(
+                button,
+                _normalButtonImageCache);
+
+            SetFocusState(
+                button,
+                isFocus,
+                _normalButtonImageCache,
+                _normalFocusOnColor,
+                _normalFocusOffColor);
+        }
 
         // --------------------------------------------------
         // スコア
@@ -309,6 +353,83 @@ namespace UISystem.Presentation
 
             // 位置反映
             _pointerRect.anchoredPosition = anchoredPos;
+        }
+
+        /// <summary>
+        /// Button と Image の対応情報を登録する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="cacheDictionary">登録先辞書</param>
+        private void RegisterButtonImageCache(
+            in Button button,
+            in Dictionary<Button, Image> cacheDictionary)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            // 既に登録済みの場合は処理なし
+            if (cacheDictionary.ContainsKey(button))
+            {
+                return;
+            }
+
+            // Button 本体の Image を取得
+            Image image = button.image;
+
+            if (image == null)
+            {
+                return;
+            }
+
+            cacheDictionary.Add(button, image);
+        }
+
+        /// <summary>
+        /// 指定ボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        /// <param name="cacheDictionary">対象辞書</param>
+        /// <param name="focusOnColor">フォーカス ON 時の色</param>
+        /// <param name="focusOffColor">対象ボタンの OFF 色</param>
+        private void SetFocusState(
+            in Button button,
+            in bool isFocus,
+            in Dictionary<Button, Image> cacheDictionary,
+            in Color focusOnColor,
+            in Color focusOffColor)
+        {
+            if (button == null)
+            {
+                return;
+            }
+            
+            // --------------------------------------------------
+            // 指定辞書のフォーカス状態更新
+            // --------------------------------------------------
+            foreach (KeyValuePair<Button, Image> cache in cacheDictionary)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // 対象ボタンの場合
+                if (cache.Key == button)
+                {
+                    // フォーカス状態に応じた色を設定
+                    cache.Value.color = isFocus
+                        ? focusOnColor
+                        : focusOffColor;
+
+                    continue;
+                }
+
+                // 対象外ボタンはフォーカス OFF 状態へ変更
+                cache.Value.color = focusOffColor;
+            }
         }
     }
 }

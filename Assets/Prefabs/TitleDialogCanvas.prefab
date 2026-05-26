@@ -448,7 +448,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.DialogPanelEvent
   _hoverColor: {r: 0, g: 0, b: 0, a: 0.7529412}
-  _unhoverColor: {r: 0, g: 0, b: 0, a: 0.5019608}
+  _unhoverColor: {r: 0, g: 0, b: 0, a: 0.7529412}
 --- !u!1 &3869059638565886685
 GameObject:
   m_ObjectHideFlags: 0
