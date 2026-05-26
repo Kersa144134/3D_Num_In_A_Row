@@ -279,13 +279,13 @@ namespace UISystem.Presentation
             }
 
             // ビュー生成
-            _mainUIView =
-                new MainUIView(
-                    _scoreTexts,
-                    _limitTimeTexts,
-                    _pointer,
-                    _normalFocusOnColor,
-                    _normalFocusOffColor);
+            _mainUIView.Initialize(
+                _scoreTexts,
+                _limitTimeTexts,
+                _pointer,
+                _normalFocusOnColor,
+                _normalFocusOffColor
+            );
 
             // プレイヤー情報の非表示処理
             for (int i = _gameOptionManager.PlayerCount; i < _playerInfoArray.Length; i++)

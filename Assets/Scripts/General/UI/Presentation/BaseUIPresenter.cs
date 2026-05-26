@@ -6,18 +6,17 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
-using PhaseSystem.Domain;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using UISystem.Application;
-using UISystem.Domain;
-using UISystem.Infrastructure;
 using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
+using PhaseSystem.Domain;
 using UpdateSystem.Domain;
+using UISystem.Application;
+using UISystem.Domain;
+using UISystem.Infrastructure;
 
 namespace UISystem.Presentation
 {
@@ -254,7 +253,7 @@ namespace UISystem.Presentation
             }
             
             // ビュー生成
-            _view = new BaseUIView(
+            _view.InitializeBase(
                 _binarizationFeature,
                 _binarizationMaterial,
                 _greyScaleFeature,

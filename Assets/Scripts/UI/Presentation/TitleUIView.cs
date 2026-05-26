@@ -15,7 +15,7 @@ namespace UISystem.Presentation
     /// <summary>
     /// タイトル UI ビュー
     /// </summary>
-    public sealed class TitleUIView
+    public sealed class TitleUIView : BaseUIView
     {
         // ======================================================
         // 定数
@@ -27,15 +27,6 @@ namespace UISystem.Presentation
         // ======================================================
         // フィールド
         // ======================================================
-
-        /// <summary>ポインター</summary>
-        private readonly GameObject _pointer;
-
-        /// <summary>ポインターRect</summary>
-        private readonly RectTransform _pointerRect;
-
-        /// <summary>CanvasRect</summary>
-        private readonly RectTransform _canvasRect;
 
         /// <summary>通常フォーカス時カラー</summary>
         private Color _normalFocusOnColor;
@@ -76,9 +67,9 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// コンストラクタ
+        /// 初期化
         /// </summary>
-        public TitleUIView(
+        public void Initialize(
             in GameObject pointer,
             in Color normalFocusOnColor,
             in Color normalfocusOffColor,
@@ -117,23 +108,6 @@ namespace UISystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
-
-        /// <summary>
-        /// ポインター位置更新
-        /// </summary>
-        public void UpdatePointer(in Vector2 screenPosition)
-        {
-            if (_pointerRect == null || _canvasRect == null)
-            {
-                return;
-            }
-
-            // Canvas 中心基準へ変換
-            Vector2 anchoredPos = screenPosition - (_canvasRect.sizeDelta * 0.5f);
-
-            // 位置反映
-            _pointerRect.anchoredPosition = anchoredPos;
-        }
 
         // --------------------------------------------------
         // ボタン
@@ -262,37 +236,6 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
-        /// Button と Image の対応情報を登録する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="cacheDictionary">登録先辞書</param>
-        private void RegisterButtonImageCache(
-            in Button button,
-            in Dictionary<Button, Image> cacheDictionary)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            // 既に登録済みの場合は処理なし
-            if (cacheDictionary.ContainsKey(button))
-            {
-                return;
-            }
-
-            // Button 本体の Image を取得
-            Image image = button.image;
-
-            if (image == null)
-            {
-                return;
-            }
-
-            cacheDictionary.Add(button, image);
-        }
-
-        /// <summary>
         /// 指定ボタンのフォーカス状態を更新する
         /// </summary>
         /// <param name="button">対象ボタン</param>
@@ -300,7 +243,7 @@ namespace UISystem.Presentation
         /// <param name="cacheDictionary">対象辞書</param>
         /// <param name="focusOnColor">フォーカス ON 時の色</param>
         /// <param name="focusOffColor">対象ボタンの OFF 色</param>
-        private void SetFocusState(
+        protected override void SetFocusState(
             in Button button,
             in bool isFocus,
             in Dictionary<Button, Image> cacheDictionary,
@@ -312,40 +255,17 @@ namespace UISystem.Presentation
                 return;
             }
 
+            base.SetFocusState(button, isFocus, cacheDictionary, focusOnColor, focusOffColor);
+
+            // --------------------------------------------------
+            // 非対象辞書のフォーカス状態更新
+            // --------------------------------------------------
             // 対象外辞書を取得
             Dictionary<Button, Image> otherDictionary =
                 cacheDictionary == _normalButtonImageCache
                     ? _optionButtonImageCache
                     : _normalButtonImageCache;
 
-            // --------------------------------------------------
-            // 指定辞書のフォーカス状態更新
-            // --------------------------------------------------
-            foreach (KeyValuePair<Button, Image> cache in cacheDictionary)
-            {
-                if (cache.Value == null)
-                {
-                    continue;
-                }
-
-                // 対象ボタンの場合
-                if (cache.Key == button)
-                {
-                    // フォーカス状態に応じた色を設定
-                    cache.Value.color = isFocus
-                        ? focusOnColor
-                        : focusOffColor;
-
-                    continue;
-                }
-
-                // 対象外ボタンはフォーカス OFF 状態へ変更
-                cache.Value.color = focusOffColor;
-            }
-
-            // --------------------------------------------------
-            // 非対象辞書のフォーカス状態更新
-            // --------------------------------------------------
             foreach (KeyValuePair<Button, Image> cache in otherDictionary)
             {
                 if (cache.Value == null)

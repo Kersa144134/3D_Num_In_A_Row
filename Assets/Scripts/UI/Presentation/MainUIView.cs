@@ -17,39 +17,30 @@ namespace UISystem.Presentation
     /// <summary>
     /// メイン UI ビュー
     /// </summary>
-    public sealed class MainUIView
+    public sealed class MainUIView : BaseUIView
     {
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>スコアフォーマットクラス</summary>
-        private readonly TextFormatter[] _scoreFormatters;
+        private TextFormatter[] _scoreFormatters;
 
         /// <summary>時間フォーマットクラス</summary>
-        private readonly TextFormatter _timeFormatter;
+        private TextFormatter _timeFormatter;
 
         // ======================================================
         // フィールド
         // ======================================================
 
         /// <summary>スコア表示テキスト</summary>
-        private readonly TextMeshProUGUI[] _scoreTexts;
+        private TextMeshProUGUI[] _scoreTexts;
 
         /// <summary>
         /// 制限時間表示テキスト
         /// インデックス 1 以降はエフェクト用とする
         /// </summary>
-        private readonly TextMeshProUGUI[] _limitTimeTexts;
-
-        /// <summary>ポインター</summary>
-        private readonly GameObject _pointer;
-
-        /// <summary>ポインター Rect</summary>
-        private readonly RectTransform _pointerRect;
-
-        /// <summary>Canvas Rect</summary>
-        private readonly RectTransform _canvasRect;
+        private TextMeshProUGUI[] _limitTimeTexts;
 
         /// <summary>通常フォーカス時カラー</summary>
         private Color _normalFocusOnColor;
@@ -97,9 +88,9 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// コンストラクタ
+        /// 初期化
         /// </summary>
-        public MainUIView(
+        public void Initialize(
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI[] limitTimeTexts,
             in GameObject pointer,
@@ -318,117 +309,6 @@ namespace UISystem.Presentation
             for (int i = 0; i < _limitTimeTexts.Length; i++)
             {
                 _limitTimeTexts[i].SetCharArray(buffer);
-            }
-        }
-
-        // --------------------------------------------------
-        // ポインター
-        // --------------------------------------------------
-        /// <summary>
-        /// ポインターの表示状態を切り替える
-        /// </summary>
-        /// <param name="isVisible">表示する場合はtrue</param>
-        public void SetPointerVisible(in bool isVisible)
-        {
-            if (_pointer == null)
-            {
-                return;
-            }
-
-            _pointer.SetActive(isVisible);
-        }
-
-        /// <summary>
-        /// ポインター位置更新
-        /// </summary>
-        public void UpdatePointer(in Vector2 screenPosition)
-        {
-            if (_pointerRect == null || _canvasRect == null)
-            {
-                return;
-            }
-
-            // Canvas中心基準へ変換
-            Vector2 anchoredPos = screenPosition - (_canvasRect.sizeDelta * 0.5f);
-
-            // 位置反映
-            _pointerRect.anchoredPosition = anchoredPos;
-        }
-
-        /// <summary>
-        /// Button と Image の対応情報を登録する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="cacheDictionary">登録先辞書</param>
-        private void RegisterButtonImageCache(
-            in Button button,
-            in Dictionary<Button, Image> cacheDictionary)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            // 既に登録済みの場合は処理なし
-            if (cacheDictionary.ContainsKey(button))
-            {
-                return;
-            }
-
-            // Button 本体の Image を取得
-            Image image = button.image;
-
-            if (image == null)
-            {
-                return;
-            }
-
-            cacheDictionary.Add(button, image);
-        }
-
-        /// <summary>
-        /// 指定ボタンのフォーカス状態を更新する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="isFocus">フォーカス状態</param>
-        /// <param name="cacheDictionary">対象辞書</param>
-        /// <param name="focusOnColor">フォーカス ON 時の色</param>
-        /// <param name="focusOffColor">対象ボタンの OFF 色</param>
-        private void SetFocusState(
-            in Button button,
-            in bool isFocus,
-            in Dictionary<Button, Image> cacheDictionary,
-            in Color focusOnColor,
-            in Color focusOffColor)
-        {
-            if (button == null)
-            {
-                return;
-            }
-            
-            // --------------------------------------------------
-            // 指定辞書のフォーカス状態更新
-            // --------------------------------------------------
-            foreach (KeyValuePair<Button, Image> cache in cacheDictionary)
-            {
-                if (cache.Value == null)
-                {
-                    continue;
-                }
-
-                // 対象ボタンの場合
-                if (cache.Key == button)
-                {
-                    // フォーカス状態に応じた色を設定
-                    cache.Value.color = isFocus
-                        ? focusOnColor
-                        : focusOffColor;
-
-                    continue;
-                }
-
-                // 対象外ボタンはフォーカス OFF 状態へ変更
-                cache.Value.color = focusOffColor;
             }
         }
     }

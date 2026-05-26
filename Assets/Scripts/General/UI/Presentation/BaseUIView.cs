@@ -6,35 +6,44 @@
 // 概要     : UI エフェクトの描画処理を担当するビュー
 // ======================================================
 
-using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using ShaderSystem.Application;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Rendering.Universal;
 
 namespace UISystem.Presentation
 {
     /// <summary>
     /// UI エフェクトの描画を担当するビュー
     /// </summary>
-    public sealed class BaseUIView
+    public abstract class BaseUIView
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>2 値化エフェクト制御クラス</summary>
+        private BinarizationPostProcessController _binarization;
+
+        /// <summary>グレースケール制御クラス</summary>
+        private GreyScalePostProcessController _greyScale;
+
+        /// <summary>歪み制御クラス</summary>
+        private DistortionPostProcessController _distortion;
+
         // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>
-        /// 2 値化エフェクト制御クラス
-        /// </summary>
-        private readonly BinarizationPostProcessController _binarization;
+        /// <summary>ポインター</summary>
+        protected GameObject _pointer;
 
-        /// <summary>
-        /// グレースケール制御クラス
-        /// </summary>
-        private readonly GreyScalePostProcessController _greyScale;
+        /// <summary>ポインター Rect</summary>
+        protected RectTransform _pointerRect;
 
-        /// <summary>
-        /// 歪み制御クラス
-        /// </summary>
-        private readonly DistortionPostProcessController _distortion;
+        /// <summary>Canvas Rect</summary>
+        protected RectTransform _canvasRect;
 
         // ======================================================
         // コンストラクタ
@@ -43,7 +52,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BaseUIView(
+        public void InitializeBase(
             ScriptableRendererFeature binFeature,
             Material binMaterial,
             ScriptableRendererFeature greyFeature,
@@ -51,13 +60,8 @@ namespace UISystem.Presentation
             ScriptableRendererFeature disFeature,
             Material disMaterial)
         {
-            // 2 値化エフェクト制御クラスを生成する
             _binarization = new BinarizationPostProcessController(binFeature, binMaterial);
-
-            // グレースケール制御クラスを生成する
             _greyScale = new GreyScalePostProcessController(greyFeature, greyMaterial);
-
-            // 歪み制御クラスを生成する
             _distortion = new DistortionPostProcessController(disFeature, disMaterial);
         }
 
@@ -65,6 +69,9 @@ namespace UISystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // エフェクト
+        // --------------------------------------------------
         /// <summary>
         /// エフェクトを更新する
         /// </summary>
@@ -117,6 +124,124 @@ namespace UISystem.Presentation
                 disStrength,
                 disNoise
             );
+        }
+
+        // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        /// <summary>
+        /// ポインターの表示状態を切り替える
+        /// </summary>
+        /// <param name="isVisible">表示する場合はtrue</param>
+        public void SetPointerVisible(in bool isVisible)
+        {
+            if (_pointer == null)
+            {
+                return;
+            }
+
+            _pointer.SetActive(isVisible);
+        }
+
+        /// <summary>
+        /// ポインター位置更新
+        /// </summary>
+        public void UpdatePointer(in Vector2 screenPosition)
+        {
+            if (_pointerRect == null || _canvasRect == null)
+            {
+                return;
+            }
+
+            // Canvas中心基準へ変換
+            Vector2 anchoredPos = screenPosition - (_canvasRect.sizeDelta * 0.5f);
+
+            // 位置反映
+            _pointerRect.anchoredPosition = anchoredPos;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// Button と Image の対応情報を登録する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="cacheDictionary">登録先辞書</param>
+        protected void RegisterButtonImageCache(
+            in Button button,
+            in Dictionary<Button, Image> cacheDictionary)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            // 既に登録済みの場合は処理なし
+            if (cacheDictionary.ContainsKey(button))
+            {
+                return;
+            }
+
+            // Button 本体の Image を取得
+            Image image = button.image;
+
+            if (image == null)
+            {
+                return;
+            }
+
+            cacheDictionary.Add(button, image);
+        }
+
+        /// <summary>
+        /// 指定ボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        /// <param name="cacheDictionary">対象辞書</param>
+        /// <param name="focusOnColor">フォーカス ON 時の色</param>
+        /// <param name="focusOffColor">対象ボタンの OFF 色</param>
+        protected virtual void SetFocusState(
+            in Button button,
+            in bool isFocus,
+            in Dictionary<Button, Image> cacheDictionary,
+            in Color focusOnColor,
+            in Color focusOffColor)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 指定辞書のフォーカス状態更新
+            // --------------------------------------------------
+            foreach (KeyValuePair<Button, Image> cache in cacheDictionary)
+            {
+                if (cache.Value == null)
+                {
+                    continue;
+                }
+
+                // 対象ボタンの場合
+                if (cache.Key == button)
+                {
+                    // フォーカス状態に応じた色を設定
+                    cache.Value.color = isFocus
+                        ? focusOnColor
+                        : focusOffColor;
+
+                    continue;
+                }
+
+                // 対象外ボタンはフォーカス OFF 状態へ変更
+                cache.Value.color = focusOffColor;
+            }
         }
     }
 }

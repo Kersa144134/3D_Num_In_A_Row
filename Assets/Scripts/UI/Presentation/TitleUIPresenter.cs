@@ -249,7 +249,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ビュー生成
             // --------------------------------------------------
-            _titleUIView = new TitleUIView(
+            _titleUIView.Initialize(
                 _pointer,
                 _normalFocusOnColor,
                 _normalFocusOffColor,
