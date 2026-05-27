@@ -77,6 +77,26 @@ namespace UISystem.Presentation
         // ボタン
         // --------------------------------------------------
         /// <summary>
+        /// オプションボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        public void SetOptionFocus(in Button button, in bool isFocus)
+        {
+            // オプションボタン辞書へ登録
+            RegisterButtonImageCache(
+                button,
+                _optionButtonImageCache);
+
+            SetFocusState(
+                button,
+                isFocus,
+                _optionButtonImageCache,
+                _optionFocusOnColor,
+                _optionFocusOffColor);
+        }
+
+        /// <summary>
         /// ボタン選択状態を全体反映する
         /// </summary>
         /// <param name="buttonArray">対象ボタン配列</param>
@@ -124,26 +144,6 @@ namespace UISystem.Presentation
                 // 選択状態に応じて色反映
                 image.color = selectStateArray[index] ? _optionSelectOnColor : _optionSelectOffColor;
             }
-        }
-
-        /// <summary>
-        /// オプションボタンのフォーカス状態を更新する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="isFocus">フォーカス状態</param>
-        public void SetOptionFocus(in Button button, in bool isFocus)
-        {
-            // オプションボタン辞書へ登録
-            RegisterButtonImageCache(
-                button,
-                _optionButtonImageCache);
-
-            SetFocusState(
-                button,
-                isFocus,
-                _optionButtonImageCache,
-                _optionFocusOnColor,
-                _optionFocusOffColor);
         }
 
         // ======================================================
