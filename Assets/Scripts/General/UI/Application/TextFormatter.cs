@@ -18,7 +18,7 @@ namespace UISystem.Application
         // ======================================================
 
         /// <summary>表示用文字バッファ</summary>
-        private readonly char[] _buffer;
+        private char[] _buffer;
 
         /// <summary>プレースホルダ数</summary>
         private readonly int _placeholderCount;
@@ -123,35 +123,35 @@ namespace UISystem.Application
 
         /// <summary>
         /// 単一数値フォーマット
+        /// 不足桁を 0 で埋める
         /// </summary>
         /// <param name="value">数値</param>
         /// <returns>フォーマット済み文字配列</returns>
-        public char[] Format(in int value)
+        public char[] FormatWithPadding(in int value)
         {
             // 要素 0 に書き込み
-            WriteDigits(value, 0);
+            WriteDigitsWithPadding(value, 0);
 
-            // バッファ返却
             return _buffer;
         }
 
         /// <summary>
         /// 複数数値フォーマット
+        /// 不足桁を 0 で埋める
         /// </summary>
         /// <param name="values">数値配列</param>
         /// <returns>フォーマット済み文字配列</returns>
-        public char[] Format(in int[] values)
+        public char[] FormatWithPadding(in int[] values)
         {
             // 各プレースホルダへ書き込み
             for (int i = 0; i < _placeholderCount; i++)
             {
-                WriteDigits(values[i], i);
+                WriteDigitsWithPadding(values[i], i);
             }
 
-            // バッファ返却
             return _buffer;
         }
-
+        
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -173,25 +173,35 @@ namespace UISystem.Application
 
         /// <summary>
         /// 数値を書き込む
+        /// 不足桁を 0 で埋める
         /// </summary>
-        private void WriteDigits(in int value, in int elementIndex)
+        /// <param name="value">書き込み数値</param>
+        /// <param name="elementIndex">プレースホルダ番号</param>
+        private void WriteDigitsWithPadding(
+            in int value,
+            in int elementIndex)
         {
+            // 表示桁数取得
             int digits = _digits[elementIndex];
 
-            int index =
-                _numberStartIndexes[elementIndex] + digits - 1;
+            // 書き込み位置取得
+            int index = _numberStartIndexes[elementIndex] + digits - 1;
 
+            // 書き込み対象数値
             int number = value;
 
             for (int i = 0; i < digits; i++)
             {
+                // 下位桁取得
                 int digit = number % 10;
 
-                _buffer[index] =
-                    (char)(ASCII_ZERO + digit);
+                // 数値文字を書き込み
+                _buffer[index] = (char)(ASCII_ZERO + digit);
 
+                // 次桁へ更新
                 number /= 10;
 
+                // 書き込み位置更新
                 index--;
             }
         }

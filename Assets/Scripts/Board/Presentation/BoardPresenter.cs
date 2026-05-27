@@ -376,9 +376,6 @@ namespace BoardSystem.Presentation
                         return;
                     }
 
-                    // 駒配置入力購読解除
-                    UnbindDropInputStream();
-
                     // 駒配置処理
                     HandleDropColumn();
                 });
@@ -407,9 +404,6 @@ namespace BoardSystem.Presentation
             _rotateInputSubscription = rotateStream
                 .Subscribe(cmd =>
                 {
-                    // 回転入力購読解除
-                    UnbindRotateInputStream();
-
                     // ボード回転処理
                     HandleRotateAsync(cmd.Axis, cmd.Direction).Forget();
                 });
@@ -475,6 +469,9 @@ namespace BoardSystem.Presentation
             // 入力通知
             _onDropInputted.OnNext(Unit.Default);
 
+            // 駒配置入力購読解除
+            UnbindDropInputStream();
+
             // ユースケース実行
             await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
 
@@ -491,6 +488,9 @@ namespace BoardSystem.Presentation
         {
             // 入力通知
             _onRotateInputted.OnNext(Unit.Default);
+
+            // ボード回転入力購読解除
+            UnbindRotateInputStream();
 
             // --------------------------------------------------
             // 回転ユースケース実行

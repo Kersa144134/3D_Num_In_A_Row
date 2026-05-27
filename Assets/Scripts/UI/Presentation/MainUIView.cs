@@ -26,6 +26,9 @@ namespace UISystem.Presentation
         /// <summary>スコアフォーマットクラス</summary>
         private TextFormatter[] _scoreFormatters;
 
+        /// <summary>ターンフォーマットクラス</summary>
+        private TextFormatter _turnFormatters;
+
         /// <summary>時間フォーマットクラス</summary>
         private TextFormatter _timeFormatter;
 
@@ -33,22 +36,43 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
+        // --------------------------------------------------
+        // UI
+        // --------------------------------------------------
         /// <summary>スコア表示テキスト</summary>
-        private TextMeshProUGUI[] _scoreTexts;
+        private readonly TextMeshProUGUI[] _scoreTexts;
+
+        /// <summary>ターン表示テキスト</summary>
+        private readonly TextMeshProUGUI _turnText;
 
         /// <summary>
         /// 制限時間表示テキスト
         /// インデックス 1 以降はエフェクト用とする
         /// </summary>
-        private TextMeshProUGUI[] _limitTimeTexts;
+        private readonly TextMeshProUGUI[] _limitTimeTexts;
 
+        // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
         /// <summary>前回表示スコア</summary>
         private int[] _previousDisplayScores;
 
+        // --------------------------------------------------
+        // ターン
+        // --------------------------------------------------
+        /// <summary>最大ターン数</summary>
+        private readonly int _maxTurnCount;
+
+        // --------------------------------------------------
+        // タイマー
+        // --------------------------------------------------
         /// <summary>前回表示秒数</summary>
         private int _previousDisplayTotalSeconds;
 
-        /// <summary>時間表示用の数値配列（分・秒）</summary>
+        /// <summary>ターン表示用の数値配列</summary>
+        private int[] _turnValues = new int[2];
+
+        /// <summary>時間表示用の数値配列</summary>
         private int[] _timeValues = new int[2];
 
         // ======================================================
@@ -60,6 +84,12 @@ namespace UISystem.Presentation
 
         /// <summary>スコア桁数</summary>
         private static readonly int[] SCORE_DIGIT = { 6 };
+
+        /// <summary>ターン表示フォーマット</summary>
+        private const string TURN_FORMAT = "{0} / {1}";
+
+        /// <summary>ターン桁数</summary>
+        private static readonly int[] TURN_DIGITS = { 3, 3 };
 
         /// <summary>制限時間表示フォーマット</summary>
         private const string LIMIT_TIME_FORMAT = "{0}:{1}";
@@ -76,10 +106,14 @@ namespace UISystem.Presentation
         /// </summary>
         public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
-            in TextMeshProUGUI[] limitTimeTexts)
+            in TextMeshProUGUI turnText,
+            in TextMeshProUGUI[] limitTimeTexts,
+            in int maxTurnCount)
         {
             _scoreTexts = scoreTexts;
+            _turnText = turnText;
             _limitTimeTexts = limitTimeTexts;
+            _maxTurnCount = maxTurnCount;
 
             _previousDisplayTotalSeconds = -1;
 
@@ -104,6 +138,17 @@ namespace UISystem.Presentation
                 }
             }
 
+            // --------------------------------------------------
+            // ターン初期化
+            // --------------------------------------------------
+            if (_turnText != null)
+            {
+                _turnFormatters =
+                    new TextFormatter(
+                        TURN_FORMAT,
+                        TURN_DIGITS);
+            }
+            
             // --------------------------------------------------
             // タイマー初期化
             // --------------------------------------------------
@@ -164,12 +209,40 @@ namespace UISystem.Presentation
             // 表示更新
             // --------------------------------------------------
             // フォーマット済みバッファ取得
-            char[] buffer = _scoreFormatters[index].Format(score);
+            char[] buffer = _scoreFormatters[index].FormatWithPadding(score);
 
             // TextMeshPro に反映
             targetText.SetCharArray(buffer);
         }
 
+        // --------------------------------------------------
+        // ターン
+        // --------------------------------------------------
+        /// <summary>
+        /// ターン数表示更新
+        /// </summary>
+        public void UpdateTurnCount(in int turnCount)
+        {
+            Debug.Log(turnCount);
+            if (_turnText == null)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 表示更新
+            // --------------------------------------------------
+            // ターン表示配列を更新
+            _turnValues[0] = turnCount;
+            _turnValues[1] = _maxTurnCount;
+
+            // フォーマット済みバッファ取得
+            char[] buffer = _turnFormatters.FormatWithPadding(_turnValues);
+
+            // TextMeshPro に反映
+            _turnText.SetCharArray(buffer);
+        }
+        
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
@@ -239,7 +312,7 @@ namespace UISystem.Presentation
             _timeValues[1] = seconds;
 
             // フォーマット済みバッファ取得
-            char[] buffer = _timeFormatter.Format(_timeValues);
+            char[] buffer = _timeFormatter.FormatWithPadding(_timeValues);
 
             // TextMeshPro に反映
             for (int i = 0; i < _limitTimeTexts.Length; i++)

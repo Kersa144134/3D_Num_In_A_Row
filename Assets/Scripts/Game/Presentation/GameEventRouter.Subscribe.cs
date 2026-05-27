@@ -104,7 +104,14 @@ namespace GameSystem.Presentation
             _phaseMachine.PlayEnterCount
                 .DistinctUntilChanged()
                 .Skip(1)
-                .Subscribe(turn => Debug.Log(turn))
+                .Subscribe(turn =>
+                {
+                    // ターン数をプレイヤー人数で割り、小数第 1 位を切り上げた値を算出
+                    int turnCount = Mathf.CeilToInt((float)turn / _gameOptionManager.PlayerCount);
+                    
+                    // ターン変更イベント通知
+                    _onTurnChanged.OnNext(turnCount);
+                })
                 .AddTo(_disposables);
 
             // --------------------------------------------------
@@ -183,6 +190,7 @@ namespace GameSystem.Presentation
                     _onColumnSelectVisibleChanged,
                     _onDropRequested,
                     _onRotateRequested,
+                    _onTurnChanged,
                     _phaseMachine.LimitTime);
 
                 _mainUIPresenter.OnChangePlayerAnimationEnd

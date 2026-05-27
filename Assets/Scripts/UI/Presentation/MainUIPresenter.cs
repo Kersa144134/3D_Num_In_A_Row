@@ -77,6 +77,14 @@ namespace UISystem.Presentation
         private TextMeshProUGUI[] _scoreTexts;
 
         // --------------------------------------------------
+        // ターン
+        // --------------------------------------------------
+        [Header("ターン")]
+        /// <summary>現在ターン数を表示するテキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI _turnText;
+
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         [Header("タイマー")]
@@ -245,7 +253,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             _uiView = new MainUIView(
                 _scoreTexts,
-                _limitTimeTexts
+                _turnText,
+                _limitTimeTexts,
+                _gameOptionManager.TurnCount
             );
             _uiView.Initialize(
                 _binarizationFeature,
@@ -358,7 +368,8 @@ namespace UISystem.Presentation
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
         /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
         /// <param name="rotateRequested">回転入力予約を通知するストリーム</param>
-        /// <param name="limitTime">制限時間の残り時間を通知するストリーム</param>
+        /// <param name="turnChanged">ターンの現在ターン数を通知するストリーム</param>
+        /// <param name="limitTimeChanged">制限時間の残り時間を通知するストリーム</param>
         public void BindStreams(
             in IObservable<PhaseType> phase,
             in IObservable<int> playerChange,
@@ -368,7 +379,8 @@ namespace UISystem.Presentation
             in IObservable<bool> columnSelectVisibleChanged,
             in IObservable<Unit> dropRequested,
             in IObservable<Unit> rotateRequested,
-            in IObservable<float> limitTime)
+            in IObservable<int> turnChanged,
+            in IObservable<float> limitTimeChanged)
         {
             phase
                 .Subscribe(type =>
@@ -445,7 +457,13 @@ namespace UISystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            limitTime
+            turnChanged
+                .DistinctUntilChanged()
+                .Subscribe(turn => UpdateTurnCountDisplay(turn))
+                .AddTo(_disposables);
+
+            limitTimeChanged
+                .DistinctUntilChanged()
                 .Subscribe(time => UpdateLimitTimeDisplay(time))
                 .AddTo(_disposables);
         }
@@ -717,7 +735,22 @@ namespace UISystem.Presentation
                 mainUIView.UpdateScore(playerId, score);
             }
         }
-        
+
+        // --------------------------------------------------
+        // ターン
+        // --------------------------------------------------
+        /// <summary>
+        /// 現在のターン数を UI に表示する
+        /// </summary>
+        /// <param name="turnCount">現在のターン数</param>
+        private void UpdateTurnCountDisplay(in int turnCount)
+        {
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.UpdateTurnCount(turnCount);
+            }
+        }
+
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------

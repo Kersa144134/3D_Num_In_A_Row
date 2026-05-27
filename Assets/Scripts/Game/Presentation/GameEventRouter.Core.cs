@@ -160,16 +160,16 @@ namespace GameSystem.Presentation
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();
 
         // --------------------------------------------------
-        // オプション
+        // システム
         // --------------------------------------------------
         /// <summary>ゲームスピード変更用 Subject</summary>
         private readonly Subject<float> _onGameSpeedChangeRequested = new Subject<float>();
 
-        // --------------------------------------------------
-        // スコア
-        // --------------------------------------------------
         /// <summary>スコア更新用 Subject</summary>
         private readonly Subject<ScoreEvent> _onScoreUpdated = new Subject<ScoreEvent>();
+
+        /// <summary>ターンカウント通知用 Subject</summary>
+        private readonly Subject<int> _onTurnChanged = new Subject<int>();
 
         // --------------------------------------------------
         // 入力
