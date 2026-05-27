@@ -13,9 +13,13 @@ namespace SoundSystem.Domain
     /// </summary>
     public enum SeType
     {
+        /// <summary>–¢İ’è</summary>
         None = 0,
 
-        Decide,
-        Cancel
+        /// <summary>UI Œˆ’è</summary>
+        UIDecide,
+
+        /// <summary>UI ƒLƒƒƒ“ƒZƒ‹</summary>
+        UICancel
     }
 }

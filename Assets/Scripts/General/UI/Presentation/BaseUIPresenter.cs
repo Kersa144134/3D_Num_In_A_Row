@@ -159,8 +159,14 @@ namespace UISystem.Presentation
         // コンポーネント参照
         // ======================================================
 
+        /// <summary>UI ビュー</summary>
+        protected BaseUIView _uiView;
+
         /// <summary>イベントを仲介するクラス</summary>
         protected readonly UIEventRouter _eventRouter = new UIEventRouter();
+
+        /// <summary>UI 状態制御クラス</summary>
+        protected BaseUIStateController _uiStateController;
 
         /// <summary>ボタンの辞書およびバインダー構築を行うクラス</summary>
         protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
@@ -218,6 +224,12 @@ namespace UISystem.Presentation
 
         /// <summary>ダイアログ表示状態通知ストリーム</summary>
         public IObservable<bool> OnDialogVisibleChanged => _onDialogVisibleChanged;
+
+        /// <summary>フォーカス座標通知用 Subject</summary>
+        private readonly Subject<Vector2> _onFocusPosition = new Subject<Vector2>();
+
+        /// <summary>フォーカス座標通知ストリーム</summary>
+        public IObservable<Vector2> OnFocusPosition => _onFocusPosition;
 
         /// <summary>フェードイン完了通知用 Subject</summary>
         private readonly Subject<Unit> _onFadeInCompleted = new Subject<Unit>();
@@ -289,6 +301,28 @@ namespace UISystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
+            // エフェクト更新
+            _uiView.UpdateEffect(
+                _isBinarizationEnabled,
+                _binarizationDistortionCenter,
+                _binarizationDistortionStrength,
+                _binarizationNoise,
+                _binarizationThreshold,
+                _binarizationLight,
+                _binarizationDark,
+                _isGreyScaleEnabled,
+                _greyScaleStrength,
+                _greyScaleDistortionCenter,
+                _greyScaleDistortionStrength,
+                _greyScaleNoise,
+                _greyScaleLight,
+                _greyScaleDark,
+                _isDistortionEnabled,
+                _distortionCenter,
+                _distortionStrength,
+                _distortionNoise
+            );
+            
             OnLateUpdateInternal(unscaledDeltaTime);
         }
 
@@ -330,6 +364,12 @@ namespace UISystem.Presentation
         /// <summary>クリックイベント受信時</summary>
         protected virtual void OnClickEventInternal(UIClickEvent clickEvent) { }
 
+        /// <summary>通常ボタンクリック時</summary>
+        protected virtual void OnNormalButtonClick(NormalButtonEvent buttonEvent) { }
+
+        /// <summary>オプションボタンクリック時</summary>
+        protected virtual void OnOptionButtonClick(OptionButtonEvent buttonEvent) { }
+        
         /// <summary>ホバーイベント受信時</summary>
         protected virtual void OnHoverEventInternal(BaseUIEvent uiEvent) { }
 
@@ -341,6 +381,9 @@ namespace UISystem.Presentation
 
         /// <summary>フォーカス解除イベント受信時</summary>
         protected virtual void OnUnFocusEventInternal(BaseUIEvent uiEvent) { }
+
+        /// <summary>ボタンイベントに応じてフォーカス状態を設定する</summary>
+        protected virtual void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus) { }
 
         // ======================================================
         // パブリックメソッド
@@ -508,33 +551,10 @@ namespace UISystem.Presentation
         }
 
         // --------------------------------------------------
-        // ボタン
-        // --------------------------------------------------
-        /// <summary>
-        /// キャンバスと入力状態に応じて選択状態を更新する
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス</param>
-        /// <param name="buttonEvent">対象ボタンイベント</param>
-        protected virtual void SetSelectionState(
-            in CanvasType canvasType,
-            in BaseButtonEvent buttonEvent = null)
-        {
-        }
-
-        /// <summary>
-        /// ボタンイベントに応じてフォーカス状態を設定する
-        /// </summary>
-        /// <param name="buttonEvent">対象のボタンイベント</param>
-        /// <param name="isFocus">フォーカス状態かどうか</param>
-        protected virtual void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus)
-        {
-        }
-
-        // --------------------------------------------------
         // イベントハンドラ
         // --------------------------------------------------
         /// <summary>
-        /// ダイアログイベント実行時の処理を行う
+        /// ダイアログイベント実行時
         /// </summary>
         private void HandleDialogEventReceived(DialogEventType eventType)
         {
@@ -545,6 +565,162 @@ namespace UISystem.Presentation
 
                 return;
             }
+        }
+
+        /// <summary>
+        /// パネルクリック時
+        /// </summary>
+        /// <param name="panelEvent">対象パネルイベント</param>
+        protected void OnPanelClick(BasePanelEvent panelEvent)
+        {
+            if (panelEvent == null)
+            {
+                return;
+            }
+
+            if (panelEvent is NormalPanelEvent)
+            {
+                // 現在アクティブなキャンバス状態を取得
+                CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                // ダイアログの場合
+                if (activeCanvasType == CanvasType.Dialog)
+                {
+                    // ダイアログキャンバス非表示
+                    _uiStateController.HideDialogCanvas();
+
+                    // 遷移先のキャンバス状態を取得
+                    CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                    // 遷移先のキャンバスで最後に選択していたボタンを適用
+                    SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+                    // ダイアログ非表示を通知
+                    _onDialogVisibleChanged.OnNext(false);
+                }
+
+                return;
+            }
+        }
+
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// ボタンへフォーカス状態を適用し、フォーカス座標を通知する
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected void OnFocusButton(BaseButtonEvent buttonEvent)
+        {
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType =
+                _uiStateController.GetActiveCanvasType();
+
+            // オプションキャンバスの場合
+            if (activeCanvasType == CanvasType.Option)
+            {
+                // OptionButton のみ選択状態を保存
+                if (buttonEvent is OptionButtonEvent)
+                {
+                    _uiStateController.SetLastSelectedButtonEvent(
+                        activeCanvasType,
+                        buttonEvent);
+                }
+            }
+            else
+            {
+                // 通常選択状態を保存
+                _uiStateController.SetLastSelectedButtonEvent(
+                    activeCanvasType,
+                    buttonEvent);
+            }
+
+            // フォーカス状態表示
+            SetFocusState(buttonEvent, true);
+
+            // スクリーン座標へ変換
+            Vector2 screenPosition =
+                RectTransformUtility.WorldToScreenPoint(
+                    null,
+                    buttonEvent.RectTransform.position);
+
+            // フォーカス座標通知
+            _onFocusPosition.OnNext(screenPosition);
+
+            // ターゲット検出演出を有効化
+            UpdatePointerTargetAnimation(true);
+        }
+
+        /// <summary>
+        /// ボタンのフォーカス状態を解除する
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected void OnUnFocusButton(BaseButtonEvent buttonEvent)
+        {
+            // フォーカス状態非表示
+            SetFocusState(buttonEvent, false);
+
+            // ターゲット検出状態を解除
+            UpdatePointerTargetAnimation(false);
+        }
+
+        /// <summary>
+        /// EventSystem の選択状態を変更する
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected void OnSelectButton(BaseButtonEvent buttonEvent)
+        {
+            // 現在選択中のオブジェクト取得
+            GameObject currentSelectedObject = _eventSystem.currentSelectedGameObject;
+
+            // 同一オブジェクトが選択されている場合
+            if (currentSelectedObject == buttonEvent.gameObject)
+            {
+                return;
+            }
+
+            // 選択状態を更新
+            _eventSystem.SetSelectedGameObject(buttonEvent.gameObject);
+        }
+
+        /// <summary>
+        /// EventSystem の選択状態を解除する
+        /// </summary>
+        protected void OnUnSelectButton()
+        {
+            // 選択解除
+            _eventSystem.SetSelectedGameObject(null);
+        }
+
+        /// <summary>
+        /// キャンバスと入力状態に応じて選択状態を更新する
+        /// </summary>
+        /// <param name="canvasType">対象キャンバス</param>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        protected void SetSelectionState(
+            in CanvasType canvasType,
+            in BaseButtonEvent buttonEvent = null)
+        {
+            // 選択状態をリセット
+            OnUnSelectButton();
+
+            // 選択対象を解決
+            BaseButtonEvent targetButton = _uiStateController.ResolveSelection(
+                canvasType,
+                _isGamePadInput,
+                buttonEvent);
+
+            if (targetButton == null)
+            {
+                return;
+            }
+
+            // 選択状態を適用
+            OnSelectButton(targetButton);
         }
 
         // --------------------------------------------------

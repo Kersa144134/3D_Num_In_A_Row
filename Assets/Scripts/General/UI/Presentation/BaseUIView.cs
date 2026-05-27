@@ -45,23 +45,43 @@ namespace UISystem.Presentation
         /// <summary>Canvas RectTransform</summary>
         protected RectTransform _canvasRect;
 
+        /// <summary>通常フォーカス時カラー</summary>
+        protected Color _normalFocusOnColor;
+
+        /// <summary>通常非フォーカス時カラー</summary>
+        protected Color _normalFocusOffColor;
+
+        // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// 通常ボタン に紐づく Image キャッシュ
+        /// </summary>
+        protected readonly Dictionary<Button, Image> _normalButtonImageCache =
+            new Dictionary<Button, Image>();
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
         /// <summary>
-        /// 基底クラスの初期化
+        /// 初期化
         /// </summary>
-        public void InitializeBase(
+        public void Initialize(
             in ScriptableRendererFeature binFeature,
             in Material binMaterial,
             in ScriptableRendererFeature greyFeature,
             in Material greyMaterial,
             in ScriptableRendererFeature disFeature,
             in Material disMaterial,
-            in GameObject pointer)
+            in GameObject pointer,
+            in Color normalFocusOnColor,
+            in Color normalFocusOffColor)
         {
             _pointer = pointer;
+            _normalFocusOnColor = normalFocusOnColor;
+            _normalFocusOffColor = normalFocusOffColor;
 
             // --------------------------------------------------
             // エフェクト初期化
@@ -144,6 +164,27 @@ namespace UISystem.Presentation
             );
         }
 
+        // --------------------------------------------------
+        // ボタン
+        // --------------------------------------------------
+        /// <summary>
+        /// 通常ボタンのフォーカス状態を更新する
+        /// </summary>
+        /// <param name="button">対象ボタン</param>
+        /// <param name="isFocus">フォーカス状態</param>
+        public void SetNormalFocus(in Button button, in bool isFocus)
+        {
+            // 通常ボタン辞書へ登録
+            RegisterButtonImageCache(button, _normalButtonImageCache);
+
+            SetFocusState(
+                button,
+                isFocus,
+                _normalButtonImageCache,
+                _normalFocusOnColor,
+                _normalFocusOffColor);
+        }
+        
         // --------------------------------------------------
         // ポインター
         // --------------------------------------------------

@@ -6,7 +6,6 @@
 // 概要     : タイトル UI のキャンバス状態管理と初期選択制御を管理する
 // ======================================================
 
-using System;
 using UnityEngine;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -90,13 +89,13 @@ namespace UISystem.Application
         /// </summary>
         public void ShowStartCanvas()
         {
-            HideAllDialogCanvas();
+            HideDialogCanvas();
 
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
 
             // 現在状態を更新
-            _activeCanvasType = CanvasType.Start;
+            SetActiveCanvasType(CanvasType.Start);
         }
 
         /// <summary>
@@ -104,13 +103,13 @@ namespace UISystem.Application
         /// </summary>
         public void ShowOptionCanvas()
         {
-            HideAllDialogCanvas();
+            HideDialogCanvas();
 
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
 
             // 現在状態を更新
-            _activeCanvasType = CanvasType.Option;
+            SetActiveCanvasType(CanvasType.Option);
         }
 
         /// <summary>
@@ -120,7 +119,7 @@ namespace UISystem.Application
         public override void ShowDialogCanvas(in DialogType dialogType)
         {
             // ダイアログ表示前の状態をキャッシュ
-            _cachedCanvasType = _activeCanvasType;
+            _cachedCanvasType = GetActiveCanvasType();
 
             base.ShowDialogCanvas(dialogType);
 
@@ -131,8 +130,10 @@ namespace UISystem.Application
         /// <summary>
         /// ダイアログキャンバスを非表示にする
         /// </summary>
-        public void HideDialogCanvas()
+        public override void HideDialogCanvas()
         {
+            base.HideDialogCanvas();
+            
             // キャッシュした状態に応じてキャンバスを表示
             switch (_cachedCanvasType)
             {
@@ -153,9 +154,9 @@ namespace UISystem.Application
         /// 現在アクティブなキャンバスに応じた初期選択ボタンを取得する
         /// </summary>
         /// <returns>初期選択ボタン</returns>
-        public override BaseButtonEvent GetInitialSelectedButton()
+        protected override BaseButtonEvent GetInitialSelectedButton()
         {
-            switch (_activeCanvasType)
+            switch (GetActiveCanvasType())
             {
                 case CanvasType.Dialog:
                     return _initialSelectedDialogCanvasButton;

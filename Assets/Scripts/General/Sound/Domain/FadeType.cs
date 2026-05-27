@@ -13,7 +13,10 @@ namespace SoundSystem.Domain
     /// </summary>
     public enum FadeType
     {
-        FadeIn,
-        FadeOut
+        /// <summary>フェードイン</summary>
+        FadeIn = 0,
+
+        /// <summary>フェードアウト</summary>
+        FadeOut = 1
     }
 }

@@ -13,10 +13,16 @@ namespace SoundSystem.Domain
     /// </summary>
     public enum BgmType
     {
+        /// <summary>未設定</summary>
         None = 0,
 
+        /// <summary>タイトル</summary>
         Title,
+
+        /// <summary>メイン</summary>
         Main,
+
+        /// <summary>リザルト</summary>
         Result
     }
 }

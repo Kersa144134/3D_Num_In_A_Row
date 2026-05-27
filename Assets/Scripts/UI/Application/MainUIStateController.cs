@@ -6,8 +6,6 @@
 // 概要     : メイン UI のキャンバス状態管理と初期選択制御を管理する
 // ======================================================
 
-using System;
-using UnityEngine;
 using UISystem.Domain;
 using UISystem.Infrastructure;
 
@@ -53,26 +51,15 @@ namespace UISystem.Application
         // ======================================================
 
         // --------------------------------------------------
-        // キャンバス
-        // --------------------------------------------------
-        /// <summary>
-        /// ダイアログキャンバスを非表示にする
-        /// </summary>
-        public void HideDialogCanvas()
-        {
-            HideAllDialogCanvas();
-        }
-
-        // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
         /// <summary>
         /// 現在アクティブなキャンバスに応じた初期選択ボタンを取得する
         /// </summary>
         /// <returns>初期選択ボタン</returns>
-        public override BaseButtonEvent GetInitialSelectedButton()
+        protected override BaseButtonEvent GetInitialSelectedButton()
         {
-            switch (_activeCanvasType)
+            switch (GetActiveCanvasType())
             {
                 case CanvasType.Dialog:
                     return _initialSelectedDialogCanvasButton;

@@ -28,12 +28,6 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
-        /// <summary>通常フォーカス時カラー</summary>
-        private Color _normalFocusOnColor;
-
-        /// <summary>通常非フォーカス時カラー</summary>
-        private Color _normalFocusOffColor;
-
         /// <summary>オプション選択時カラー</summary>
         private Color _optionSelectOnColor;
 
@@ -51,39 +45,33 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 通常ボタン に紐づく Image キャッシュ
-        /// </summary>
-        private readonly Dictionary<Button, Image> _normalButtonImageCache =
-            new Dictionary<Button, Image>();
-
-        /// <summary>
         /// オプションボタン に紐づく Image キャッシュ
         /// </summary>
         private readonly Dictionary<Button, Image> _optionButtonImageCache =
             new Dictionary<Button, Image>();
 
         // ======================================================
-        // パブリックメソッド
+        // コンストラクタ
         // ======================================================
 
         /// <summary>
-        /// 初期化
+        /// コンストラクタ
         /// </summary>
-        public void Initialize(
-            in Color normalFocusOnColor,
-            in Color normalfocusOffColor,
+        public TitleUIView(
             in Color optionSelectOnColor,
             in Color optionSelectOffColor,
             in Color optionFocusOnColor,
             in Color optionFocusOffColor)
         {
-            _normalFocusOnColor = normalFocusOnColor;
-            _normalFocusOffColor = normalfocusOffColor;
             _optionSelectOnColor = optionSelectOnColor;
             _optionSelectOffColor = optionSelectOffColor;
             _optionFocusOnColor = optionFocusOnColor;
             _optionFocusOffColor = optionFocusOffColor;
         }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
 
         // --------------------------------------------------
         // ボタン
@@ -136,24 +124,6 @@ namespace UISystem.Presentation
                 // 選択状態に応じて色反映
                 image.color = selectStateArray[index] ? _optionSelectOnColor : _optionSelectOffColor;
             }
-        }
-
-        /// <summary>
-        /// 通常ボタンのフォーカス状態を更新する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="isFocus">フォーカス状態</param>
-        public void SetNormalFocus(in Button button, in bool isFocus)
-        {
-            // 通常ボタン辞書へ登録
-            RegisterButtonImageCache(button, _normalButtonImageCache);
-
-            SetFocusState(
-                button,
-                isFocus,
-                _normalButtonImageCache,
-                _normalFocusOnColor,
-                _normalFocusOffColor);
         }
 
         /// <summary>

@@ -287,7 +287,6 @@ namespace SoundSystem.Presentation
             // Clip を設定
             bgm.Source.clip = bgm.Clip;
 
-            // BGM 再生
             bgm.Source.Play();
         }
 
@@ -310,7 +309,6 @@ namespace SoundSystem.Presentation
                         continue;
                     }
 
-                    // BGM 停止
                     _bgmSets[i].Source.Stop();
                 }
 
@@ -323,7 +321,6 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // BGM 停止
             bgm.Source.Stop();
         }
 
@@ -378,14 +375,13 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // 音量設定
             bgm.Source.volume = volume;
         }
 
         /// <summary>
         /// ローパスフィルター ON / OFF
         /// </summary>
-        /// <param name="enable">ON なら true、OFF なら false</param>
+        /// <param name="enable">true: ON / false: OFF</param>
         public void SetBgmLowPass(in bool enable)
         {
             if (_lowPassFilters == null)
@@ -403,8 +399,8 @@ namespace SoundSystem.Presentation
             _lowPassTargetFreq = enable ? _lowPassTargetFrequency : MAX_LOW_PASS_FREQUENCY;
 
             // 補間開始
-            _lowPassElapsed = 0f;
             _isLowPassActive = true;
+            _lowPassElapsed = 0f;
         }
 
         // --------------------------------------------------
@@ -459,7 +455,7 @@ namespace SoundSystem.Presentation
         /// 距離から SE 音量を算出
         /// </summary>
         /// <param name="distance">リスナーとの距離</param>
-        /// <returns>再生音量（0～1）</returns>
+        /// <returns>再生音量（0 ～ 1）</returns>
         private float CalculateSEVolume(in float distance)
         {
             // 最小距離以内は最大音量
@@ -474,7 +470,7 @@ namespace SoundSystem.Presentation
                 return 0f;
             }
 
-            // _seMinDistance ～ _seMaxDistance を 0 ～ 1 に正規化
+            // 距離の上限と下限を 0 ～ 1 に正規化
             float normalized = Mathf.InverseLerp(_seMinDistance, _seMaxDistance, distance);
 
             // 距離が遠くなるほど音量が下がるように反転

@@ -31,7 +31,7 @@ namespace UISystem.Application
         // 状態
         // --------------------------------------------------
         /// <summary>現在アクティブなキャンバス状態</summary>
-        protected CanvasType _activeCanvasType = CanvasType.None;
+        private CanvasType _activeCanvasType = CanvasType.None;
 
         /// <summary>キャンバスごとの最後に選択したボタンイベント</summary>
         private readonly BaseButtonEvent[] _lastSelectedButtonEvents =
@@ -53,6 +53,22 @@ namespace UISystem.Application
         {
             DialogCanvasArray = dialogCanvasArray;
         }
+
+        // ======================================================
+        // 抽象メソッド
+        // ======================================================
+
+        /// <summary>
+        /// 現在状態に応じた初期選択ボタンを取得する
+        /// </summary>
+        /// <returns>初期選択ボタン</returns>
+        protected abstract BaseButtonEvent GetInitialSelectedButton();
+
+        /// <summary>
+        /// ダイアログ用初期選択ボタンを取得する
+        /// </summary>
+        /// <returns>ダイアログ初期選択ボタン</returns>
+        protected abstract BaseButtonEvent GetDialogInitialSelectedButton();
 
         // ======================================================
         // パブリックメソッド
@@ -82,13 +98,12 @@ namespace UISystem.Application
             // 指定ダイアログのみ有効化する
             for (int i = 0; i < DialogCanvasArray.Length; i++)
             {
-                // 要素が未設定の場合はスキップする
                 if (DialogCanvasArray[i] == null)
                 {
                     continue;
                 }
 
-                // 対象ダイアログ以外はスキップする
+                // 対象ダイアログ以外はスキップ
                 if (DialogCanvasArray[i].Type != dialogType)
                 {
                     continue;
@@ -103,24 +118,13 @@ namespace UISystem.Application
         }
 
         /// <summary>
-        /// 全ダイアログキャンバスを非表示にする
+        /// ダイアログキャンバスを非表示にする
         /// </summary>
-        protected void HideAllDialogCanvas()
+        public virtual void HideDialogCanvas()
         {
-            // 全ダイアログを走査する
-            for (int i = 0; i < DialogCanvasArray.Length; i++)
-            {
-                // 要素が未設定の場合はスキップする
-                if (DialogCanvasArray[i] == null)
-                {
-                    continue;
-                }
-
-                // ダイアログを非表示にする
-                DialogCanvasArray[i].Canvas.SetActive(false);
-            }
+            HideAllDialogCanvas();
         }
-
+        
         // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
@@ -165,21 +169,8 @@ namespace UISystem.Application
                 return hoverButtonEvent;
             }
 
-            // 該当なし
             return null;
         }
-
-        /// <summary>
-        /// 現在状態に応じた初期選択ボタンを取得する
-        /// </summary>
-        /// <returns>初期選択ボタン</returns>
-        public abstract BaseButtonEvent GetInitialSelectedButton();
-
-        /// <summary>
-        /// ダイアログ用初期選択ボタンを取得する
-        /// </summary>
-        /// <returns>ダイアログ初期選択ボタン</returns>
-        protected abstract BaseButtonEvent GetDialogInitialSelectedButton();
 
         /// <summary>
         /// 指定キャンバスの最後に選択したボタンイベントを設定する
@@ -190,7 +181,7 @@ namespace UISystem.Application
             in CanvasType canvasType,
             in BaseButtonEvent buttonEvent)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
             // 最後の選択状態を保存する
@@ -206,7 +197,7 @@ namespace UISystem.Application
             in CanvasType canvasType,
             in BaseButtonEvent buttonEvent)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
             // 最後のホバー状態を保存する
@@ -220,7 +211,7 @@ namespace UISystem.Application
         /// <returns>最後に選択したボタンイベント</returns>
         public BaseButtonEvent GetLastSelectedButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
             // キャッシュ済み選択状態を返す
@@ -234,7 +225,7 @@ namespace UISystem.Application
         /// <returns>最後にホバー中のボタンイベント</returns>
         public BaseButtonEvent GetLastHoveredButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
             // キャッシュ済みホバー状態を返す
@@ -247,10 +238,9 @@ namespace UISystem.Application
         /// <param name="canvasType">対象キャンバス種別</param>
         public void ClearLastSelectedButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
-            // 選択状態をクリアする
             _lastSelectedButtonEvents[canvasIndex] = null;
         }
 
@@ -260,11 +250,40 @@ namespace UISystem.Application
         /// <param name="canvasType">対象キャンバス種別</param>
         public void ClearLastHoveredButtonEvent(in CanvasType canvasType)
         {
-            // キャンバス種別を配列添字へ変換する
+            // キャンバス種別を int へ変換する
             int canvasIndex = (int)canvasType;
 
-            // ホバー状態をクリアする
             _lastHoveredButtonEvents[canvasIndex] = null;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// 現在アクティブなキャンバス状態をセットする
+        /// </summary>
+        /// <returns>現在アクティブなキャンバス種別</returns>
+        protected void SetActiveCanvasType(in CanvasType activeCanvasType)
+        {
+            _activeCanvasType = activeCanvasType;
+        }
+
+        /// <summary>
+        /// 全ダイアログキャンバスを非表示にする
+        /// </summary>
+        protected void HideAllDialogCanvas()
+        {
+            // 全ダイアログを非表示にする
+            for (int i = 0; i < DialogCanvasArray.Length; i++)
+            {
+                if (DialogCanvasArray[i] == null)
+                {
+                    continue;
+                }
+
+                DialogCanvasArray[i].Canvas.SetActive(false);
+            }
         }
     }
 }

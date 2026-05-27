@@ -42,12 +42,6 @@ namespace UISystem.Presentation
         /// </summary>
         private TextMeshProUGUI[] _limitTimeTexts;
 
-        /// <summary>通常フォーカス時カラー</summary>
-        private Color _normalFocusOnColor;
-
-        /// <summary>通常非フォーカス時カラー</summary>
-        private Color _normalFocusOffColor;
-
         /// <summary>前回表示スコア</summary>
         private int[] _previousDisplayScores;
 
@@ -56,16 +50,6 @@ namespace UISystem.Presentation
 
         /// <summary>時間表示用の数値配列（分・秒）</summary>
         private int[] _timeValues = new int[2];
-
-        // ======================================================
-        // 辞書
-        // ======================================================
-
-        /// <summary>
-        /// 通常ボタン に紐づく Image キャッシュ
-        /// </summary>
-        private readonly Dictionary<Button, Image> _normalButtonImageCache =
-            new Dictionary<Button, Image>();
 
         // ======================================================
         // 定数
@@ -84,22 +68,18 @@ namespace UISystem.Presentation
         private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
-        // パブリックメソッド
+        // コンストラクタ
         // ======================================================
 
         /// <summary>
-        /// 初期化
+        /// コンストラクタ
         /// </summary>
-        public void Initialize(
+        public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
-            in TextMeshProUGUI[] limitTimeTexts,
-            in Color normalFocusOnColor,
-            in Color normalfocusOffColor)
+            in TextMeshProUGUI[] limitTimeTexts)
         {
             _scoreTexts = scoreTexts;
             _limitTimeTexts = limitTimeTexts;
-            _normalFocusOnColor = normalFocusOnColor;
-            _normalFocusOffColor = normalfocusOffColor;
 
             _previousDisplayTotalSeconds = -1;
 
@@ -136,26 +116,9 @@ namespace UISystem.Presentation
             }
         }
 
-        // --------------------------------------------------
-        // ボタン
-        // --------------------------------------------------
-        /// <summary>
-        /// 通常ボタンのフォーカス状態を更新する
-        /// </summary>
-        /// <param name="button">対象ボタン</param>
-        /// <param name="isFocus">フォーカス状態</param>
-        public void SetNormalFocus(in Button button, in bool isFocus)
-        {
-            // 通常ボタン辞書へ登録
-            RegisterButtonImageCache(button, _normalButtonImageCache);
-
-            SetFocusState(
-                button,
-                isFocus,
-                _normalButtonImageCache,
-                _normalFocusOnColor,
-                _normalFocusOffColor);
-        }
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
 
         // --------------------------------------------------
         // スコア
