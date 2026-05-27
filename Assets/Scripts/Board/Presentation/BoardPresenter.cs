@@ -83,7 +83,7 @@ namespace BoardSystem.Presentation
         private BoardRepositionUseCase _repositionUseCase;
 
         /// <summary>駒ビュー更新ハンドラ</summary>
-        private BoardViewMoveHandler _viewMoveHandler;
+        private BoardViewPieceMapUpdater _viewPieceMapUpdater;
 
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
@@ -236,7 +236,7 @@ namespace BoardSystem.Presentation
             _dropHandler = new BoardDropHandler(_model, _view);
             _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
             _repositionUseCase = new BoardRepositionUseCase(_model);
-            _viewMoveHandler = new BoardViewMoveHandler(_view);
+            _viewPieceMapUpdater = new BoardViewPieceMapUpdater(_view);
 
             // 回転対象外のため親から分離
             _boardCollider.transform.SetParent(null);
@@ -597,7 +597,7 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            _viewMoveHandler.ApplyViewMoves(moves);
+            _viewPieceMapUpdater.UpdatePieceMap(moves);
         }
     }
 }

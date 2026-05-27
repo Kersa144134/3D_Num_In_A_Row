@@ -9,53 +9,21 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using BoardSystem.Application;
+using BoardSystem.Domain;
 
-namespace BoardSystem.Presentation
+namespace BoardSystem.Application
 {
     /// <summary>
-    /// 駒アニメーションビュー
+    /// 駒アニメーション制御クラス
     /// </summary>
-    public sealed class PieceAnimationView
+    public sealed class PieceAnimationController
     {
-        // ======================================================
-        // 構造体
-        // ======================================================
-
-        /// <summary>
-        /// 駒移動計画データ
-        /// </summary>
-        public struct MovePlanData
-        {
-            /// <summary>対象Transform</summary>
-            public Transform Transform;
-
-            /// <summary>開始位置</summary>
-            public Vector3 Start;
-
-            /// <summary>終了位置</summary>
-            public Vector3 End;
-
-            /// <summary>
-            /// コンストラクタ
-            /// </summary>
-            public MovePlanData(
-                Transform transform,
-                Vector3 start,
-                Vector3 end)
-            {
-                Transform = transform;
-                Start = start;
-                End = end;
-            }
-        }
-
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
         /// <summary>落下アニメーション</summary>
-        private readonly PieceDropAnimator _dropAnimator;
+        private readonly PieceDropAnimator _dropAnimator = new PieceDropAnimator();
 
         // ======================================================
         // フィールド
@@ -71,14 +39,8 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public PieceAnimationView(
-            PieceDropAnimator dropAnimation,
-            GameObject deleteParticle)
+        public PieceAnimationController(in GameObject deleteParticle)
         {
-            // 落下アニメーションサービスを保持する
-            _dropAnimator = dropAnimation;
-
-            // 削除パーティクルを保持する
             _deleteParticle = deleteParticle;
         }
 
@@ -106,7 +68,7 @@ namespace BoardSystem.Presentation
         /// 複数落下アニメーション
         /// </summary>
         public async UniTask PlayMovesAsync(
-            List<MovePlanData> plans)
+            List<PieceMoveData> plans)
         {
             // タスクリストを生成する
             List<UniTask> tasks =
@@ -115,7 +77,7 @@ namespace BoardSystem.Presentation
             // 各移動を登録する
             for (int i = 0; i < plans.Count; i++)
             {
-                MovePlanData plan = plans[i];
+                PieceMoveData plan = plans[i];
 
                 tasks.Add(
                     _dropAnimator.AnimateDropAsync(

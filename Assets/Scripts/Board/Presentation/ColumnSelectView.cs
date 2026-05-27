@@ -18,14 +18,18 @@ namespace BoardSystem.Presentation
     public sealed class ColumnSelectView
     {
         // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>座標変換サービス</summary>
+        private readonly BoardPositionConverter _converter;
+
+        // ======================================================
         // フィールド
         // ======================================================
 
         /// <summary>列選択表示のルート Transform</summary>
         private readonly Transform _root;
-
-        /// <summary>座標変換サービス</summary>
-        private readonly BoardPositionConverter _converter;
 
         /// <summary>セル間隔</summary>
         private readonly float _cellSpacing;
@@ -83,16 +87,10 @@ namespace BoardSystem.Presentation
             BoardPositionConverter converter,
             float cellSpacing)
         {
-            // ルート Transform を保持する
             _root = root;
-
-            // 座標変換サービスを保持する
             _converter = converter;
-
-            // セル間隔を保持する
             _cellSpacing = cellSpacing;
 
-            // 初期化処理を実行する
             Initialize();
         }
 
@@ -182,7 +180,6 @@ namespace BoardSystem.Presentation
             // X 軸のみ移動対象を更新する
             for (int i = 0; i < _frameXTargets.Length; i++)
             {
-                // 対象 Transform を取得する
                 Transform target = _frameXTargets[i];
 
                 // 現在位置を取得する
@@ -200,7 +197,6 @@ namespace BoardSystem.Presentation
             // Z 軸のみ移動対象を更新する
             for (int i = 0; i < _frameZTargets.Length; i++)
             {
-                // 対象 Transform を取得する
                 Transform target = _frameZTargets[i];
 
                 // 現在位置を取得する
@@ -221,7 +217,6 @@ namespace BoardSystem.Presentation
             // 全軸更新対象を更新する
             for (int i = 0; i < _freeTargets.Length; i++)
             {
-                // 対象 Transform を取得する
                 Transform target = _freeTargets[i];
 
                 // X, Z を更新して位置を設定する
@@ -239,18 +234,17 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 初期化処理
+        /// 初期化
         /// </summary>
         private void Initialize()
         {
             // 子階層を含めた Renderer を取得する
-            _renderers =
-                _root.GetComponentsInChildren<Renderer>(true);
+            _renderers = _root.GetComponentsInChildren<Renderer>(true);
 
             // 直下の子オブジェクト数を取得する
             int childCount = _root.childCount;
 
-            // 各配列の要素数カウント用変数
+            // 各配列の要素数カウント
             int xCount = 0;
             int zCount = 0;
             int freeCount = 0;
@@ -290,7 +284,7 @@ namespace BoardSystem.Presentation
             _frameZTargets = new Transform[zCount];
             _freeTargets = new Transform[freeCount];
 
-            // インデックス管理用変数
+            // 各配列のインデックス
             int xIndex = 0;
             int zIndex = 0;
             int freeIndex = 0;

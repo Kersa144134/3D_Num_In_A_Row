@@ -1,25 +1,26 @@
 // ======================================================
-// BoardViewMoveHandler.cs
+// BoardViewPieceMapUpdater.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-17
 // 更新日時 : 2026-04-17
-// 概要     : 駒のビュー移動更新処理を担当するクラス
+// 概要     : 駒移動情報を基にビューの駒辞書を更新するクラス
 // ======================================================
+
 using System.Collections.Generic;
 using BoardSystem.Domain;
 
 namespace BoardSystem.Presentation
 {
     /// <summary>
-    /// 駒のビュー移動更新クラス
+    /// ビューの駒辞書を更新するクラス
     /// </summary>
-    public sealed class BoardViewMoveHandler
+    public sealed class BoardViewPieceMapUpdater
     {
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>盤面ビュー</summary>
+        /// <summary>ビュー</summary>
         private readonly BoardView _view;
 
         // ======================================================
@@ -29,9 +30,8 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardViewMoveHandler(in BoardView view)
+        public BoardViewPieceMapUpdater(in BoardView view)
         {
-            // View参照保持
             _view = view;
         }
 
@@ -42,7 +42,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ビューの駒辞書を移動情報に基づいて更新
         /// </summary>
-        public void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        public void UpdatePieceMap(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // --------------------------------------------------
             // 重複排除処理

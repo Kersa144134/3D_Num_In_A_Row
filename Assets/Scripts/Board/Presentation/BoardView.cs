@@ -65,7 +65,7 @@ namespace BoardSystem.Presentation
         private readonly BoardPositionConverter _boardPositionConverter;
 
         /// <summary>駒アニメーションビュー</summary>
-        private readonly PieceAnimationView _pieceAnimationView;
+        private readonly PieceAnimationController _pieceAnimationController;
 
         /// <summary>マテリアル適用サービス</summary>
         private readonly PieceMaterialMapper _materialMapper;
@@ -184,12 +184,8 @@ namespace BoardSystem.Presentation
                     _cellSpacing
                 );
 
-            // 駒アニメーションビュー初期化
-            _pieceAnimationView =
-                new PieceAnimationView(
-                    new PieceDropAnimator(),
-                    deleteParticle
-                );
+            // 駒アニメーションコントローラー初期化
+            _pieceAnimationController = new PieceAnimationController(deleteParticle);
         }
 
         // ======================================================
@@ -272,7 +268,7 @@ namespace BoardSystem.Presentation
             if (_pieces.TryGetValue(index, out PieceData piece))
             {
                 // 削除演出を再生
-                _pieceAnimationView.PlayDeleteEffect(piece.Transform.position);
+                _pieceAnimationController.PlayDeleteEffect(piece.Transform.position);
 
                 Object.Destroy(piece.Transform.gameObject);
             }
@@ -371,7 +367,7 @@ namespace BoardSystem.Presentation
             GameObject piece = CreatePieceObject(startPosition, player);
 
             // 落下アニメーションを再生
-            await _pieceAnimationView.PlayDropAsync(
+            await _pieceAnimationController.PlayDropAsync(
                 piece.transform,
                 startPosition,
                 endPosition
@@ -599,16 +595,16 @@ namespace BoardSystem.Presentation
         /// </summary>
         private async UniTask ExecuteMoveAnimations(List<MovePlanData> plans)
         {
-            // ビュー用移動計画リストを生成
-            List<PieceAnimationView.MovePlanData> viewPlans =
-                new List<PieceAnimationView.MovePlanData>(plans.Count);
+            // ビュー用移動データリストを生成
+            List<PieceMoveData> viewPlans =
+                new List<PieceMoveData>(plans.Count);
 
             for (int i = 0; i < plans.Count; i++)
             {
                 MovePlanData plan = plans[i];
 
                 viewPlans.Add(
-                    new PieceAnimationView.MovePlanData(
+                    new PieceMoveData(
                         plan.Piece.Transform,
                         plan.Start,
                         plan.End
@@ -617,7 +613,7 @@ namespace BoardSystem.Presentation
             }
 
             // アニメーション実行
-            await _pieceAnimationView.PlayMovesAsync(viewPlans);
+            await _pieceAnimationController.PlayMovesAsync(viewPlans);
         }
 
         /// <summary>
