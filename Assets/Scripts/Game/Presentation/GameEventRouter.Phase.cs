@@ -56,24 +56,14 @@ namespace GameSystem.Presentation
                     break;
 
                 // --------------------------------------------------
-                // Event, Pause
-                // --------------------------------------------------
-                case PhaseType.Event:
-                case PhaseType.Pause:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
-                    break;
-
-                // --------------------------------------------------
                 // Ready
                 // --------------------------------------------------
                 case PhaseType.Ready:
-                    // 入力マッピングをインゲーム用に変更
-                    NotifyMappingChanged(0);
-
                     // スコア計算クラス初期化
                     _scoreManager.Initialize(_gameOptionManager.PlayerCount);
+
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
 
                     // スキップ入力
                     // ChangePlayer へフェーズ遷移通知
@@ -122,6 +112,15 @@ namespace GameSystem.Presentation
                     break;
 
                 // --------------------------------------------------
+                // Event
+                // --------------------------------------------------
+                case PhaseType.Event:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(0);
+
+                    break;
+
+                // --------------------------------------------------
                 // ChangePlayer
                 // --------------------------------------------------
                 case PhaseType.ChangePlayer:
@@ -136,6 +135,15 @@ namespace GameSystem.Presentation
 
                     // スキップ入力購読解除
                     UnbindEventSkipStream();
+
+                    break;
+
+                // --------------------------------------------------
+                // Pause
+                // --------------------------------------------------
+                case PhaseType.Pause:
+                    // 入力マッピングをインゲーム用に変更
+                    NotifyMappingChanged(1);
 
                     break;
 

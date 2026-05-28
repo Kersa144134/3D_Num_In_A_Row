@@ -122,6 +122,7 @@ namespace GameSystem.Presentation
                     .Subscribe(e => TogglePausePhase(_currentPhase.Value))
                     .AddTo(_disposables);
                 _inputManager.ActiveDeviceType
+                    .DistinctUntilChanged()
                     .Subscribe(e => NotifyActiveControllerChanged(e))
                     .AddTo(_disposables);
             }
@@ -148,10 +149,8 @@ namespace GameSystem.Presentation
                     .Subscribe(phase => NotifyPhaseChangeRequested(phase))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnDialogVisibleChanged
-                    .Subscribe(_ =>
-                    {
-                        UnbindInputCommands();
-                    })
+                    .DistinctUntilChanged()
+                    .Subscribe(_ => UnbindInputCommands())
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFocusPosition
                     .Subscribe(e =>
@@ -197,10 +196,8 @@ namespace GameSystem.Presentation
                     .Subscribe(phase => NotifyPhaseChangeRequested(phase))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnDialogVisibleChanged
-                    .Subscribe(_ =>
-                    {
-                        UnbindInputCommands();
-                    })
+                    .DistinctUntilChanged()
+                    .Subscribe(_ => UnbindInputCommands())
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFocusPosition
                     .Subscribe(e =>
@@ -288,6 +285,7 @@ namespace GameSystem.Presentation
                         .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
                         .AddTo(_disposables);
                     boardPresenter.IsColumnSelectVisible
+                        .DistinctUntilChanged()
                         .DistinctUntilChanged()
                         .Subscribe(isVisible => _onColumnSelectVisibleChanged.OnNext(isVisible))
                         .AddTo(_disposables);
