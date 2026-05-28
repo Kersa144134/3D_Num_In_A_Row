@@ -193,6 +193,9 @@ namespace UISystem.Presentation
         /// <summary>ゲームパッド入力状態フラグ</summary>
         protected bool _isGamePadInput = false;
 
+        /// <summary>シーン遷移中かどうかを示すフラグ</summary>
+        private bool _isSceneTransitioning = false;
+
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -218,6 +221,12 @@ namespace UISystem.Presentation
 
         /// <summary>ルーター用購読管理</summary>
         protected readonly CompositeDisposable _routerDisposables = new CompositeDisposable();
+
+        /// <summary>フェーズ遷移予約通知用 Subject</summary>
+        protected readonly Subject<PhaseType> _onPhaseChangeRequested = new Subject<PhaseType>();
+
+        /// <summary>フェーズ遷移予約ストリーム</summary>
+        public IObservable<PhaseType> OnPhaseChangeRequested => _onPhaseChangeRequested;
 
         /// <summary>ダイアログ表示状態通知用 Subject</summary>
         protected readonly Subject<bool> _onDialogVisibleChanged = new Subject<bool>();
@@ -258,6 +267,9 @@ namespace UISystem.Presentation
 
         /// <summary>IsTarget パラメータ名</summary>
         protected static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
+
+        /// <summary>通常ボタン選択時の拡大倍率</summary>
+        private const float NORMAL_BUTTON_SELECTED_SCALE = 1.05f;
 
         // ======================================================
         // IUpdatable イベント
@@ -451,6 +463,12 @@ namespace UISystem.Presentation
             _eventRouter.OnClick
                 .Subscribe(clickEvent =>
                 {
+                    // シーン遷移中はクリック無効
+                    if (_isSceneTransitioning)
+                    {
+                        return;
+                    }
+
                     OnClickEventInternal(clickEvent);
                 })
                 .AddTo(_routerDisposables);
@@ -475,6 +493,15 @@ namespace UISystem.Presentation
             _eventRouter.OnFocus
                 .Subscribe(uiEvent =>
                 {
+                    // 通常ボタンイベントの場合、ボタンスケール変更
+                    if (uiEvent is NormalButtonEvent)
+                    {
+                        uiEvent.transform.localScale = new Vector3(
+                            NORMAL_BUTTON_SELECTED_SCALE,
+                            NORMAL_BUTTON_SELECTED_SCALE,
+                            NORMAL_BUTTON_SELECTED_SCALE);
+                    }
+
                     OnFocusEventInternal(uiEvent);
                 })
                 .AddTo(_routerDisposables);
@@ -483,6 +510,12 @@ namespace UISystem.Presentation
             _eventRouter.OnUnFocus
                 .Subscribe(uiEvent =>
                 {
+                    // 通常ボタンイベントの場合、ボタンスケール変更
+                    if (uiEvent is NormalButtonEvent)
+                    {
+                        uiEvent.transform.localScale = Vector3.one;
+                    }
+
                     OnUnFocusEventInternal(uiEvent);
                 })
                 .AddTo(_routerDisposables);
@@ -561,6 +594,9 @@ namespace UISystem.Presentation
             if (eventType == DialogEventType.RequestSceneChange)
             {
                 _onSceneChangeRequested.OnNext(Unit.Default);
+
+                // シーン遷移中フラグを有効化
+                _isSceneTransitioning = true;
 
                 return;
             }

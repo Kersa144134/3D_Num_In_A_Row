@@ -150,6 +150,9 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
+                _titleUIPresenter.OnPhaseChangeRequested
+                    .Subscribe(phase => NotifyPhaseChangeRequested(phase))
+                    .AddTo(_disposables);
                 _titleUIPresenter.OnDialogVisibleChanged
                     .Subscribe(_ =>
                     {
@@ -182,7 +185,7 @@ namespace GameSystem.Presentation
                     _phaseMachine.LimitTime);
 
                 _mainUIPresenter.OnChangePlayerAnimationEnd
-                    .Subscribe(_ => NotifyPhaseChanged(PhaseType.Play))
+                    .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Play))
                     .AddTo(_disposables);
 
                 // --------------------------------------------------
@@ -190,6 +193,9 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
 
+                _mainUIPresenter.OnPhaseChangeRequested
+                    .Subscribe(phase => NotifyPhaseChangeRequested(phase))
+                    .AddTo(_disposables);
                 _mainUIPresenter.OnDialogVisibleChanged
                     .Subscribe(_ =>
                     {
@@ -246,13 +252,13 @@ namespace GameSystem.Presentation
                     boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
 
                     boardPresenter.OnPlayerEnd
-                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.ChangePlayer))
+                        .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.ChangePlayer))
                         .AddTo(_disposables);
                     boardPresenter.OnDropInputted
-                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                        .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Event))
                         .AddTo(_disposables);
                     boardPresenter.OnRotateInputted
-                        .Subscribe(_ => NotifyPhaseChanged(PhaseType.Event))
+                        .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Event))
                         .AddTo(_disposables);
                     boardPresenter.OnLineComplete
                         .Subscribe(e => HandleLineCompleted(e))

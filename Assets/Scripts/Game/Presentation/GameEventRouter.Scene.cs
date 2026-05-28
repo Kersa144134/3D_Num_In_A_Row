@@ -26,21 +26,22 @@ namespace GameSystem.Presentation
         /// </summary>
         private void NotifySceneChangeRequested()
         {
-            UnityEngine.Debug.Log(_currentPhase.Value);
             switch (_currentPhase.Value)
             {
                 case PhaseType.Title:
-                    // 3 x 3 ボードシーンへ遷移
                     if (_gameOptionManager.BoardSize == BOARD_SIZE_THREE)
                     {
+                        // 3 x 3 ボードシーンへ遷移
                         _onSceneChangeRequested.OnNext(THREE_SIZE_SCENE_NAME);
+
                         break;
                     }
 
-                    // 5 x 5 ボードシーンへ遷移
                     if (_gameOptionManager.BoardSize == BOARD_SIZE_FIVE)
                     {
+                        // 5 x 5 ボードシーンへ遷移
                         _onSceneChangeRequested.OnNext(FIVE_SIZE_SCENE_NAME);
+
                     }
 
                     break;
@@ -66,15 +67,14 @@ namespace GameSystem.Presentation
         /// <summary>
         /// シーンロード準備開始時の処理を行う
         /// </summary>
-        /// <param name="sceneName">現在のシーン名</param>
-        private void HandleLoadPrepareStart(in string sceneName)
+        /// <param name="nextSceneName">遷移先のシーン名</param>
+        private void HandleLoadPrepareStart(in string nextSceneName)
         {
-            switch (sceneName)
+            switch (nextSceneName)
             {
                 case TITLE_SCENE_NAME:
-                    // スキップ入力
-                    // シーン遷移実行通知
-                    BindEventSkipStream(_onSceneChangeExecuted, Unit.Default);
+                    // シーン遷移実行通知を即時発火
+                    _onSceneChangeExecuted.OnNext(Unit.Default);
 
                     break;
 
@@ -93,6 +93,10 @@ namespace GameSystem.Presentation
                     break;
 
                 case RESULT_SCENE_NAME:
+                    // スキップ入力
+                    // シーン遷移実行通知
+                    BindEventSkipStream(_onSceneChangeExecuted, Unit.Default);
+
                     break;
 
                 default:

@@ -79,7 +79,6 @@ namespace UISystem.Infrastructure
         /// </summary>
         public override void Dispose()
         {
-            // 基底 Dispose 実行
             base.Dispose();
 
             // Optionクリック通知を解放

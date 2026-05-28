@@ -89,8 +89,6 @@ namespace UISystem.Application
         /// </summary>
         public void ShowStartCanvas()
         {
-            HideDialogCanvas();
-
             _startCanvas.SetActive(true);
             _optionCanvas.SetActive(false);
 
@@ -103,8 +101,6 @@ namespace UISystem.Application
         /// </summary>
         public void ShowOptionCanvas()
         {
-            HideDialogCanvas();
-
             _startCanvas.SetActive(false);
             _optionCanvas.SetActive(true);
 

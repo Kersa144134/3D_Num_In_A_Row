@@ -150,11 +150,11 @@ namespace GameSystem.Presentation
         private readonly ReactiveProperty<BoardInputType> _currentBoardInputType
             = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
 
-        /// <summary>フェーズ変更通知用 Subject</summary>
-        private readonly Subject<PhaseChangeEvent> _onPhaseChanged = new Subject<PhaseChangeEvent>();
+        /// <summary>フェーズ変更リクエスト通知用 Subject</summary>
+        private readonly Subject<PhaseChangeEvent> _onPhaseChangeRequested = new Subject<PhaseChangeEvent>();
 
         /// <summary>フェーズ変更ストリーム</summary>
-        public IObservable<PhaseChangeEvent> OnPhaseChanged => _onPhaseChanged;
+        public IObservable<PhaseChangeEvent> OnPhaseChangeRequested => _onPhaseChangeRequested;
 
         /// <summary>プレイヤー変更用 Subject</summary>
         private readonly Subject<int> _onPlayerChanged = new Subject<int>();

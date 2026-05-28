@@ -533,10 +533,6 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogYes)
             {
-                // ダイアログボタンを非表示にする
-                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(false);
-                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(false);
-
                 // ダイアログデータ取得
                 DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
 

@@ -105,7 +105,7 @@ namespace GameSystem.Presentation
         // シーン
         // --------------------------------------------------
         /// <summary>シーンロードの最低保証時間</summary>
-        private const float MIN_LOAD_TIME_SECONDS = 1.0f;
+        private const float MIN_LOAD_TIME_SECONDS = 0.25f;
 
         // --------------------------------------------------
         // アニメーション
@@ -114,7 +114,7 @@ namespace GameSystem.Presentation
         private const float SCREEN_FADE_DURATION_SECONDS = 0.5f;
 
         /// <summary>画面フェードの最低待機時間</summary>
-        private const float SCREEN_FADE_HOLD_TIME_SECONDS = 1.0f;
+        private const float SCREEN_FADE_HOLD_TIME_SECONDS = 0.25f;
 
         // ======================================================
         // UniRx 変数
@@ -243,7 +243,7 @@ namespace GameSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            _eventRouter.OnPhaseChanged
+            _eventRouter.OnPhaseChangeRequested
                 .Subscribe(e =>
                 {
                     SetTargetPhase(e.NextPhaseType);
@@ -273,7 +273,7 @@ namespace GameSystem.Presentation
                 // 非同期シーン遷移を開始する
                 ChangeScene(_targetScene).Forget();
 
-                // 二重実行防止フラグを有効化する
+                // 多重実行防止フラグを有効化
                 _isSceneTransitioning = true;
 
                 return;
@@ -360,9 +360,6 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ロード処理
             // --------------------------------------------------
-            // ロード準備開始イベント
-            _onLoadPrepareStart.OnNext(_currentScene);
-
             // ロード処理
             UniTask loadTask = BeginSceneLoad(nextScene);
 
@@ -371,6 +368,9 @@ namespace GameSystem.Presentation
 
             // シーン切替完了イベント待機
             UniTask executeTask = _eventRouter.OnSceneChangeExecuted.ToUniTask(true);
+
+            // ロード準備開始イベント
+            _onLoadPrepareStart.OnNext(nextScene);
 
             // 完了まで待機
             await UniTask.WhenAll(

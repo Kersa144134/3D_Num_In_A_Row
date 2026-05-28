@@ -52,7 +52,6 @@ namespace UISystem.Infrastructure
         /// </summary>
         public override void Dispose()
         {
-            // 基底 Dispose 実行
             base.Dispose();
 
             // Normal クリック通知を解放

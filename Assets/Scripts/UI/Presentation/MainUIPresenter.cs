@@ -631,9 +631,6 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogYes)
             {
-                // ダイアログキャンバスを非表示にする
-                _uiStateController.HideDialogCanvas();
-
                 // ダイアログデータ取得
                 DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
 
@@ -676,6 +673,8 @@ namespace UISystem.Presentation
             // タイトルスタートボタン押下時の処理
             if (actionType == UIActionType.ReturnToMain)
             {
+                // Play フェーズに戻るリクエスト通知
+                _onPhaseChangeRequested.OnNext(PhaseType.Play);
                 return;
             }
 

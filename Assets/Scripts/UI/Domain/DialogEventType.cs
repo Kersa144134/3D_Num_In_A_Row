@@ -10,7 +10,6 @@ namespace UISystem.Domain
 {
     /// <summary>
     /// ダイアログから通知されるイベントの種類
-    /// Inspectorで選択され、外部システムへ伝播される
     /// </summary>
     public enum DialogEventType
     {
@@ -19,8 +18,5 @@ namespace UISystem.Domain
 
         /// <summary>シーン遷移要求</summary>
         RequestSceneChange,
-
-        /// <summary>オプション画面を開く</summary>
-        OpenOption,
     }
 }

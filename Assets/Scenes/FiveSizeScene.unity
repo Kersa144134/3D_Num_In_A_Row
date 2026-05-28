@@ -786,11 +786,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4411821207981939308, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4294934528
+      value: 4286611584
       objectReference: {fileID: 0}
     - target: {fileID: 7638330661285618663, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4294934528
+      value: 4286611584
       objectReference: {fileID: 0}
     - target: {fileID: 8300703382523715873, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
       propertyPath: m_Name
@@ -1424,6 +1424,10 @@ PrefabInstance:
     - target: {fileID: 3046512216835001843, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5227156379412500376, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
+      propertyPath: _eventType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8227369200397554848, guid: 83c08aa52d329094185b59fba8fcc567, type: 3}
       propertyPath: m_Pivot.x
