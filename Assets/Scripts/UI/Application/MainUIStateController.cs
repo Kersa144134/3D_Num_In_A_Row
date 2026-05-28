@@ -51,6 +51,37 @@ namespace UISystem.Application
         // ======================================================
 
         // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
+        /// <summary>
+        /// ポーズキャンバスを表示する
+        /// </summary>
+        public void ShowPauseCanvas()
+        {
+            // 現在状態を更新
+            SetActiveCanvasType(CanvasType.Pause);
+        }
+
+        /// <summary>
+        /// ポーズキャンバスを非表示にする
+        /// </summary>
+        public void HidePauseCanvas()
+        {
+            // 現在状態を更新
+            SetActiveCanvasType(CanvasType.None);
+        }
+
+        /// <summary>
+        /// ダイアログキャンバスを非表示にする
+        /// </summary>
+        public override void HideDialogCanvas()
+        {
+            base.HideDialogCanvas();
+
+            ShowPauseCanvas();
+        }
+
+        /// --------------------------------------------------
         // ボタン
         // --------------------------------------------------
         /// <summary>

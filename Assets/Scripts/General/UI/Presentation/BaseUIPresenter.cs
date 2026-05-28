@@ -758,6 +758,24 @@ namespace UISystem.Presentation
             OnSelectButton(targetButton);
         }
 
+        /// <summary>
+        /// 指定したボタンイベントの interactable 状態を更新する
+        /// </summary>
+        /// /// <param name="buttonEvent">対象ボタンイベント</param>
+        /// <param name="isInteractable">ボタンに設定する interactable 状態</param>
+        protected void SetButtonInteractable(
+            in BaseButtonEvent buttonEvent,
+            in bool isInteractable)
+        {
+            if (buttonEvent == null)
+            {
+                return;
+            }
+
+            // ボタンの操作可能状態を更新する
+            buttonEvent.Button.interactable = isInteractable;
+        }
+
         // --------------------------------------------------
         // ポインター
         // --------------------------------------------------

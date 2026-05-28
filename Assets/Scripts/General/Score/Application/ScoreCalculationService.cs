@@ -130,8 +130,6 @@ namespace ScoreSystem.Application
                 bonusMultiplier,
                 _bonusType);
 
-            Debug.Log(multiplier);
-
             // スコア加算量を算出
             int scoreToAdd = Mathf.FloorToInt(baseScore * multiplier);
 

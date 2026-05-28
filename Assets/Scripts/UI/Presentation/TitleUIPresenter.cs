@@ -357,7 +357,6 @@ namespace UISystem.Presentation
                 })
                 .AddTo(_disposables);
 
-
             gamepadUsed
                 .DistinctUntilChanged()
                 .Subscribe(isUsed =>
@@ -456,11 +455,6 @@ namespace UISystem.Presentation
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
-            // 選択対象のボタンイベントをキャッシュ
-            _uiStateController.SetLastHoveredButtonEvent(
-                activeCanvasType,
-                buttonEvent);
-
             OnSelectButton(buttonEvent);
         }
 
@@ -478,9 +472,6 @@ namespace UISystem.Presentation
 
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            // 選択対象のボタンイベントをクリア
-            _uiStateController.ClearLastHoveredButtonEvent(activeCanvasType);
 
             // ホバー解除処理
             OnUnSelectButton();
@@ -580,10 +571,6 @@ namespace UISystem.Presentation
 
                 // 次のキャンバス状態を取得する
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                // ダイアログ用ボタンを表示する
-                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
-                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
 
                 // 初期フォーカスを Yes ボタンに設定する
                 SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));

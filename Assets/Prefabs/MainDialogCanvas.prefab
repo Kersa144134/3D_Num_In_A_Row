@@ -483,7 +483,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da2038514706de64fbd48b495cb95d04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GeneralUIDomain::UI.Dialog.Domain.DialogData
-  _eventType: 0
+  _eventType: 1
 --- !u!1 &6165279648669189536
 GameObject:
   m_ObjectHideFlags: 0

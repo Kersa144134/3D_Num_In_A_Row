@@ -431,6 +431,17 @@ namespace UISystem.Presentation
                     // 現在の入力デバイス状態を保持
                     _isGamePadInput = isUsed;
 
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+
+                    // 入力状態に応じて入力アイコン表示を更新
                     SetInputIconVisible(isUsed);
                 })
                 .AddTo(_disposables);
@@ -554,11 +565,6 @@ namespace UISystem.Presentation
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
-            // 選択対象のボタンイベントをキャッシュ
-            _uiStateController.SetLastHoveredButtonEvent(
-                activeCanvasType,
-                buttonEvent);
-
             OnSelectButton(buttonEvent);
         }
 
@@ -576,9 +582,6 @@ namespace UISystem.Presentation
 
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            // 選択対象のボタンイベントをクリア
-            _uiStateController.ClearLastHoveredButtonEvent(activeCanvasType);
 
             // ホバー解除処理
             OnUnSelectButton();
@@ -648,6 +651,10 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogNo)
             {
+                // ポーズ画面のボタンを操作可能に更新
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.ReturnToMain), true);
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.ReturnToTitle), true);
+
                 // ダイアログキャンバスを非表示にする
                 _uiStateController.HideDialogCanvas();
 
@@ -675,6 +682,7 @@ namespace UISystem.Presentation
             {
                 // Play フェーズに戻るリクエスト通知
                 _onPhaseChangeRequested.OnNext(PhaseType.Play);
+
                 return;
             }
 
@@ -684,15 +692,15 @@ namespace UISystem.Presentation
             // タイトルスタートボタン押下時の処理
             if (actionType == UIActionType.ReturnToTitle)
             {
+                // ポーズ画面のボタンを操作不可に更新
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.ReturnToMain), false);
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.ReturnToTitle), false);
+
                 // ダイアログキャンバスを表示する
                 _uiStateController.ShowDialogCanvas(DialogType.Confirm);
 
                 // 次のキャンバス状態を取得する
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                // ダイアログ用ボタンを表示する
-                _normalButtonResolver.GetButton(UIActionType.DialogYes).gameObject.SetActive(true);
-                _normalButtonResolver.GetButton(UIActionType.DialogNo).gameObject.SetActive(true);
 
                 // 初期フォーカスを Yes ボタンに設定する
                 SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
@@ -935,6 +943,21 @@ namespace UISystem.Presentation
             }
 
             _outgameCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+
+            if (_uiStateController is MainUIStateController mainUIStateController)
+            {
+                if (isPause)
+                {
+                    mainUIStateController.ShowPauseCanvas();
+
+                    // ターゲット検出状態を解除
+                    UpdatePointerTargetAnimation(false);
+                }
+                else
+                {
+                    mainUIStateController.HidePauseCanvas();
+                }
+            }
         }
 
         /// <summary>
@@ -947,7 +970,7 @@ namespace UISystem.Presentation
             {
                 return;
             }
-
+            
             _outgameCanvasAnimator.SetBool(IS_FINISH_HASH, isFinish);
         }
 

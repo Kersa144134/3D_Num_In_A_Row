@@ -135,12 +135,6 @@ namespace GameSystem.Presentation
                     _currentPhase.Select(phase => phase != PhaseType.Title),
                     _onGamepadUsed);
 
-                _titleUIPresenter.OnFocusPosition
-                    .Subscribe(e =>
-                    {
-                        _onPointerPositionChanged.OnNext(e);
-                    })
-                    .AddTo(_disposables);
                 _titleUIPresenter.OnUpdateGameOption
                     .Subscribe(e => HandleGameOptionUpdated(e))
                     .AddTo(_disposables);
@@ -157,6 +151,12 @@ namespace GameSystem.Presentation
                     .Subscribe(_ =>
                     {
                         UnbindInputCommands();
+                    })
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnFocusPosition
+                    .Subscribe(e =>
+                    {
+                        _onPointerPositionChanged.OnNext(e);
                     })
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
@@ -200,6 +200,12 @@ namespace GameSystem.Presentation
                     .Subscribe(_ =>
                     {
                         UnbindInputCommands();
+                    })
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnFocusPosition
+                    .Subscribe(e =>
+                    {
+                        _onPointerPositionChanged.OnNext(e);
                     })
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream

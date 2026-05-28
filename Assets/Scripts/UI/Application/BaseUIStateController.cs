@@ -37,10 +37,6 @@ namespace UISystem.Application
         private readonly BaseButtonEvent[] _lastSelectedButtonEvents =
             new BaseButtonEvent[Enum.GetValues(typeof(CanvasType)).Length];
 
-        /// <summary>キャンバスごとの最後にホバー中のボタンイベント</summary>
-        private readonly BaseButtonEvent[] _lastHoveredButtonEvents =
-            new BaseButtonEvent[Enum.GetValues(typeof(CanvasType)).Length];
-
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -159,16 +155,6 @@ namespace UISystem.Application
                 return GetInitialSelectedButton();
             }
 
-            // ホバー中ボタンを取得する
-            BaseButtonEvent hoverButtonEvent =
-                GetLastHoveredButtonEvent(canvasType);
-
-            // ホバー中ボタンが存在する場合
-            if (hoverButtonEvent != null)
-            {
-                return hoverButtonEvent;
-            }
-
             return null;
         }
 
@@ -189,22 +175,6 @@ namespace UISystem.Application
         }
 
         /// <summary>
-        /// 指定キャンバスの最後にホバー中のボタンイベントを設定する
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス種別</param>
-        /// <param name="buttonEvent">設定ボタンイベント</param>
-        public void SetLastHoveredButtonEvent(
-            in CanvasType canvasType,
-            in BaseButtonEvent buttonEvent)
-        {
-            // キャンバス種別を int へ変換する
-            int canvasIndex = (int)canvasType;
-
-            // 最後のホバー状態を保存する
-            _lastHoveredButtonEvents[canvasIndex] = buttonEvent;
-        }
-
-        /// <summary>
         /// 指定キャンバスの最後に選択したボタンイベントを取得する
         /// </summary>
         /// <param name="canvasType">対象キャンバス種別</param>
@@ -216,44 +186,6 @@ namespace UISystem.Application
 
             // キャッシュ済み選択状態を返す
             return _lastSelectedButtonEvents[canvasIndex];
-        }
-
-        /// <summary>
-        /// 指定キャンバスの最後にホバー中のボタンイベントを取得する
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス種別</param>
-        /// <returns>最後にホバー中のボタンイベント</returns>
-        public BaseButtonEvent GetLastHoveredButtonEvent(in CanvasType canvasType)
-        {
-            // キャンバス種別を int へ変換する
-            int canvasIndex = (int)canvasType;
-
-            // キャッシュ済みホバー状態を返す
-            return _lastHoveredButtonEvents[canvasIndex];
-        }
-
-        /// <summary>
-        /// 指定キャンバスの最後に選択したボタンイベントをクリアする
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス種別</param>
-        public void ClearLastSelectedButtonEvent(in CanvasType canvasType)
-        {
-            // キャンバス種別を int へ変換する
-            int canvasIndex = (int)canvasType;
-
-            _lastSelectedButtonEvents[canvasIndex] = null;
-        }
-
-        /// <summary>
-        /// 指定キャンバスの最後にホバー中のボタンイベントをクリアする
-        /// </summary>
-        /// <param name="canvasType">対象キャンバス種別</param>
-        public void ClearLastHoveredButtonEvent(in CanvasType canvasType)
-        {
-            // キャンバス種別を int へ変換する
-            int canvasIndex = (int)canvasType;
-
-            _lastHoveredButtonEvents[canvasIndex] = null;
         }
 
         // ======================================================

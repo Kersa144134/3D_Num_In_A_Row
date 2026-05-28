@@ -1608,6 +1608,7 @@ MonoBehaviour:
       _button: {fileID: 2239627875070817521}
     - _type: 2
       _button: {fileID: 2239627875070817520}
+  _pointer: {fileID: 1640972096}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEnabled: 0
@@ -1617,7 +1618,6 @@ MonoBehaviour:
   _binarizationThreshold: 0
   _binarizationLight: {r: 0, g: 0, b: 0, a: 0}
   _binarizationDark: {r: 0, g: 0, b: 0, a: 0}
-  _pointer: {fileID: 1640972096}
   _greyScaleFeature: {fileID: 7296796606161525243, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _greyScaleMaterial: {fileID: -876546973899608171, guid: 98266eff9d973b042b3806c4034ecd24, type: 3}
   _isGreyScaleEnabled: 0
