@@ -56,10 +56,10 @@ namespace GameSystem.Presentation
                 {
                     _isFadeCompleted = true;
 
-                    // 入力購読処理の保留があれば即実行
+                    // フェーズ購読処理の保留があれば即実行
                     if (_pendingPhase.HasValue)
                     {
-                        HandlePhaseInputSwitch(_pendingPhase.Value);
+                        HandlePhaseChange(_pendingPhase.Value);
                         _pendingPhase = null;
                     }
                 })
@@ -73,18 +73,6 @@ namespace GameSystem.Presentation
                 .Skip(1)
                 .Subscribe(phase =>
                 {
-                    if (phase == PhaseType.Ready)
-                    {
-                        // スコア計算クラス初期化
-                        _scoreManager.Initialize(_gameOptionManager.PlayerCount);
-                    }
-
-                    if (phase == PhaseType.ChangePlayer)
-                    {
-                        // スコア累積カウントリセット
-                        _scoreManager.ResetAllCumulativeCount();
-                    }
-
                     // フェード未完了なら入力購読処理を保留
                     if (!_isFadeCompleted)
                     {
@@ -93,7 +81,7 @@ namespace GameSystem.Presentation
                         return;
                     }
 
-                    HandlePhaseInputSwitch(phase);
+                    HandlePhaseChange(phase);
                 })
                 .AddTo(_disposables);
             _phaseMachine.CurrentPlayerIndex

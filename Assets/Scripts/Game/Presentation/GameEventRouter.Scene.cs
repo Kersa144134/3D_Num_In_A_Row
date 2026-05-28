@@ -26,6 +26,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private void NotifySceneChangeRequested()
         {
+            UnityEngine.Debug.Log(_currentPhase.Value);
             switch (_currentPhase.Value)
             {
                 case PhaseType.Title:

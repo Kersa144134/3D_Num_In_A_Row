@@ -223,7 +223,6 @@ namespace UISystem.Presentation
         /// </summary>
         public void UpdateTurnCount(in int turnCount)
         {
-            Debug.Log(turnCount);
             if (_turnText == null)
             {
                 return;
@@ -232,6 +231,12 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // 表示更新
             // --------------------------------------------------
+            // 現在ターン数が最大ターン数より大きい場合、処理なし
+            if (turnCount > _maxTurnCount)
+            {
+                return;
+            }
+            
             // ターン表示配列を更新
             _turnValues[0] = turnCount;
             _turnValues[1] = _maxTurnCount;

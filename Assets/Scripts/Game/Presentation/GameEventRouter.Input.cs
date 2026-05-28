@@ -54,10 +54,10 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// フェーズ変更時の入力購読切替処理を行う
+        /// フェーズ変更時の処理を行う
         /// </summary>
         /// <param name="phase">変更後のフェーズ</param>
-        private void HandlePhaseInputSwitch(in PhaseType phase)
+        private void HandlePhaseChange(in PhaseType phase)
         {
             // 入力購読解除
             UnbindInputCommands();
@@ -90,6 +90,9 @@ namespace GameSystem.Presentation
                 case PhaseType.Ready:
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
+
+                    // スコア計算クラス初期化
+                    _scoreManager.Initialize(_gameOptionManager.PlayerCount);
 
                     // スキップ入力
                     // ChangePlayer へフェーズ遷移通知
@@ -132,6 +135,9 @@ namespace GameSystem.Presentation
                             break;
                     }
 
+                    // スコア累積カウントリセット
+                    _scoreManager.ResetAllCumulativeCount();
+
                     break;
 
                 // --------------------------------------------------
@@ -162,12 +168,8 @@ namespace GameSystem.Presentation
                     // ゲームスピード変更購読解除
                     UnbindGameSpeedChangeStream();
 
-                    // スキップ入力
-                    // リザルトシーンへ遷移予約通知
-                    BindEventSkipStream(
-                        _onSceneChangeRequested,
-                        RESULT_SCENE_NAME
-                    );
+                    // リザルトシーン遷移リクエスト発火
+                    _onSceneChangeRequested.OnNext(RESULT_SCENE_NAME);
 
                     break;
 

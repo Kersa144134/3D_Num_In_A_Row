@@ -6,20 +6,19 @@
 // 概要     : メインシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
-using System;
-using TMPro;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
-using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -191,6 +190,9 @@ namespace UISystem.Presentation
 
         /// <summary>Pause パラメータ名</summary>
         private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
+
+        /// <summary>Finish パラメータ名</summary>
+        private static readonly int IS_FINISH_HASH = Animator.StringToHash("IsFinish");
 
         /// <summary>PlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
@@ -396,6 +398,10 @@ namespace UISystem.Presentation
                     // Pause
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
+
+                    // Finish
+                    bool isFinish = type == PhaseType.Finish;
+                    SetFinishState(isFinish);
                 })
                 .AddTo(_disposables);
 
@@ -930,6 +936,20 @@ namespace UISystem.Presentation
             }
 
             _outgameCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+        }
+
+        /// <summary>
+        /// Finish 状態アニメーターの状態を切り替える
+        /// </summary>
+        /// <param name="isFinish">Finish 状態の場合はtrue</param>
+        private void SetFinishState(in bool isFinish)
+        {
+            if (_outgameCanvasAnimator == null)
+            {
+                return;
+            }
+
+            _outgameCanvasAnimator.SetBool(IS_FINISH_HASH, isFinish);
         }
 
         /// <summary>

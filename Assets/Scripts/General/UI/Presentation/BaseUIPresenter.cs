@@ -40,6 +40,14 @@ namespace UISystem.Presentation
         protected DialogCanvasDefinition[] _dialogCanvasArray;
 
         // --------------------------------------------------
+        // ポインター
+        // --------------------------------------------------
+        [Header("ポインター")]
+        /// <summary>ポインターを表示する Image</summary>
+        [SerializeField]
+        protected GameObject _pointer;
+
+        // --------------------------------------------------
         // 演出 <2 値化>
         // --------------------------------------------------
         [Header("演出 <2 値化>")]
@@ -78,14 +86,6 @@ namespace UISystem.Presentation
         /// <summary>暗部カラー</summary>
         [SerializeField]
         protected Color _binarizationDark;
-
-        // --------------------------------------------------
-        // ポインター
-        // --------------------------------------------------
-        [Header("ポインター")]
-        /// <summary>ポインターを表示する Image</summary>
-        [SerializeField]
-        protected GameObject _pointer;
 
         // --------------------------------------------------
         // 演出 <グレースケール>
@@ -177,7 +177,7 @@ namespace UISystem.Presentation
         /// <summary>ダイアログ UI のイベント購読対象を収集するクラス</summary>
         protected readonly DialogUICollector _dialogUICollector = new DialogUICollector();
 
-        /// <summary>フェードシステム</summary>
+        /// <summary>フェードシステムキャッシュ</summary>
         protected Fade _fade;
 
         /// <summary>EventSystem キャッシュ</summary>
@@ -302,7 +302,7 @@ namespace UISystem.Presentation
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
             // エフェクト更新
-            _uiView.UpdateEffect(
+            _uiView?.UpdateEffect(
                 _isBinarizationEnabled,
                 _binarizationDistortionCenter,
                 _binarizationDistortionStrength,
@@ -521,7 +521,6 @@ namespace UISystem.Presentation
             {
                 normalButtons[i] = _dialogUICollector.Buttons[i];
             }
-
             // 引数ボタンコピー
             for (int i = 0; i < argumentCount; i++)
             {
