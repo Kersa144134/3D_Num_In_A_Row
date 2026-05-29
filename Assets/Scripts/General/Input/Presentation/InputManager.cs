@@ -304,7 +304,6 @@ namespace InputSystem.Presentation
                 .AddTo(_disposables);
 
             pointerPosition
-                .DistinctUntilChanged()
                 .Subscribe(position =>
                 {
                     _pointerStateUpdateService.SetPointerPosition(

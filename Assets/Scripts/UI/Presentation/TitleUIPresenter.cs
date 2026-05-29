@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UniRx;
+using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
@@ -124,6 +125,9 @@ namespace UISystem.Presentation
         /// <summary>OptionButtonBinder 生成クラス</summary>
         private OptionButtonBinderFactory _optionButtonBinderFactory;
 
+        /// <summary>スタートキャンバスのアニメーションイベント通知クラス</summary>
+        private AnimationEventNotifier _startCanvasAnimationEventNotifier;
+
         // --------------------------------------------------
         // システム参照
         // --------------------------------------------------
@@ -136,6 +140,13 @@ namespace UISystem.Presentation
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
+
+        // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>スタートキャンバスのアニメーター</summary>
+        private Animator _startAnimator;
 
         // ======================================================
         // 辞書
@@ -151,14 +162,26 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
+        // --------------------------------------------------
+        // オプション
+        // --------------------------------------------------
+        /// <summary>3 x 3 ボードサイズ</summary>
+        private const int BOARD_SIZE_THREE = 3;
+
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
+        /// <summary>IsStart パラメータ名</summary>
+        private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
+
+        /// <summary>IsSkip パラメータ名</summary>
+        private static readonly int IS_SKIP_HASH = Animator.StringToHash("IsSkip");
+
         /// <summary>BoardSize パラメータ名</summary>
         private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
 
         /// <summary>ボードアニメーション無効値</summary>
         private const int BOARD_ANIMATION_DISABLED = -1;
-
-        /// <summary>3 x 3 ボードサイズ</summary>
-        private const int BOARD_SIZE_THREE = 3;
 
         // ======================================================
         // UniRx 変数
@@ -190,7 +213,8 @@ namespace UISystem.Presentation
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
-                _dialogUICollector == null ||
+                _startCanvas == null ||
+                _optionCanvas == null ||
                 _titleNormalButtons == null ||
                 _titleOptionButtons == null ||
                 _initialSelectedStartCanvasButton == null ||
@@ -311,8 +335,20 @@ namespace UISystem.Presentation
                 titleUIStateController.ShowStartCanvas();
             }
 
+            // --------------------------------------------------
+            // アニメーター初期化
+            // --------------------------------------------------
+            _startAnimator = _startCanvas.GetComponent<Animator>();
+
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_boardAnimator);
+            SetAnimatorUnscaledTime(_startAnimator);
+
+            // アニメーションイベント通知クラス取得
+            _startCanvasAnimationEventNotifier = _startCanvas.GetComponent<AnimationEventNotifier>();
+
+            // ポインター非表示
+            SetPointerVisible(false);
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -337,66 +373,9 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
-        // パブリックメソッド
+        // ボタン派生イベント
         // ======================================================
 
-        /// <summary>
-        /// イベントストリームをまとめて購読する
-        /// </summary>
-        /// <param name="inputLock">入力ロック状態ストリーム</param>
-        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
-        public void BindStreams(
-            in IObservable<bool> inputLock,
-            in IObservable<bool> gamepadUsed)
-        {
-            inputLock
-                .DistinctUntilChanged()
-                .Subscribe(isLock =>
-                {
-                    _isInputLock = isLock;
-                })
-                .AddTo(_disposables);
-
-            gamepadUsed
-                .DistinctUntilChanged()
-                .Subscribe(isUsed =>
-                {
-                    // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isUsed;
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
-                    // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType, selectedButtonEvent);
-                })
-                .AddTo(_disposables);
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        // --------------------------------------------------
-        // イベント購読
-        // --------------------------------------------------
-        /// <summary>
-        /// イベント購読解除
-        /// </summary>
-        protected override void Dispose()
-        {
-            base.Dispose();
-
-            _disposables?.Dispose();
-        }
-
-        // --------------------------------------------------
-        // イベントハンドラ
-        // --------------------------------------------------
         /// <summary>
         /// クリックイベント受信時
         /// </summary>
@@ -438,73 +417,6 @@ namespace UISystem.Presentation
             {
                 OnPanelClick(panelEvent);
             }
-        }
-
-        /// <summary>
-        /// ホバーイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            OnSelectButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// ホバー解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            // ホバー解除処理
-            OnUnSelectButton();
-        }
-
-        /// <summary>
-        /// フォーカスイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnFocusButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// フォーカス解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnUnFocusButton(buttonEvent);
         }
 
         /// <summary>
@@ -740,6 +652,179 @@ namespace UISystem.Presentation
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, boardSize);
             }
+        }
+
+        /// <summary>
+        /// ホバーイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+            OnSelectButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// ホバー解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+            OnUnSelectButton();
+        }
+
+        /// <summary>
+        /// フォーカスイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnFocusButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// フォーカス解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnUnFocusButton(buttonEvent);
+        }
+
+        // ======================================================
+        // 画面フェード派生イベント
+        // ======================================================
+
+        /// <summary>
+        /// フェードアウト開始時
+        /// </summary>
+        protected override void OnFadeOutStart()
+        {
+            // タイトルスタートアニメーション起動
+            _startAnimator.SetTrigger(IS_START_HASH);
+        }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        /// <param name="inputLock">入力ロック状態ストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
+        /// <param name="titleStartAnimationSkiped">タイトルスタートアニメーションのスキップを通知するストリーム</param>
+        public void BindStreams(
+            in IObservable<bool> inputLock,
+            in IObservable<bool> gamepadUsed,
+            in IObservable<Unit> titleStartAnimationSkiped)
+        {
+            inputLock
+                .DistinctUntilChanged()
+                .Subscribe(isLock =>
+                {
+                    _isInputLock = isLock;
+                })
+                .AddTo(_disposables);
+
+            gamepadUsed
+                .DistinctUntilChanged()
+                .Subscribe(isUsed =>
+                {
+                    // 現在の入力デバイス状態を保持
+                    _isGamePadInput = isUsed;
+
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+                })
+                .AddTo(_disposables);
+
+            titleStartAnimationSkiped
+                .Subscribe(_ =>
+                {
+                    // タイトルスタートスキップアニメーション起動
+                    _startAnimator.SetTrigger(IS_SKIP_HASH);
+
+                    // シーン遷移状態解除
+                    _isSceneTransitioning = false;
+
+                    // ポインター表示
+                    SetPointerVisible(true);
+                })
+                .AddTo(_disposables);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        protected override void Subscribe()
+        {
+            base.Subscribe();
+
+            // アニメーション終了通知
+            _startCanvasAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    // シーン遷移状態解除
+                    _isSceneTransitioning = false;
+
+                    // ポインター表示
+                    SetPointerVisible(true);
+                })
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        protected override void Dispose()
+        {
+            base.Dispose();
+
+            _disposables?.Dispose();
         }
 
         // --------------------------------------------------

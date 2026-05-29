@@ -6,18 +6,17 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
-using PhaseSystem.Domain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UISystem.Application;
-using UISystem.Domain;
-using UISystem.Infrastructure;
-using UniRx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.UIElements;
+using UniRx;
+using PhaseSystem.Domain;
+using UISystem.Application;
+using UISystem.Domain;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -194,7 +193,7 @@ namespace UISystem.Presentation
         protected bool _isGamePadInput = false;
 
         /// <summary>シーン遷移中かどうかを示すフラグ</summary>
-        private bool _isSceneTransitioning = false;
+        protected bool _isSceneTransitioning = true;
 
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
@@ -398,9 +397,22 @@ namespace UISystem.Presentation
         protected virtual void SetFocusState(in BaseButtonEvent buttonEvent, in bool isFocus) { }
 
         // ======================================================
+        // 画面フェード継承イベント
+        // ======================================================
+
+        /// <summary>フェードイン開始時</summary>
+        protected virtual void OnFadeInStart() { }
+
+        /// <summary>フェードアウト開始時</summary>
+        protected virtual void OnFadeOutStart() { }
+
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
         /// <summary>
         /// 共通イベントストリームをまとめて購読する
         /// </summary>
@@ -413,6 +425,8 @@ namespace UISystem.Presentation
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeInRoutine(time));
+
+                    OnFadeInStart();
                 })
                 .AddTo(_disposables);
 
@@ -420,6 +434,8 @@ namespace UISystem.Presentation
                 .Subscribe(time =>
                 {
                     StartCoroutine(FadeOutRoutine(time));
+
+                    OnFadeOutStart();
                 })
                 .AddTo(_disposables);
 
@@ -780,11 +796,25 @@ namespace UISystem.Presentation
         // ポインター
         // --------------------------------------------------
         /// <summary>
+        /// ポインターの表示状態を更新する
+        /// </summary>
+        /// <param name="isVisible">表示する場合はtrue</param>
+        protected virtual void SetPointerVisible(in bool isVisible)
+        {
+            _uiView.SetPointerVisible(isVisible);
+        }
+
+        /// <summary>
         /// ポインターのターゲット検出状態アニメーションを更新する
         /// </summary>
         protected void UpdatePointerTargetAnimation(in bool isTarget)
         {
-            _pointerAnimator?.SetBool(IS_TARGET_HASH, isTarget);
+            if (_pointerAnimator == null)
+            {
+                return;
+            }
+
+            _pointerAnimator.SetBool(IS_TARGET_HASH, isTarget);
         }
 
         // --------------------------------------------------

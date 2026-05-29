@@ -43,8 +43,8 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ルーター
             // --------------------------------------------------
-            // ボタン A 押す
-            _inputManager.ButtonA.OnDown
+            // ボタン A 離す
+            _inputManager.ButtonA.OnUp
                 .Subscribe(_ =>
                 {
                     // スキップイベント発火
@@ -134,7 +134,8 @@ namespace GameSystem.Presentation
             {
                 _titleUIPresenter.BindStreams(
                     _currentPhase.Select(phase => phase != PhaseType.Title),
-                    _onGamepadUsed);
+                    _onGamepadUsed,
+                    _onTitleStartAnimationSkiped);
 
                 _titleUIPresenter.OnUpdateGameOption
                     .Subscribe(e => HandleGameOptionUpdated(e))
@@ -153,10 +154,7 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => UnbindInputCommands())
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFocusPosition
-                    .Subscribe(e =>
-                    {
-                        _onPointerPositionChanged.OnNext(e);
-                    })
+                    .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -200,10 +198,7 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => UnbindInputCommands())
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFocusPosition
-                    .Subscribe(e =>
-                    {
-                        _onPointerPositionChanged.OnNext(e);
-                    })
+                    .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -334,6 +329,10 @@ namespace GameSystem.Presentation
                 {
                     // フェードアウト時間を通知
                     _fadeOutTrigger.OnNext(seconds);
+
+                    // スキップ入力
+                    // タイトルスタートアニメーションスキップ通知
+                    BindEventSkipStream(_onTitleStartAnimationSkiped, Unit.Default);
                 })
                 .AddTo(_disposables);
         }

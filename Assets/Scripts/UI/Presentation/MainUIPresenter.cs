@@ -312,6 +312,9 @@ namespace UISystem.Presentation
                 _initialSelectedPauseCanvasButton
             );
 
+            // --------------------------------------------------
+            // アニメーター初期化
+            // --------------------------------------------------
             // アニメーター取得
             _intermittentCanvasAnimator = _intermittentCanvas.GetComponent<Animator>();
             _outgameCanvasAnimator = _outgameCanvas.GetComponent<Animator>();
@@ -506,6 +509,9 @@ namespace UISystem.Presentation
                     _onChangePlayerAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
+
+            // シーン遷移状態解除
+            _isSceneTransitioning = false;
         }
 
         /// <summary>
@@ -548,73 +554,6 @@ namespace UISystem.Presentation
             {
                 OnPanelClick(panelEvent);
             }
-        }
-
-        /// <summary>
-        /// ホバーイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            OnSelectButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// ホバー解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-            // ホバー解除処理
-            OnUnSelectButton();
-        }
-
-        /// <summary>
-        /// フォーカスイベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnFocusButton(buttonEvent);
-        }
-
-        /// <summary>
-        /// フォーカス解除イベント受信時
-        /// </summary>
-        /// <param name="uiEvent">UI イベント</param>
-        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
-        {
-            // ボタンイベント判定
-            if (uiEvent is not BaseButtonEvent buttonEvent)
-            {
-                return;
-            }
-
-            OnUnFocusButton(buttonEvent);
         }
 
         /// <summary>
@@ -710,6 +649,72 @@ namespace UISystem.Presentation
 
                 return;
             }
+        }
+
+        /// <summary>
+        /// ホバーイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+            OnSelectButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// ホバー解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnHoverEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+            OnUnSelectButton();
+        }
+
+        /// <summary>
+        /// フォーカスイベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnFocusButton(buttonEvent);
+        }
+
+        /// <summary>
+        /// フォーカス解除イベント受信時
+        /// </summary>
+        /// <param name="uiEvent">UI イベント</param>
+        protected override void OnUnFocusEventInternal(BaseUIEvent uiEvent)
+        {
+            // ボタンイベント判定
+            if (uiEvent is not BaseButtonEvent buttonEvent)
+            {
+                return;
+            }
+
+            OnUnFocusButton(buttonEvent);
         }
 
         // --------------------------------------------------
@@ -846,9 +851,9 @@ namespace UISystem.Presentation
         /// ポインターの表示状態を更新する
         /// </summary>
         /// <param name="isVisible">表示する場合はtrue</param>
-        private void SetPointerVisible(in bool isVisible)
+        protected override void SetPointerVisible(in bool isVisible)
         {
-            _uiView.SetPointerVisible(isVisible);
+            base.SetPointerVisible(isVisible);
 
             UpdatePointerTargetAnimation(_isPointerTarget);
         }

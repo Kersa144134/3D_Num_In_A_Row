@@ -201,6 +201,12 @@ namespace GameSystem.Presentation
         /// <summary>画面フェード完了ストリーム</summary>
         public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
 
+        /// <summary>タイトルスタートアニメーションスキップ通知用 Subject</summary>
+        private readonly Subject<Unit> _onTitleStartAnimationSkiped = new Subject<Unit>();
+
+        /// <summary>タイトルスタートアニメーションスキップ通知ストリーム</summary>
+        public IObservable<Unit> OnTitleStartAnimationSkiped => _onTitleStartAnimationSkiped;
+
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------
