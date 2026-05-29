@@ -30,17 +30,17 @@ namespace UISystem.Domain
         // タイトル
         // ======================================================
 
-        /// <summary>スタートボタン</summary>
+        /// <summary>タイトルスタートボタン</summary>
         TitleStart,
 
-        /// <summary>オプションボタン</summary>
+        /// <summary>タイトルオプションボタン</summary>
         TitleOption,
 
         /// <summary>オプションキャンセルボタン</summary>
-        TitleOptionCancel,
+        OptionCancel,
 
         /// <summary>オプション決定ボタン</summary>
-        TitleOptionDecide,
+        OptionDecide,
 
         // ======================================================
         // オプション
@@ -72,6 +72,13 @@ namespace UISystem.Domain
         ReturnToMain,
 
         /// <summary>タイトルシーンに戻るボタン</summary>
-        ReturnToTitle
+        ReturnToTitle,
+
+        // ======================================================
+        // リザルト
+        // ======================================================
+
+        /// <summary>リザルト終了ボタン</summary>
+        ResultEnd
     }
 }

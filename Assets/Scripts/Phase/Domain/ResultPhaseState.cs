@@ -6,7 +6,6 @@
 // 概要     : リザルトフェーズの振る舞い
 // ======================================================
 
-using System;
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain
@@ -25,7 +24,10 @@ namespace PhaseSystem.Domain
         /// </summary>
         public override UpdatableType[] GetUpdatableTypes()
         {
-            return Array.Empty<UpdatableType>();
+            return new UpdatableType[]
+            {
+                UpdatableType.ResultUIPresenter
+            };
         }
 
         // ======================================================

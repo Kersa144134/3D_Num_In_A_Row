@@ -355,7 +355,7 @@ namespace UISystem.Presentation
         {
             base.OnLateUpdateInternal(unscaledDeltaTime);
 
-            if (_isInputLock)
+            if (_isPointerLock)
             {
                 return;
             }
@@ -473,9 +473,8 @@ namespace UISystem.Presentation
             }
 
             // --------------------------------------------------
-            // スタートボタン
+            // タイトルスタート
             // --------------------------------------------------
-            // タイトルスタートボタン押下時の処理
             if (actionType == UIActionType.TitleStart)
             {
                 // ダイアログキャンバスを表示する
@@ -494,7 +493,7 @@ namespace UISystem.Presentation
             }
 
             // --------------------------------------------------
-            // オプション
+            // タイトルオプション
             // --------------------------------------------------
             if (actionType == UIActionType.TitleOption)
             {
@@ -555,7 +554,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // オプションキャンセル
             // --------------------------------------------------
-            if (actionType == UIActionType.TitleOptionCancel)
+            if (actionType == UIActionType.OptionCancel)
             {
                 if (_uiStateController is TitleUIStateController titleUIStateController)
                 {
@@ -578,7 +577,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // オプション確定
             // --------------------------------------------------
-            if (actionType == UIActionType.TitleOptionDecide)
+            if (actionType == UIActionType.OptionDecide)
             {
                 if (_uiStateController is TitleUIStateController titleUIStateController)
                 {
@@ -740,22 +739,12 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベントストリームをまとめて購読する
         /// </summary>
-        /// <param name="inputLock">入力ロック状態ストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="titleStartAnimationSkiped">タイトルスタートアニメーションのスキップを通知するストリーム</param>
         public void BindStreams(
-            in IObservable<bool> inputLock,
             in IObservable<bool> gamepadUsed,
             in IObservable<Unit> titleStartAnimationSkiped)
         {
-            inputLock
-                .DistinctUntilChanged()
-                .Subscribe(isLock =>
-                {
-                    _isInputLock = isLock;
-                })
-                .AddTo(_disposables);
-
             gamepadUsed
                 .DistinctUntilChanged()
                 .Subscribe(isUsed =>

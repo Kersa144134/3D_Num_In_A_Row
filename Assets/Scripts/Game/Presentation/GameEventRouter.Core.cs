@@ -67,6 +67,9 @@ namespace GameSystem.Presentation
         /// <summary>MainUIPresenter キャッシュ</summary>
         private readonly MainUIPresenter _mainUIPresenter;
 
+        /// <summary>ResultUIPresenter キャッシュ</summary>
+        private readonly ResultUIPresenter _resultUIPresenter;
+
         /// <summary>CameraPresenter キャッシュ</summary>
         private readonly CameraPresenter _cameraPresenter;
 
@@ -201,11 +204,8 @@ namespace GameSystem.Presentation
         /// <summary>画面フェード完了ストリーム</summary>
         public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
 
-        /// <summary>タイトルスタートアニメーションスキップ通知用 Subject</summary>
-        private readonly Subject<Unit> _onTitleStartAnimationSkiped = new Subject<Unit>();
-
-        /// <summary>タイトルスタートアニメーションスキップ通知ストリーム</summary>
-        public IObservable<Unit> OnTitleStartAnimationSkiped => _onTitleStartAnimationSkiped;
+        /// <summary>シーンスタートアニメーションスキップ通知用 Subject</summary>
+        private readonly Subject<Unit> _onSceneStartAnimationSkiped = new Subject<Unit>();
 
         // --------------------------------------------------
         // ボード
@@ -298,6 +298,9 @@ namespace GameSystem.Presentation
 
             _mainUIPresenter = (MainUIPresenter)
                 updatableReader.Get(UpdatableType.MainUIPresenter);
+
+            _resultUIPresenter = (ResultUIPresenter)
+                updatableReader.Get(UpdatableType.ResultUIPresenter);
 
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;

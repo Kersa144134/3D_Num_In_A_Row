@@ -331,7 +331,7 @@ namespace UISystem.Presentation
         {
             base.OnLateUpdateInternal(unscaledDeltaTime);
 
-            if (_isInputLock)
+            if (_isPointerLock)
             {
                 return;
             }
@@ -368,7 +368,7 @@ namespace UISystem.Presentation
         /// <param name="phase">フェーズ状態を通知するストリーム</param>
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
-        /// <param name="inputLock">入力ロック状態を通知するストリーム</param>
+        /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
         /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
@@ -379,7 +379,7 @@ namespace UISystem.Presentation
             in IObservable<PhaseType> phase,
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> scoreUpdated,
-            in IObservable<bool> inputLock,
+            in IObservable<bool> pointerLock,
             in IObservable<bool> gamepadUsed,
             in IObservable<bool> columnSelectVisibleChanged,
             in IObservable<Unit> dropRequested,
@@ -416,11 +416,11 @@ namespace UISystem.Presentation
                 .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
                 .AddTo(_disposables);
 
-            inputLock
+            pointerLock
                 .DistinctUntilChanged()
                 .Subscribe(isLock =>
                 {
-                    _isInputLock = isLock;
+                    _isPointerLock = isLock;
 
                     // ロック状態でない場合にポインター表示
                     SetPointerVisible(!isLock);
@@ -616,7 +616,6 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // メインに戻るボタン
             // --------------------------------------------------
-            // タイトルスタートボタン押下時の処理
             if (actionType == UIActionType.ReturnToMain)
             {
                 // Play フェーズに戻るリクエスト通知
@@ -628,7 +627,6 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // タイトルに戻るボタン
             // --------------------------------------------------
-            // タイトルスタートボタン押下時の処理
             if (actionType == UIActionType.ReturnToTitle)
             {
                 // ポーズ画面のボタンを操作不可に更新

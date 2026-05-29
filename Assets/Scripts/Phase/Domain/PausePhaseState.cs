@@ -6,7 +6,6 @@
 // 概要     : 一時停止フェーズの振る舞い
 // ======================================================
 
-using System;
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain

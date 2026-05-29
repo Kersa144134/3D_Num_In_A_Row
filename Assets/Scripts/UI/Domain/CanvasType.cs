@@ -30,6 +30,9 @@ namespace UISystem.Domain
         Option = 3,
 
         /// <summary>ポーズキャンバス</summary>
-        Pause = 4
+        Pause = 4,
+
+        /// <summary>リザルトキャンバス</summary>
+        Result = 5,
     }
 }

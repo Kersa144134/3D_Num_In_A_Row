@@ -186,11 +186,11 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
-        /// <summary>入力ロックフラグ</summary>
-        protected bool _isInputLock = true;
-
         /// <summary>ゲームパッド入力状態フラグ</summary>
         protected bool _isGamePadInput = false;
+
+        /// <summary>ポインターロックフラグ</summary>
+        protected bool _isPointerLock = false;
 
         /// <summary>シーン遷移中かどうかを示すフラグ</summary>
         protected bool _isSceneTransitioning = true;
@@ -255,7 +255,7 @@ namespace UISystem.Presentation
         // ダイアログイベント
         // --------------------------------------------------
         /// <summary>シーン遷移リクエスト通知用 Subject</summary>
-        private readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
+        protected readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
 
         /// <summary>シーン遷移リクエスト通知ストリーム</summary>
         public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;

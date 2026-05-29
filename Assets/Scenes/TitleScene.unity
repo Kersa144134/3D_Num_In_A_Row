@@ -743,7 +743,7 @@ GameObject:
   - component: {fileID: 214943122}
   - component: {fileID: 214943123}
   m_Layer: 0
-  m_Name: TitleUIPresenter
+  m_Name: TitleUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10972,10 +10972,6 @@ PrefabInstance:
     - target: {fileID: 3977456849550658369, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
       propertyPath: m_Name
       value: Pointer
-      objectReference: {fileID: 0}
-    - target: {fileID: 3977456849550658369, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7436380128807994146, guid: 3679044e08d718c418c4c896b396fbee, type: 3}
       propertyPath: m_Pivot.x

@@ -6,7 +6,6 @@
 // 概要     : イベントフェーズの振る舞い
 // ======================================================
 
-using System;
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain

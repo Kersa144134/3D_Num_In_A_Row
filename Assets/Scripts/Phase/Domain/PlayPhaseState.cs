@@ -6,8 +6,6 @@
 // 概要     : プレイフェーズの振る舞い
 // ======================================================
 
-using UniRx;
-using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain

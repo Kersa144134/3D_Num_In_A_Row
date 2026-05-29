@@ -133,9 +133,8 @@ namespace GameSystem.Presentation
             if (_titleUIPresenter != null)
             {
                 _titleUIPresenter.BindStreams(
-                    _currentPhase.Select(phase => phase != PhaseType.Title),
                     _onGamepadUsed,
-                    _onTitleStartAnimationSkiped);
+                    _onSceneStartAnimationSkiped);
 
                 _titleUIPresenter.OnUpdateGameOption
                     .Subscribe(e => HandleGameOptionUpdated(e))
@@ -207,6 +206,38 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnSceneChangeRequested
+                    .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+            }
+
+            if (_resultUIPresenter != null)
+            {
+                _resultUIPresenter.BindStreams(
+                    _onGamepadUsed,
+                    _onSceneStartAnimationSkiped);
+
+                // --------------------------------------------------
+                // 共通
+                // --------------------------------------------------
+                _resultUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
+
+                _resultUIPresenter.OnPhaseChangeRequested
+                    .Subscribe(phase => NotifyPhaseChangeRequested(phase))
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnDialogVisibleChanged
+                    .DistinctUntilChanged()
+                    .Subscribe(_ => UnbindInputCommands())
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnFocusPosition
+                    .Subscribe(e => _onPointerPositionChanged.OnNext(e))
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnFadeInCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnFadeOutCompletedStream
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
             }
@@ -331,8 +362,8 @@ namespace GameSystem.Presentation
                     _fadeOutTrigger.OnNext(seconds);
 
                     // スキップ入力
-                    // タイトルスタートアニメーションスキップ通知
-                    BindEventSkipStream(_onTitleStartAnimationSkiped, Unit.Default);
+                    // シーンスタートアニメーションスキップ通知
+                    BindEventSkipStream(_onSceneStartAnimationSkiped, Unit.Default);
                 })
                 .AddTo(_disposables);
         }

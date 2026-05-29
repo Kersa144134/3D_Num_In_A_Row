@@ -6,7 +6,6 @@
 // 概要     : プレイヤー切り替えフェーズの振る舞い
 // ======================================================
 
-using System;
 using UpdateSystem.Domain;
 
 namespace PhaseSystem.Domain
