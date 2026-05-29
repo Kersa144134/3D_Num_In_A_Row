@@ -6,20 +6,21 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
+using InputSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UISystem.Presentation;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -94,6 +95,9 @@ namespace GameSystem.Presentation
 
         /// <summary>現在の入力マッピング番号</summary>
         private int _currentMappingIndex = -1;
+
+        /// <summary>現在アクティブな入力デバイスのキャッシュ</summary>
+        private InputDeviceType _cachedActiveDevice = InputDeviceType.Gamepad;
 
         /// <summary>フェード完了フラグ</summary>
         private bool _isFadeCompleted;

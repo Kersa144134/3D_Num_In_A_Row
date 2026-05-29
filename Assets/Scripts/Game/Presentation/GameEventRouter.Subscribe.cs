@@ -7,16 +7,17 @@
 //            購読関連処理をまとめたファイル
 // ======================================================
 
-using System;
-using System.Linq;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
+using Cysharp.Threading.Tasks;
+using InputSystem.Domain;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using System;
+using System.Linq;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -122,7 +123,6 @@ namespace GameSystem.Presentation
                     .Subscribe(e => TogglePausePhase(_currentPhase.Value))
                     .AddTo(_disposables);
                 _inputManager.ActiveDeviceType
-                    .DistinctUntilChanged()
                     .Subscribe(e => NotifyActiveControllerChanged(e))
                     .AddTo(_disposables);
             }
@@ -135,6 +135,9 @@ namespace GameSystem.Presentation
                 _titleUIPresenter.BindStreams(
                     _onGamepadUsed,
                     _onSceneStartAnimationSkiped);
+
+                // 直後にキャッシュ状態を同期
+                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
 
                 _titleUIPresenter.OnUpdateGameOption
                     .Subscribe(e => HandleGameOptionUpdated(e))
@@ -180,6 +183,9 @@ namespace GameSystem.Presentation
                     _onTurnChanged,
                     _phaseMachine.LimitTime);
 
+                // 直後にキャッシュ状態を同期
+                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
+
                 _mainUIPresenter.OnChangePlayerAnimationEnd
                     .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Play))
                     .AddTo(_disposables);
@@ -215,6 +221,9 @@ namespace GameSystem.Presentation
                 _resultUIPresenter.BindStreams(
                     _onGamepadUsed,
                     _onSceneStartAnimationSkiped);
+
+                // 直後にキャッシュ状態を同期
+                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
 
                 // --------------------------------------------------
                 // 共通

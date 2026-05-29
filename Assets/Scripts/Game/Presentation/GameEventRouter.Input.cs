@@ -41,6 +41,9 @@ namespace GameSystem.Presentation
         /// </summary>
         private void NotifyActiveControllerChanged(in InputDeviceType device)
         {
+            // 最新の入力デバイスを保存
+            _cachedActiveDevice = device;
+
             if (device == InputDeviceType.Gamepad)
             {
                 _onGamepadUsed.OnNext(true);

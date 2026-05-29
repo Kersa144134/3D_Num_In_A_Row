@@ -428,7 +428,6 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             gamepadUsed
-                .DistinctUntilChanged()
                 .Subscribe(isUsed =>
                 {
                     // 現在の入力デバイス状態を保持
