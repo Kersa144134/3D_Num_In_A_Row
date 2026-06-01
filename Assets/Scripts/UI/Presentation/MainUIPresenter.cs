@@ -210,12 +210,6 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>ChangePlayerアニメーション終了通知用 Subject</summary>
-        private readonly Subject<Unit> _onChangePlayerAnimationEnd = new Subject<Unit>();
-
-        /// <summary>ChangePlayerアニメーション終了通知ストリーム</summary>
-        public IObservable<Unit> OnChangePlayerAnimationEnd => _onChangePlayerAnimationEnd;
-        
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
@@ -505,7 +499,7 @@ namespace UISystem.Presentation
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
-                    _onChangePlayerAnimationEnd.OnNext(Unit.Default);
+                    _onAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
 

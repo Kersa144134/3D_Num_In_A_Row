@@ -449,6 +449,7 @@ GameObject:
   m_Component:
   - component: {fileID: 214943122}
   - component: {fileID: 214943123}
+  - component: {fileID: 214943124}
   m_Layer: 0
   m_Name: ResultUI
   m_TagString: Untagged
@@ -488,21 +489,21 @@ MonoBehaviour:
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEnabled: 0
-  _binarizationDistortionCenter: {x: 0, y: 0}
-  _binarizationDistortionStrength: 0
-  _binarizationNoise: 0
-  _binarizationThreshold: 0
+  _binarizationDistortionCenter: {x: 0.7, y: 0.55}
+  _binarizationDistortionStrength: 0.1
+  _binarizationNoise: 3000
+  _binarizationThreshold: 0.5
   _binarizationLight: {r: 0, g: 0, b: 0, a: 0}
-  _binarizationDark: {r: 0, g: 0, b: 0, a: 0}
+  _binarizationDark: {r: 1, g: 1, b: 1, a: 0}
   _greyScaleFeature: {fileID: 7296796606161525243, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _greyScaleMaterial: {fileID: -876546973899608171, guid: 98266eff9d973b042b3806c4034ecd24, type: 3}
   _isGreyScaleEnabled: 0
-  _greyScaleStrength: {x: 0, y: 0, z: 0}
-  _greyScaleDistortionCenter: {x: 0, y: 0}
-  _greyScaleDistortionStrength: 0
-  _greyScaleNoise: 0
+  _greyScaleStrength: {x: 0.25, y: 0.25, z: 0}
+  _greyScaleDistortionCenter: {x: 0.7, y: 0.55}
+  _greyScaleDistortionStrength: 0.1
+  _greyScaleNoise: 1000
   _greyScaleLight: {r: 0, g: 0, b: 0, a: 0}
-  _greyScaleDark: {r: 0, g: 0, b: 0, a: 0}
+  _greyScaleDark: {r: 1, g: 1, b: 1, a: 0}
   _distortionFeature: {fileID: -345652857613902587, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _distortionMaterial: {fileID: -876546973899608171, guid: 525d77932589f7e409004c68d3e9a33e, type: 3}
   _isDistortionEnabled: 0
@@ -533,6 +534,28 @@ MonoBehaviour:
   - {fileID: 853593038}
   - {fileID: 891002039}
   _resultRankAnimator: {fileID: 125530594}
+--- !u!95 &214943124
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214943121}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: f76e13ebb96d02b4686f850b549c215f, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &343603744
 GameObject:
   m_ObjectHideFlags: 0
@@ -1063,7 +1086,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 512
+    m_Bits: 640
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 1a620c72558e24c43af90a917beaf90b, type: 2}
   m_TargetDisplay: 0
@@ -1083,12 +1106,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 601466403}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -2.5}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1720444250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &629860656
 GameObject:
@@ -2216,7 +2239,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1155871001}
   - component: {fileID: 1155871002}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: BloodEffect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3068,6 +3091,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 601466407}
   - {fileID: 1074475306}
   m_Father: {fileID: 784205747}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4124,7 +4148,6 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1575469516}
-  - {fileID: 601466407}
   - {fileID: 125530593}
   - {fileID: 446005901}
   - {fileID: 8449544345372127329}

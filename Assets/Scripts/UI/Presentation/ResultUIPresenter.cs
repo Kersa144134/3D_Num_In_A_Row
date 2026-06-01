@@ -510,6 +510,7 @@ namespace UISystem.Presentation
                 .Subscribe(_ =>
                 {
                     // ランクアニメーション終了
+                    _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
                 })
@@ -549,8 +550,12 @@ namespace UISystem.Presentation
                 .Subscribe(_ =>
                 {
                     // ランクアニメーション終了
+                    _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
+
+                    // アニメーション終了通知
+                    _onAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
 

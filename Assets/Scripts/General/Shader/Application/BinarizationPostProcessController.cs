@@ -109,7 +109,7 @@ namespace ShaderSystem.Application
                 posterizationLightColor,
                 posterizationDarkColor
             );
-
+            
             if (_isEffectEnabled)
             {
                 SetFullScreenPassActive(true);

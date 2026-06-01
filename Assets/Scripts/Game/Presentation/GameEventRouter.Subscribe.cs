@@ -143,6 +143,11 @@ namespace GameSystem.Presentation
                     .Subscribe(e => HandleGameOptionUpdated(e))
                     .AddTo(_disposables);
 
+                // タイトルスタートアニメーション終了時
+                _titleUIPresenter.OnAnimationEnd
+                    .Subscribe(_ => UnbindEventSkipStream())
+                    .AddTo(_disposables);
+
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
@@ -186,7 +191,8 @@ namespace GameSystem.Presentation
                 // 直後にキャッシュ状態を同期
                 _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
 
-                _mainUIPresenter.OnChangePlayerAnimationEnd
+                // ChangePlayer アニメーション終了時
+                _mainUIPresenter.OnAnimationEnd
                     .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Play))
                     .AddTo(_disposables);
 
@@ -224,6 +230,11 @@ namespace GameSystem.Presentation
 
                 // 直後にキャッシュ状態を同期
                 _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
+
+                // リザルト順位アニメーション終了時
+                _resultUIPresenter.OnAnimationEnd
+                    .Subscribe(_ => UnbindEventSkipStream())
+                    .AddTo(_disposables);
 
                 // --------------------------------------------------
                 // 共通

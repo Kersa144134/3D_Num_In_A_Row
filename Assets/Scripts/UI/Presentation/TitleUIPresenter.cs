@@ -802,6 +802,9 @@ namespace UISystem.Presentation
 
                     // ポインター表示
                     SetPointerVisible(true);
+
+                    // アニメーション終了通知
+                    _onAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
         }

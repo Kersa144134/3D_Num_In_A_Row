@@ -61,7 +61,8 @@ namespace ShaderSystem.Application
                 return;
             }
 
-            if (_fullScreenPassFeature.isActive)
+            // Œ»İó‘Ô‚Æ“¯‚¶‚È‚çˆ—‚È‚µ
+            if (_fullScreenPassFeature.isActive == isEnable)
             {
                 return;
             }

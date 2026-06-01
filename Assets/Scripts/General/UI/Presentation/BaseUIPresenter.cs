@@ -233,6 +233,12 @@ namespace UISystem.Presentation
         /// <summary>ダイアログ表示状態通知ストリーム</summary>
         public IObservable<bool> OnDialogVisibleChanged => _onDialogVisibleChanged;
 
+        /// <summary>アニメーション終了通知用 Subject</summary>
+        protected readonly Subject<Unit> _onAnimationEnd = new Subject<Unit>();
+
+        /// <summary>アニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnAnimationEnd => _onAnimationEnd;
+
         /// <summary>フォーカス座標通知用 Subject</summary>
         private readonly Subject<Vector2> _onFocusPosition = new Subject<Vector2>();
 
