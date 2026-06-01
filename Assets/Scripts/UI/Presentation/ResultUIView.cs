@@ -6,12 +6,13 @@
 // 概要     : リザルト UI の描画処理を担当するビュー
 // ======================================================
 
-using System.Collections.Generic;
-using UnityEngine.UI;
-using TMPro;
 using ScoreSystem.Domain;
 using ShaderSystem.Application;
+using System.Collections.Generic;
+using TMPro;
 using UISystem.Application;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace UISystem.Presentation
 {
@@ -37,11 +38,23 @@ namespace UISystem.Presentation
         // フィールド
         // ======================================================
 
+        /// <summary>駒の Renderer 配列</summary>
+        private readonly Renderer[] _pieceRendererArray;
+
+        /// <summary>駒のマテリアル配列</summary>
+        private readonly Material[] _pieceMaterialArray;
+
+        /// <summary>プレイヤーのカラー配列</summary>
+        private readonly Color[] _playerColorArray;
+
         /// <summary>ランキングのプレイヤー ID 表示用テキスト</summary>
         private readonly TextMeshProUGUI[] _rankingPlayerIdTexts;
 
         /// <summary>ランキングのスコア表示用テキスト</summary>
         private readonly TextMeshProUGUI[] _rankingScoreTexts;
+
+        /// <summary>リザルト背景用の Renderer</summary>
+        private Renderer _resultBackgroundRenderer;
 
         // ======================================================
         // 定数
@@ -77,11 +90,19 @@ namespace UISystem.Presentation
         /// </summary>
         public ResultUIView(
             in RawImage radialAfterimageRenderer,
+            in Renderer[] pieceRendererArray,
+            in Material[] pieceMaterialArray,
+            in Color[] playerColorArray,
             in TextMeshProUGUI[] rankingPlayerIdTexts,
-            in TextMeshProUGUI[] rankingScoreTexts)
+            in TextMeshProUGUI[] rankingScoreTexts,
+            in Renderer resultBackgroundRenderer)
         {
+            _pieceRendererArray = pieceRendererArray;
+            _pieceMaterialArray = pieceMaterialArray;
+            _playerColorArray = playerColorArray;
             _rankingPlayerIdTexts = rankingPlayerIdTexts;
             _rankingScoreTexts = rankingScoreTexts;
+            _resultBackgroundRenderer = resultBackgroundRenderer;
 
             _radialAfterimage = new RadialAfterimageEffectController(radialAfterimageRenderer.material);
 
@@ -165,9 +186,10 @@ namespace UISystem.Presentation
         /// <summary>
         /// ランキング情報を基にスコア表示と順位表示を更新する
         /// </summary>
-        /// <param name="ranking">ランキングデータ（スコア昇順）</param>
+        /// <param name="ranking">ランキングデータ</param>
         public void UpdateRankingInfo(List<RankingData> ranking)
         {
+            // 必要な参照が存在しない場合は処理しない
             if (_rankingPlayerIdTexts == null ||
                 _rankingScoreTexts == null ||
                 _playerIdFormatters == null ||
@@ -176,54 +198,255 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // デバッグ用ランキングデータ
             ranking = new List<RankingData>
             {
                 new RankingData(2, 500),
-                new RankingData(1, 100)
+                new RankingData(3, 400),
+                new RankingData(2, 300),
+                new RankingData(1, 200)
             };
 
-            // テキスト数の取得
+            // 表示可能な順位数を取得
             int viewLength = _rankingPlayerIdTexts.Length;
 
-            // ランキングデータ件数の取得
+            // ランキングデータ件数を取得
             int dataLength = ranking != null
                 ? ranking.Count
                 : 0;
-            
+
+            // ランキングデータが存在しない場合は処理しない
+            if (dataLength <= 0)
+            {
+                return;
+            }
+
+            // 順位表示を更新
             for (int i = 0; i < viewLength; i++)
             {
-                // --------------------------------------------------
-                // テキスト表示制御
-                // --------------------------------------------------
-                // プレイヤー人数が 4 人に満たない場合、未使用テキストを非表示
-                if (i >= dataLength)
+                // 現在の順位に対応するデータが存在するか判定
+                bool isValidRank = i < dataLength;
+
+                // 駒表示状態を更新
+                UpdatePieceRendererVisibility(i, isValidRank);
+
+                // ランキングテキストの表示状態を更新
+                UpdateRankingTextVisibility(i, isValidRank);
+
+                // データが存在しない順位は更新しない
+                if (!isValidRank)
                 {
-                    _rankingPlayerIdTexts[i].enabled = false;
-                    _rankingScoreTexts[i].enabled = false;
                     continue;
                 }
 
-                _rankingPlayerIdTexts[i].enabled = true;
-                _rankingScoreTexts[i].enabled = true;
+                // 現在順位のランキングデータを取得
+                RankingData rankingData = ranking[i];
 
-                // --------------------------------------------------
-                // データ取得
-                // --------------------------------------------------
-                int playerId = ranking[i].PlayerId;
-                int score = ranking[i].Score;
+                // 駒マテリアルを更新
+                UpdatePieceMaterial(i, rankingData.PlayerId);
 
-                // --------------------------------------------------
-                // プレイヤー ID 表示更新
-                // --------------------------------------------------
-                char[] idBuffer = _playerIdFormatters[i].FormatWithPadding(playerId);
-                _rankingPlayerIdTexts[i].SetCharArray(idBuffer);
+                // テキスト色を更新
+                UpdateRankingTextColor(i, rankingData.PlayerId);
+                
+                // プレイヤーID表示を更新
+                UpdatePlayerIdText(i, rankingData.PlayerId);
 
-                // --------------------------------------------------
-                // スコア表示更新
-                // --------------------------------------------------
-                char[] scoreBuffer = _scoreFormatters[i].FormatWithPadding(score);
-                _rankingScoreTexts[i].SetCharArray(scoreBuffer);
+                // スコア表示を更新
+                UpdateScoreText(i, rankingData.Score);
             }
+
+            // 1 位プレイヤーIDを取得
+            int firstPlayerId = ranking[0].PlayerId;
+
+            // 1 位プレイヤーの色を背景へ反映
+            UpdateResultBackgroundColor(firstPlayerId);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // 駒
+        // --------------------------------------------------
+        /// <summary>
+        /// 駒 Renderer の表示状態を更新する
+        /// </summary>
+        /// <param name="index">順位インデックス</param>
+        /// <param name="isVisible">表示状態</param>
+        private void UpdatePieceRendererVisibility(
+            int index,
+            bool isVisible)
+        {
+            if (_pieceRendererArray == null)
+            {
+                return;
+            }
+
+            if (index >= _pieceRendererArray.Length)
+            {
+                return;
+            }
+
+            // 駒の表示状態を更新
+            _pieceRendererArray[index].enabled =
+                isVisible;
+        }
+
+        /// <summary>
+        /// 順位に対応する駒マテリアルを更新する
+        /// </summary>
+        /// <param name="rankIndex">順位インデックス</param>
+        /// <param name="playerId">プレイヤー ID</param>
+        private void UpdatePieceMaterial(
+            int rankIndex,
+            int playerId)
+        {
+            if (_pieceRendererArray == null ||
+                _pieceMaterialArray == null)
+            {
+                return;
+            }
+
+            if (rankIndex >= _pieceRendererArray.Length)
+            {
+                return;
+            }
+
+            // プレイヤー ID をインデックスへ変換
+            int materialIndex = playerId - 1;
+
+            if (materialIndex < 0 ||
+                materialIndex >= _pieceMaterialArray.Length)
+            {
+                return;
+            }
+
+            _pieceRendererArray[rankIndex].material =
+                _pieceMaterialArray[materialIndex];
+        }
+
+        // --------------------------------------------------
+        // テキスト
+        // --------------------------------------------------
+        /// <summary>
+        /// ランキングテキストの表示状態を更新する
+        /// </summary>
+        /// <param name="index">順位インデックス</param>
+        /// <param name="isVisible">表示状態</param>
+        private void UpdateRankingTextVisibility(
+            int index,
+            bool isVisible)
+        {
+            // プレイヤーID表示状態を更新
+            _rankingPlayerIdTexts[index].enabled = isVisible;
+
+            // スコア表示状態を更新
+            _rankingScoreTexts[index].enabled = isVisible;
+        }
+
+        /// <summary>
+        /// ランキングテキストの色を更新する
+        /// </summary>
+        /// <param name="rankIndex">順位インデックス</param>
+        /// <param name="playerId">プレイヤー ID</param>
+        private void UpdateRankingTextColor(
+            int rankIndex,
+            int playerId)
+        {
+            if (_playerColorArray == null)
+            {
+                return;
+            }
+
+            // プレイヤー ID をインデックスへ変換
+            int colorIndex = playerId - 1;
+
+            if (colorIndex < 0 ||
+                colorIndex >= _playerColorArray.Length)
+            {
+                return;
+            }
+
+            // プレイヤーカラーを取得
+            Color playerColor =
+                _playerColorArray[colorIndex];
+
+            // プレイヤーIDテキスト色を更新
+            _rankingPlayerIdTexts[rankIndex].color =
+                playerColor;
+
+            // スコアテキスト色を更新
+            _rankingScoreTexts[rankIndex].color =
+                playerColor;
+        }
+
+        /// <summary>
+        /// プレイヤー ID 表示を更新する
+        /// </summary>
+        /// <param name="rankIndex">順位インデックス</param>
+        /// <param name="playerId">プレイヤー ID</param>
+        private void UpdatePlayerIdText(
+            int rankIndex,
+            int playerId)
+        {
+            // 表示用文字列を生成
+            char[] buffer =
+                _playerIdFormatters[rankIndex]
+                .FormatWithPadding(playerId);
+
+            // テキストへ反映
+            _rankingPlayerIdTexts[rankIndex]
+                .SetCharArray(buffer);
+        }
+
+        /// <summary>
+        /// スコア表示を更新する
+        /// </summary>
+        /// <param name="rankIndex">順位インデックス</param>
+        /// <param name="score">スコア</param>
+        private void UpdateScoreText(
+            int rankIndex,
+            int score)
+        {
+            // 表示用文字列を生成
+            char[] buffer =
+                _scoreFormatters[rankIndex]
+                .FormatWithPadding(score);
+
+            // テキストへ反映
+            _rankingScoreTexts[rankIndex]
+                .SetCharArray(buffer);
+        }
+
+        // --------------------------------------------------
+        // 背景
+        // --------------------------------------------------
+        /// <summary>
+        /// 1位プレイヤーの色を背景へ反映する
+        /// </summary>
+        /// <param name="playerId">1位プレイヤーID</param>
+        private void UpdateResultBackgroundColor(
+            int playerId)
+        {
+            if (_resultBackgroundRenderer == null ||
+                _playerColorArray == null)
+            {
+                return;
+            }
+
+            // プレイヤー ID をインデックスへ変換
+            int colorIndex = playerId - 1;
+
+            if (colorIndex < 0 ||
+                colorIndex >= _playerColorArray.Length)
+            {
+                return;
+            }
+
+            // 背景色を更新
+            _resultBackgroundRenderer.material.color =
+                _playerColorArray[colorIndex];
         }
     }
 }

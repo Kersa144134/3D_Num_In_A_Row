@@ -6,19 +6,19 @@
 // 概要     : リザルトシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
-using System;
-using System.Collections.Generic;
-using TMPro;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -100,6 +100,30 @@ namespace UISystem.Presentation
         private BaseButtonEvent _initialSelectedResultCanvasButton;
 
         // --------------------------------------------------
+        // 駒 Renderer
+        // --------------------------------------------------
+        [Header("駒 Renderer")]
+        /// <summary>駒の Renderer 配列</summary>
+        [SerializeField]
+        private Renderer[] _pieceRendererArray;
+
+        // --------------------------------------------------
+        // 駒マテリアル
+        // --------------------------------------------------
+        [Header("駒マテリアル")]
+        /// <summary>駒のマテリアル配列</summary>
+        [SerializeField]
+        private Material[] _pieceMaterialArray;
+
+        // --------------------------------------------------
+        // プレイヤーカラー
+        // --------------------------------------------------
+        [Header("プレイヤーカラー")]
+        /// <summary>プレイヤーのカラー配列</summary>
+        [SerializeField]
+        private Color[] _playerColorArray;
+
+        // --------------------------------------------------
         // ランキング情報
         // --------------------------------------------------
         [Header("ランキング情報")]
@@ -110,6 +134,14 @@ namespace UISystem.Presentation
         /// <summary>ランキングのスコア表示用テキスト</summary>
         [SerializeField]
         private TextMeshProUGUI[] _rankingScoreTexts;
+
+        // --------------------------------------------------
+        // リザルト背景 Renderer
+        // --------------------------------------------------
+        [Header("リザルト背景 Renderer")]
+        /// <summary>リザルト背景用の Renderer</summary>
+        [SerializeField]
+        private Renderer _resultBackgroundRenderer;
 
         // --------------------------------------------------
         // アニメーター
@@ -209,8 +241,12 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             _uiView = new ResultUIView(
                 _radialAfterimageRenderer,
+                _pieceRendererArray,
+                _pieceMaterialArray,
+                _playerColorArray,
                 _rankingPlayerIdTexts,
-                _rankingScoreTexts
+                _rankingScoreTexts,
+                _resultBackgroundRenderer
             );
             _uiView.Initialize(
                 _binarizationFeature,
@@ -509,7 +545,7 @@ namespace UISystem.Presentation
             resultStartAnimationSkiped
                 .Subscribe(_ =>
                 {
-                    // ランクアニメーション終了
+                    // 順位アニメーション終了
                     _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
@@ -549,7 +585,7 @@ namespace UISystem.Presentation
             _resultRankAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
-                    // ランクアニメーション終了
+                    // 順位アニメーション終了
                     _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
