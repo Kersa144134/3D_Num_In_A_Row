@@ -5,6 +5,9 @@ Shader "UI/RadialAfterimage"
         // 残像生成元となる RenderTexture
         _MainTex ("Texture", 2D) = "white" {}
 
+        // エフェクト全体の強さ
+        _EffectStrength ("Effect Strength", Range(0.0, 1.0)) = 1.0
+
         // 表示する残像数
         _SampleCount ("Sample Count", Range(1, 8)) = 6
 
@@ -16,9 +19,6 @@ Shader "UI/RadialAfterimage"
 
         // 透明度が0になる距離
         _AlphaFadeDistance ("Alpha Fade Distance", Range(0.01, 10.0)) = 1.0
-
-        // エフェクト全体の強さ
-        _EffectStrength ("Effect Strength", Range(0.0, 1.0)) = 1.0
 
         // クロマキー除去対象色
         _ChromaColor ("Chroma Color", Color) = (1,0,1,1)

@@ -56,19 +56,16 @@ namespace ShaderSystem.Application
         /// <param name="isEnable">有効にするかどうか</param>
         public void SetFullScreenPassActive(bool isEnable)
         {
-            // Full Screen Pass Feature が未設定の場合は処理を行わない
             if (_fullScreenPassFeature == null)
             {
                 return;
             }
 
-            // すでに目的の状態である場合は処理を行わない
-            if (_fullScreenPassFeature.isActive == isEnable)
+            if (_fullScreenPassFeature.isActive)
             {
                 return;
             }
 
-            // Full Screen Pass Feature の有効状態を切り替える
             _fullScreenPassFeature.SetActive(isEnable);
         }
 
@@ -96,14 +93,11 @@ namespace ShaderSystem.Application
         /// </summary>
         protected void ApplyToMaterial()
         {
-            // Material が未設定の場合は反映を行わない
             if (_effectMaterial == null)
             {
                 return;
             }
 
-            // 派生クラス側で定義された
-            // 個別のパラメータ反映処理を呼び出す
             ApplyPropertiesToMaterial(_effectMaterial);
         }
     }

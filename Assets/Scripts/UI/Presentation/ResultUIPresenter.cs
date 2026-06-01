@@ -6,15 +6,19 @@
 // 概要     : リザルトシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using System;
-using UnityEngine;
-using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
+using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using TMPro;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
+using UniRx;
+using UnityEngine;
+using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -31,6 +35,34 @@ namespace UISystem.Presentation
 
         [Header("リザルトシーン固有インスペクタ")]
 
+        // --------------------------------------------------
+        // エフェクト
+        // --------------------------------------------------
+        [Header("エフェクト")]
+        /// <summary>画面中心からの残像エフェクト用レンダラー</summary>
+        [SerializeField]
+        private RawImage _radialAfterimageRenderer;
+
+        /// <summary>エフェクト全体の強さ</summary>
+        [SerializeField, Range(0.0f, 1.0f)]
+        private float _radialAfterimageEffectStrength = 1.0f;
+
+        /// <summary>表示する残像数</summary>
+        [SerializeField, Range(1, 8)]
+        private int _radialAfterimageSampleCount = 3;
+
+        /// <summary>残像の拡大率間隔</summary>
+        [SerializeField, Range(0.01f, 1.0f)]
+        private float _radialAfterimageScaleStep = 0.15f;
+
+        /// <summary>残像が外側へ流れる速度</summary>
+        [SerializeField, Range(0.0f, 10.0f)]
+        private float _radialAfterimageScaleSpeed = 1.0f;
+
+        /// <summary>透明度が 0 になる距離</summary>
+        [SerializeField, Range(0.01f, 10.0f)]
+        private float _radialAfterimageAlphaFadeDistance = 1.0f;
+        
         // --------------------------------------------------
         // キャンバス
         // --------------------------------------------------
@@ -67,6 +99,26 @@ namespace UISystem.Presentation
         [SerializeField]
         private BaseButtonEvent _initialSelectedResultCanvasButton;
 
+        // --------------------------------------------------
+        // ランキング情報
+        // --------------------------------------------------
+        [Header("ランキング情報")]
+        /// <summary>ランキングのプレイヤー ID 表示用テキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI[] _rankingPlayerIdTexts;
+
+        /// <summary>ランキングのスコア表示用テキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI[] _rankingScoreTexts;
+
+        // --------------------------------------------------
+        // アニメーター
+        // --------------------------------------------------
+        [Header("アニメーター")]
+        /// <summary>リザルト順位表示アニメーター</summary>
+        [SerializeField]
+        private Animator _resultRankAnimator;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -74,6 +126,9 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // UI 管理
         // --------------------------------------------------
+        /// <summary>リザルト順位表示のアニメーションイベント通知クラス</summary>
+        private AnimationEventNotifier _resultRankAnimationEventNotifier;
+
         /// <summary>リザルトキャンバスのアニメーションイベント通知クラス</summary>
         private AnimationEventNotifier _resultCanvasAnimationEventNotifier;
 
@@ -91,7 +146,10 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>リザルトキャンバスのアニメーター</summary>
-        private Animator _resultAnimator;
+        private Animator _resultCanvasAnimator;
+
+        /// <summary>ランクアニメーションのチェックポイントカウント回数</summary>
+        private int _rankAnimationCheckPointCount = 0;
 
         // ======================================================
         // 定数
@@ -103,8 +161,11 @@ namespace UISystem.Presentation
         /// <summary>IsStart パラメータ名</summary>
         private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
 
-        /// <summary>IsSkip パラメータ名</summary>
-        private static readonly int IS_SKIP_HASH = Animator.StringToHash("IsSkip");
+        /// <summary>IsEnd パラメータ名</summary>
+        private static readonly int IS_END_HASH = Animator.StringToHash("IsEnd");
+
+        /// <summary>IsFlash パラメータ名</summary>
+        private static readonly int IS_FLASH_HASH = Animator.StringToHash("IsFlash");
 
         // ======================================================
         // UniRx 変数
@@ -129,7 +190,8 @@ namespace UISystem.Presentation
                 _scoreManager == null ||
                 _resultCanvas == null ||
                 _resultNormalButtons == null ||
-                _initialSelectedResultCanvasButton == null)
+                _initialSelectedResultCanvasButton == null ||
+                _resultRankAnimator == null)
             {
                 Debug.LogError("[TitleUIPresenter] クラスの初期化に失敗しました。");
 
@@ -145,7 +207,11 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // ビュー生成
             // --------------------------------------------------
-            _uiView = new ResultUIView();
+            _uiView = new ResultUIView(
+                _radialAfterimageRenderer,
+                _rankingPlayerIdTexts,
+                _rankingScoreTexts
+            );
             _uiView.Initialize(
                 _binarizationFeature,
                 _binarizationMaterial,
@@ -191,16 +257,29 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // アニメーター初期化
             // --------------------------------------------------
-            _resultAnimator = _resultCanvas.GetComponent<Animator>();
+            _resultCanvasAnimator = _resultCanvas.GetComponent<Animator>();
 
             // アニメーター速度をタイムスケール非依存に設定
-            SetAnimatorUnscaledTime(_resultAnimator);
+            SetAnimatorUnscaledTime(_resultRankAnimator);
+            SetAnimatorUnscaledTime(_resultCanvasAnimator);
 
             // アニメーションイベント通知クラス取得
+            _resultRankAnimationEventNotifier = _resultRankAnimator.gameObject.GetComponent<AnimationEventNotifier>();
             _resultCanvasAnimationEventNotifier = _resultCanvas.GetComponent<AnimationEventNotifier>();
 
             // ポインター非表示
             SetPointerVisible(false);
+
+            // --------------------------------------------------
+            // スコア取得
+            // --------------------------------------------------
+            List<RankingData> ranking = _scoreManager.GetRanking();
+
+            if (_uiView is ResultUIView resultUIView)
+            {
+                resultUIView.UpdateRankingInfo(ranking);
+            }
+            
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -212,11 +291,28 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // --------------------------------------------------
+            // ポインター更新
+            // --------------------------------------------------
             // ポインター取得
             Vector2 screenPos = _inputManager.Pointer;
 
             // ビューへ反映
             _uiView.UpdatePointer(screenPos);
+
+            // --------------------------------------------------
+            // エフェクト更新
+            // --------------------------------------------------
+            if (_uiView is ResultUIView resultUIView)
+            {
+                resultUIView.UpdateRadialAfterimageEffect(
+                    _radialAfterimageEffectStrength,
+                    _radialAfterimageSampleCount,
+                    _radialAfterimageScaleStep,
+                    _radialAfterimageScaleSpeed,
+                    _radialAfterimageAlphaFadeDistance
+                );
+            }
         }
 
         protected override void OnExitInternal()
@@ -373,8 +469,9 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutStart()
         {
-            // リザルトスタートアニメーション起動
-            _resultAnimator.SetTrigger(IS_START_HASH);
+            // リザルト順位表示アニメーション開始
+            _resultRankAnimator.SetTrigger(IS_START_HASH);
+            _resultCanvasAnimator.SetTrigger(IS_START_HASH);
         }
 
         // ======================================================
@@ -412,14 +509,9 @@ namespace UISystem.Presentation
             resultStartAnimationSkiped
                 .Subscribe(_ =>
                 {
-                    // リザルトスタートスキップアニメーション起動
-                    _resultAnimator.SetTrigger(IS_SKIP_HASH);
-
-                    // シーン遷移状態解除
-                    _isSceneTransitioning = false;
-
-                    // ポインター表示
-                    SetPointerVisible(true);
+                    // ランクアニメーション終了
+                    _resultRankAnimator.SetTrigger(IS_END_HASH);
+                    _resultCanvasAnimator.SetTrigger(IS_END_HASH);
                 })
                 .AddTo(_disposables);
         }
@@ -437,6 +529,30 @@ namespace UISystem.Presentation
         protected override void Subscribe()
         {
             base.Subscribe();
+
+            // アニメーションチェックポイント通知
+            _resultRankAnimationEventNotifier.OnAnimationCheckPoint
+                .Subscribe(_ =>
+                {
+                    _rankAnimationCheckPointCount++;
+
+                    if (_rankAnimationCheckPointCount == 4)
+                    {
+                        // フラッシュアニメーション開始
+                        _resultCanvasAnimator.SetTrigger(IS_FLASH_HASH);
+                    }
+                })
+                .AddTo(_disposables);
+
+            // アニメーション終了通知
+            _resultRankAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    // ランクアニメーション終了
+                    _resultRankAnimator.SetTrigger(IS_END_HASH);
+                    _resultCanvasAnimator.SetTrigger(IS_END_HASH);
+                })
+                .AddTo(_disposables);
 
             // アニメーション終了通知
             _resultCanvasAnimationEventNotifier.OnAnimationEnd

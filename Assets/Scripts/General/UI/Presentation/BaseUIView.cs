@@ -6,11 +6,11 @@
 // 概要     : UI エフェクトの描画処理を担当するビュー
 // ======================================================
 
-using ShaderSystem.Application;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
+using ShaderSystem.Application;
 
 namespace UISystem.Presentation
 {
@@ -111,9 +111,9 @@ namespace UISystem.Presentation
         // エフェクト
         // --------------------------------------------------
         /// <summary>
-        /// エフェクトを更新する
+        /// 全画面エフェクトを更新する
         /// </summary>
-        public void UpdateEffect(
+        public void UpdateFullScreenEffect(
             bool binEnabled,
             Vector2 binCenter,
             float binDistortion,

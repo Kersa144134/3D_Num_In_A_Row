@@ -312,8 +312,8 @@ namespace UISystem.Presentation
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
-            // エフェクト更新
-            _uiView?.UpdateEffect(
+            // 全画面エフェクト更新
+            _uiView?.UpdateFullScreenEffect(
                 _isBinarizationEnabled,
                 _binarizationDistortionCenter,
                 _binarizationDistortionStrength,

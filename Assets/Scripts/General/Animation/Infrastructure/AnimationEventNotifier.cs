@@ -22,9 +22,19 @@ namespace AnimationSystem.Infrastructure
         // ======================================================
 
         /// <summary>
+        /// アニメーションチェックポイントイベント用 Subject
+        /// </summary>
+        private readonly Subject<Unit> _onAnimationCheckPointSubject = new Subject<Unit>();
+
+        /// <summary>
         /// アニメーション終了イベント用 Subject
         /// </summary>
         private readonly Subject<Unit> _onAnimationEndSubject = new Subject<Unit>();
+
+        /// <summary>
+        /// アニメーションチェックポイントイベントストリーム
+        /// </summary>
+        public IObservable<Unit> OnAnimationCheckPoint => _onAnimationCheckPointSubject;
 
         /// <summary>
         /// アニメーション終了イベントストリーム
@@ -37,6 +47,9 @@ namespace AnimationSystem.Infrastructure
 
         private void OnDestroy()
         {
+            _onAnimationCheckPointSubject.OnCompleted();
+            _onAnimationCheckPointSubject.Dispose();
+
             _onAnimationEndSubject.OnCompleted();
             _onAnimationEndSubject.Dispose();
         }
@@ -44,6 +57,14 @@ namespace AnimationSystem.Infrastructure
         // ======================================================
         // アニメーションイベント
         // ======================================================
+
+        /// <summary>
+        /// AnimationClip のチェックポイントタイミングで呼び出されるメソッド
+        /// </summary>
+        public void NotifyAnimationCheckPoint()
+        {
+            _onAnimationCheckPointSubject.OnNext(Unit.Default);
+        }
 
         /// <summary>
         /// AnimationClip の終了タイミングで呼び出されるメソッド

@@ -49,7 +49,7 @@ namespace ShaderSystem.Application
         /// <summary>エフェクトが有効かどうか</summary>
         private bool _isEffectEnabled = false;
 
-        /// <summary>歪みの中心座標（UV 空間）</summary>
+        /// <summary>歪みの中心座標</summary>
         private Vector2 _distortionCenter = new Vector2(0.5f, 0.5f);
 
         /// <summary>歪みエフェクトの強度</summary>

@@ -56,7 +56,7 @@ namespace ShaderSystem.Application
         /// <summary>グレースケールの強さ</summary>
         private Vector3 _greyScaleStrength = new Vector3(0.25f, 0.25f, 0f);
 
-        /// <summary>歪みの中心座標（UV 空間）</summary>
+        /// <summary>歪みの中心座標</summary>
         private Vector2 _distortionCenter = new Vector2(0.5f, 0.5f);
 
         /// <summary>歪みエフェクトの強度</summary>

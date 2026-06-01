@@ -6,6 +6,7 @@
 // 概要     : スコア管理クラス
 // ======================================================
 
+using System.Collections.Generic;
 using UnityEngine;
 using UniRx;
 using ScoreSystem.Application;
@@ -252,6 +253,51 @@ namespace ScoreSystem.Presentation
             }
 
             return _totalScores[playerIndex];
+        }
+
+        /// <summary>
+        /// スコア順に並んだプレイヤーIDランキングを取得する
+        /// </summary>
+        /// <returns>
+        /// 上位から順にランキング情報を格納したリスト
+        /// </returns>
+        public List<RankingData> GetRanking()
+        {
+            if (_totalScores == null)
+            {
+                return new List<RankingData>();
+            }
+
+            List<RankingData> result =
+                new List<RankingData>();
+
+            for (int i = 0; i < _totalScores.Length; i++)
+            {
+                // 1 ベースへ変換
+                int playerId = i + 1;
+
+                // スコア取得
+                int score = _totalScores[i].Value;
+
+                result.Add(new RankingData(playerId, score));
+            }
+
+            result.Sort((a, b) =>
+            {
+                // スコア比較
+                int scoreCompare = b.Score.CompareTo(a.Score);
+
+                // スコアが異なる場合はその結果を返す
+                if (scoreCompare != 0)
+                {
+                    return scoreCompare;
+                }
+
+                // スコアが同じ場合はプレイヤー ID 昇順
+                return a.PlayerId.CompareTo(b.PlayerId);
+            });
+
+            return result;
         }
 
         // ======================================================
