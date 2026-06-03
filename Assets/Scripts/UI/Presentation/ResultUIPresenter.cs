@@ -127,6 +127,10 @@ namespace UISystem.Presentation
         // ランキング情報
         // --------------------------------------------------
         [Header("ランキング情報")]
+        /// <summary>1 位のプレイヤー ID 表示用テキスト</summary>
+        [SerializeField]
+        private TextMeshPro _firstRankingPlayerIdText;
+
         /// <summary>ランキングのプレイヤー ID 表示用テキスト</summary>
         [SerializeField]
         private TextMeshProUGUI[] _rankingPlayerIdTexts;
@@ -244,6 +248,7 @@ namespace UISystem.Presentation
                 _pieceRendererArray,
                 _pieceMaterialArray,
                 _playerColorArray,
+                _firstRankingPlayerIdText,
                 _rankingPlayerIdTexts,
                 _rankingScoreTexts,
                 _resultBackgroundRenderer

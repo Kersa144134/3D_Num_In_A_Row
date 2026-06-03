@@ -28,7 +28,10 @@ namespace UISystem.Presentation
         /// <summary>画面中心からの残像エフェクト制御クラス</summary>
         private readonly RadialAfterimageEffectController _radialAfterimage;
 
-        /// <summary>プレイヤー ID フォーマットクラス</summary>
+        /// <summary>1 位プレイヤー ID アニメーション表示フォーマットクラス</summary>
+        private TextFormatter _firstPlayerIdFormatter;
+
+        /// <summary>プレイヤー ID 順位表示フォーマットクラス</summary>
         private TextFormatter[] _playerIdFormatters;
 
         /// <summary>スコアフォーマットクラス</summary>
@@ -47,6 +50,9 @@ namespace UISystem.Presentation
         /// <summary>プレイヤーのカラー配列</summary>
         private readonly Color[] _playerColorArray;
 
+        /// <summary>1 位のプレイヤー ID 表示用テキスト</summary>
+        private readonly TextMeshPro _firstRankingPlayerIdText;
+
         /// <summary>ランキングのプレイヤー ID 表示用テキスト</summary>
         private readonly TextMeshProUGUI[] _rankingPlayerIdTexts;
 
@@ -60,23 +66,26 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>1st プレイヤー ID 表示フォーマット</summary>
-        private const string FIRST_PLAYER_ID_FORMAT = "1st: {0}P";
+        /// <summary>1st プレイヤー ID リザルトアニメーション表示フォーマット</summary>
+        private const string FIRST_PLAYER_ID_RESULT_FORMAT = "{0}P";
 
-        /// <summary>2nd プレイヤー ID 表示フォーマット</summary>
-        private const string SECOND_PLAYER_ID_FORMAT = "2nd: {0}P";
+        /// <summary>1st プレイヤー ID 順位表示フォーマット</summary>
+        private const string FIRST_PLAYER_ID_RANKING_FORMAT = "1st {0}P";
 
-        /// <summary>3rd プレイヤー ID 表示フォーマット</summary>
-        private const string THIRD_PLAYER_ID_FORMAT = "3rd: {0}P";
+        /// <summary>2nd プレイヤー ID 順位表示フォーマット</summary>
+        private const string SECOND_PLAYER_ID_RANKING_FORMAT = "2nd {0}P";
 
-        /// <summary>4th プレイヤー ID 表示フォーマット</summary>
-        private const string FOURTH_PLAYER_ID_FORMAT = "4th: {0}P";
+        /// <summary>3rd プレイヤー ID 順位表示フォーマット</summary>
+        private const string THIRD_PLAYER_ID_RANKING_FORMAT = "3rd {0}P";
+
+        /// <summary>4th プレイヤー ID 順位表示フォーマット</summary>
+        private const string FOURTH_PLAYER_ID_RANKING_FORMAT = "4th {0}P";
 
         /// <summary>プレイヤー ID 桁数</summary>
         private static readonly int[] PLAYER_ID_DIGIT = { 1 };
 
         /// <summary>スコア表示フォーマット</summary>
-        private const string SCORE_FORMAT = "Score: {0}";
+        private const string SCORE_FORMAT = "Score {0}";
 
         /// <summary>スコア桁数</summary>
         private static readonly int[] SCORE_DIGIT = { 6 };
@@ -93,6 +102,7 @@ namespace UISystem.Presentation
             in Renderer[] pieceRendererArray,
             in Material[] pieceMaterialArray,
             in Color[] playerColorArray,
+            in TextMeshPro firstRankingPlayerIdText,
             in TextMeshProUGUI[] rankingPlayerIdTexts,
             in TextMeshProUGUI[] rankingScoreTexts,
             in Renderer resultBackgroundRenderer)
@@ -100,6 +110,7 @@ namespace UISystem.Presentation
             _pieceRendererArray = pieceRendererArray;
             _pieceMaterialArray = pieceMaterialArray;
             _playerColorArray = playerColorArray;
+            _firstRankingPlayerIdText = firstRankingPlayerIdText;
             _rankingPlayerIdTexts = rankingPlayerIdTexts;
             _rankingScoreTexts = rankingScoreTexts;
             _resultBackgroundRenderer = resultBackgroundRenderer;
@@ -125,19 +136,26 @@ namespace UISystem.Presentation
             _playerIdFormatters = new TextFormatter[length];
             _scoreFormatters = new TextFormatter[length];
 
+            // --------------------------------------------------
+            // 1 位プレイヤー ID アニメーションフォーマッタ生成
+            // --------------------------------------------------
+            _firstPlayerIdFormatter = new TextFormatter(
+                FIRST_PLAYER_ID_RESULT_FORMAT,
+                PLAYER_ID_DIGIT);
+            
             // 1 位 ～ 4 位までの順位表示フォーマットを配列化
             string[] playerIdFormats =
             {
-                FIRST_PLAYER_ID_FORMAT,
-                SECOND_PLAYER_ID_FORMAT,
-                THIRD_PLAYER_ID_FORMAT,
-                FOURTH_PLAYER_ID_FORMAT
+                FIRST_PLAYER_ID_RANKING_FORMAT,
+                SECOND_PLAYER_ID_RANKING_FORMAT,
+                THIRD_PLAYER_ID_RANKING_FORMAT,
+                FOURTH_PLAYER_ID_RANKING_FORMAT
             };
 
             for (int i = 0; i < length; i++)
             {
                 // --------------------------------------------------
-                // プレイヤー ID フォーマッタ生成
+                // プレイヤー ID 順位フォーマッタ生成
                 // --------------------------------------------------
                 _playerIdFormatters[i] =
                     new TextFormatter(
@@ -201,7 +219,7 @@ namespace UISystem.Presentation
             // デバッグ用ランキングデータ
             ranking = new List<RankingData>
             {
-                new RankingData(2, 500),
+                new RankingData(4, 500),
                 new RankingData(3, 400),
                 new RankingData(2, 300),
                 new RankingData(1, 200)
@@ -247,16 +265,19 @@ namespace UISystem.Presentation
 
                 // テキスト色を更新
                 UpdateRankingTextColor(i, rankingData.PlayerId);
-                
-                // プレイヤーID表示を更新
-                UpdatePlayerIdText(i, rankingData.PlayerId);
+
+                // ランキング用プレイヤー ID 表示を更新
+                UpdatePlayerIdRankingText(i, rankingData.PlayerId);
 
                 // スコア表示を更新
                 UpdateScoreText(i, rankingData.Score);
             }
 
-            // 1 位プレイヤーIDを取得
+            // 1 位プレイヤー ID を取得
             int firstPlayerId = ranking[0].PlayerId;
+
+            // 1 位プレイヤー 表示を取得
+            UpdateFirstPlayerIdText(firstPlayerId);
 
             // 1 位プレイヤーの色を背景へ反映
             UpdateResultBackgroundColor(firstPlayerId);
@@ -274,9 +295,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="index">順位インデックス</param>
         /// <param name="isVisible">表示状態</param>
-        private void UpdatePieceRendererVisibility(
-            int index,
-            bool isVisible)
+        private void UpdatePieceRendererVisibility(in int index, in bool isVisible)
         {
             if (_pieceRendererArray == null)
             {
@@ -289,8 +308,7 @@ namespace UISystem.Presentation
             }
 
             // 駒の表示状態を更新
-            _pieceRendererArray[index].enabled =
-                isVisible;
+            _pieceRendererArray[index].enabled = isVisible;
         }
 
         /// <summary>
@@ -298,12 +316,9 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="rankIndex">順位インデックス</param>
         /// <param name="playerId">プレイヤー ID</param>
-        private void UpdatePieceMaterial(
-            int rankIndex,
-            int playerId)
+        private void UpdatePieceMaterial(in int rankIndex, in int playerId)
         {
-            if (_pieceRendererArray == null ||
-                _pieceMaterialArray == null)
+            if (_pieceRendererArray == null || _pieceMaterialArray == null)
             {
                 return;
             }
@@ -316,14 +331,12 @@ namespace UISystem.Presentation
             // プレイヤー ID をインデックスへ変換
             int materialIndex = playerId - 1;
 
-            if (materialIndex < 0 ||
-                materialIndex >= _pieceMaterialArray.Length)
+            if (materialIndex < 0 || materialIndex >= _pieceMaterialArray.Length)
             {
                 return;
             }
 
-            _pieceRendererArray[rankIndex].material =
-                _pieceMaterialArray[materialIndex];
+            _pieceRendererArray[rankIndex].material = _pieceMaterialArray[materialIndex];
         }
 
         // --------------------------------------------------
@@ -334,9 +347,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="index">順位インデックス</param>
         /// <param name="isVisible">表示状態</param>
-        private void UpdateRankingTextVisibility(
-            int index,
-            bool isVisible)
+        private void UpdateRankingTextVisibility(in int index, in bool isVisible)
         {
             // プレイヤーID表示状態を更新
             _rankingPlayerIdTexts[index].enabled = isVisible;
@@ -350,9 +361,7 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="rankIndex">順位インデックス</param>
         /// <param name="playerId">プレイヤー ID</param>
-        private void UpdateRankingTextColor(
-            int rankIndex,
-            int playerId)
+        private void UpdateRankingTextColor(in int rankIndex, in int playerId)
         {
             if (_playerColorArray == null)
             {
@@ -362,23 +371,19 @@ namespace UISystem.Presentation
             // プレイヤー ID をインデックスへ変換
             int colorIndex = playerId - 1;
 
-            if (colorIndex < 0 ||
-                colorIndex >= _playerColorArray.Length)
+            if (colorIndex < 0 || colorIndex >= _playerColorArray.Length)
             {
                 return;
             }
 
             // プレイヤーカラーを取得
-            Color playerColor =
-                _playerColorArray[colorIndex];
+            Color playerColor = _playerColorArray[colorIndex];
 
             // プレイヤーIDテキスト色を更新
-            _rankingPlayerIdTexts[rankIndex].color =
-                playerColor;
+            _rankingPlayerIdTexts[rankIndex].color = playerColor;
 
             // スコアテキスト色を更新
-            _rankingScoreTexts[rankIndex].color =
-                playerColor;
+            _rankingScoreTexts[rankIndex].color = playerColor;
         }
 
         /// <summary>
@@ -386,18 +391,27 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="rankIndex">順位インデックス</param>
         /// <param name="playerId">プレイヤー ID</param>
-        private void UpdatePlayerIdText(
-            int rankIndex,
-            int playerId)
+        private void UpdatePlayerIdRankingText(in int rankIndex, in int playerId)
         {
             // 表示用文字列を生成
-            char[] buffer =
-                _playerIdFormatters[rankIndex]
-                .FormatWithPadding(playerId);
+            char[] buffer = _playerIdFormatters[rankIndex].FormatWithPadding(playerId);
 
             // テキストへ反映
-            _rankingPlayerIdTexts[rankIndex]
-                .SetCharArray(buffer);
+            _rankingPlayerIdTexts[rankIndex].SetCharArray(buffer);
+        }
+
+        /// <summary>
+        /// 1 位プレイヤー ID 表示を更新する
+        /// </summary>
+        /// <param name="rankIndex">順位インデックス</param>
+        /// <param name="playerId">プレイヤー ID</param>
+        private void UpdateFirstPlayerIdText(in int playerId)
+        {
+            // 表示用文字列を生成
+            char[] buffer = _firstPlayerIdFormatter.FormatWithPadding(playerId);
+
+            // テキストへ反映
+            _firstRankingPlayerIdText.SetCharArray(buffer);
         }
 
         /// <summary>
@@ -405,18 +419,13 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="rankIndex">順位インデックス</param>
         /// <param name="score">スコア</param>
-        private void UpdateScoreText(
-            int rankIndex,
-            int score)
+        private void UpdateScoreText(in int rankIndex, in int score)
         {
             // 表示用文字列を生成
-            char[] buffer =
-                _scoreFormatters[rankIndex]
-                .FormatWithPadding(score);
+            char[] buffer = _scoreFormatters[rankIndex].FormatWithPadding(score);
 
             // テキストへ反映
-            _rankingScoreTexts[rankIndex]
-                .SetCharArray(buffer);
+            _rankingScoreTexts[rankIndex].SetCharArray(buffer);
         }
 
         // --------------------------------------------------
@@ -426,11 +435,9 @@ namespace UISystem.Presentation
         /// 1位プレイヤーの色を背景へ反映する
         /// </summary>
         /// <param name="playerId">1位プレイヤーID</param>
-        private void UpdateResultBackgroundColor(
-            int playerId)
+        private void UpdateResultBackgroundColor(in int playerId)
         {
-            if (_resultBackgroundRenderer == null ||
-                _playerColorArray == null)
+            if (_resultBackgroundRenderer == null || _playerColorArray == null)
             {
                 return;
             }
@@ -438,15 +445,13 @@ namespace UISystem.Presentation
             // プレイヤー ID をインデックスへ変換
             int colorIndex = playerId - 1;
 
-            if (colorIndex < 0 ||
-                colorIndex >= _playerColorArray.Length)
+            if (colorIndex < 0 || colorIndex >= _playerColorArray.Length)
             {
                 return;
             }
 
             // 背景色を更新
-            _resultBackgroundRenderer.material.color =
-                _playerColorArray[colorIndex];
+            _resultBackgroundRenderer.material.color = _playerColorArray[colorIndex];
         }
     }
 }
