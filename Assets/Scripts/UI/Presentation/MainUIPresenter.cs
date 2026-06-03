@@ -394,7 +394,9 @@ namespace UISystem.Presentation
                     // Play
                     bool isPlay = type == PhaseType.Play;
                     SetLimitTimeVisible(isPlay);
-                    SetWarningAnimation(isPlay);
+                    SetWarningAnimationSpeed(isPlay
+                        ? 1.0f
+                        : 0.0f);
 
                     // Pause
                     bool isPause = type == PhaseType.Pause;
@@ -961,23 +963,19 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
-        /// 警告アニメーションの再生状態を設定する
+        /// 警告アニメーションの再生速度を設定する
         /// </summary>
-        /// <param name="isPlay">再生する場合は true</param>
-        private void SetWarningAnimation(in bool isPlay)
+        /// <param name="speed">再生速度</param>
+        private void SetWarningAnimationSpeed(in float speed)
         {
             if (_limitTimeAnimator == null)
             {
                 return;
             }
 
-            // 再生状態に応じて速度を設定
-            _limitTimeAnimator.speed =
-                isPlay
-                    ? 1.0f
-                    : 0.0f;
+            _limitTimeAnimator.speed = speed;
         }
-        
+
         // ======================================================
         // アニメーションイベント
         // ======================================================
