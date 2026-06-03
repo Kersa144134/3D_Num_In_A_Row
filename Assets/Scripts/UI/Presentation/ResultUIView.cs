@@ -205,7 +205,7 @@ namespace UISystem.Presentation
         /// ランキング情報を基にスコア表示と順位表示を更新する
         /// </summary>
         /// <param name="ranking">ランキングデータ</param>
-        public void UpdateRankingInfo(List<RankingData> ranking)
+        public void UpdateRankingInfo(in List<RankingData> ranking)
         {
             // 必要な参照が存在しない場合は処理しない
             if (_rankingPlayerIdTexts == null ||
@@ -215,15 +215,6 @@ namespace UISystem.Presentation
             {
                 return;
             }
-
-            // デバッグ用ランキングデータ
-            ranking = new List<RankingData>
-            {
-                new RankingData(4, 500),
-                new RankingData(3, 400),
-                new RankingData(2, 300),
-                new RankingData(1, 200)
-            };
 
             // 表示可能な順位数を取得
             int viewLength = _rankingPlayerIdTexts.Length;
@@ -306,6 +297,7 @@ namespace UISystem.Presentation
             {
                 return;
             }
+            Debug.Log($"{index}, {isVisible}");
 
             // 駒の表示状態を更新
             _pieceRendererArray[index].enabled = isVisible;
