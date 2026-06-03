@@ -21,8 +21,8 @@ namespace SoundSystem.Application
         // フィールド
         // ======================================================
 
-        /// <summary>BGM辞書キャッシュ</summary>
-        private readonly Dictionary<BgmType, BgmSet> _bgmMap;
+        /// <summary>BGM タイプと配列インデックスの対応表</summary>
+        private readonly Dictionary<BgmType, int> _bgmIndexMap;
 
         /// <summary>SE辞書キャッシュ</summary>
         private readonly Dictionary<SeType, SeSet> _seMap;
@@ -38,8 +38,8 @@ namespace SoundSystem.Application
         /// <param name="seSets">SEセット配列</param>
         public SoundSetFinder(BgmSet[] bgmSets, SeSet[] seSets)
         {
-            // BGM 辞書生成
-            _bgmMap = new Dictionary<BgmType, BgmSet>();
+            // BGM インデックス辞書生成
+            _bgmIndexMap = new Dictionary<BgmType, int>();
 
             if (bgmSets != null)
             {
@@ -52,16 +52,18 @@ namespace SoundSystem.Application
                         continue;
                     }
 
-                    if (set.Type == BgmType.None || set.Source == null || set.Clip == null)
+                    if (set.Type == BgmType.None ||
+                        set.Source == null ||
+                        set.Clip == null)
                     {
                         continue;
                     }
 
                     // 後勝ち登録
-                    _bgmMap[set.Type] = set;
+                    _bgmIndexMap[set.Type] = i;
                 }
             }
-
+            
             // SE 辞書生成
             _seMap = new Dictionary<SeType, SeSet>();
 
@@ -92,21 +94,23 @@ namespace SoundSystem.Application
         // ======================================================
 
         /// <summary>
-        /// BGM 取得
+        /// BGM インデックス取得
         /// </summary>
-        /// <param name="type">検索するBGMタイプ</param>
-        /// <param name="result">取得結果</param>
+        /// <param name="type">検索する BGM タイプ</param>
+        /// <param name="index">BGM 配列インデックス</param>
         /// <returns>取得成功時 true</returns>
-        public bool TryFindBgmSet(in BgmType type, out BgmSet result)
+        public bool TryFindBgmIndex(
+            in BgmType type,
+            out int index)
         {
-            if (_bgmMap == null)
-            {
-                result = null;
+            index = -1;
 
+            if (_bgmIndexMap == null)
+            {
                 return false;
             }
 
-            return _bgmMap.TryGetValue(type, out result);
+            return _bgmIndexMap.TryGetValue(type, out index);
         }
 
         /// <summary>

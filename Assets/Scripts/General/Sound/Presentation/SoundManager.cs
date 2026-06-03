@@ -41,9 +41,6 @@ namespace SoundSystem.Presentation
         [SerializeField] private AudioSource _seSource;
 
         [Header("BGM 設定")]
-        /// <summary>BGM フェードにかかる時間（秒）</summary>
-        [SerializeField] private float _fadeDuration = 1.5f;
-
         /// <summary>ローパスフィルター ON 時の目標周波数</summary>
         [SerializeField] private float _lowPassTargetFrequency = 500f;
 
@@ -74,18 +71,21 @@ namespace SoundSystem.Presentation
         /// <summary>BGM オーディオソースにアタッチされた AudioLowPassFilter 配列</summary>
         private AudioLowPassFilter[] _lowPassFilters;
 
-        /// <summary>BGM セットごとのフェード中フラグ</summary>
-        private bool[] _isFadingArray;
+        /// <summary>BGM セットごとの音量補間中フラグ</summary>
+        private bool[] _isVolumeTransitionArray;
 
-        /// <summary>BGM セットごとのフェード開始音量</summary>
-        private float[] _fadeStartVolumeArray;
+        /// <summary>BGM セットごとの補間開始音量</summary>
+        private float[] _volumeStartArray;
 
-        /// <summary>BGM セットごとのフェード目標音量</summary>
-        private float[] _fadeTargetVolumeArray;
+        /// <summary>BGM セットごとの目標音量</summary>
+        private float[] _volumeTargetArray;
 
-        /// <summary>BGM セットごとのフェード経過時間（秒）</summary>
-        private float[] _fadeElapsedArray;
+        /// <summary>BGM セットごとの補間経過時間（秒）</summary>
+        private float[] _volumeElapsedArray;
 
+        /// <summary>BGM セットごとの補間時間（秒）</summary>
+        private float[] _volumeDurationArray;
+        
         /// <summary>ローパス補間中フラグ</summary>
         private bool _isLowPassActive = false;
 
@@ -162,12 +162,13 @@ namespace SoundSystem.Presentation
             }
 
             // --------------------------------------------------
-            // フェード配列初期化
+            // 音量補間配列初期化
             // --------------------------------------------------
-            _isFadingArray = new bool[bgmCount];
-            _fadeStartVolumeArray = new float[bgmCount];
-            _fadeTargetVolumeArray = new float[bgmCount];
-            _fadeElapsedArray = new float[bgmCount];
+            _isVolumeTransitionArray = new bool[bgmCount];
+            _volumeStartArray = new float[bgmCount];
+            _volumeTargetArray = new float[bgmCount];
+            _volumeElapsedArray = new float[bgmCount];
+            _volumeDurationArray = new float[bgmCount];
         }
 
         private void Update()
@@ -175,7 +176,7 @@ namespace SoundSystem.Presentation
             float unscaledDeltaTime = Time.unscaledDeltaTime; ;
 
             // --------------------------------------------------
-            // BGM フェード更新
+            // BGM 音量補間更新
             // 各 BGM セットごとに個別の値を適用
             // --------------------------------------------------
             for (int i = 0; i < _bgmSets.Length; i++)
@@ -187,22 +188,26 @@ namespace SoundSystem.Presentation
                     continue;
                 }
 
-                // 対象の BGM セットがフェード中か確認
-                if (_isFadingArray[i])
+                // 対象の BGM が音量補間中か
+                if (_isVolumeTransitionArray[i])
                 {
-                    // 経過時間を加算
-                    _fadeElapsedArray[i] += unscaledDeltaTime;
+                    _volumeElapsedArray[i] += unscaledDeltaTime;
 
                     // 0 ～ 1 の補間係数に変換
-                    float t = Mathf.Clamp01(_fadeElapsedArray[i] / _fadeDuration);
+                    float t = Mathf.Clamp01(
+                        _volumeElapsedArray[i] /
+                        _volumeDurationArray[i]);
 
-                    // フェード補間
-                    bgm.Source.volume = Mathf.Lerp(_fadeStartVolumeArray[i], _fadeTargetVolumeArray[i], t);
+                    // 音量補間
+                    bgm.Source.volume = Mathf.Lerp(
+                        _volumeStartArray[i],
+                        _volumeTargetArray[i],
+                        t);
 
-                    // フェード完了時にフラグを解除
+                    // 補間完了時にフラグを解除
                     if (t >= 1f)
                     {
-                        _isFadingArray[i] = false;
+                        _isVolumeTransitionArray[i] = false;
                     }
                 }
             }
@@ -278,12 +283,15 @@ namespace SoundSystem.Presentation
         /// <param name="type">再生する BGM タイプ</param>
         public void PlayBGM(in BgmType type)
         {
-            // 指定タイプに一致する BGM セット取得
-            if (!_soundSetFinder.TryFindBgmSet(type, out BgmSet bgm))
+            // 指定タイプに一致する BGM インデックス取得
+            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
-            
+
+            // BGM セット取得
+            BgmSet bgm = _bgmSets[bgmIndex];
+
             // Clip を設定
             bgm.Source.clip = bgm.Clip;
 
@@ -315,67 +323,70 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // 指定タイプに一致する BGM セット取得
-            if (!_soundSetFinder.TryFindBgmSet(type, out BgmSet bgm))
+            // 指定タイプに一致する BGM インデックス取得
+            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
+
+            // BGM セット取得
+            BgmSet bgm = _bgmSets[bgmIndex];
 
             bgm.Source.Stop();
-        }
-
-        /// <summary>
-        /// BGM フェード開始
-        /// </summary>
-        /// <param name="type">フェード対象の BGM タイプ</param>
-        /// <param name="fadeType">フェードタイプ</param>
-        public void FadeBGM(in BgmType type, in FadeType fadeType)
-        {
-            for (int i = 0; i < _bgmSets.Length; i++)
-            {
-                if (_bgmSets[i].Type != type)
-                {
-                    continue;
-                }
-
-                if (_bgmSets[i].Source == null)
-                {
-                    return;
-                }
-
-                // フェード開始音量を保存
-                _fadeStartVolumeArray[i] = _bgmSets[i].Source.volume;
-
-                // フェード目標音量設定
-                _fadeTargetVolumeArray[i] =
-                    (fadeType == FadeType.FadeIn)
-                    ? 1f
-                    : 0f;
-
-                // フェード経過時間初期化
-                _fadeElapsedArray[i] = 0f;
-
-                // フェード開始
-                _isFadingArray[i] = true;
-
-                return;
-            }
         }
 
         /// <summary>
         /// 指定タイプの BGM 音量を設定
         /// </summary>
         /// <param name="type">BGM タイプ</param>
-        /// <param name="volume">設定音量</param>
-        public void SetBGMVolume(in BgmType type, in float volume)
+        /// <param name="volume">目標音量</param>
+        /// <param name="transitionDuration">補間時間（秒）</param>
+        public void SetBGMVolume(
+            in BgmType type,
+            in float volume,
+            in float transitionDuration = 0f)
         {
-            // 指定タイプに一致する BGM セット取得
-            if (!_soundSetFinder.TryFindBgmSet(type, out BgmSet bgm))
+            // 指定タイプに一致する BGM インデックス取得
+            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
 
-            bgm.Source.volume = volume;
+            // BGM セット取得
+            BgmSet bgm = _bgmSets[bgmIndex];
+
+            if (bgm.Source == null)
+            {
+                return;
+            }
+
+            // 音量範囲を補正
+            float targetVolume = Mathf.Clamp01(volume);
+
+            // 補間時間が 0 以下の場合は即時反映
+            if (transitionDuration <= 0f)
+            {
+                bgm.Source.volume = targetVolume;
+
+                _isVolumeTransitionArray[bgmIndex] = false;
+
+                return;
+            }
+
+            // 補間開始音量を保存
+            _volumeStartArray[bgmIndex] = bgm.Source.volume;
+
+            // 目標音量を保存
+            _volumeTargetArray[bgmIndex] = targetVolume;
+
+            // 補間経過時間を初期化
+            _volumeElapsedArray[bgmIndex] = 0f;
+
+            // 補間時間を保存
+            _volumeDurationArray[bgmIndex] = transitionDuration;
+
+            // 音量補間開始
+            _isVolumeTransitionArray[bgmIndex] = true;
         }
 
         /// <summary>
@@ -407,22 +418,34 @@ namespace SoundSystem.Presentation
         // SE
         // --------------------------------------------------
         /// <summary>
-        /// SE 再生
+        /// SE を再生する
         /// </summary>
         /// <param name="type">再生する SE タイプ</param>
-        /// <param name="position">音発生位置、null ならリスナー位置扱い</param>
-        public void PlaySE(in SeType type, in Vector3? position = null)
+        /// <param name="volume">再生音量</param>
+        public void PlaySE(in SeType type, in float volume = 1.0f)
         {
-            // 指定タイプに一致する BGM セット取得
+            // 指定タイプに一致する SE セット取得
             if (!_soundSetFinder.TryFindSeSet(type, out SeSet se))
             {
                 return;
             }
 
-            // 音発生位置が未指定の場合は最大音量で再生
-            if (position == null)
+            // 指定音量で再生
+            _seSource.PlayOneShot(
+                se.Clip,
+                volume);
+        }
+
+        /// <summary>
+        /// 距離に応じた音量で SE を再生する
+        /// </summary>
+        /// <param name="type">再生する SE タイプ</param>
+        /// <param name="position">音発生位置</param>
+        public void PlayDistanceSE(in SeType type, in Vector3? position = null)
+        {
+            // 指定タイプに一致する BGM セット取得
+            if (!_soundSetFinder.TryFindSeSet(type, out SeSet se))
             {
-                _seSource.PlayOneShot(se.Clip, 1f);
                 return;
             }
 
@@ -437,6 +460,14 @@ namespace SoundSystem.Presentation
             // 最大距離外は再生しない
             if (distance > _seMaxDistance)
             {
+                return;
+            }
+
+            // 音発生位置が未指定の場合は最大音量で再生
+            if (position == null)
+            {
+                _seSource.PlayOneShot(se.Clip, 1f);
+
                 return;
             }
 
