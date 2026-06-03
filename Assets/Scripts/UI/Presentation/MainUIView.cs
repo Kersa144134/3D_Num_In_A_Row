@@ -6,11 +6,11 @@
 // 概要     : メイン UI の描画処理を担当するビュー
 // ======================================================
 
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
+using System;
 using TMPro;
 using UISystem.Application;
+using UniRx;
+using UnityEngine;
 
 namespace UISystem.Presentation
 {
@@ -66,6 +66,9 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
+        /// <summary>警告開始タイミング（秒）</summary>
+        private readonly int _warningLimitTime;
+
         /// <summary>前回表示秒数</summary>
         private int _previousDisplayTotalSeconds;
 
@@ -98,6 +101,16 @@ namespace UISystem.Presentation
         private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>警告表示用 Subject</summary>
+        private readonly Subject<Unit> _onWarningVisible = new Subject<Unit>();
+
+        /// <summary>警告表示ストリーム</summary>
+        public IObservable<Unit> OnWarningVisible => _onWarningVisible;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -108,12 +121,14 @@ namespace UISystem.Presentation
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI turnText,
             in TextMeshProUGUI[] limitTimeTexts,
-            in int maxTurnCount)
+            in int maxTurnCount,
+            in int warningLimitTime)
         {
             _scoreTexts = scoreTexts;
             _turnText = turnText;
             _limitTimeTexts = limitTimeTexts;
             _maxTurnCount = maxTurnCount;
+            _warningLimitTime = warningLimitTime;
 
             _previousDisplayTotalSeconds = -1;
 
@@ -164,6 +179,17 @@ namespace UISystem.Presentation
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// サブジェクト終了処理
+        /// </summary>
+        public void Dispose()
+        {
+            _onWarningVisible?.Dispose();
+        }
 
         // --------------------------------------------------
         // スコア
@@ -264,18 +290,7 @@ namespace UISystem.Presentation
 
             for (int i = 0; i < _limitTimeTexts.Length; i++)
             {
-                if (i == 0)
-                {
-                    _limitTimeTexts[i].enabled = isVisible;
-
-                    continue;
-                }
-
-                // エフェクト用テキストは非表示時のみ制御対象とする
-                if (!isVisible)
-                {
-                    _limitTimeTexts[i].enabled = false;
-                }
+                _limitTimeTexts[i].enabled = isVisible;
             }
         }
 
@@ -323,6 +338,12 @@ namespace UISystem.Presentation
             for (int i = 0; i < _limitTimeTexts.Length; i++)
             {
                 _limitTimeTexts[i].SetCharArray(buffer);
+            }
+
+            // 警告状態判定
+            if (totalSeconds > 0f && totalSeconds <= _warningLimitTime)
+            {
+                _onWarningVisible.OnNext(Unit.Default);
             }
         }
     }

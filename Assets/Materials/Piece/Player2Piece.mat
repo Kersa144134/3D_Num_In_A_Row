@@ -104,7 +104,7 @@ Material:
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
     - _Fade_End_Distance: 1
-    - _Fade_Start_Distance: 1.25
+    - _Fade_Start_Distance: 1.2
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0

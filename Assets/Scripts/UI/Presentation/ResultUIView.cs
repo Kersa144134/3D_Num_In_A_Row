@@ -297,7 +297,6 @@ namespace UISystem.Presentation
             {
                 return;
             }
-            Debug.Log($"{index}, {isVisible}");
 
             // 駒の表示状態を更新
             _pieceRendererArray[index].enabled = isVisible;

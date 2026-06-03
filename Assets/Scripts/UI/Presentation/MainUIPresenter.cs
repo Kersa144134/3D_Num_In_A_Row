@@ -93,7 +93,7 @@ namespace UISystem.Presentation
 
         /// <summary>警告開始タイミング（秒）</summary>
         [SerializeField]
-        private float _warningLimitTime = 5f;
+        private int _warningLimitTime = 5;
 
         // --------------------------------------------------
         // ボタン
@@ -159,9 +159,6 @@ namespace UISystem.Presentation
 
         /// <summary>制限時間表示中フラグ</summary>
         private bool _isLimitTimeVisible = false;
-
-        /// <summary>警告アニメーション表示中フラグ</summary>
-        private bool _isWarning;
 
         // --------------------------------------------------
         // 入力
@@ -251,7 +248,8 @@ namespace UISystem.Presentation
                 _scoreTexts,
                 _turnText,
                 _limitTimeTexts,
-                _gameOptionManager.TurnCount
+                _gameOptionManager.TurnCount,
+                _warningLimitTime
             );
             _uiView.Initialize(
                 _binarizationFeature,
@@ -350,6 +348,11 @@ namespace UISystem.Presentation
         protected override void OnExitInternal()
         {
             base.OnExitInternal();
+
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.Dispose();
+            }
         }
 
         // ======================================================
@@ -391,6 +394,7 @@ namespace UISystem.Presentation
                     // Play
                     bool isPlay = type == PhaseType.Play;
                     SetLimitTimeVisible(isPlay);
+                    SetWarningAnimation(isPlay);
 
                     // Pause
                     bool isPause = type == PhaseType.Pause;
@@ -497,14 +501,18 @@ namespace UISystem.Presentation
 
             // アニメーション終了通知
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ =>
-                {
-                    _onAnimationEnd.OnNext(Unit.Default);
-                })
+                .Subscribe(_ => _onAnimationEnd.OnNext(Unit.Default))
                 .AddTo(_disposables);
 
             // シーン遷移状態解除
             _isSceneTransitioning = false;
+
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.OnWarningVisible
+                    .Subscribe(_ => TriggerWarningVisible())
+                    .AddTo(_disposables);
+            }
         }
 
         /// <summary>
@@ -793,46 +801,6 @@ namespace UISystem.Presentation
             {
                 mainUIView.UpdateLimitTime(limitTime);
             }
-
-            // アニメーション更新
-            UpdateWarningAnimation(limitTime);
-        }
-
-        /// <summary>
-        /// 警告アニメーションの状態を更新する
-        /// </summary>
-        /// <param name="limitTime">残り時間（秒）</param>
-        private void UpdateWarningAnimation(in float limitTime)
-        {
-            // 非表示時は強制解除
-            if (!_isLimitTimeVisible)
-            {
-                SetWarningState(false);
-
-                return;
-            }
-
-            // 警告判定
-            bool isWarning = limitTime > 0f && limitTime <= _warningLimitTime;
-
-            // 状態変化なし時は処理なし
-            if (_isWarning == isWarning)
-            {
-                return;
-            }
-
-            SetWarningState(isWarning);
-        }
-
-        /// <summary>
-        /// 警告状態を更新する
-        /// </summary>
-        /// <param name="isWarning">警告状態</param>
-        private void SetWarningState(bool isWarning)
-        {
-            _isWarning = isWarning;
-
-            _limitTimeAnimator?.SetBool(IS_WARNING_HASH, isWarning);
         }
 
         // --------------------------------------------------
@@ -984,6 +952,32 @@ namespace UISystem.Presentation
             _effectAnimator.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
         }
 
+        /// <summary>
+        /// 警告表示を起動する
+        /// </summary>
+        private void TriggerWarningVisible()
+        {
+            _limitTimeAnimator?.SetTrigger(IS_WARNING_HASH);
+        }
+
+        /// <summary>
+        /// 警告アニメーションの再生状態を設定する
+        /// </summary>
+        /// <param name="isPlay">再生する場合は true</param>
+        private void SetWarningAnimation(in bool isPlay)
+        {
+            if (_limitTimeAnimator == null)
+            {
+                return;
+            }
+
+            // 再生状態に応じて速度を設定
+            _limitTimeAnimator.speed =
+                isPlay
+                    ? 1.0f
+                    : 0.0f;
+        }
+        
         // ======================================================
         // アニメーションイベント
         // ======================================================
