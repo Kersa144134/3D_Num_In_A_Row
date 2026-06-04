@@ -118,9 +118,6 @@ namespace UISystem.Application
             _cachedCanvasType = GetActiveCanvasType();
 
             base.ShowDialogCanvas(dialogType);
-
-            _startCanvas.SetActive(false);
-            _optionCanvas.SetActive(false);
         }
 
         /// <summary>
@@ -129,18 +126,9 @@ namespace UISystem.Application
         public override void HideDialogCanvas()
         {
             base.HideDialogCanvas();
-            
-            // キャッシュした状態に応じてキャンバスを表示
-            switch (_cachedCanvasType)
-            {
-                case CanvasType.Start:
-                    ShowStartCanvas();
-                    break;
 
-                case CanvasType.Option:
-                    ShowOptionCanvas();
-                    break;
-            }
+            // キャッシュした状態に応じてキャンバス状態を更新
+            SetActiveCanvasType(_cachedCanvasType);
         }
 
         // --------------------------------------------------

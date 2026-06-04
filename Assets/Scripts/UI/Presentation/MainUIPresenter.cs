@@ -356,180 +356,9 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
-        // パブリックメソッド
+        // ボタン派生イベント
         // ======================================================
 
-        /// <summary>
-        /// イベントストリームをまとめて購読する
-        /// </summary>
-        /// <param name="phase">フェーズ状態を通知するストリーム</param>
-        /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
-        /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
-        /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
-        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
-        /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
-        /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
-        /// <param name="rotateRequested">回転入力予約を通知するストリーム</param>
-        /// <param name="turnChanged">ターンの現在ターン数を通知するストリーム</param>
-        /// <param name="limitTimeChanged">制限時間の残り時間を通知するストリーム</param>
-        public void BindStreams(
-            in IObservable<PhaseType> phase,
-            in IObservable<int> playerChange,
-            in IObservable<ScoreEvent> scoreUpdated,
-            in IObservable<bool> pointerLock,
-            in IObservable<bool> gamepadUsed,
-            in IObservable<bool> columnSelectVisibleChanged,
-            in IObservable<Unit> dropRequested,
-            in IObservable<Unit> rotateRequested,
-            in IObservable<int> turnChanged,
-            in IObservable<float> limitTimeChanged)
-        {
-            phase
-                .Subscribe(type =>
-                {
-                    // Ready
-                    bool isReady = type == PhaseType.Ready;
-                    SetReadyState(isReady);
-
-                    // Play
-                    bool isPlay = type == PhaseType.Play;
-                    SetLimitTimeVisible(isPlay);
-                    SetWarningAnimationSpeed(isPlay
-                        ? 1.0f
-                        : 0.0f);
-
-                    // Pause
-                    bool isPause = type == PhaseType.Pause;
-                    SetPauseState(isPause);
-
-                    // Finish
-                    bool isFinish = type == PhaseType.Finish;
-                    SetFinishState(isFinish);
-                })
-                .AddTo(_disposables);
-
-            playerChange
-                .Subscribe(playerIndex => SetChangePlayerState(playerIndex))
-                .AddTo(_disposables);
-
-            scoreUpdated
-                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
-                .AddTo(_disposables);
-
-            pointerLock
-                .DistinctUntilChanged()
-                .Subscribe(isLock =>
-                {
-                    _isPointerLock = isLock;
-
-                    // ロック状態でない場合にポインター表示
-                    SetPointerVisible(!isLock);
-                })
-                .AddTo(_disposables);
-
-            gamepadUsed
-                .Subscribe(isUsed =>
-                {
-                    // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isUsed;
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
-                    // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType, selectedButtonEvent);
-
-                    // 入力状態に応じて入力アイコン表示を更新
-                    SetInputIconVisible(isUsed);
-                })
-                .AddTo(_disposables);
-
-            columnSelectVisibleChanged
-                .DistinctUntilChanged()
-                .Subscribe(isVisible =>
-                {
-                    _isPointerTarget = isVisible;
-
-                    UpdatePointerTargetAnimation(isVisible);
-                })
-                .AddTo(_disposables);
-
-            dropRequested
-                .Subscribe(_ =>
-                {
-                    SetSwitchProjection(false);
-
-                    SetInputInfoActive(_inputInfoPieceDrop);
-                })
-                .AddTo(_disposables);
-
-            rotateRequested
-                .Subscribe(_ =>
-                {
-                    SetSwitchProjection(true);
-
-                    SetInputInfoActive(_inputInfoBoardRotation);
-                })
-                .AddTo(_disposables);
-
-            turnChanged
-                .DistinctUntilChanged()
-                .Subscribe(turn => UpdateTurnCountDisplay(turn))
-                .AddTo(_disposables);
-
-            limitTimeChanged
-                .DistinctUntilChanged()
-                .Subscribe(time => UpdateLimitTimeDisplay(time))
-                .AddTo(_disposables);
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        // --------------------------------------------------
-        // イベント購読
-        // --------------------------------------------------
-        /// <summary>
-        /// イベント購読
-        /// </summary>
-        protected override void Subscribe()
-        {
-            base.Subscribe();
-
-            // アニメーション終了通知
-            _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ => _onAnimationEnd.OnNext(Unit.Default))
-                .AddTo(_disposables);
-
-            // シーン遷移状態解除
-            _isSceneTransitioning = false;
-
-            if (_uiView is MainUIView mainUIView)
-            {
-                mainUIView.OnWarningVisible
-                    .Subscribe(_ => TriggerWarningVisible())
-                    .AddTo(_disposables);
-            }
-        }
-
-        /// <summary>
-        /// イベント購読解除
-        /// </summary>
-        protected override void Dispose()
-        {
-            base.Dispose();
-
-            _disposables?.Dispose();
-        }
-
-        // --------------------------------------------------
-        // イベントハンドラ
-        // --------------------------------------------------
         /// <summary>
         /// クリックイベント受信時
         /// </summary>
@@ -718,9 +547,6 @@ namespace UISystem.Presentation
             OnUnFocusButton(buttonEvent);
         }
 
-        // --------------------------------------------------
-        // ボタン
-        // --------------------------------------------------
         /// <summary>
         /// ボタンイベントに応じてフォーカス状態を設定する
         /// </summary>
@@ -737,6 +563,178 @@ namespace UISystem.Presentation
                     mainUIView.SetNormalFocus(normalButton.Button, isFocus);
                 }
             }
+        }
+
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        /// <param name="phase">フェーズ状態を通知するストリーム</param>
+        /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
+        /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
+        /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
+        /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
+        /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
+        /// <param name="rotateRequested">回転入力予約を通知するストリーム</param>
+        /// <param name="turnChanged">ターンの現在ターン数を通知するストリーム</param>
+        /// <param name="limitTimeChanged">制限時間の残り時間を通知するストリーム</param>
+        public void BindStreams(
+            in IObservable<PhaseType> phase,
+            in IObservable<int> playerChange,
+            in IObservable<ScoreEvent> scoreUpdated,
+            in IObservable<bool> pointerLock,
+            in IObservable<bool> gamepadUsed,
+            in IObservable<bool> columnSelectVisibleChanged,
+            in IObservable<Unit> dropRequested,
+            in IObservable<Unit> rotateRequested,
+            in IObservable<int> turnChanged,
+            in IObservable<float> limitTimeChanged)
+        {
+            phase
+                .Subscribe(type =>
+                {
+                    // Ready
+                    bool isReady = type == PhaseType.Ready;
+                    SetReadyState(isReady);
+
+                    // Play
+                    bool isPlay = type == PhaseType.Play;
+                    SetLimitTimeVisible(isPlay);
+                    SetWarningAnimationSpeed(isPlay
+                        ? 1.0f
+                        : 0.0f);
+
+                    // Pause
+                    bool isPause = type == PhaseType.Pause;
+                    SetPauseState(isPause);
+
+                    // Finish
+                    bool isFinish = type == PhaseType.Finish;
+                    SetFinishState(isFinish);
+                })
+                .AddTo(_disposables);
+
+            playerChange
+                .Subscribe(playerIndex => SetChangePlayerState(playerIndex))
+                .AddTo(_disposables);
+
+            scoreUpdated
+                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
+
+            pointerLock
+                .DistinctUntilChanged()
+                .Subscribe(isLock =>
+                {
+                    _isPointerLock = isLock;
+
+                    // ロック状態でない場合にポインター表示
+                    SetPointerVisible(!isLock);
+                })
+                .AddTo(_disposables);
+
+            gamepadUsed
+                .Subscribe(isUsed =>
+                {
+                    // 現在の入力デバイス状態を保持
+                    _isGamePadInput = isUsed;
+
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+
+                    // 入力状態に応じて入力アイコン表示を更新
+                    SetInputIconVisible(isUsed);
+                })
+                .AddTo(_disposables);
+
+            columnSelectVisibleChanged
+                .DistinctUntilChanged()
+                .Subscribe(isVisible =>
+                {
+                    _isPointerTarget = isVisible;
+
+                    UpdatePointerTargetAnimation(isVisible);
+                })
+                .AddTo(_disposables);
+
+            dropRequested
+                .Subscribe(_ =>
+                {
+                    SetSwitchProjection(false);
+
+                    SetInputInfoActive(_inputInfoPieceDrop);
+                })
+                .AddTo(_disposables);
+
+            rotateRequested
+                .Subscribe(_ =>
+                {
+                    SetSwitchProjection(true);
+
+                    SetInputInfoActive(_inputInfoBoardRotation);
+                })
+                .AddTo(_disposables);
+
+            turnChanged
+                .DistinctUntilChanged()
+                .Subscribe(turn => UpdateTurnCountDisplay(turn))
+                .AddTo(_disposables);
+
+            limitTimeChanged
+                .DistinctUntilChanged()
+                .Subscribe(time => UpdateLimitTimeDisplay(time))
+                .AddTo(_disposables);
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        protected override void Subscribe()
+        {
+            base.Subscribe();
+
+            // アニメーション終了通知
+            _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ => _onAnimationEnd.OnNext(Unit.Default))
+                .AddTo(_disposables);
+
+            // シーン遷移状態解除
+            _isSceneTransitioning = false;
+
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.OnWarningVisible
+                    .Subscribe(_ => TriggerWarningVisible())
+                    .AddTo(_disposables);
+            }
+        }
+
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        protected override void Dispose()
+        {
+            base.Dispose();
+
+            _disposables?.Dispose();
         }
 
         // --------------------------------------------------

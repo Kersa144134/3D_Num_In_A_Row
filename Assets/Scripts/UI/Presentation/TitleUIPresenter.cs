@@ -445,6 +445,12 @@ namespace UISystem.Presentation
                     dialogEvent.InvokeEvent();
                 }
 
+                // ダイアログキャンバスを非表示にする
+                _uiStateController.HideDialogCanvas();
+
+                // ダイアログ非表示を通知する
+                _onDialogVisibleChanged.OnNext(false);
+
                 return;
             }
 
@@ -453,6 +459,10 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogNo)
             {
+                // ポーズ画面のボタンを操作可能に更新
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), true);
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), true);
+
                 // ダイアログキャンバスを非表示にする
                 _uiStateController.HideDialogCanvas();
 
@@ -477,6 +487,10 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.TitleStart)
             {
+                // スタート画面のボタンを操作不可に更新
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), false);
+                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), false);
+
                 // ダイアログキャンバスを表示する
                 _uiStateController.ShowDialogCanvas(DialogType.Confirm);
 
