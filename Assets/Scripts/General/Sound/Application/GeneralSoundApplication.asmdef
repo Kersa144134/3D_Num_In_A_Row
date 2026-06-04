@@ -2,6 +2,7 @@
     "name": "GeneralSoundApplication",
     "rootNamespace": "",
     "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
         "GUID:d84e3ddb75a4122409d43e6d13595141",
         "GUID:3528ad3c0b8da9a4582a7fdea156fac7"
     ],

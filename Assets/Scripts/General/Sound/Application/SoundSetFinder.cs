@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-26
 // 更新日時 : 2026-05-26
-// 概要     : サウンドセット検索クラス
+// 概要     : オーディオ設定検索クラス
 // ======================================================
 
 using System.Collections.Generic;
@@ -13,9 +13,9 @@ using SoundSystem.Infrastructure;
 namespace SoundSystem.Application
 {
     /// <summary>
-    /// サウンドセット検索クラス
+    /// オーディオ設定検索クラス
     /// </summary>
-    public sealed class SoundSetFinder
+    public sealed class AudioSetFinder
     {
         // ======================================================
         // フィールド
@@ -24,7 +24,7 @@ namespace SoundSystem.Application
         /// <summary>BGM タイプと配列インデックスの対応表</summary>
         private readonly Dictionary<BgmType, int> _bgmIndexMap;
 
-        /// <summary>SE辞書キャッシュ</summary>
+        /// <summary>SE 辞書キャッシュ</summary>
         private readonly Dictionary<SeType, SeSet> _seMap;
 
         // ======================================================
@@ -32,11 +32,11 @@ namespace SoundSystem.Application
         // ======================================================
 
         /// <summary>
-        /// コンストラクタで辞書キャッシュを生成する
+        /// コンストラクタ
         /// </summary>
         /// <param name="bgmSets">BGMセット配列</param>
         /// <param name="seSets">SEセット配列</param>
-        public SoundSetFinder(BgmSet[] bgmSets, SeSet[] seSets)
+        public AudioSetFinder(BgmSet[] bgmSets, SeSet[] seSets)
         {
             // BGM インデックス辞書生成
             _bgmIndexMap = new Dictionary<BgmType, int>();
@@ -99,9 +99,7 @@ namespace SoundSystem.Application
         /// <param name="type">検索する BGM タイプ</param>
         /// <param name="index">BGM 配列インデックス</param>
         /// <returns>取得成功時 true</returns>
-        public bool TryFindBgmIndex(
-            in BgmType type,
-            out int index)
+        public bool TryFindBgmIndex(in BgmType type, out int index)
         {
             index = -1;
 

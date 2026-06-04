@@ -305,7 +305,6 @@ GameObject:
   m_Component:
   - component: {fileID: 286062511}
   - component: {fileID: 286062509}
-  - component: {fileID: 286062510}
   m_Layer: 0
   m_Name: Se
   m_TagString: Untagged
@@ -410,31 +409,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!169 &286062510
-AudioLowPassFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 286062508}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_LowpassResonanceQ: 1
-  lowpassLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!4 &286062511
 Transform:
   m_ObjectHideFlags: 0
@@ -498,11 +472,10 @@ MonoBehaviour:
   - Type: 1
     Clip: {fileID: 0}
   _seSource: {fileID: 286062509}
-  _fadeDuration: 1.5
   _lowPassTargetFrequency: 500
   _lowPassTransition: 1
-  _seMinDistance: 5
-  _seMaxDistance: 80
+  _seMinDistance: 0
+  _seMaxDistance: 0
 --- !u!4 &532500520
 Transform:
   m_ObjectHideFlags: 0

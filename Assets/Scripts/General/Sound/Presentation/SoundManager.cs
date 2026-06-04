@@ -2,15 +2,14 @@
 // SoundManager.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-02-15
-// 更新日時 : 2026-05-26
+// 更新日時 : 2026-06-04
 // 概要     : サウンド管理クラス
 // ======================================================
 
+using UnityEngine;
 using SoundSystem.Application;
 using SoundSystem.Domain;
 using SoundSystem.Infrastructure;
-using System;
-using UnityEngine;
 
 namespace SoundSystem.Presentation
 {
@@ -23,7 +22,9 @@ namespace SoundSystem.Presentation
         // シングルトン
         // ======================================================
 
-        /// <summary>シングルトンインスタンス</summary>
+        /// <summary>
+        /// シングルトンインスタンス
+        /// </summary>
         public static SoundManager Instance { get; private set; }
 
         // ======================================================
@@ -31,86 +32,75 @@ namespace SoundSystem.Presentation
         // ======================================================
 
         [Header("AudioSource / Clip 設定")]
-        /// <summary>BGM 配列</summary>
-        [SerializeField] private BgmSet[] _bgmSets;
+        /// <summary>BGM 設定配列</summary>
+        [SerializeField]
+        private BgmSet[] _bgmSets;
 
-        /// <summary>SE 配列</summary>
-        [SerializeField] private SeSet[] _seSets;
+        /// <summary>SE 設定配列</summary>
+        [SerializeField]
+        private SeSet[] _seSets;
 
-        /// <summary>SE オーディオソース</summary>
-        [SerializeField] private AudioSource _seSource;
+        /// <summary>SE 再生用 AudioSource</summary>
+        [SerializeField]
+        private AudioSource _seSource;
 
         [Header("BGM 設定")]
-        /// <summary>ローパスフィルター ON 時の目標周波数</summary>
-        [SerializeField] private float _lowPassTargetFrequency = 500f;
+        /// <summary>ローパス適用時の目標周波数</summary>
+        [SerializeField]
+        private float _lowPassTargetFrequency = 500f;
 
-        /// <summary>ローパスフィルター補間時間（秒）</summary>
-        [SerializeField] private float _lowPassTransition = 1.0f;
+        /// <summary>ローパス補間時間</summary>
+        [SerializeField]
+        private float _lowPassTransition = 1.0f;
 
         [Header("SE 設定")]
-        /// <summary>SE 再生距離の最小値</summary>
-        [SerializeField] private float _seMinDistance = 5f;
+        /// <summary>SE 最大音量となる距離</summary>
+        [SerializeField]
+        private float _seMinDistance = 5f;
 
-        /// <summary>SE 再生距離の最大値</summary>
-        [SerializeField] private float _seMaxDistance = 80f;
+        /// <summary>SE 再生可能最大距離</summary>
+        [SerializeField]
+        private float _seMaxDistance = 80f;
 
         // ======================================================
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>サウンドセット検索クラス</summary>
-        private SoundSetFinder _soundSetFinder;
+        /// <summary>オーディオ距離計算ユースケース</summary>
+        private AudioDistanceUseCase _audioDistanceUseCase;
+
+        /// <summary>オーディオフェードユースケース</summary>
+        private AudioFadeUseCase _audioFadeUseCase;
+
+        /// <summary>オーディオ設定検索クラス</summary>
+        private AudioSetFinder _audioSetFinder;
 
         // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>SE に使用するサウンドリスナー基準 Transform</summary>
-        private Transform _listenerTransform;
-        
-        /// <summary>BGM オーディオソースにアタッチされた AudioLowPassFilter 配列</summary>
+        /// <summary>BGM に紐付くローパスフィルター配列</summary>
         private AudioLowPassFilter[] _lowPassFilters;
-
-        /// <summary>BGM セットごとの音量補間中フラグ</summary>
-        private bool[] _isVolumeTransitionArray;
-
-        /// <summary>BGM セットごとの補間開始音量</summary>
-        private float[] _volumeStartArray;
-
-        /// <summary>BGM セットごとの目標音量</summary>
-        private float[] _volumeTargetArray;
-
-        /// <summary>BGM セットごとの補間経過時間（秒）</summary>
-        private float[] _volumeElapsedArray;
-
-        /// <summary>BGM セットごとの補間時間（秒）</summary>
-        private float[] _volumeDurationArray;
-        
-        /// <summary>ローパス補間中フラグ</summary>
-        private bool _isLowPassActive = false;
-
-        /// <summary>ローパス補間開始時の周波数</summary>
-        private float _lowPassStartFreq;
-
-        /// <summary>ローパス補間目標周波数</summary>
-        private float _lowPassTargetFreq;
-
-        /// <summary>ローパス補間経過時間（秒）</summary>
-        private float _lowPassElapsed;
 
         // ======================================================
         // 定数
         // ======================================================
 
-        /// <summary>BGM ローパスフィルター OFF 時の最大周波数</summary>
+        /// <summary>ローパス無効時の周波数</summary>
         private const float MAX_LOW_PASS_FREQUENCY = 22000f;
 
         // ======================================================
-        // Unity イベント
+        // Unityイベント
         // ======================================================
 
+        /// <summary>
+        /// 初期化処理
+        /// </summary>
         private void Awake()
         {
+            // --------------------------------------------------
+            // シングルトン
+            // --------------------------------------------------
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -118,36 +108,52 @@ namespace SoundSystem.Presentation
             }
 
             Instance = this;
+
             DontDestroyOnLoad(gameObject);
 
+            // --------------------------------------------------
+            // 初期参照
+            // --------------------------------------------------
             if (_bgmSets == null ||
                 _seSets == null ||
                 _seSource == null)
             {
-                Debug.LogError("[SoundManager] クラスの初期化に失敗しました。");
+                Debug.LogError(
+                    "[SoundManager] クラスの初期化に失敗しました。");
 
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    UnityEngine.Application.Quit();
+                Application.Quit();
 #endif
 
                 return;
             }
 
-            // --------------------------------------------------
-            // サウンドセット検索クラス初期化
-            // --------------------------------------------------
-            _soundSetFinder = new SoundSetFinder(_bgmSets, _seSets);
-
-            // --------------------------------------------------
-            // LowPassFilter 配列初期化
-            // --------------------------------------------------
-            // BGM セットの要素数取得
+            // BGM 数取得
             int bgmCount = _bgmSets.Length;
 
+            // --------------------------------------------------
+            // クラス初期化
+            // --------------------------------------------------
+            // オーディオ距離計算ユースケース生成
+            _audioDistanceUseCase = new AudioDistanceUseCase(
+                _seMinDistance,
+                _seMaxDistance);
+
+            // オーディオフェードユースケース生成
+            _audioFadeUseCase = new AudioFadeUseCase(bgmCount);
+            
+            // オーディオ検索クラス生成
+            _audioSetFinder = new AudioSetFinder(_bgmSets, _seSets);
+
+            // --------------------------------------------------
+            // ローパス設定初期化
+            // --------------------------------------------------
+            // ローパス配列生成
             _lowPassFilters = new AudioLowPassFilter[bgmCount];
 
+            // 各 BGM 設定から AudioLowPassFilter 取得
             for (int i = 0; i < bgmCount; i++)
             {
                 AudioSource source = _bgmSets[i].Source;
@@ -157,97 +163,17 @@ namespace SoundSystem.Presentation
                     continue;
                 }
 
-                // LowPass取得
                 _lowPassFilters[i] = source.GetComponent<AudioLowPassFilter>();
             }
-
-            // --------------------------------------------------
-            // 音量補間配列初期化
-            // --------------------------------------------------
-            _isVolumeTransitionArray = new bool[bgmCount];
-            _volumeStartArray = new float[bgmCount];
-            _volumeTargetArray = new float[bgmCount];
-            _volumeElapsedArray = new float[bgmCount];
-            _volumeDurationArray = new float[bgmCount];
         }
 
-        private void Update()
+        /// <summary>
+        /// 終了時クリーンアップ
+        /// </summary>
+        private void OnDestroy()
         {
-            float unscaledDeltaTime = Time.unscaledDeltaTime; ;
-
-            // --------------------------------------------------
-            // BGM 音量補間更新
-            // 各 BGM セットごとに個別の値を適用
-            // --------------------------------------------------
-            for (int i = 0; i < _bgmSets.Length; i++)
-            {
-                BgmSet bgm = _bgmSets[i];
-
-                if (bgm.Source == null)
-                {
-                    continue;
-                }
-
-                // 対象の BGM が音量補間中か
-                if (_isVolumeTransitionArray[i])
-                {
-                    _volumeElapsedArray[i] += unscaledDeltaTime;
-
-                    // 0 ～ 1 の補間係数に変換
-                    float t = Mathf.Clamp01(
-                        _volumeElapsedArray[i] /
-                        _volumeDurationArray[i]);
-
-                    // 音量補間
-                    bgm.Source.volume = Mathf.Lerp(
-                        _volumeStartArray[i],
-                        _volumeTargetArray[i],
-                        t);
-
-                    // 補間完了時にフラグを解除
-                    if (t >= 1f)
-                    {
-                        _isVolumeTransitionArray[i] = false;
-                    }
-                }
-            }
-
-            // --------------------------------------------------
-            // ローパス補間更新
-            // 全 BGM に同じローパス値を適用
-            // --------------------------------------------------
-            if (_isLowPassActive && _lowPassFilters != null)
-            {
-                // 経過時間を加算
-                _lowPassElapsed += unscaledDeltaTime;
-
-                // 補間係数
-                float t = (_lowPassTransition > 0f)
-                    ? Mathf.Clamp01(_lowPassElapsed / _lowPassTransition)
-                    : 1f;
-
-                // 補間値計算
-                float cutoff = Mathf.Lerp(_lowPassStartFreq, _lowPassTargetFreq, t);
-
-                // 全フィルターに適用
-                for (int i = 0; i < _lowPassFilters.Length; i++)
-                {
-                    AudioLowPassFilter filter = _lowPassFilters[i];
-
-                    if (filter == null)
-                    {
-                        continue;
-                    }
-
-                    filter.cutoffFrequency = cutoff;
-                }
-
-                // 補間完了
-                if (t >= 1f)
-                {
-                    _isLowPassActive = false;
-                }
-            }
+            // 購読破棄
+            _audioFadeUseCase?.Dispose();
         }
 
         // ======================================================
@@ -258,56 +184,53 @@ namespace SoundSystem.Presentation
         // リスナー
         // --------------------------------------------------
         /// <summary>
-        /// サウンドリスナーの基準 Transform を設定
+        /// リスナー Transform 設定
         /// </summary>
-        /// <param name="listener">リスナーとなるTransform</param>
+        /// <param name="listener">
+        /// リスナーTransform
+        /// </param>
         public void SetListenerTransform(in Transform listener)
         {
-            _listenerTransform = listener;
+            _audioDistanceUseCase.SetListenerTransform(listener);
         }
 
         /// <summary>
-        /// サウンドリスナーの基準 Transform をリセット
+        /// リスナー Transform 解除
         /// </summary>
         public void ResetListenerTransform()
         {
-            _listenerTransform = null;
+            _audioDistanceUseCase.ResetListenerTransform();
         }
 
         // --------------------------------------------------
         // BGM
         // --------------------------------------------------
         /// <summary>
-        /// 指定タイプの BGM を再生
+        /// BGM再生
         /// </summary>
-        /// <param name="type">再生する BGM タイプ</param>
+        /// <param name="type">BGM タイプ</param>
         public void PlayBGM(in BgmType type)
         {
-            // 指定タイプに一致する BGM インデックス取得
-            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
+            // BGM インデックス取得
+            if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
 
-            // BGM セット取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
-            // Clip を設定
             bgm.Source.clip = bgm.Clip;
 
             bgm.Source.Play();
         }
 
         /// <summary>
-        /// BGM 停止
+        /// BGM停止
         /// </summary>
-        /// <param name="type">
-        /// 停止する BGM タイプ
-        /// None の場合は全 BGM 停止
-        /// </param>
+        /// <param name="type">停止対象</param>
         public void StopBGM(in BgmType type = BgmType.None)
         {
-            // 全 BGM 停止
+            // None の場合、全 BGM 停止
             if (type == BgmType.None)
             {
                 for (int i = 0; i < _bgmSets.Length; i++)
@@ -323,36 +246,34 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // 指定タイプに一致する BGM インデックス取得
-            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
+            // BGM インデックス取得
+            if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
 
-            // BGM セット取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
             bgm.Source.Stop();
         }
 
         /// <summary>
-        /// 指定タイプの BGM 音量を設定
+        /// BGM音量設定
         /// </summary>
         /// <param name="type">BGM タイプ</param>
         /// <param name="volume">目標音量</param>
-        /// <param name="transitionDuration">補間時間（秒）</param>
+        /// <param name="transitionDuration">補間時間</param>
         public void SetBGMVolume(
             in BgmType type,
             in float volume,
             in float transitionDuration = 0f)
         {
-            // 指定タイプに一致する BGM インデックス取得
-            if (!_soundSetFinder.TryFindBgmIndex(type, out int bgmIndex))
+            // BGMインデックス取得
+            if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
             }
 
-            // BGM セット取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
             if (bgm.Source == null)
@@ -360,33 +281,15 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // 音量範囲を補正
+            // 音量補正
             float targetVolume = Mathf.Clamp01(volume);
 
-            // 補間時間が 0 以下の場合は即時反映
-            if (transitionDuration <= 0f)
-            {
-                bgm.Source.volume = targetVolume;
-
-                _isVolumeTransitionArray[bgmIndex] = false;
-
-                return;
-            }
-
-            // 補間開始音量を保存
-            _volumeStartArray[bgmIndex] = bgm.Source.volume;
-
-            // 目標音量を保存
-            _volumeTargetArray[bgmIndex] = targetVolume;
-
-            // 補間経過時間を初期化
-            _volumeElapsedArray[bgmIndex] = 0f;
-
-            // 補間時間を保存
-            _volumeDurationArray[bgmIndex] = transitionDuration;
-
-            // 音量補間開始
-            _isVolumeTransitionArray[bgmIndex] = true;
+            // 音量フェード実行
+            _audioFadeUseCase.StartVolumeFade(
+                bgmIndex,
+                bgm.Source,
+                targetVolume,
+                transitionDuration);
         }
 
         /// <summary>
@@ -395,75 +298,53 @@ namespace SoundSystem.Presentation
         /// <param name="enable">true: ON / false: OFF</param>
         public void SetBgmLowPass(in bool enable)
         {
-            if (_lowPassFilters == null)
-            {
-                return;
-            }
+            // 目標周波数決定
+            float targetFrequency = enable
+                ? _lowPassTargetFrequency
+                : MAX_LOW_PASS_FREQUENCY;
 
-            // 補間開始値を現在の周波数で設定
-            if (_lowPassFilters.Length > 0 && _lowPassFilters[0] != null)
-            {
-                _lowPassStartFreq = _lowPassFilters[0].cutoffFrequency;
-            }
-
-            // 補間目標値を設定
-            _lowPassTargetFreq = enable ? _lowPassTargetFrequency : MAX_LOW_PASS_FREQUENCY;
-
-            // 補間開始
-            _isLowPassActive = true;
-            _lowPassElapsed = 0f;
+            // ローパスフェード開始
+            _audioFadeUseCase.StartLowPassFade(
+                _lowPassFilters,
+                targetFrequency,
+                _lowPassTransition);
         }
 
         // --------------------------------------------------
         // SE
         // --------------------------------------------------
         /// <summary>
-        /// SE を再生する
+        /// SE 再生
         /// </summary>
-        /// <param name="type">再生する SE タイプ</param>
+        /// <param name="type">SE タイプ</param>
         /// <param name="volume">再生音量</param>
         public void PlaySE(in SeType type, in float volume = 1.0f)
         {
-            // 指定タイプに一致する SE セット取得
-            if (!_soundSetFinder.TryFindSeSet(type, out SeSet se))
+            // SE 取得
+            if (!_audioSetFinder.TryFindSeSet(type, out SeSet se))
             {
                 return;
             }
 
-            // 指定音量で再生
-            _seSource.PlayOneShot(
-                se.Clip,
-                volume);
+            _seSource.PlayOneShot(se.Clip, volume);
         }
 
         /// <summary>
-        /// 距離に応じた音量で SE を再生する
+        /// 距離減衰付き SE 再生
         /// </summary>
-        /// <param name="type">再生する SE タイプ</param>
-        /// <param name="position">音発生位置</param>
-        public void PlayDistanceSE(in SeType type, in Vector3? position = null)
+        /// <param name="type">SE タイプ</param>
+        /// <param name="position">音源位置</param>
+        public void PlayDistanceSE(
+            in SeType type,
+            in Vector3? position = null)
         {
-            // 指定タイプに一致する BGM セット取得
-            if (!_soundSetFinder.TryFindSeSet(type, out SeSet se))
+            // SE 取得
+            if (!_audioSetFinder.TryFindSeSet(type, out SeSet se))
             {
                 return;
             }
 
-            // リスナー位置取得
-            Vector3 listenerPos = _listenerTransform != null
-                ? _listenerTransform.position
-                : Vector3.zero;
-
-            // リスナーと音発生位置の距離計算
-            float distance = Vector3.Distance(listenerPos, position.Value);
-
-            // 最大距離外は再生しない
-            if (distance > _seMaxDistance)
-            {
-                return;
-            }
-
-            // 音発生位置が未指定の場合は最大音量で再生
+            // 座標未指定の場合は最大音量で再生
             if (position == null)
             {
                 _seSource.PlayOneShot(se.Clip, 1f);
@@ -471,43 +352,16 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // 距離に応じた音量取得
-            float volume = CalculateSEVolume(distance);
+            // 再生可能距離判定
+            if (!_audioDistanceUseCase.IsAudible(position.Value))
+            {
+                return;
+            }
 
-            // SE 再生
+            // 距離減衰音量算出
+            float volume = _audioDistanceUseCase.CalculateVolume(position.Value);
+
             _seSource.PlayOneShot(se.Clip, volume);
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 距離から SE 音量を算出
-        /// </summary>
-        /// <param name="distance">リスナーとの距離</param>
-        /// <returns>再生音量（0 ～ 1）</returns>
-        private float CalculateSEVolume(in float distance)
-        {
-            // 最小距離以内は最大音量
-            if (distance <= _seMinDistance)
-            {
-                return 1f;
-            }
-
-            // 最大距離以上は無音
-            if (distance >= _seMaxDistance)
-            {
-                return 0f;
-            }
-
-            // 距離の上限と下限を 0 ～ 1 に正規化
-            float normalized = Mathf.InverseLerp(_seMinDistance, _seMaxDistance, distance);
-
-            // 距離が遠くなるほど音量が下がるように反転
-            float volume = 1f - normalized;
-
-            return volume;
         }
     }
 }
