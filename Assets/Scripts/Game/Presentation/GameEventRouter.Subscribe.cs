@@ -112,6 +112,16 @@ namespace GameSystem.Presentation
             }
 
             // --------------------------------------------------
+            // スコア
+            // --------------------------------------------------
+            if (_scoreManager != null)
+            {
+                _scoreManager.CumulativeCount
+                    .Subscribe(count => _onComboAdded.OnNext(count))
+                    .AddTo(_disposables);
+            }
+
+            // --------------------------------------------------
             // 入力
             // --------------------------------------------------
             if (_inputManager != null)
@@ -186,6 +196,7 @@ namespace GameSystem.Presentation
                     _onDropRequested,
                     _onRotateRequested,
                     _onTurnChanged,
+                    _onComboAdded,
                     _phaseMachine.LimitTime);
 
                 // 直後にキャッシュ状態を同期

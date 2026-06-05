@@ -11,6 +11,7 @@ using UnityEngine;
 using UniRx;
 using ScoreSystem.Application;
 using ScoreSystem.Domain;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace ScoreSystem.Presentation
 {
@@ -78,10 +79,14 @@ namespace ScoreSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>
-        /// プレイヤー別累計スコア配列
-        /// </summary>
+        /// <summary>プレイヤー別累計スコア配列</summary>
         private ReactiveProperty<int>[] _totalScores;
+
+        /// <summary>累積カウンター</summary>
+        private ReactiveProperty<int> _cumulativeCount = new ReactiveProperty<int>(0);
+
+        /// <summary>累積カウンター</summary>
+        public IReadOnlyReactiveProperty<int> CumulativeCount => _cumulativeCount;
 
         // ======================================================
         // Unity イベント
@@ -176,10 +181,15 @@ namespace ScoreSystem.Presentation
                 return;
             }
 
-            // 全プレイヤーのカウントを進める
+            // 累積カウンターを進める
+            _cumulativeCount.Value++;
+
+            // 全プレイヤーへ適用する
             for (int i = 0; i < _playerScores.Length; i++)
             {
-                _calculateService.AddCumulativeCount(ref _playerScores[i]);
+                _calculateService.ApplyCumulativeCount(
+                    ref _playerScores[i],
+                    _cumulativeCount.Value);
             }
         }
 
@@ -193,10 +203,13 @@ namespace ScoreSystem.Presentation
                 return;
             }
 
+            // 累積カウンターをリセット
+            _cumulativeCount.Value = 0;
+
             // 全プレイヤーの累積カウントを初期化
             for (int i = 0; i < _playerScores.Length; i++)
             {
-                _calculateService.ResetAddCounter(ref _playerScores[i]);
+                _calculateService.ApplyCumulativeCount(ref _playerScores[i], _cumulativeCount.Value);
             }
         }
 

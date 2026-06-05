@@ -146,14 +146,6 @@ namespace ScoreSystem.Application
         }
 
         /// <summary>
-        /// 累積カウンターのみ加算する
-        /// </summary>
-        public void AddCumulativeCount(ref ScoreData scoreData)
-        {
-            scoreData.AddCount++;
-        }
-
-        /// <summary>
         /// スコアを初期化する
         /// </summary>
         /// <param name="scoreData">更新対象のスコアデータ</param>
@@ -163,12 +155,13 @@ namespace ScoreSystem.Application
         }
 
         /// <summary>
-        /// 加算カウントを初期化する
+        /// 累積カウンターを適用する
         /// </summary>
-        /// <param name="scoreData">更新対象のスコアデータ</param>
-        public void ResetAddCounter(ref ScoreData scoreData)
+        /// <param name="scoreData">対象スコア</param>
+        /// <param name="count">累積カウンター値</param>
+        public void ApplyCumulativeCount(ref ScoreData scoreData, in int count)
         {
-            scoreData.AddCount = 0;
+            scoreData.AddCount = count;
         }
 
         // ======================================================

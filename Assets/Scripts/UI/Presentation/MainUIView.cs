@@ -11,6 +11,7 @@ using TMPro;
 using UISystem.Application;
 using UniRx;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UISystem.Presentation
 {
@@ -23,8 +24,11 @@ namespace UISystem.Presentation
         // コンポーネント参照
         // ======================================================
 
-        /// <summary>スコアフォーマットクラス</summary>
-        private TextFormatter[] _scoreFormatters;
+        /// <summary>現在スコアフォーマットクラス</summary>
+        private TextFormatter[] _currentScoreFormatters;
+
+        /// <summary>加算スコアフォーマットクラス</summary>
+        private TextFormatter[] _addedScoreFormatters;
 
         /// <summary>ターンフォーマットクラス</summary>
         private TextFormatter _turnFormatters;
@@ -35,6 +39,9 @@ namespace UISystem.Presentation
         /// <summary>時間フォーマットクラス</summary>
         private TextFormatter _timeFormatter;
 
+        /// <summary>プレイヤー毎のスコアアニメーション制御クラス配列</summary>
+        private NumberAnimationController[] _scoreAnimationControllers;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -42,8 +49,11 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // UI
         // --------------------------------------------------
-        /// <summary>スコア表示テキスト</summary>
-        private readonly TextMeshProUGUI[] _scoreTexts;
+        /// <summary>現在スコアを表示するテキスト</summary>
+        private TextMeshProUGUI[] _currentScoreTexts;
+
+        /// <summary>スコア加算量表示テキスト</summary>
+        private TextMeshProUGUI[] _addedScoreTexts;
 
         /// <summary>ターン表示テキスト</summary>
         private readonly TextMeshProUGUI _turnText;
@@ -56,12 +66,6 @@ namespace UISystem.Presentation
         /// インデックス 1 以降はエフェクト用とする
         /// </summary>
         private readonly TextMeshProUGUI[] _limitTimeTexts;
-
-        // --------------------------------------------------
-        // スコア
-        // --------------------------------------------------
-        /// <summary>前回表示スコア</summary>
-        private int[] _previousDisplayScores;
 
         // --------------------------------------------------
         // ターン
@@ -97,8 +101,11 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>スコア表示フォーマット</summary>
-        private const string SCORE_FORMAT = "Score: {0}";
+        /// <summary>現在スコア表示フォーマット</summary>
+        private const string CURRENT_SCORE_FORMAT = "Score: {0}";
+
+        /// <summary>加算スコア表示フォーマット</summary>
+        private const string ADDED_SCORE_FORMAT = "+ {0}";
 
         /// <summary>スコア桁数</summary>
         private static readonly int[] SCORE_DIGITS = { 6 };
@@ -125,6 +132,15 @@ namespace UISystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>コンボ表示用 Subject</summary>
+        private readonly Subject<Unit> _onComboVisible = new Subject<Unit>();
+
+        /// <summary>コンボ表示ストリーム</summary>
+        public IObservable<Unit> OnComboVisible => _onComboVisible;
+
         /// <summary>警告表示用 Subject</summary>
         private readonly Subject<Unit> _onWarningVisible = new Subject<Unit>();
 
@@ -139,7 +155,8 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         public MainUIView(
-            in TextMeshProUGUI[] scoreTexts,
+            in TextMeshProUGUI[] currentScoreTexts,
+            in TextMeshProUGUI[] addedScoreTexts,
             in TextMeshProUGUI turnText,
             in TextMeshPro comboText,
             in TextMeshProUGUI[] limitTimeTexts,
@@ -147,7 +164,8 @@ namespace UISystem.Presentation
             in int maxComboCount,
             in int warningLimitTime)
         {
-            _scoreTexts = scoreTexts;
+            _currentScoreTexts = currentScoreTexts;
+            _addedScoreTexts = addedScoreTexts;
             _turnText = turnText;
             _comboText = comboText;
             _limitTimeTexts = limitTimeTexts;
@@ -160,20 +178,36 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // スコア初期化
             // --------------------------------------------------
-            if (_scoreTexts != null)
+            if (_currentScoreTexts != null)
             {
-                int length = _scoreTexts.Length;
+                int length = _currentScoreTexts.Length;
 
                 // scoreTexts の長さで配列生成
-                _scoreFormatters = new TextFormatter[length];
-                _previousDisplayScores = new int[length];
+                _currentScoreFormatters = new TextFormatter[length];
 
                 for (int i = 0; i < length; i++)
                 {
                     // 各 Text ごとにフォーマッタ生成
-                    _scoreFormatters[i] =
+                    _currentScoreFormatters[i] =
                         new TextFormatter(
-                            SCORE_FORMAT,
+                            CURRENT_SCORE_FORMAT,
+                            SCORE_DIGITS);
+                }
+            }
+
+            if (_addedScoreTexts != null)
+            {
+                int length = _addedScoreTexts.Length;
+
+                // scoreTexts の長さで配列生成
+                _addedScoreFormatters = new TextFormatter[length];
+
+                for (int i = 0; i < length; i++)
+                {
+                    // 各 Text ごとにフォーマッタ生成
+                    _addedScoreFormatters[i] =
+                        new TextFormatter(
+                            ADDED_SCORE_FORMAT,
                             SCORE_DIGITS);
                 }
             }
@@ -220,63 +254,83 @@ namespace UISystem.Presentation
         // イベント購読
         // --------------------------------------------------
         /// <summary>
-        /// サブジェクト終了処理
+        /// イベント購読
+        /// </summary>
+        public void Subscribe()
+        {
+            if (_currentScoreTexts == null)
+            {
+                return;
+            }
+
+            // スコア表示数取得
+            int length = _currentScoreTexts.Length;
+
+            // アニメーション制御配列生成
+            _scoreAnimationControllers = new NumberAnimationController[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                int cacheIndex = i;
+
+                // アニメーション制御生成
+                _scoreAnimationControllers[i] = new NumberAnimationController();
+
+                // 数値変化通知を購読
+                _scoreAnimationControllers[i].CurrentValue
+                    .Subscribe(score => UpdateCurrentScoreText(cacheIndex, score))
+                    .AddTo(_disposables);
+            }
+        }
+
+        /// <summary>
+        /// イベント購読解除
         /// </summary>
         public void Dispose()
         {
+            _disposables?.Dispose();
+            _onComboVisible?.Dispose();
             _onWarningVisible?.Dispose();
+
+            for (int i = 0; i < _scoreAnimationControllers.Length; i++)
+            {
+                _scoreAnimationControllers[i].Dispose();
+            }
         }
 
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------
         /// <summary>
-        /// スコア表示更新
+        /// 現在スコア表示更新
         /// </summary>
         /// <param name="playerId">プレイヤーID（1 ベース）</param>
-        /// <param name="score">スコア</param>
-        public void UpdateScore(in int playerId, in int score)
+        /// <param name="score">現在スコア</param>
+        public void UpdateCurrentScore(in int playerId, in int score)
         {
-            // --------------------------------------------------
-            // インデックス変換（1 ベース → 0 ベース）
-            // --------------------------------------------------
+            // インデックス変換
             int index = playerId - 1;
 
-            if (_scoreTexts == null ||
+            if (_scoreAnimationControllers == null ||
                 index < 0 ||
-                index >= _scoreTexts.Length)
+                index >= _scoreAnimationControllers.Length)
             {
                 return;
             }
 
-            TMP_Text targetText = _scoreTexts[index];
-
-            if (targetText == null)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // スコア計算
-            // --------------------------------------------------
-            // 同一値なら更新スキップ
-            if (score == _previousDisplayScores[index])
-            {
-                return;
-            }
-
-            _previousDisplayScores[index] = score;
-
-            // --------------------------------------------------
-            // 表示更新
-            // --------------------------------------------------
-            // フォーマット済みバッファ取得
-            char[] buffer = _scoreFormatters[index].FormatWithPadding(score);
-
-            // TextMeshPro に反映
-            targetText.SetCharArray(buffer);
+            // アニメーション開始
+            _scoreAnimationControllers[index].AnimateTo(score);
         }
 
+        /// <summary>
+        /// スコア加算量表示更新
+        /// </summary>
+        /// <param name="playerId">プレイヤーID（1 ベース）</param>
+        /// <param name="addScore">加算スコア</param>
+        public void UpdateAddedScore(in int playerId, in int addScore)
+        {
+        }
+        
         // --------------------------------------------------
         // ターン
         // --------------------------------------------------
@@ -326,6 +380,14 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // 表示更新
             // --------------------------------------------------
+            // コンボ数が 0 の場合は非表示にする
+            if (comboCount == 0)
+            {
+                _comboText.SetText(string.Empty);
+
+                return;
+            }
+
             // 現在コンボ数が最大コンボ数より大きい場合、最大コンボを表示
             if (comboCount > _maxComboCount)
             {
@@ -341,6 +403,9 @@ namespace UISystem.Presentation
 
             // TextMeshPro に反映
             _comboText.SetCharArray(buffer);
+
+            // コンボ表示アニメーション通知
+            _onComboVisible.OnNext(Unit.Default);
         }
 
         // --------------------------------------------------
@@ -414,6 +479,46 @@ namespace UISystem.Presentation
             {
                 _onWarningVisible.OnNext(Unit.Default);
             }
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
+        /// <summary>
+        /// スコアテキスト更新
+        /// </summary>
+        /// <param name="index">プレイヤーインデックス（0 ベース）</param>
+        /// <param name="score">表示スコア</param>
+        private void UpdateCurrentScoreText(in int index, in int score)
+        {
+            if (_currentScoreTexts == null || _currentScoreFormatters == null)
+            {
+                return;
+            }
+
+            // 範囲チェック
+            if (index < 0 || index >= _currentScoreTexts.Length)
+            {
+                return;
+            }
+
+            // 対象テキスト取得
+            TMP_Text targetText = _currentScoreTexts[index];
+
+            if (targetText == null)
+            {
+                return;
+            }
+
+            // フォーマット済みバッファ取得
+            char[] buffer = _currentScoreFormatters[index].FormatWithPadding(score);
+
+            // TextMeshPro に反映
+            targetText.SetCharArray(buffer);
         }
     }
 }

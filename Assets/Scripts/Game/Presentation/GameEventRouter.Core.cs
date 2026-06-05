@@ -226,6 +226,9 @@ namespace GameSystem.Presentation
         /// <summary>ボード回転実行用 Subject</summary>
         private readonly Subject<RotationCommand> _onRotateExecuted = new Subject<RotationCommand>();
 
+        /// <summary>コンボ加算通知用 Subject</summary>
+        private readonly Subject<int> _onComboAdded = new Subject<int>();
+
         /// <summary>中心座標算出ストリーム</summary>
         private readonly Subject<Vector3> _onCenterPositionCalculated = new Subject<Vector3>();
 

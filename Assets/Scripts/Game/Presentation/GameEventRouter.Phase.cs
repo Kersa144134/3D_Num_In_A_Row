@@ -62,6 +62,9 @@ namespace GameSystem.Presentation
                     // スコア計算クラス初期化
                     _scoreManager.Initialize(_gameOptionManager.PlayerCount);
 
+                    // スコア更新購読
+                    BindScoreUpdateStream();
+
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 
@@ -77,9 +80,6 @@ namespace GameSystem.Presentation
 
                     // ゲームスピード変更購読
                     BindGameSpeedChangeStream();
-
-                    // スコア更新購読
-                    BindScoreUpdateStream();
 
                     break;
 
@@ -106,9 +106,6 @@ namespace GameSystem.Presentation
                             break;
                     }
 
-                    // スコア累積カウントリセット
-                    _scoreManager.ResetAllCumulativeCount();
-
                     break;
 
                 // --------------------------------------------------
@@ -124,6 +121,9 @@ namespace GameSystem.Presentation
                 // ChangePlayer
                 // --------------------------------------------------
                 case PhaseType.ChangePlayer:
+                    // スコア累積カウントリセット
+                    _scoreManager.ResetAllCumulativeCount();
+
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);
 

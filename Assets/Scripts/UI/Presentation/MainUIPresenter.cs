@@ -71,9 +71,13 @@ namespace UISystem.Presentation
         // スコア
         // --------------------------------------------------
         [Header("スコア")]
-        /// <summary>スコアを表示するテキスト</summary>
+        /// <summary>現在スコアを表示するテキスト</summary>
         [SerializeField]
-        private TextMeshProUGUI[] _scoreTexts;
+        private TextMeshProUGUI[] _currentScoreTexts;
+
+        /// <summary>スコア加算量表示テキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI[] _addedScoreTexts;
 
         // --------------------------------------------------
         // ターン
@@ -190,6 +194,9 @@ namespace UISystem.Presentation
         /// <summary>アウトゲーム関連のキャンバス</summary>
         private Animator _outgameCanvasAnimator;
 
+        /// <summary>コンボ表示のアニメーター</summary>
+        private Animator _comboAnimator;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -206,9 +213,15 @@ namespace UISystem.Presentation
         /// <summary>PlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
 
+        /// <summary>AddCombo パラメータ名</summary>
+        private static readonly int ADD_COMBO_HASH = Animator.StringToHash("AddCombo");
+
         /// <summary>IsWarning パラメータ名</summary>
         private static readonly int IS_WARNING_HASH = Animator.StringToHash("IsWarning");
 
+        /// <summary>ChangePlayer パラメータ名</summary>
+        private static readonly int CHANGE_PLAYER_HASH = Animator.StringToHash("ChangePlayer");
+        
         /// <summary>SwitchProjection パラメータ名</summary>
         private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
 
@@ -257,7 +270,8 @@ namespace UISystem.Presentation
             // ビュー生成
             // --------------------------------------------------
             _uiView = new MainUIView(
-                _scoreTexts,
+                _currentScoreTexts,
+                _addedScoreTexts,
                 _turnText,
                 _comboText,
                 _limitTimeTexts,
@@ -324,6 +338,7 @@ namespace UISystem.Presentation
             // アニメーター取得
             _intermittentCanvasAnimator = _intermittentCanvas.GetComponent<Animator>();
             _outgameCanvasAnimator = _outgameCanvas.GetComponent<Animator>();
+            _comboAnimator = _comboText.gameObject.GetComponent<Animator>();
 
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_outgameCanvasAnimator);
@@ -352,8 +367,6 @@ namespace UISystem.Presentation
         protected override void OnPhaseEnterInternal(in PhaseType phase)
         {
             base.OnPhaseEnterInternal(phase);
-
-            UpdateComboCountDisplay(20);
         }
 
         protected override void OnPhaseExitInternal(in PhaseType phase)
@@ -608,6 +621,7 @@ namespace UISystem.Presentation
             in IObservable<Unit> dropRequested,
             in IObservable<Unit> rotateRequested,
             in IObservable<int> turnChanged,
+            in IObservable<int> comboAdded,
             in IObservable<float> limitTimeChanged)
         {
             phase
@@ -624,6 +638,13 @@ namespace UISystem.Presentation
                         ? 1.0f
                         : 0.0f);
 
+                    // ChangePlayer
+                    bool isChangePlayer = type == PhaseType.ChangePlayer;
+                    if (isChangePlayer)
+                    {
+                        TriggerPlayerChange();
+                    }
+
                     // Pause
                     bool isPause = type == PhaseType.Pause;
                     SetPauseState(isPause);
@@ -639,7 +660,7 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             scoreUpdated
-                .Subscribe(e => UpdateScore(e.PlayerId, e.LineLength))
+                .Subscribe(e => UpdateCurrentScore(e.PlayerId, e.LineLength))
                 .AddTo(_disposables);
 
             pointerLock
@@ -707,6 +728,11 @@ namespace UISystem.Presentation
                 .Subscribe(turn => UpdateTurnCountDisplay(turn))
                 .AddTo(_disposables);
 
+            comboAdded
+                .DistinctUntilChanged()
+                .Subscribe(combo => UpdateComboCountDisplay(combo))
+                .AddTo(_disposables);
+
             limitTimeChanged
                 .DistinctUntilChanged()
                 .Subscribe(time => UpdateLimitTimeDisplay(time))
@@ -737,9 +763,14 @@ namespace UISystem.Presentation
 
             if (_uiView is MainUIView mainUIView)
             {
+                mainUIView.OnComboVisible
+                    .Subscribe(_ => TriggerComboVisible())
+                    .AddTo(_disposables);
                 mainUIView.OnWarningVisible
                     .Subscribe(_ => TriggerWarningVisible())
                     .AddTo(_disposables);
+
+                mainUIView.Subscribe();
             }
         }
 
@@ -761,11 +792,11 @@ namespace UISystem.Presentation
         /// </summary>
         /// <param name="playerId">プレイヤー ID（1 ベース）</param>
         /// <param name="score">スコア</param>
-        private void UpdateScore(in int playerId, in int score)
+        private void UpdateCurrentScore(in int playerId, in int score)
         {
             if (_uiView is MainUIView mainUIView)
             {
-                mainUIView.UpdateScore(playerId, score);
+                mainUIView.UpdateCurrentScore(playerId, score);
             }
         }
 
@@ -984,11 +1015,27 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// コンボ表示を起動する
+        /// </summary>
+        private void TriggerComboVisible()
+        {
+            _comboAnimator?.SetTrigger(ADD_COMBO_HASH);
+        }
+
+        /// <summary>
         /// 警告表示を起動する
         /// </summary>
         private void TriggerWarningVisible()
         {
             _limitTimeAnimator?.SetTrigger(IS_WARNING_HASH);
+        }
+
+        /// <summary>
+        /// プレイヤー変更による警告アニメーションの強制終了
+        /// </summary>
+        private void TriggerPlayerChange()
+        {
+            _limitTimeAnimator?.SetTrigger(CHANGE_PLAYER_HASH);
         }
 
         /// <summary>
