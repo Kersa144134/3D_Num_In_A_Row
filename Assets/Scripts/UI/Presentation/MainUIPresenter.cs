@@ -84,6 +84,18 @@ namespace UISystem.Presentation
         private TextMeshProUGUI _turnText;
 
         // --------------------------------------------------
+        // コンボ
+        // --------------------------------------------------
+        [Header("コンボ")]
+        /// <summary>コンボを表示するテキスト</summary>
+        [SerializeField]
+        private TextMeshPro _comboText;
+
+        /// <summary>最大コンボ表示数</summary>
+        [SerializeField]
+        private int _maxComboCount;
+
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         [Header("タイマー")]
@@ -247,8 +259,10 @@ namespace UISystem.Presentation
             _uiView = new MainUIView(
                 _scoreTexts,
                 _turnText,
+                _comboText,
                 _limitTimeTexts,
                 _gameOptionManager.TurnCount,
+                _maxComboCount,
                 _warningLimitTime
             );
             _uiView.Initialize(
@@ -338,6 +352,8 @@ namespace UISystem.Presentation
         protected override void OnPhaseEnterInternal(in PhaseType phase)
         {
             base.OnPhaseEnterInternal(phase);
+
+            UpdateComboCountDisplay(20);
         }
 
         protected override void OnPhaseExitInternal(in PhaseType phase)
@@ -765,6 +781,21 @@ namespace UISystem.Presentation
             if (_uiView is MainUIView mainUIView)
             {
                 mainUIView.UpdateTurnCount(turnCount);
+            }
+        }
+
+        // --------------------------------------------------
+        // コンボ
+        // --------------------------------------------------
+        /// <summary>
+        /// 現在のコンボ数を UI に表示する
+        /// </summary>
+        /// <param name="comboCount">現在のコンボ数</param>
+        private void UpdateComboCountDisplay(in int comboCount)
+        {
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.UpdateComboCount(comboCount);
             }
         }
 

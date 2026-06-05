@@ -42,6 +42,9 @@ namespace UISystem.Application
         /// <summary>数値文字の基準 ASCII コード</summary>
         private const char ASCII_ZERO = '0';
 
+        /// <summary>空白文字</summary>
+        private const char SPACE = ' ';
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -151,7 +154,38 @@ namespace UISystem.Application
 
             return _buffer;
         }
-        
+
+        /// <summary>
+        /// 単一数値フォーマット
+        /// 左詰めで書き込み、余りを空白で埋める
+        /// </summary>
+        /// <param name="value">数値</param>
+        /// <returns>フォーマット済み文字配列</returns>
+        public char[] FormatWithSpacePadding(in int value)
+        {
+            // 要素 0 に書き込み
+            WriteDigitsWithSpacePadding(value, 0);
+
+            return _buffer;
+        }
+
+        /// <summary>
+        /// 複数数値フォーマット
+        /// 左詰めで書き込み、余りを空白で埋める
+        /// </summary>
+        /// <param name="values">数値配列</param>
+        /// <returns>フォーマット済み文字配列</returns>
+        public char[] FormatWithSpacePadding(in int[] values)
+        {
+            // 各プレースホルダへ書き込み
+            for (int i = 0; i < _placeholderCount; i++)
+            {
+                WriteDigitsWithSpacePadding(values[i], i);
+            }
+
+            return _buffer;
+        }
+
         // ======================================================
         // プライベートメソッド
         // ======================================================
@@ -204,6 +238,90 @@ namespace UISystem.Application
                 // 書き込み位置更新
                 index--;
             }
+        }
+
+        /// <summary>
+        /// 数値を左詰めで書き込む
+        /// 余った領域は空白で埋める
+        /// </summary>
+        /// <param name="value">書き込み数値</param>
+        /// <param name="elementIndex">プレースホルダ番号</param>
+        private void WriteDigitsWithSpacePadding(
+            in int value,
+            in int elementIndex)
+        {
+            // 表示桁数取得
+            int digits = _digits[elementIndex];
+
+            // 書き込み開始位置取得
+            int startIndex = _numberStartIndexes[elementIndex];
+
+            // 数値桁数取得
+            int numberDigits = CountDigits(value);
+
+            // 表示桁数を超える場合は右側を使用
+            if (numberDigits > digits)
+            {
+                numberDigits = digits;
+            }
+
+            // 数値を一時格納
+            int number = value;
+
+            // 数値文字を逆順で格納
+            char[] temp = new char[numberDigits];
+
+            for (int i = numberDigits - 1; i >= 0; i--)
+            {
+                temp[i] = (char)(ASCII_ZERO + (number % 10));
+
+                number /= 10;
+            }
+
+            // 左詰めで書き込み
+            for (int i = 0; i < numberDigits; i++)
+            {
+                _buffer[startIndex + i] = temp[i];
+            }
+
+            // 余りを空白で埋める
+            for (int i = numberDigits; i < digits; i++)
+            {
+                _buffer[startIndex + i] = SPACE;
+            }
+        }
+
+        /// <summary>
+        /// 数値の桁数取得
+        /// </summary>
+        /// <param name="value">対象数値</param>
+        /// <returns>桁数</returns>
+        private int CountDigits(in int value)
+        {
+            // 0 は 1 桁として扱う
+            if (value == 0)
+            {
+                return 1;
+            }
+
+            // 算出した桁数
+            int count = 0;
+
+            // 桁数計算用の作業変数
+            int number = value;
+
+            // 数値が 0 になるまで繰り返す
+            while (number > 0)
+            {
+                // 下位 1 桁を除去する
+                number /= 10;
+
+                // 除去した桁数を加算する
+                count++;
+            }
+
+            // 算出した桁数を返す
+            return count;
         }
     }
 }

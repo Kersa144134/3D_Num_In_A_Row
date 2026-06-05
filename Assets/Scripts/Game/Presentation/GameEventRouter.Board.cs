@@ -28,6 +28,9 @@ namespace GameSystem.Presentation
         /// </summary>
         private void HandleLineCompleted(in IReadOnlyList<LineCompleteEvent> events)
         {
+            // スコア累積カウント加算
+            _scoreManager.AddAllCumulativeCount();
+
             // --------------------------------------------------
             // 各イベントを個別に処理
             // --------------------------------------------------
@@ -46,9 +49,6 @@ namespace GameSystem.Presentation
                 {
                     continue;
                 }
-
-                // スコア累積カウント加算
-                _scoreManager.AddAllCumulativeCount();
 
                 // 1 ライン分のスコア加算
                 _scoreManager.AddLineScore(playerId, line.Count);

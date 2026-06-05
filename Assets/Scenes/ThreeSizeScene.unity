@@ -424,6 +424,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 532500520}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &316619607 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3719462194734748822, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
+  m_PrefabInstance: {fileID: 4377337985919882834}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9541d86e2fd84c1d9990edf0852d74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshPro
 --- !u!114 &472643313 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6392865127827250243, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
@@ -1052,7 +1063,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: _turnCount
-      value: 1
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: _cameraSpeed
@@ -1559,7 +1570,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 984295162936094157, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
 --- !u!114 &4733496847391195816
 MonoBehaviour:
@@ -1621,6 +1635,8 @@ MonoBehaviour:
   - {fileID: 23200963}
   - {fileID: 23200961}
   _turnText: {fileID: 472643313}
+  _comboText: {fileID: 316619607}
+  _maxComboCount: 99
   _limitTimeTexts:
   - {fileID: 1640972099}
   - {fileID: 1640972098}

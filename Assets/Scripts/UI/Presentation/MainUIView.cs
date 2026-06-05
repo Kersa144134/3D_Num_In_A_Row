@@ -29,6 +29,9 @@ namespace UISystem.Presentation
         /// <summary>ターンフォーマットクラス</summary>
         private TextFormatter _turnFormatters;
 
+        /// <summary>コンボフォーマットクラス</summary>
+        private TextFormatter _comboFormatter;
+
         /// <summary>時間フォーマットクラス</summary>
         private TextFormatter _timeFormatter;
 
@@ -44,6 +47,9 @@ namespace UISystem.Presentation
 
         /// <summary>ターン表示テキスト</summary>
         private readonly TextMeshProUGUI _turnText;
+
+        /// <summary>コンボを表示するテキスト</summary>
+        private readonly TextMeshPro _comboText;
 
         /// <summary>
         /// 制限時間表示テキスト
@@ -64,6 +70,12 @@ namespace UISystem.Presentation
         private readonly int _maxTurnCount;
 
         // --------------------------------------------------
+        // コンボ
+        // --------------------------------------------------
+        /// <summary>最大コンボ表示数</summary>
+        private readonly int _maxComboCount;
+
+        // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
         /// <summary>警告開始タイミング（秒）</summary>
@@ -74,6 +86,9 @@ namespace UISystem.Presentation
 
         /// <summary>ターン表示用の数値配列</summary>
         private int[] _turnValues = new int[2];
+
+        /// <summary>コンボ表示用の数値配列</summary>
+        private int[] _comboValues = new int[1];
 
         /// <summary>時間表示用の数値配列</summary>
         private int[] _timeValues = new int[2];
@@ -86,13 +101,19 @@ namespace UISystem.Presentation
         private const string SCORE_FORMAT = "Score: {0}";
 
         /// <summary>スコア桁数</summary>
-        private static readonly int[] SCORE_DIGIT = { 6 };
+        private static readonly int[] SCORE_DIGITS = { 6 };
 
         /// <summary>ターン表示フォーマット</summary>
         private const string TURN_FORMAT = "{0} / {1}";
 
         /// <summary>ターン桁数</summary>
         private static readonly int[] TURN_DIGITS = { 3, 3 };
+
+        /// <summary>コンボ表示フォーマット</summary>
+        private const string COMBO_FORMAT = "× {0}";
+
+        /// <summary>コンボ桁数</summary>
+        private static readonly int[] COMBO_DIGITS = { 2 };
 
         /// <summary>制限時間表示フォーマット</summary>
         private const string LIMIT_TIME_FORMAT = "{0}:{1}";
@@ -120,14 +141,18 @@ namespace UISystem.Presentation
         public MainUIView(
             in TextMeshProUGUI[] scoreTexts,
             in TextMeshProUGUI turnText,
+            in TextMeshPro comboText,
             in TextMeshProUGUI[] limitTimeTexts,
             in int maxTurnCount,
+            in int maxComboCount,
             in int warningLimitTime)
         {
             _scoreTexts = scoreTexts;
             _turnText = turnText;
+            _comboText = comboText;
             _limitTimeTexts = limitTimeTexts;
             _maxTurnCount = maxTurnCount;
+            _maxComboCount = maxComboCount;
             _warningLimitTime = warningLimitTime;
 
             _previousDisplayTotalSeconds = -1;
@@ -149,7 +174,7 @@ namespace UISystem.Presentation
                     _scoreFormatters[i] =
                         new TextFormatter(
                             SCORE_FORMAT,
-                            SCORE_DIGIT);
+                            SCORE_DIGITS);
                 }
             }
 
@@ -163,7 +188,18 @@ namespace UISystem.Presentation
                         TURN_FORMAT,
                         TURN_DIGITS);
             }
-            
+
+            // --------------------------------------------------
+            // コンボ初期化
+            // --------------------------------------------------
+            if (_comboText != null)
+            {
+                _comboFormatter =
+                    new TextFormatter(
+                        COMBO_FORMAT,
+                        COMBO_DIGITS);
+            }
+
             // --------------------------------------------------
             // タイマー初期化
             // --------------------------------------------------
@@ -273,7 +309,40 @@ namespace UISystem.Presentation
             // TextMeshPro に反映
             _turnText.SetCharArray(buffer);
         }
-        
+
+        // --------------------------------------------------
+        // コンボ
+        // --------------------------------------------------
+        /// <summary>
+        /// コンボ数表示更新
+        /// </summary>
+        public void UpdateComboCount(in int comboCount)
+        {
+            if (_comboText == null)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // 表示更新
+            // --------------------------------------------------
+            // 現在コンボ数が最大コンボ数より大きい場合、最大コンボを表示
+            if (comboCount > _maxComboCount)
+            {
+                _comboValues[0] = _maxComboCount;
+            }
+            else
+            {
+                _comboValues[0] = comboCount;
+            }
+
+            // フォーマット済みバッファ取得
+            char[] buffer = _comboFormatter.FormatWithSpacePadding(_comboValues);
+
+            // TextMeshPro に反映
+            _comboText.SetCharArray(buffer);
+        }
+
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
