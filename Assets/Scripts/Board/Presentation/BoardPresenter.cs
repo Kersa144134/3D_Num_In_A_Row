@@ -167,6 +167,9 @@ namespace BoardSystem.Presentation
         /// <summary>中心座標算出ストリーム</summary>
         public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
 
+        /// <summary>ライン発光開始ストリーム</summary>
+        public IObservable<Unit> OnLineEmissionStarted => _deleteHandler.OnLineEmissionStarted;
+
         /// <summary>プレイヤー行動終了通知用 Subject</summary>
         private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
 

@@ -16,6 +16,7 @@ using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UISystem.Presentation;
@@ -90,8 +91,11 @@ namespace GameSystem.Presentation
         /// <summary>スコア更新の保留フラグ</summary>
         private bool _hasPendingScoreEvent;
 
-        /// <summary>保留中のスコアイベント</summary>
-        private ScoreEvent _pendingScoreEvent;
+        /// <summary>保留中の更新スコアイベント</summary>
+        private ScoreEvent _pendingUpdateScoreEvent;
+
+        /// <summary>保留中の加算スコアイベントリスト</summary>
+        private readonly Queue<ScoreEvent> _pendingAddScoreEvents = new Queue<ScoreEvent>();
 
         /// <summary>現在の入力マッピング番号</summary>
         private int _currentMappingIndex = -1;
@@ -174,6 +178,9 @@ namespace GameSystem.Presentation
 
         /// <summary>スコア更新用 Subject</summary>
         private readonly Subject<ScoreEvent> _onScoreUpdated = new Subject<ScoreEvent>();
+
+        /// <summary>スコア加算用 Subject</summary>
+        private readonly Subject<ScoreEvent> _onScoreAdded = new Subject<ScoreEvent>();
 
         /// <summary>ターンカウント通知用 Subject</summary>
         private readonly Subject<int> _onTurnChanged = new Subject<int>();

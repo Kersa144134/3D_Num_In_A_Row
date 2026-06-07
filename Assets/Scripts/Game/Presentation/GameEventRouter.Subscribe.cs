@@ -190,6 +190,7 @@ namespace GameSystem.Presentation
                     _currentPhase,
                     _onPlayerChanged,
                     _onScoreUpdated,
+                    _onScoreAdded,
                     _currentPhase.Select(phase => phase != PhaseType.Play && phase != PhaseType.Pause),
                     _onGamepadUsed,
                     _onColumnSelectVisibleChanged,
@@ -332,7 +333,7 @@ namespace GameSystem.Presentation
                             }
 
                             // スコア更新通知
-                            _onScoreUpdated.OnNext(_pendingScoreEvent);
+                            _onScoreUpdated.OnNext(_pendingUpdateScoreEvent);
 
                             // リセット
                             _hasPendingScoreEvent = false;
@@ -340,6 +341,21 @@ namespace GameSystem.Presentation
                         .AddTo(_disposables);
                     boardPresenter.OnCenterPositionCalculated
                         .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
+                        .AddTo(_disposables);
+                    boardPresenter.OnLineEmissionStarted
+                        .Subscribe(_ =>
+                        {
+                            if (_pendingAddScoreEvents.Count == 0)
+                            {
+                                return;
+                            }
+
+                            // 保留中の加算スコアイベント取得
+                            ScoreEvent scoreEvent = _pendingAddScoreEvents.Dequeue();
+
+                            // スコア加算通知
+                            _onScoreAdded.OnNext(scoreEvent);
+                        })
                         .AddTo(_disposables);
                     boardPresenter.IsColumnSelectVisible
                         .DistinctUntilChanged()
@@ -534,7 +550,7 @@ namespace GameSystem.Presentation
                     .Subscribe(score =>
                     {
                         // 最新スコアを保留イベントとして保持する
-                        _pendingScoreEvent = new ScoreEvent(currentPlayerId, score);
+                        _pendingUpdateScoreEvent = new ScoreEvent(currentPlayerId, score);
 
                         _hasPendingScoreEvent = true;
                     })

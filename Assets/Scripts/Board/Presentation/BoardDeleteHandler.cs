@@ -45,6 +45,12 @@ namespace BoardSystem.Application
         /// <summary>中心座標算出ストリーム</summary>
         public IObservable<Vector3> OnCenterPositionCalculated => _onCenterPositionCalculated;
 
+        /// <summary>ライン発光開始通知用 Subject</summary>
+        private readonly Subject<Unit> _onLineEmissionStarted = new Subject<Unit>();
+
+        /// <summary>ライン発光開始ストリーム</summary>
+        public IObservable<Unit> OnLineEmissionStarted => _onLineEmissionStarted;
+        
         // ======================================================
         // 定数
         // ======================================================
@@ -144,6 +150,8 @@ namespace BoardSystem.Application
                 // --------------------------------------------------
                 // 発光演出
                 // --------------------------------------------------
+                _onLineEmissionStarted.OnNext(Unit.Default);
+
                 foreach (BoardIndex index in lineEmissionList)
                 {
                     _view.SetPieceEmissionColor(index);

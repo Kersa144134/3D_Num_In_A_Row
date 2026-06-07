@@ -11,6 +11,7 @@ using TMPro;
 using UISystem.Application;
 using UniRx;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UIElements;
 
 namespace UISystem.Presentation
@@ -28,7 +29,7 @@ namespace UISystem.Presentation
         private TextFormatter[] _currentScoreFormatters;
 
         /// <summary>加算スコアフォーマットクラス</summary>
-        private TextFormatter[] _addedScoreFormatters;
+        private TextFormatter[] _addScoreFormatters;
 
         /// <summary>ターンフォーマットクラス</summary>
         private TextFormatter _turnFormatters;
@@ -53,7 +54,7 @@ namespace UISystem.Presentation
         private TextMeshProUGUI[] _currentScoreTexts;
 
         /// <summary>スコア加算量表示テキスト</summary>
-        private TextMeshProUGUI[] _addedScoreTexts;
+        private TextMeshProUGUI[] _addScoreTexts;
 
         /// <summary>ターン表示テキスト</summary>
         private readonly TextMeshProUGUI _turnText;
@@ -105,7 +106,7 @@ namespace UISystem.Presentation
         private const string CURRENT_SCORE_FORMAT = "Score: {0}";
 
         /// <summary>加算スコア表示フォーマット</summary>
-        private const string ADDED_SCORE_FORMAT = "+ {0}";
+        private const string ADD_SCORE_FORMAT = "+ {0}";
 
         /// <summary>スコア桁数</summary>
         private static readonly int[] SCORE_DIGITS = { 6 };
@@ -156,7 +157,7 @@ namespace UISystem.Presentation
         /// </summary>
         public MainUIView(
             in TextMeshProUGUI[] currentScoreTexts,
-            in TextMeshProUGUI[] addedScoreTexts,
+            in TextMeshProUGUI[] addScoreTexts,
             in TextMeshProUGUI turnText,
             in TextMeshPro comboText,
             in TextMeshProUGUI[] limitTimeTexts,
@@ -165,7 +166,7 @@ namespace UISystem.Presentation
             in int warningLimitTime)
         {
             _currentScoreTexts = currentScoreTexts;
-            _addedScoreTexts = addedScoreTexts;
+            _addScoreTexts = addScoreTexts;
             _turnText = turnText;
             _comboText = comboText;
             _limitTimeTexts = limitTimeTexts;
@@ -182,12 +183,10 @@ namespace UISystem.Presentation
             {
                 int length = _currentScoreTexts.Length;
 
-                // scoreTexts の長さで配列生成
                 _currentScoreFormatters = new TextFormatter[length];
 
                 for (int i = 0; i < length; i++)
                 {
-                    // 各 Text ごとにフォーマッタ生成
                     _currentScoreFormatters[i] =
                         new TextFormatter(
                             CURRENT_SCORE_FORMAT,
@@ -195,19 +194,17 @@ namespace UISystem.Presentation
                 }
             }
 
-            if (_addedScoreTexts != null)
+            if (_addScoreTexts != null)
             {
-                int length = _addedScoreTexts.Length;
+                int length = _addScoreTexts.Length;
 
-                // scoreTexts の長さで配列生成
-                _addedScoreFormatters = new TextFormatter[length];
+                _addScoreFormatters = new TextFormatter[length];
 
                 for (int i = 0; i < length; i++)
                 {
-                    // 各 Text ごとにフォーマッタ生成
-                    _addedScoreFormatters[i] =
+                    _addScoreFormatters[i] =
                         new TextFormatter(
-                            ADDED_SCORE_FORMAT,
+                            ADD_SCORE_FORMAT,
                             SCORE_DIGITS);
                 }
             }
@@ -326,9 +323,14 @@ namespace UISystem.Presentation
         /// スコア加算量表示更新
         /// </summary>
         /// <param name="playerId">プレイヤーID（1 ベース）</param>
-        /// <param name="addScore">加算スコア</param>
-        public void UpdateAddedScore(in int playerId, in int addScore)
+        /// <param name="score">加算スコア</param>
+        public void UpdateAddScore(in int playerId, in int score)
         {
+            // インデックス変換
+            int index = playerId - 1;
+
+            // テキスト即時更新
+            UpdateAddScoreText(index, score);
         }
         
         // --------------------------------------------------
@@ -516,6 +518,39 @@ namespace UISystem.Presentation
 
             // フォーマット済みバッファ取得
             char[] buffer = _currentScoreFormatters[index].FormatWithPadding(score);
+
+            // TextMeshPro に反映
+            targetText.SetCharArray(buffer);
+        }
+
+        /// <summary>
+        /// スコアテキスト更新
+        /// </summary>
+        /// <param name="index">プレイヤーインデックス（0 ベース）</param>
+        /// <param name="score">表示スコア</param>
+        private void UpdateAddScoreText(in int index, in int score)
+        {
+            if (_addScoreTexts == null || _addScoreFormatters == null)
+            {
+                return;
+            }
+
+            // 範囲チェック
+            if (index < 0 || index >= _addScoreTexts.Length)
+            {
+                return;
+            }
+
+            // 対象テキスト取得
+            TMP_Text targetText = _addScoreTexts[index];
+
+            if (targetText == null)
+            {
+                return;
+            }
+
+            // フォーマット済みバッファ取得
+            char[] buffer = _addScoreFormatters[index].FormatWithSpacePadding(score);
 
             // TextMeshPro に反映
             targetText.SetCharArray(buffer);

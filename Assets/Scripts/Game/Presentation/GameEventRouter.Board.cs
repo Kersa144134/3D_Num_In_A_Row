@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
+using ScoreSystem.Domain;
 
 namespace GameSystem.Presentation
 {
@@ -28,6 +29,9 @@ namespace GameSystem.Presentation
         /// </summary>
         private void HandleLineCompleted(in IReadOnlyList<LineCompleteEvent> events)
         {
+            // 前回分の保留データを破棄
+            _pendingAddScoreEvents.Clear();
+
             // スコア累積カウント加算
             _scoreManager.AddAllCumulativeCount();
 
@@ -51,7 +55,10 @@ namespace GameSystem.Presentation
                 }
 
                 // 1 ライン分のスコア加算
-                _scoreManager.AddLineScore(playerId, line.Count);
+                int addedScore = _scoreManager.AddLineScore(playerId, line.Count);
+
+                // 発光開始時に通知するため保持
+                _pendingAddScoreEvents.Enqueue(new ScoreEvent(playerId, addedScore));
             }
         }
 

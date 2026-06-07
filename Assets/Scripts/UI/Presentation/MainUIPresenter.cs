@@ -77,7 +77,7 @@ namespace UISystem.Presentation
 
         /// <summary>スコア加算量表示テキスト</summary>
         [SerializeField]
-        private TextMeshProUGUI[] _addedScoreTexts;
+        private TextMeshProUGUI[] _addScoreTexts;
 
         // --------------------------------------------------
         // ターン
@@ -188,11 +188,14 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // アニメーター
         // --------------------------------------------------
-        /// <summary>断続更新対象のキャンバス</summary>
+        /// <summary>断続更新対象キャンバスのアニメーター</summary>
         private Animator _intermittentCanvasAnimator;
 
-        /// <summary>アウトゲーム関連のキャンバス</summary>
+        /// <summary>アウトゲーム関連キャンバスのアニメーター</summary>
         private Animator _outgameCanvasAnimator;
+
+        /// <summary>スコア加算量表示のアニメーター</summary>
+        private Animator[] _addScoreAnimators;
 
         /// <summary>コンボ表示のアニメーター</summary>
         private Animator _comboAnimator;
@@ -212,6 +215,9 @@ namespace UISystem.Presentation
 
         /// <summary>PlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
+
+        /// <summary>AddScore パラメータ名</summary>
+        private static readonly int ADD_SCORE_HASH = Animator.StringToHash("AddScore");
 
         /// <summary>AddCombo パラメータ名</summary>
         private static readonly int ADD_COMBO_HASH = Animator.StringToHash("AddCombo");
@@ -271,7 +277,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             _uiView = new MainUIView(
                 _currentScoreTexts,
-                _addedScoreTexts,
+                _addScoreTexts,
                 _turnText,
                 _comboText,
                 _limitTimeTexts,
@@ -335,10 +341,22 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // アニメーター初期化
             // --------------------------------------------------
+            // テキスト数に合わせて生成
+            _addScoreAnimators = new Animator[_addScoreTexts.Length];
+            
             // アニメーター取得
             _intermittentCanvasAnimator = _intermittentCanvas.GetComponent<Animator>();
             _outgameCanvasAnimator = _outgameCanvas.GetComponent<Animator>();
             _comboAnimator = _comboText.gameObject.GetComponent<Animator>();
+            for (int i = 0; i < _addScoreTexts.Length; i++)
+            {
+                if (_addScoreTexts[i] == null)
+                {
+                    continue;
+                }
+
+                _addScoreAnimators[i] = _addScoreTexts[i].gameObject.GetComponent<Animator>();
+            }
 
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_outgameCanvasAnimator);
@@ -604,6 +622,7 @@ namespace UISystem.Presentation
         /// <param name="phase">フェーズ状態を通知するストリーム</param>
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
+        /// <param name="scoreUpdated">スコア加算を通知するストリーム</param>
         /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
@@ -615,6 +634,7 @@ namespace UISystem.Presentation
             in IObservable<PhaseType> phase,
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> scoreUpdated,
+            in IObservable<ScoreEvent> scoreAdded,
             in IObservable<bool> pointerLock,
             in IObservable<bool> gamepadUsed,
             in IObservable<bool> columnSelectVisibleChanged,
@@ -661,6 +681,10 @@ namespace UISystem.Presentation
 
             scoreUpdated
                 .Subscribe(e => UpdateCurrentScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
+
+            scoreAdded
+                .Subscribe(e => UpdateAddScore(e.PlayerId, e.LineLength))
                 .AddTo(_disposables);
 
             pointerLock
@@ -788,7 +812,7 @@ namespace UISystem.Presentation
         // スコア
         // --------------------------------------------------
         /// <summary>
-        /// スコア表示更新
+        /// 現在スコア表示更新
         /// </summary>
         /// <param name="playerId">プレイヤー ID（1 ベース）</param>
         /// <param name="score">スコア</param>
@@ -798,6 +822,42 @@ namespace UISystem.Presentation
             {
                 mainUIView.UpdateCurrentScore(playerId, score);
             }
+        }
+
+        /// <summary>
+        /// 加算スコア表示更新
+        /// </summary>
+        /// <param name="playerId">プレイヤー ID（1 ベース）</param>
+        /// <param name="score">スコア</param>
+        private void UpdateAddScore(in int playerId, in int score)
+        {
+            if (score <= 0)
+            {
+                return;
+            }
+
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.UpdateAddScore(playerId, score);
+            }
+
+            // 配列用インデックスへ変換
+            int playerIndex = playerId - 1;
+
+            if (playerIndex < 0 || playerIndex >= _addScoreAnimators.Length)
+            {
+                return;
+            }
+
+            Animator animator = _addScoreAnimators[playerIndex];
+
+            if (animator == null)
+            {
+                return;
+            }
+
+            // スコア加算演出を機動
+            animator.SetTrigger(ADD_SCORE_HASH);
         }
 
         // --------------------------------------------------

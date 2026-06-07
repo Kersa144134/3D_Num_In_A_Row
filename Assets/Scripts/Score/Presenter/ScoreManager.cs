@@ -144,17 +144,17 @@ namespace ScoreSystem.Presentation
         /// <summary>
         /// ライン成立スコア加算
         /// </summary>
-        public void AddLineScore(int playerId, int lineLength)
+        public int AddLineScore(int playerId, int lineLength)
         {
             if (_totalScores == null)
             {
-                return;
+                return 0;
             }
 
             // インデックス変換
             if (!TryConvertPlayerIndex(playerId, out int playerIndex))
             {
-                return;
+                return 0;
             }
 
             // ライン長をスケーリング値に変換
@@ -167,8 +167,8 @@ namespace ScoreSystem.Presentation
                 _lineComleteChainBonus
             );
 
-            // 対象プレイヤーのスコアへ反映し通知する
-            ApplyScore(playerIndex, delta);
+            // 実際に反映されたスコア量
+            return ApplyScore(playerIndex, delta);
         }
 
         /// <summary>
@@ -393,17 +393,18 @@ namespace ScoreSystem.Presentation
         /// </summary>
         /// <param name="playerIndex">プレイヤー Index</param>
         /// <param name="delta">スコア加算量</param>
-        private void ApplyScore(int playerIndex, int delta)
+        /// <returns>実際に加算されたスコア量</returns>
+        private int ApplyScore(int playerIndex, int delta)
         {
             if (_totalScores == null)
             {
-                return;
+                return 0;
             }
 
             // 加算値が 0 なら処理なし
             if (delta == 0)
             {
-                return;
+                return 0;
             }
 
             // 加算前スコアを保持
@@ -419,6 +420,9 @@ namespace ScoreSystem.Presentation
             }
 
             _totalScores[playerIndex].Value = nextScore;
+
+            // 実際に加算された量を返却
+            return nextScore - previousScore;
         }
     }
 }
