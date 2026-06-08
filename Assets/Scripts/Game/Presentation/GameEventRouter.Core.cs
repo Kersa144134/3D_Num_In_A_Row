@@ -271,7 +271,7 @@ namespace GameSystem.Presentation
         private const float GAME_SPEED_NORMAL = 1.0f;
 
         /// <summary>高速ゲームスピード</summary>
-        private const float GAME_SPEED_FAST = 2.0f;
+        private const float GAME_SPEED_FAST = 3.0f;
 
         /// <summary>3 x 3 ボードサイズ</summary>
         private const int BOARD_SIZE_THREE = 3;

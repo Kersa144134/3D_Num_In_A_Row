@@ -73,6 +73,12 @@ namespace UISystem.Presentation
         private readonly int _maxTurnCount;
 
         // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
+        /// <summary>ランダムアニメーション開始フラグ</summary>
+        private bool _isRandomAnimationStarted = false;
+
+        // --------------------------------------------------
         // コンボ
         // --------------------------------------------------
         /// <summary>最大コンボ表示数</summary>
@@ -290,6 +296,11 @@ namespace UISystem.Presentation
             for (int i = 0; i < _scoreAnimationControllers.Length; i++)
             {
                 _scoreAnimationControllers[i].Dispose();
+
+                if (_isRandomAnimationStarted)
+                {
+                    _scoreAnimationControllers[i].StopRandomAnimation();
+                }
             }
         }
 
@@ -362,6 +373,26 @@ namespace UISystem.Presentation
 
             // TextMeshPro に反映
             _turnText.SetCharArray(buffer);
+
+            // --------------------------------------------------
+            // スコア演出更新
+            // --------------------------------------------------
+            // 残りターン数を計算
+            int remainingTurnCount = _maxTurnCount - turnCount;
+
+            // 残りターン数が3以下かつ未実行の場合のみ開始
+            if (remainingTurnCount <= 3 &&
+                !_isRandomAnimationStarted)
+            {
+                // 開始済みフラグを設定
+                _isRandomAnimationStarted = true;
+
+                // 全スコア演出開始
+                for (int i = 0; i < _scoreAnimationControllers.Length; i++)
+                {
+                    _scoreAnimationControllers[i].StartRandomAnimation();
+                }
+            }
         }
 
         // --------------------------------------------------

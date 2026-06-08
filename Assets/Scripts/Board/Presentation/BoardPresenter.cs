@@ -584,11 +584,7 @@ namespace BoardSystem.Presentation
             }
 
             // 演出待機
-            // タイムスケールを無視する
-            await UniTask.Delay(
-                TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY),
-                ignoreTimeScale: true
-            );
+            await UniTask.Delay(TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY));
 
             // フェーズ終了通知
             _onPlayerEnd.OnNext(Unit.Default);
