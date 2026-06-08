@@ -1033,6 +1033,16 @@ namespace UISystem.Presentation
                 {
                     mainUIStateController.ShowPauseCanvas();
 
+                    // 次のキャンバス状態を取得する
+                    CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択されていたボタンを取得する
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                    // 入力状態に応じて初期選択を適用する
+                    SetSelectionState(nextCanvasType, selectedButtonEvent);
+
                     // ターゲット検出状態を解除
                     UpdatePointerTargetAnimation(false);
                 }

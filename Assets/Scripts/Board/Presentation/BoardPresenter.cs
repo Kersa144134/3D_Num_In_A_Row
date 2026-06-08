@@ -52,9 +52,9 @@ namespace BoardSystem.Presentation
         private float _pieceScaleFactor;
 
         [Header("ヒット判定")]
-        /// <summary>ボードのクリック判定用 Collider</summary>
+        /// <summary>ボードのクリック判定用 GameObject</summary>
         [SerializeField]
-        private Collider _boardCollider;
+        private GameObject _boardHit;
 
         /// <summary>Ray 判定用レイヤー</summary>
         [SerializeField]
@@ -103,6 +103,12 @@ namespace BoardSystem.Presentation
 
         /// <summary>ボードの列選択表示プレーン</summary>
         private Transform _columnSelectPlane;
+
+        /// <summary>ボードのクリック判定用 Collider</summary>
+        private Collider _boardHitCollider;
+
+        /// <summary>ボードのクリック判定用 Renderer</summary>
+        private Renderer _boardHitRenderer;
 
         /// <summary>ボードサイズ</summary>
         private int _boardSize;
@@ -204,7 +210,7 @@ namespace BoardSystem.Presentation
 
             if (_gameOptionManager == null || _inputManager == null || _camera == null ||
                 _piecePrefab == null || _deleteParticle == null ||
-                _boardCollider == null || _columnSelectRoot == null)
+                _boardHit == null || _columnSelectRoot == null)
             {
                 Debug.LogError("[BoardPresenter] クラスの初期化に失敗しました。");
 
@@ -217,33 +223,48 @@ namespace BoardSystem.Presentation
                 return;
             }
 
-            // オプションを取得
+            // オプション取得
             _boardSize = _gameOptionManager.BoardSize;
             _connectCount = _gameOptionManager.ConnectCount;
 
+            // --------------------------------------------------
+            // ボードクリック判定初期化
+            // --------------------------------------------------
+            // 回転対象外のため親から分離
+            _boardHit.transform.SetParent(null);
+
+            // Collider, Renderer 取得
+            _boardHitCollider = _boardHit.GetComponent<Collider>();
+            _boardHitRenderer = _boardHit.GetComponent<Renderer>();
+
+            // --------------------------------------------------
             // モデル、ビュー初期化
+            // --------------------------------------------------
             _model = new BoardModel(_boardSize, _connectCount);
             _view = new BoardView(
                 transform,
                 _boardSize,
                 _piecePrefab,
                 _pieceMaterials,
+                _boardHitRenderer,
                 _columnSelectRoot,
                 _deleteParticle,
                 _pieceScaleFactor,
                 ROTATION_DURATION
             );
 
-            // 下位クラス初期化
+            // --------------------------------------------------
+            // クラス初期化
+            // --------------------------------------------------
             _deleteHandler = new BoardDeleteHandler(_model, _view);
             _dropHandler = new BoardDropHandler(_model, _view);
             _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
             _repositionUseCase = new BoardRepositionUseCase(_model);
             _viewPieceMapUpdater = new BoardViewPieceMapUpdater(_view);
 
-            // 回転対象外のため親から分離
-            _boardCollider.transform.SetParent(null);
-
+            // --------------------------------------------------
+            // 列選択表示初期化
+            // --------------------------------------------------
             // 列選択オブジェクトの直下の子数を取得
             int childCount = _columnSelectRoot.transform.childCount;
 
@@ -251,7 +272,6 @@ namespace BoardSystem.Presentation
             {
                 Transform child = _columnSelectRoot.transform.GetChild(i);
 
-                // Plane タグならキャッシュ
                 if (child.CompareTag(TAG_PLANE))
                 {
                     _columnSelectPlane = child;
@@ -264,12 +284,17 @@ namespace BoardSystem.Presentation
 
         public void OnUpdate(in float unscaledDeltaTime)
         {
-            // 駒配置入力が未購読、またはプレイヤー ID が不正なら非表示
+            // 駒配置入力が未購読、またはプレイヤー ID が不正の場合
             if (_dropInputSubscription == null || _currentPlayer == PLAYER_NONE)
             {
-                _view.SeteColumnSelectVisible(false);
+                _view.SetBoardHitVisible(false);
+                _view.SetColumnSelectVisible(false);
 
                 return;
+            }
+            else
+            {
+                _view.SetBoardHitVisible(true);
             }
 
             // Ray 生成
@@ -284,7 +309,7 @@ namespace BoardSystem.Presentation
 
             if (hitCount == 0)
             {
-                _view.SeteColumnSelectVisible(false);
+                _view.SetColumnSelectVisible(false);
 
                 return;
             }
@@ -293,9 +318,9 @@ namespace BoardSystem.Presentation
             RaycastHit hit = _raycastHits[0];
 
             // 対象外 Collider 判定
-            if (hit.collider != _boardCollider)
+            if (hit.collider != _boardHitCollider)
             {
-                _view.SeteColumnSelectVisible(false);
+                _view.SetColumnSelectVisible(false);
 
                 return;
             }
@@ -303,7 +328,7 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // 表示更新
             // --------------------------------------------------
-            _view.SeteColumnSelectVisible(true);
+            _view.SetColumnSelectVisible(true);
             _view.UpdateColumnSelectPosition(hit.point);
         }
 

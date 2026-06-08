@@ -1417,6 +1417,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: OutgameCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 4995241897344691947, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -400
+      objectReference: {fileID: 0}
+    - target: {fileID: 6342150109063910473, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -200
+      objectReference: {fileID: 0}
     - target: {fileID: 6440202992338872309, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -1495,6 +1503,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6440202992338872309, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146039636231583058, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9113782433901481968, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

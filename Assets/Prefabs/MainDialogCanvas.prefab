@@ -333,7 +333,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.7529412}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.8784314}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -362,8 +362,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0caae484bbd46942ba5fc46430dfabc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.DialogPanelEvent
-  _hoverColor: {r: 0, g: 0, b: 0, a: 0.7529412}
-  _unhoverColor: {r: 0, g: 0, b: 0, a: 0.7529412}
+  _hoverColor: {r: 0, g: 0, b: 0, a: 0.8784314}
+  _unhoverColor: {r: 0, g: 0, b: 0, a: 0.8784314}
 --- !u!1 &3046512216835001843
 GameObject:
   m_ObjectHideFlags: 0

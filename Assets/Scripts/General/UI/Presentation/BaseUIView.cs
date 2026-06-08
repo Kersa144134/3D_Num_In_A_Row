@@ -8,8 +8,8 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
 using ShaderSystem.Application;
 
 namespace UISystem.Presentation
@@ -41,6 +41,9 @@ namespace UISystem.Presentation
 
         /// <summary>ポインター RectTransform</summary>
         protected RectTransform _pointerRect;
+
+        /// <summary>ポインター Image 配列</summary>
+        protected Image[] _pointerImages;
 
         /// <summary>Canvas RectTransform</summary>
         protected RectTransform _canvasRect;
@@ -96,6 +99,7 @@ namespace UISystem.Presentation
             if (_pointer != null)
             {
                 _pointerRect = _pointer.GetComponent<RectTransform>();
+                _pointerImages = _pointer.GetComponentsInChildren<Image>(true);
 
                 // 親 Canvas を取得
                 Canvas canvas = _pointer.GetComponentInParent<Canvas>();
@@ -191,15 +195,23 @@ namespace UISystem.Presentation
         /// <summary>
         /// ポインターの表示状態を切り替える
         /// </summary>
-        /// <param name="isVisible">表示する場合はtrue</param>
+        /// <param name="isVisible">表示する場合は true</param>
         public void SetPointerVisible(in bool isVisible)
         {
-            if (_pointer == null)
+            if (_pointerImages == null)
             {
                 return;
             }
+            Debug.Log(_pointerImages.Length);
+            foreach(Image image in _pointerImages)
+            {
+                if (image == null)
+                {
+                    continue;
+                }
 
-            _pointer.SetActive(isVisible);
+                image.enabled = isVisible;
+            }
         }
 
         /// <summary>

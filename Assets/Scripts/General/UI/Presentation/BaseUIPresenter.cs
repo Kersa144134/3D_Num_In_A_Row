@@ -195,6 +195,9 @@ namespace UISystem.Presentation
         /// <summary>シーン遷移中かどうかを示すフラグ</summary>
         protected bool _isSceneTransitioning = true;
 
+        /// <summary>フォーカス中ボタン RectTransform</summary>
+        private RectTransform _focusButtonRectTransform;
+
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -339,7 +342,21 @@ namespace UISystem.Presentation
                 _distortionStrength,
                 _distortionNoise
             );
-            
+
+            // ゲームパッド入力かつフォーカス中ボタンが存在する場合
+            if (_isGamePadInput && _focusButtonRectTransform != null)
+            {
+                // フォーカス中ボタンのワールド座標をスクリーン座標へ変換
+                Vector2 screenPosition =
+                    RectTransformUtility.WorldToScreenPoint(
+                        null,
+                        _focusButtonRectTransform.position
+                    );
+
+                // フォーカス座標通知
+                _onFocusPosition.OnNext(screenPosition);
+            }
+
             OnLateUpdateInternal(unscaledDeltaTime);
         }
 
@@ -699,17 +716,11 @@ namespace UISystem.Presentation
             // フォーカス状態表示
             SetFocusState(buttonEvent, true);
 
-            // スクリーン座標へ変換
-            Vector2 screenPosition =
-                RectTransformUtility.WorldToScreenPoint(
-                    null,
-                    buttonEvent.RectTransform.position);
-
-            // フォーカス座標通知
-            _onFocusPosition.OnNext(screenPosition);
-
             // ターゲット検出演出を有効化
             UpdatePointerTargetAnimation(true);
+
+            // ボタンの RectTransform をキャッシュ
+            _focusButtonRectTransform = buttonEvent.RectTransform;
         }
 
         /// <summary>
@@ -723,6 +734,9 @@ namespace UISystem.Presentation
 
             // ターゲット検出状態を解除
             UpdatePointerTargetAnimation(false);
+
+            // ボタンの RectTransform キャッシュを破棄
+            _focusButtonRectTransform = null;
         }
 
         /// <summary>
@@ -737,6 +751,9 @@ namespace UISystem.Presentation
             // 同一オブジェクトが選択されている場合
             if (currentSelectedObject == buttonEvent.gameObject)
             {
+                // ターゲット検出演出を有効化
+                UpdatePointerTargetAnimation(true);
+                
                 return;
             }
 

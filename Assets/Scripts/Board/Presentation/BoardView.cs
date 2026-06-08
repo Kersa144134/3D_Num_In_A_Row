@@ -80,6 +80,9 @@ namespace BoardSystem.Presentation
         /// <summary>盤面の親 Transform</summary>
         private readonly Transform _root;
 
+        /// <summary>ボードのクリック判定用 Renderer</summary>
+        private readonly Renderer _boardHitRenderer;
+
         /// <summary>駒 Prefab</summary>
         private readonly GameObject _piecePrefab;
 
@@ -139,6 +142,7 @@ namespace BoardSystem.Presentation
             in int boardSize,
             in GameObject piecePrefab,
             in Material[] pieceMaterials,
+            in Renderer boardHitRenderer,
             in GameObject columnSelectRoot,
             in GameObject deleteParticle,
             in float pieceScaleFactor,
@@ -147,6 +151,7 @@ namespace BoardSystem.Presentation
             _root = root;
             _boardSize = boardSize;
             _piecePrefab = piecePrefab;
+            _boardHitRenderer = boardHitRenderer;
             _pieceScaleFactor = pieceScaleFactor;
             _rotationDuration = rotationDuration;
 
@@ -505,9 +510,17 @@ namespace BoardSystem.Presentation
         }
 
         /// <summary>
+        /// ボードクリック判定表示の表示状態を切り替える
+        /// </summary>
+        public void SetBoardHitVisible(in bool isVisible)
+        {
+            _boardHitRenderer.enabled = isVisible;
+        }
+
+        /// <summary>
         /// 列選択表示の表示状態を切り替える
         /// </summary>
-        public void SeteColumnSelectVisible(in bool isVisible)
+        public void SetColumnSelectVisible(in bool isVisible)
         {
             _columnSelectView.SetVisible(isVisible);
         }

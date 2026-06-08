@@ -68,11 +68,8 @@ namespace InputSystem.Application
         /// </summary>
         /// <param name="pointer">現在のポインター座標</param>
         /// <param name="position">設定する座標</param>
-        public void SetPointerPosition(
-            ref Vector2 pointer,
-            in Vector2 position)
+        public void SetPointerPosition(ref Vector2 pointer, in Vector2 position)
         {
-            // 指定座標をそのまま反映
             pointer = position;
 
             // 画面内制限
