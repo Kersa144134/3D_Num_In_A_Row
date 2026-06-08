@@ -18,27 +18,20 @@ namespace UISystem.Presentation
     public sealed class TitleUIView : BaseUIView
     {
         // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>SelectImage タグ</summary>
-        private const string SELECTABLE_TAG = "Selectable";
-
-        // ======================================================
         // フィールド
         // ======================================================
 
         /// <summary>オプション選択時カラー</summary>
-        private Color _optionSelectOnColor;
+        private readonly Color _optionSelectOnColor;
 
         /// <summary>オプション非選択時カラー</summary>
-        private Color _optionSelectOffColor;
+        private readonly Color _optionSelectOffColor;
 
         /// <summary>オプションフォーカス時カラー</summary>
-        private Color _optionFocusOnColor;
+        private readonly Color _optionFocusOnColor;
 
         /// <summary>オプション非フォーカス時カラー</summary>
-        private Color _optionFocusOffColor;
+        private readonly Color _optionFocusOffColor;
 
         // ======================================================
         // 辞書
@@ -49,6 +42,13 @@ namespace UISystem.Presentation
         /// </summary>
         private readonly Dictionary<Button, Image> _optionButtonImageCache =
             new Dictionary<Button, Image>();
+
+        // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>SelectImage タグ</summary>
+        private const string SELECTABLE_TAG = "Selectable";
 
         // ======================================================
         // コンストラクタ

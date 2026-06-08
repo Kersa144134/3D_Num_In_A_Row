@@ -8,7 +8,6 @@
 
 using System;
 using System.Collections.Generic;
-using UniRx;
 
 namespace BoardSystem.Domain
 {
@@ -47,21 +46,17 @@ namespace BoardSystem.Domain
         /// <summary>
         /// モデル生成
         /// </summary>
-        public BoardModel(
-            in int boardSize,
-            in int connectCount)
+        public BoardModel(in int boardSize, int connectCount)
         {
-            int safeConnectCount = connectCount;
-
-            if (safeConnectCount > boardSize)
+            if (connectCount > boardSize)
             {
-                safeConnectCount = boardSize;
+                connectCount = boardSize;
             }
 
             _boardState = new BoardState(boardSize);
             _lineJudge = new LineJudge(
                 boardSize,
-                safeConnectCount
+                connectCount
             );
         }
 
@@ -72,9 +67,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 指定列の配置計算処理
         /// </summary>
-        public int CalculatePlace(
-            in int columnX,
-            in int columnZ)
+        public int CalculatePlace(in int columnX, in int columnZ)
         {
             return _piecePlacement.CalculatePlace(
                 _boardState,
@@ -86,9 +79,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 配置適用処理
         /// </summary>
-        public void ApplyPlace(
-            in BoardIndex index,
-            in int player)
+        public void ApplyPlace(in BoardIndex index, in int player)
         {
             _piecePlacement.ApplyPlace(
                 _boardState,
@@ -114,9 +105,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 再配置適用処理
         /// </summary>
-        public void ApplyReposition(
-            in int columnX,
-            in int columnZ)
+        public void ApplyReposition(in int columnX, in int columnZ)
         {
             _piecePlacement.ApplyReposition(
                 _boardState,

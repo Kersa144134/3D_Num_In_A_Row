@@ -11,7 +11,6 @@ using UnityEngine;
 using UniRx;
 using ScoreSystem.Application;
 using ScoreSystem.Domain;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace ScoreSystem.Presentation
 {

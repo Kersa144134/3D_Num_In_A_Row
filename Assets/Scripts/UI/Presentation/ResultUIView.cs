@@ -29,13 +29,13 @@ namespace UISystem.Presentation
         private readonly RadialAfterimageEffectController _radialAfterimage;
 
         /// <summary>1 位プレイヤー ID アニメーション表示フォーマットクラス</summary>
-        private TextFormatter _firstPlayerIdFormatter;
+        private readonly TextFormatter _firstPlayerIdFormatter;
 
         /// <summary>プレイヤー ID 順位表示フォーマットクラス</summary>
-        private TextFormatter[] _playerIdFormatters;
+        private readonly TextFormatter[] _playerIdFormatters;
 
         /// <summary>スコアフォーマットクラス</summary>
-        private TextFormatter[] _scoreFormatters;
+        private readonly TextFormatter[] _scoreFormatters;
 
         // ======================================================
         // フィールド
@@ -60,7 +60,7 @@ namespace UISystem.Presentation
         private readonly TextMeshProUGUI[] _rankingScoreTexts;
 
         /// <summary>リザルト背景用の Renderer</summary>
-        private Renderer _resultBackgroundRenderer;
+        private readonly Renderer _resultBackgroundRenderer;
 
         // ======================================================
         // 定数

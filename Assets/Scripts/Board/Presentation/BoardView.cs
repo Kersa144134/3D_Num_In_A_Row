@@ -153,7 +153,7 @@ namespace BoardSystem.Presentation
             // セル間隔算出
             _cellSpacing = root.localScale.x / _boardSize;
 
-            // 最大駒数を元に容量確保
+            // 最大配置可能ピース数を元に初期化
             int capacity = _boardSize * _boardSize * _boardSize;
             _pieces = new Dictionary<BoardIndex, PieceData>(capacity);
 
@@ -201,13 +201,12 @@ namespace BoardSystem.Presentation
         private GameObject CreatePieceObject(in Vector3 startPosition, in int player)
         {
             // 指定された位置にプレハブから駒を生成
-            GameObject piece =
-                Object.Instantiate(
-                    _piecePrefab,
-                    startPosition,
-                    Quaternion.identity,
-                    _root
-                );
+            GameObject piece = Object.Instantiate(
+                _piecePrefab,
+                startPosition,
+                Quaternion.identity,
+                _root
+            );
 
             // Renderer を取得
             Renderer renderer = piece.GetComponent<Renderer>();
@@ -238,9 +237,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒登録
         /// </summary>
-        public void SetPiece(
-            in BoardIndex index,
-            in PieceData piece)
+        public void SetPiece(in BoardIndex index, in PieceData piece)
         {
             _pieces[index] = piece;
         }
@@ -333,13 +330,14 @@ namespace BoardSystem.Presentation
         // アニメーション
         // --------------------------------------------------
         /// <summary>
-        /// 駒生成
+        /// 指定座標にプレイヤーの駒を生成する
         /// </summary>
-        public async UniTask<PieceData> SpawnPieceAsync(
-            int x,
-            int y,
-            int z,
-            int player)
+        /// <param name="x">ボード上の X 座標</param>
+        /// <param name="y">ボード上の Y 座標</param>
+        /// <param name="z">ボード上の Z 座標</param>
+        /// <param name="player">駒を配置するプレイヤー ID</param>
+        /// <returns>生成された駒データ</returns>
+        public async UniTask<PieceData> SpawnPieceAsync(int x, int y, int z, int player)
         {
             // 指定インデックスから目標ワールド座標を算出
             ColumnToWorld(
@@ -352,16 +350,13 @@ namespace BoardSystem.Presentation
             );
 
             // 駒の生成開始 Y 座標を取得
-            float spawnY =
-                _boardPositionConverter.GetSpawnWorldY(_cellSpacing);
+            float spawnY = _boardPositionConverter.GetSpawnWorldY(_cellSpacing);
 
             // 落下開始位置を生成
-            Vector3 startPosition =
-                new Vector3(targetX, spawnY, targetZ);
+            Vector3 startPosition = new Vector3(targetX, spawnY, targetZ);
 
             // 最終到達位置を生成
-            Vector3 endPosition =
-                new Vector3(targetX, targetY, targetZ);
+            Vector3 endPosition = new Vector3(targetX, targetY, targetZ);
 
             // 駒インスタンスを生成
             GameObject piece = CreatePieceObject(startPosition, player);
@@ -373,10 +368,7 @@ namespace BoardSystem.Presentation
                 endPosition
             );
 
-            return new PieceData(
-                piece.transform,
-                player
-            );
+            return new PieceData(piece.transform, player);
         }
 
         /// <summary>
@@ -417,8 +409,7 @@ namespace BoardSystem.Presentation
             // ワールド基準回転パラメータ生成
             // --------------------------------------------------
             // 回転角度を方向に応じて決定する
-            float angle =
-                direction == RotationDirection.Positive
+            float angle = direction == RotationDirection.Positive
                 ? 90f
                 : -90f;
 
@@ -528,8 +519,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒の移動計画を生成
         /// </summary>
-        private List<MovePlanData> CreateMovePlans(
-            in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        private List<MovePlanData> CreateMovePlans(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
             // スナップショットを作成
             Dictionary<BoardIndex, PieceData> snapshot =

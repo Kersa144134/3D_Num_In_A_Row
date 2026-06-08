@@ -33,9 +33,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardDropHandler(
-            in BoardModel model,
-            in BoardView view)
+        public BoardDropHandler(in BoardModel model, in BoardView view)
         {
             _model = model;
             _view = view;
@@ -51,13 +49,7 @@ namespace BoardSystem.Presentation
         public async UniTask HandleDropAsync(int x, int y, int z, int player)
         {
             // 駒生成
-            PieceData piece =
-                await _view.SpawnPieceAsync(
-                    x,
-                    y,
-                    z,
-                    player
-                );
+            PieceData piece = await _view.SpawnPieceAsync(x, y, z, player);
 
             // インデックス生成
             BoardIndex index = new BoardIndex(x, y, z);

@@ -19,6 +19,7 @@ using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
 using UpdateSystem.Domain;
+using TMPro;
 
 namespace UISystem.Presentation
 {
@@ -45,6 +46,14 @@ namespace UISystem.Presentation
         /// <summary>オプション関連の UI を表示するキャンバス</summary>
         [SerializeField]
         private GameObject _optionCanvas;
+
+        // --------------------------------------------------
+        // ダイアログ
+        // --------------------------------------------------
+        [Header("ダイアログ")]
+        /// <summary>ダイアログのオプション表示テキスト</summary>
+        [SerializeField]
+        private TextMeshProUGUI _dialogOptionText;
 
         // --------------------------------------------------
         // ボタン
@@ -122,6 +131,10 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // UI 管理
         // --------------------------------------------------
+        /// <summary>ダイアログ表示文字列生成クラス</summary>
+        private readonly DialogTextBuilder _dialogTextBuilder =
+            new DialogTextBuilder();
+
         /// <summary>OptionButtonBinder 生成クラス</summary>
         private OptionButtonBinderFactory _optionButtonBinderFactory;
 
@@ -270,13 +283,9 @@ namespace UISystem.Presentation
             // 初期選択インデックス取得用リーダー
             IOptionSelectionIndexReader reader;
 
-            // デバッグ用
-            _repository.Delete();
-
             // 保存データが存在する場合
             if (_repository.HasSavedData())
             {
-                // PlayerPrefs をそのまま使用
                 reader = _repository;
             }
             else
@@ -459,7 +468,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogNo)
             {
-                // ポーズ画面のボタンを操作可能に更新
+                // スタート画面のボタンを操作可能に更新
                 SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), true);
                 SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), true);
 
@@ -490,6 +499,9 @@ namespace UISystem.Presentation
                 // スタート画面のボタンを操作不可に更新
                 SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), false);
                 SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), false);
+
+                // ダイアログ表示内容を更新
+                UpdateDialogOptionText();
 
                 // ダイアログキャンバスを表示する
                 _uiStateController.ShowDialogCanvas(DialogType.Confirm);
@@ -538,8 +550,8 @@ namespace UISystem.Presentation
                 // 現在のボードサイズを取得する
                 int boardSize = _gameOptionManager.BoardSize;
 
-                // ConnectCount オプション表示制御を適用する
-                ApplyBoardSizeDependentConnectCount(boardSize);
+                // ConnectCount 同期
+                ApplyBoardSizeSynchronizeConnectCount(boardSize);
 
                 // 各オプション種別ごとに状態を復元する
                 foreach (KeyValuePair<OptionType, OptionButtonBinder> binder in _optionBinders)
@@ -659,8 +671,8 @@ namespace UISystem.Presentation
             {
                 int boardSize = (int)buttonEvent.Data.BoardSizeType;
 
-                // ConnectCount 制御
-                ApplyBoardSizeDependentConnectCount(boardSize);
+                // ConnectCount 同期
+                ApplyBoardSizeSynchronizeConnectCount(boardSize);
 
                 // ボード変更アニメーションを実行
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, boardSize);
@@ -834,6 +846,33 @@ namespace UISystem.Presentation
         }
 
         // --------------------------------------------------
+        // ダイアログ
+        // --------------------------------------------------
+        /// <summary>
+        /// ダイアログオプション表示テキスト更新
+        /// </summary>
+        private void UpdateDialogOptionText()
+        {
+            // プレイヤー人数取得
+            int playerCount = _gameOptionManager.PlayerCount;
+
+            // ボードサイズ取得
+            int boardSize = _gameOptionManager.BoardSize;
+
+            // 連結数取得
+            int connectCount = _gameOptionManager.ConnectCount;
+
+            // 表示文字列生成
+            string text = _dialogTextBuilder.OptionTextBuild(
+                playerCount,
+                boardSize,
+                connectCount);
+
+            // テキスト反映
+            _dialogOptionText.text = text;
+        }
+
+        // --------------------------------------------------
         // ボタン
         // --------------------------------------------------
         /// <summary>
@@ -879,9 +918,9 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
-        /// ボードサイズに応じて ConnectCount の表示状態と初期選択を制御する
+        /// ボードサイズに応じて ConnectCount の表示状態と初期選択を同期する
         /// </summary>
-        private void ApplyBoardSizeDependentConnectCount(in int boardSize)
+        private void ApplyBoardSizeSynchronizeConnectCount(in int boardSize)
         {
             // ConnectCount バインダー取得
             if (!_optionBinders.TryGetValue(OptionType.ConnectCount, out OptionButtonBinder connectCountBinder))

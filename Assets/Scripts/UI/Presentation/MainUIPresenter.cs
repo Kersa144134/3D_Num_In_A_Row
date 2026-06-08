@@ -259,7 +259,8 @@ namespace UISystem.Presentation
             if (_gameOptionManager == null ||
                 _inputManager == null ||
                 _intermittentCanvas == null ||
-                _outgameCanvas == null)
+                _outgameCanvas == null ||
+                _comboText == null)
             {
                 Debug.LogError("[MainUIPresenter] クラスの初期化に失敗しました。");
 

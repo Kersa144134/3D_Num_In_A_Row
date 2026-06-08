@@ -196,13 +196,27 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 984295162936094157, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
 --- !u!4 &20419170 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6231715118946571769, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
   m_PrefabInstance: {fileID: 20419169}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &20419171 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3719462194734748822, guid: bfaba496fdde53843892f64d5c8ded85, type: 3}
+  m_PrefabInstance: {fileID: 20419169}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9541d86e2fd84c1d9990edf0852d74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshPro
 --- !u!1 &133768178 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5265205945639400021, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
@@ -513,7 +527,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 3306658965066873525}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -869,6 +883,50 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+--- !u!114 &1308190363228619897 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5419977873535082363, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1308190363228619898 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5147051419159874843, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1308190363228619899 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1425073908012387382, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1308190363228619900 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8128566394464602609, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!4 &1998823820961547086
 Transform:
   m_ObjectHideFlags: 0
@@ -1103,12 +1161,19 @@ MonoBehaviour:
   - {fileID: 1618328882}
   _inputInfoPieceDrop: {fileID: 133768178}
   _inputInfoBoardRotation: {fileID: 219306206}
-  _scoreTexts:
+  _currentScoreTexts:
   - {fileID: 1855730084}
   - {fileID: 2146103290}
   - {fileID: 965059134}
   - {fileID: 504664009}
+  _addScoreTexts:
+  - {fileID: 1308190363228619900}
+  - {fileID: 1308190363228619899}
+  - {fileID: 1308190363228619898}
+  - {fileID: 1308190363228619897}
   _turnText: {fileID: 372178781}
+  _comboText: {fileID: 20419171}
+  _maxComboCount: 99
   _limitTimeTexts:
   - {fileID: 86523971652887636}
   - {fileID: 1605613824}

@@ -7,12 +7,10 @@
 // ======================================================
 
 using System;
-using TMPro;
-using UISystem.Application;
-using UniRx;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
-using UnityEngine.UIElements;
+using TMPro;
+using UniRx;
+using UISystem.Application;
 
 namespace UISystem.Presentation
 {
@@ -26,19 +24,19 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>現在スコアフォーマットクラス</summary>
-        private TextFormatter[] _currentScoreFormatters;
+        private readonly TextFormatter[] _currentScoreFormatters;
 
         /// <summary>加算スコアフォーマットクラス</summary>
-        private TextFormatter[] _addScoreFormatters;
+        private readonly TextFormatter[] _addScoreFormatters;
 
         /// <summary>ターンフォーマットクラス</summary>
-        private TextFormatter _turnFormatters;
+        private readonly TextFormatter _turnFormatters;
 
         /// <summary>コンボフォーマットクラス</summary>
-        private TextFormatter _comboFormatter;
+        private readonly TextFormatter _comboFormatter;
 
         /// <summary>時間フォーマットクラス</summary>
-        private TextFormatter _timeFormatter;
+        private readonly TextFormatter _timeFormatter;
 
         /// <summary>プレイヤー毎のスコアアニメーション制御クラス配列</summary>
         private NumberAnimationController[] _scoreAnimationControllers;
@@ -51,10 +49,10 @@ namespace UISystem.Presentation
         // UI
         // --------------------------------------------------
         /// <summary>現在スコアを表示するテキスト</summary>
-        private TextMeshProUGUI[] _currentScoreTexts;
+        private readonly TextMeshProUGUI[] _currentScoreTexts;
 
         /// <summary>スコア加算量表示テキスト</summary>
-        private TextMeshProUGUI[] _addScoreTexts;
+        private readonly TextMeshProUGUI[] _addScoreTexts;
 
         /// <summary>ターン表示テキスト</summary>
         private readonly TextMeshProUGUI _turnText;

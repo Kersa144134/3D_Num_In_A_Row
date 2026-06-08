@@ -276,12 +276,11 @@ namespace BoardSystem.Presentation
             Ray ray = _camera.ScreenPointToRay(_inputManager.Pointer);
 
             // ƒqƒbƒg”»’è
-            int hitCount =
-                Physics.RaycastNonAlloc(
-                    ray,
-                    _raycastHits,
-                    Mathf.Infinity,
-                    _raycastLayerMask);
+            int hitCount = Physics.RaycastNonAlloc(
+                ray,
+                _raycastHits,
+                Mathf.Infinity,
+                _raycastLayerMask);
 
             if (hitCount == 0)
             {

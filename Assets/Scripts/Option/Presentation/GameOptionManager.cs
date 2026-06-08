@@ -6,11 +6,11 @@
 // 概要     : ゲームオプション制御・適用クラス
 // ======================================================
 
+using System;
+using UnityEngine;
+using UniRx;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
-using System;
-using UniRx;
-using UnityEngine;
 
 namespace OptionSystem.Presentation
 {
@@ -146,9 +146,6 @@ namespace OptionSystem.Presentation
 
             // リポジトリ初期化
             _repository = new PlayerPrefsGameOptionRepository();
-
-            // デバッグ用
-            _repository.Delete();
 
             // オプションセーブデータがあるか
             if (_repository.HasSavedData())

@@ -9,7 +9,6 @@
 using System;
 using Cysharp.Threading.Tasks;
 using UniRx;
-using UnityEngine;
 
 namespace UISystem.Application
 {
@@ -83,7 +82,7 @@ namespace UISystem.Application
         /// 現在値を即時設定
         /// </summary>
         /// <param name="value">設定値</param>
-        public void SetValueImmediately(in int value)
+        public void SetValue(in int value)
         {
             _currentValue.Value = value;
             _targetValue = value;
@@ -149,9 +148,7 @@ namespace UISystem.Application
                 }
 
                 // タイムスケールに追従して待機
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(UPDATE_INTERVAL),
-                    DelayType.DeltaTime);
+                await UniTask.Delay(TimeSpan.FromSeconds(UPDATE_INTERVAL), DelayType.DeltaTime);
             }
 
             // アニメーション終了
