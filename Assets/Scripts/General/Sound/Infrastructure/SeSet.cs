@@ -22,7 +22,10 @@ namespace SoundSystem.Infrastructure
         /// <summary>SE タイプ</summary>
         public SeType Type;
 
-        /// <summary>SE クリップ</summary>
-        public AudioClip Clip;
+        /// <summary>SE オーディオソース</summary>
+        public AudioSource Source;
+
+        /// <summary>ループ再生か</summary>
+        public bool IsLoop = false;
     }
 }

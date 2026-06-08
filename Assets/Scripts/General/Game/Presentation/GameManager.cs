@@ -14,6 +14,7 @@ using GameSystem.Application;
 using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
+using SoundSystem.Presentation;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
 
@@ -59,6 +60,9 @@ namespace GameSystem.Presentation
 
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
+
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
 
         // ======================================================
         // フィールド
@@ -163,15 +167,81 @@ namespace GameSystem.Presentation
             _targetPhase = _startPhase;
         }
 
-        private void Start()
+        private void Update()
         {
             // --------------------------------------------------
-            // オプション読み込み
+            // シーン遷移判定
             // --------------------------------------------------
+            // シーン遷移が必要かつ未実行の場合のみ実行
+            if (_currentScene != _targetScene && !_isSceneTransitioning)
+            {
+                // 非同期シーン遷移を開始する
+                ChangeScene(_targetScene).Forget();
+
+                // 多重実行防止フラグを有効化
+                _isSceneTransitioning = true;
+
+                return;
+            }
+
+            // シーン切替直後は 1 フレーム停止
+            if (_isAfterSceneChange)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // フェーズ処理
+            // --------------------------------------------------
+            float unscaledDeltaTime = Time.unscaledDeltaTime;
+
+            _phaseMachine?.OnUpdate(unscaledDeltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            // シーン切替直後は 1 フレーム停止
+            if (_isAfterSceneChange)
+            {
+                _isAfterSceneChange = false;
+                return;
+            }
+
+            // --------------------------------------------------
+            // フェーズ処理
+            // --------------------------------------------------
+            float unscaledDeltaTime = Time.unscaledDeltaTime;
+
+            _phaseMachine?.OnLateUpdate(unscaledDeltaTime);
+
+            // --------------------------------------------------
+            // フェーズ遷移判定
+            // --------------------------------------------------
+            if (CurrentPhase.Value != _targetPhase)
+            {
+                RequestChangePhase(_targetPhase);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // イベント購読解除
+            _disposables?.Dispose();
+            _eventRouter?.Dispose();
+        }
+
+        // ======================================================
+        // UniTask イベント
+        // ======================================================
+
+        private async UniTaskVoid Start()
+        {
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
+            _soundManager = SoundManager.Instance;
 
-            if (_gameOptionManager == null)
+            if (_gameOptionManager == null ||
+                _soundManager == null)
             {
                 Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
 
@@ -184,6 +254,11 @@ namespace GameSystem.Presentation
                 return;
             }
 
+            // --------------------------------------------------
+            // サウンド初期化
+            // --------------------------------------------------
+            await _soundManager.InitializeAsync();
+            
             // --------------------------------------------------
             // Updatable 初期化
             // --------------------------------------------------
@@ -260,69 +335,6 @@ namespace GameSystem.Presentation
 
             // シーン変更後イベント
             TriggerSceneChangedEventAsync().Forget();
-        }
-
-        private void Update()
-        {
-            // --------------------------------------------------
-            // シーン遷移判定
-            // --------------------------------------------------
-            // シーン遷移が必要かつ未実行の場合のみ実行
-            if (_currentScene != _targetScene && !_isSceneTransitioning)
-            {
-                // 非同期シーン遷移を開始する
-                ChangeScene(_targetScene).Forget();
-
-                // 多重実行防止フラグを有効化
-                _isSceneTransitioning = true;
-
-                return;
-            }
-
-            // シーン切替直後は 1 フレーム停止
-            if (_isAfterSceneChange)
-            {
-                return;
-            }
-
-            // --------------------------------------------------
-            // フェーズ処理
-            // --------------------------------------------------
-            float unscaledDeltaTime = Time.unscaledDeltaTime;
-            
-            _phaseMachine?.OnUpdate(unscaledDeltaTime);
-        }
-
-        private void LateUpdate()
-        {
-            // シーン切替直後は 1 フレーム停止
-            if (_isAfterSceneChange)
-            {
-                _isAfterSceneChange = false;
-                return;
-            }
-
-            // --------------------------------------------------
-            // フェーズ処理
-            // --------------------------------------------------
-            float unscaledDeltaTime = Time.unscaledDeltaTime;
-
-            _phaseMachine?.OnLateUpdate(unscaledDeltaTime);
-            
-            // --------------------------------------------------
-            // フェーズ遷移判定
-            // --------------------------------------------------
-            if (CurrentPhase.Value != _targetPhase)
-            {
-                RequestChangePhase(_targetPhase);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            // イベント購読解除
-            _disposables?.Dispose();
-            _eventRouter?.Dispose();
         }
 
         // ======================================================
@@ -437,7 +449,7 @@ namespace GameSystem.Presentation
         /// <summary>
         /// シーン遷移完了イベントを実行する
         /// </summary>
-        private async UniTaskVoid TriggerSceneChangedEventAsync()
+        private async UniTask TriggerSceneChangedEventAsync()
         {
             // フェード開始タイミングまで待機
             await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS));

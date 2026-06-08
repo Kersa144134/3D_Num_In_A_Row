@@ -336,8 +336,8 @@ namespace BoardSystem.Presentation
         {
             // çwì«âèú
             _disposables?.Dispose();
-            _model.Dispose();
-            _deleteHandler.Dispose();
+            _model?.Dispose();
+            _deleteHandler?.Dispose();
 
             UnbindPlayerChangeStream();
             UnbindDropInputStream();

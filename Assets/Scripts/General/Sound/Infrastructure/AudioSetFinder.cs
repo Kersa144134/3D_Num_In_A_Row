@@ -1,5 +1,5 @@
 // ======================================================
-// SoundSetFinder.cs
+// AudioSetFinder.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-26
 // 更新日時 : 2026-05-26
@@ -8,9 +8,8 @@
 
 using System.Collections.Generic;
 using SoundSystem.Domain;
-using SoundSystem.Infrastructure;
 
-namespace SoundSystem.Application
+namespace SoundSystem.Infrastructure
 {
     /// <summary>
     /// オーディオ設定検索クラス
@@ -24,8 +23,8 @@ namespace SoundSystem.Application
         /// <summary>BGM タイプと配列インデックスの対応表</summary>
         private readonly Dictionary<BgmType, int> _bgmIndexMap;
 
-        /// <summary>SE 辞書キャッシュ</summary>
-        private readonly Dictionary<SeType, SeSet> _seMap;
+        /// <summary>SE タイプと配列インデックスの対応表</summary>
+        private readonly Dictionary<SeType, int> _seIndexMap;
 
         // ======================================================
         // コンストラクタ
@@ -34,8 +33,8 @@ namespace SoundSystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="bgmSets">BGMセット配列</param>
-        /// <param name="seSets">SEセット配列</param>
+        /// <param name="bgmSets">BGM セット配列</param>
+        /// <param name="seSets">SE セット配列</param>
         public AudioSetFinder(BgmSet[] bgmSets, SeSet[] seSets)
         {
             // BGM インデックス辞書生成
@@ -53,8 +52,7 @@ namespace SoundSystem.Application
                     }
 
                     if (set.Type == BgmType.None ||
-                        set.Source == null ||
-                        set.Clip == null)
+                        set.Source == null)
                     {
                         continue;
                     }
@@ -63,9 +61,9 @@ namespace SoundSystem.Application
                     _bgmIndexMap[set.Type] = i;
                 }
             }
-            
-            // SE 辞書生成
-            _seMap = new Dictionary<SeType, SeSet>();
+
+            // SE インデックス辞書生成
+            _seIndexMap = new Dictionary<SeType, int>();
 
             if (seSets != null)
             {
@@ -78,13 +76,13 @@ namespace SoundSystem.Application
                         continue;
                     }
 
-                    if (set.Type == SeType.None || set.Clip == null)
+                    if (set.Type == SeType.None)
                     {
                         continue;
                     }
 
                     // 後勝ち登録
-                    _seMap[set.Type] = set;
+                    _seIndexMap[set.Type] = i;
                 }
             }
         }
@@ -98,7 +96,6 @@ namespace SoundSystem.Application
         /// </summary>
         /// <param name="type">検索する BGM タイプ</param>
         /// <param name="index">BGM 配列インデックス</param>
-        /// <returns>取得成功時 true</returns>
         public bool TryFindBgmIndex(in BgmType type, out int index)
         {
             index = -1;
@@ -112,20 +109,20 @@ namespace SoundSystem.Application
         }
 
         /// <summary>
-        /// SE 取得
+        /// SE インデックス取得
         /// </summary>
-        /// <param name="type">検索するSEタイプ</param>
-        /// <param name="result">取得結果</param>
-        /// <returns>取得成功時 true</returns>
-        public bool TryFindSeSet(in SeType type, out SeSet result)
+        /// <param name="type">検索する SE タイプ</param>
+        /// <param name="index">SE 配列インデックス</param>
+        public bool TryFindSeIndex(in SeType type, out int index)
         {
-            if (_seMap == null)
+            index = -1;
+
+            if (_seIndexMap == null)
             {
-                result = null;
                 return false;
             }
 
-            return _seMap.TryGetValue(type, out result);
+            return _seIndexMap.TryGetValue(type, out index);
         }
     }
 }

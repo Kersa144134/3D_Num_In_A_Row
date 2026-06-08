@@ -312,11 +312,11 @@ namespace CameraSystem.Presentation
         /// <param name="centerPosition">成立ライン中心座標通知ストリーム</param>
         /// <param name="centerOffsetVector">成立ライン中心との差分ベクトル通知ストリーム</param>
         public void BindStreams(
-            IObservable<bool> inputLock,
-            IObservable<bool> gamepadUsed,
-            IObservable<bool> rotationPreparation,
-            IObservable<Vector3> centerPosition,
-            IObservable<Vector3> centerOffsetVector)
+            in IObservable<bool> inputLock,
+            in IObservable<bool> gamepadUsed,
+            in IObservable<bool> rotationPreparation,
+            in IObservable<Vector3> centerPosition,
+            in IObservable<Vector3> centerOffsetVector)
         {
             inputLock
                 .Subscribe(isLock =>

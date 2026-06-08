@@ -6,6 +6,11 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
 using InputSystem.Domain;
@@ -15,13 +20,8 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using SoundSystem.Presentation;
 using UISystem.Presentation;
-using UniRx;
-using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -71,6 +71,9 @@ namespace GameSystem.Presentation
 
         /// <summary>ResultUIPresenter キャッシュ</summary>
         private readonly ResultUIPresenter _resultUIPresenter;
+
+        /// <summary>SoundManager キャッシュ</summary>
+        private readonly SoundManager _soundManager;
 
         /// <summary>CameraPresenter キャッシュ</summary>
         private readonly CameraPresenter _cameraPresenter;
@@ -320,6 +323,23 @@ namespace GameSystem.Presentation
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
+            _soundManager = SoundManager.Instance;
+
+            if (_gameOptionManager == null ||
+                _inputManager == null ||
+                _scoreManager == null ||
+                _soundManager == null)
+            {
+                Debug.LogError("[GameEventRouter] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+    UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
         }
     }
 }

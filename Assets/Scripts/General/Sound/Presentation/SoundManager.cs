@@ -6,6 +6,7 @@
 // 概要     : サウンド管理クラス
 // ======================================================
 
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using SoundSystem.Application;
 using SoundSystem.Domain;
@@ -40,10 +41,6 @@ namespace SoundSystem.Presentation
         [SerializeField]
         private SeSet[] _seSets;
 
-        /// <summary>SE 再生用 AudioSource</summary>
-        [SerializeField]
-        private AudioSource _seSource;
-
         [Header("BGM 設定")]
         /// <summary>ローパス適用時の目標周波数</summary>
         [SerializeField]
@@ -65,6 +62,9 @@ namespace SoundSystem.Presentation
         // ======================================================
         // コンポーネント参照
         // ======================================================
+
+        /// <summary>AudioClip リポジトリ</summary>
+        private readonly AudioClipRepository _audioClipRepository = new AudioClipRepository();
 
         /// <summary>オーディオ距離計算ユースケース</summary>
         private AudioDistanceUseCase _audioDistanceUseCase;
@@ -93,9 +93,6 @@ namespace SoundSystem.Presentation
         // Unityイベント
         // ======================================================
 
-        /// <summary>
-        /// 初期化処理
-        /// </summary>
         private void Awake()
         {
             // --------------------------------------------------
@@ -111,12 +108,8 @@ namespace SoundSystem.Presentation
 
             DontDestroyOnLoad(gameObject);
 
-            // --------------------------------------------------
-            // 初期参照
-            // --------------------------------------------------
             if (_bgmSets == null ||
-                _seSets == null ||
-                _seSource == null)
+                _seSets == null)
             {
                 Debug.LogError(
                     "[SoundManager] クラスの初期化に失敗しました。");
@@ -167,12 +160,9 @@ namespace SoundSystem.Presentation
             }
         }
 
-        /// <summary>
-        /// 終了時クリーンアップ
-        /// </summary>
         private void OnDestroy()
         {
-            // 購読破棄
+            // イベント購読解除
             _audioFadeUseCase?.Dispose();
         }
 
@@ -180,6 +170,18 @@ namespace SoundSystem.Presentation
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // 初期化
+        // --------------------------------------------------
+        /// <summary>
+        /// 非同期初期化処理
+        /// </summary>
+        public async UniTask InitializeAsync()
+        {
+            // AudioClip をロード
+            await _audioClipRepository.LoadAllAsync();
+        }
+        
         // --------------------------------------------------
         // リスナー
         // --------------------------------------------------
@@ -206,7 +208,7 @@ namespace SoundSystem.Presentation
         // BGM
         // --------------------------------------------------
         /// <summary>
-        /// BGM再生
+        /// BGM を再生する
         /// </summary>
         /// <param name="type">BGM タイプ</param>
         public void PlayBGM(in BgmType type)
@@ -217,10 +219,28 @@ namespace SoundSystem.Presentation
                 return;
             }
 
+            // BGM 設定取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
-            bgm.Source.clip = bgm.Clip;
+            // AudioClip 取得
+            if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
+            {
+                return;
+            }
 
+            // 再生クリップ設定
+            bgm.Source.clip = clip;
+
+            // オフセット値をクリップ長範囲へ補正
+            float offset = Mathf.Clamp(
+                bgm.Offset,
+                0f,
+                clip.length);
+
+            // 再生開始位置設定
+            bgm.Source.time = offset;
+
+            // BGM 再生
             bgm.Source.Play();
         }
 
@@ -314,19 +334,47 @@ namespace SoundSystem.Presentation
         // SE
         // --------------------------------------------------
         /// <summary>
-        /// SE 再生
+        /// 指定した SE を再生する
         /// </summary>
         /// <param name="type">SE タイプ</param>
         /// <param name="volume">再生音量</param>
-        public void PlaySE(in SeType type, in float volume = 1.0f)
+        public void PlaySE(
+            in SeType type,
+            in float volume = 1.0f)
         {
-            // SE 取得
-            if (!_audioSetFinder.TryFindSeSet(type, out SeSet se))
+            // SE インデックス取得
+            if (!_audioSetFinder.TryFindSeIndex(type, out int index))
             {
                 return;
             }
 
-            _seSource.PlayOneShot(se.Clip, volume);
+            // SE 設定取得
+            SeSet se = _seSets[index];
+
+            // AudioClip 取得
+            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
+            {
+                return;
+            }
+
+            // ループ SE 再生
+            if (se.IsLoop)
+            {
+                se.Source.Stop();
+                se.Source.clip = clip;
+                se.Source.volume = volume;
+
+                // ループ有効化
+                se.Source.loop = true;
+
+                // ループ再生
+                se.Source.Play();
+
+                return;
+            }
+
+            // 通常 SE 再生
+            se.Source.PlayOneShot(clip, volume);
         }
 
         /// <summary>
@@ -338,8 +386,17 @@ namespace SoundSystem.Presentation
             in SeType type,
             in Vector3? position = null)
         {
-            // SE 取得
-            if (!_audioSetFinder.TryFindSeSet(type, out SeSet se))
+            // SE インデックス取得
+            if (!_audioSetFinder.TryFindSeIndex(type, out int index))
+            {
+                return;
+            }
+
+            // SE 設定取得
+            SeSet se = _seSets[index];
+
+            // AudioClip 取得
+            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
             {
                 return;
             }
@@ -347,7 +404,7 @@ namespace SoundSystem.Presentation
             // 座標未指定の場合は最大音量で再生
             if (position == null)
             {
-                _seSource.PlayOneShot(se.Clip, 1f);
+                se.Source.PlayOneShot(clip, 1f);
 
                 return;
             }
@@ -361,7 +418,48 @@ namespace SoundSystem.Presentation
             // 距離減衰音量算出
             float volume = _audioDistanceUseCase.CalculateVolume(position.Value);
 
-            _seSource.PlayOneShot(se.Clip, volume);
+            // ループ SE 再生
+            if (se.IsLoop)
+            {
+                se.Source.Stop();
+                se.Source.clip = clip;
+                se.Source.volume = volume;
+
+                // ループ有効化
+                se.Source.loop = true;
+
+                // ループ再生
+                se.Source.Play();
+
+                return;
+            }
+
+            // 通常 SE 再生
+            se.Source.PlayOneShot(clip, volume);
+        }
+
+        /// <summary>
+        /// ループ SE 停止
+        /// </summary>
+        /// <param name="type">SE タイプ</param>
+        public void StopLoopSE(in SeType type)
+        {
+            // SE インデックス取得
+            if (!_audioSetFinder.TryFindSeIndex(type, out int index))
+            {
+                return;
+            }
+
+            SeSet se = _seSets[index];
+
+            // ループ SE でない場合処理なし
+            if (!se.IsLoop)
+            {
+                return;
+            }
+
+            se.Source.Stop();
+            se.Source.clip = null;
         }
     }
 }

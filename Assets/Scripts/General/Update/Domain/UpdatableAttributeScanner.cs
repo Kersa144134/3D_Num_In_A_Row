@@ -8,7 +8,6 @@
 // ======================================================
 
 using System;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace UpdateSystem.Domain
@@ -27,9 +26,7 @@ namespace UpdateSystem.Domain
         /// </summary>
         /// <param name="writer">登録先</param>
         /// <param name="instances">対象インスタンス</param>
-        public void RegisterFromAssembly(
-            IUpdatableWriter writer,
-            IUpdatable[] instances)
+        public void RegisterFromAssembly(in IUpdatableWriter writer, in IUpdatable[] instances)
         {
             if (writer == null || instances == null)
             {

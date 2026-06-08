@@ -25,7 +25,8 @@ namespace SoundSystem.Infrastructure
         /// <summary>BGM オーディオソース</summary>
         public AudioSource Source;
 
-        /// <summary>BGM クリップ</summary>
-        public AudioClip Clip;
+        /// <summary>BGM 再生開始オフセット（秒）</summary>
+        [Min(0f)]
+        public float Offset = 0f;
     }
 }

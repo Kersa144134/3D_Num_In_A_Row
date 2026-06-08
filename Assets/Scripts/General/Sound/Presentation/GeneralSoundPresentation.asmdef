@@ -2,6 +2,7 @@
     "name": "GeneralSoundPresentation",
     "rootNamespace": "",
     "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
         "GUID:e64ac1870d0974342be1e07a621abd6f",
         "GUID:9dc1741d589efd34baa6822103f0b016",
         "GUID:d84e3ddb75a4122409d43e6d13595141",

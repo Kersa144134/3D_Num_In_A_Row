@@ -2,6 +2,7 @@
     "name": "GeneralSoundInfrastructure",
     "rootNamespace": "",
     "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
         "GUID:3528ad3c0b8da9a4582a7fdea156fac7"
     ],
     "includePlatforms": [],

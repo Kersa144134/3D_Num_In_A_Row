@@ -7,6 +7,10 @@
 //            購読関連処理をまとめたファイル
 // ======================================================
 
+using System;
+using System.Linq;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using Cysharp.Threading.Tasks;
@@ -14,10 +18,7 @@ using InputSystem.Domain;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
-using System;
-using System.Linq;
-using UniRx;
-using UnityEngine;
+using SoundSystem.Domain;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -155,7 +156,13 @@ namespace GameSystem.Presentation
 
                 // タイトルスタートアニメーション終了時
                 _titleUIPresenter.OnAnimationEnd
-                    .Subscribe(_ => UnbindEventSkipStream())
+                    .Subscribe(_ =>
+                    {
+                        UnbindEventSkipStream();
+
+                        // BGM 再生
+                        _soundManager.PlayBGM(BgmType.Title);
+                    })
                     .AddTo(_disposables);
 
                 // --------------------------------------------------
@@ -232,6 +239,9 @@ namespace GameSystem.Presentation
                 _mainUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
+
+                // BGM 再生
+                _soundManager.PlayBGM(BgmType.Main);
             }
 
             if (_resultUIPresenter != null)
@@ -245,7 +255,13 @@ namespace GameSystem.Presentation
 
                 // リザルト順位アニメーション終了時
                 _resultUIPresenter.OnAnimationEnd
-                    .Subscribe(_ => UnbindEventSkipStream())
+                    .Subscribe(_ =>
+                    {
+                        UnbindEventSkipStream();
+
+                        // BGM 再生
+                        _soundManager.PlayBGM(BgmType.Result);
+                    })
                     .AddTo(_disposables);
 
                 // --------------------------------------------------

@@ -202,7 +202,7 @@ namespace UISystem.Presentation
             {
                 return;
             }
-            Debug.Log(_pointerImages.Length);
+
             foreach(Image image in _pointerImages)
             {
                 if (image == null)
