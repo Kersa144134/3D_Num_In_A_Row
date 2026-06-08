@@ -511,7 +511,7 @@ MonoBehaviour:
   _distortionNoise: 0
   _radialAfterimageRenderer: {fileID: 813381007}
   _radialAfterimageEffectStrength: 0
-  _radialAfterimageSampleCount: 4
+  _radialAfterimageSampleCount: 3
   _radialAfterimageScaleStep: 0.15
   _radialAfterimageScaleSpeed: 1
   _radialAfterimageAlphaFadeDistance: 1
@@ -548,7 +548,7 @@ MonoBehaviour:
   - {fileID: 926811466}
   - {fileID: 853593038}
   - {fileID: 891002039}
-  _resultBackgroundRenderer: {fileID: 1155871002}
+  _resultBackgroundRenderer: {fileID: 1074475308}
   _resultRankAnimator: {fileID: 125530594}
 --- !u!95 &214943124
 Animator:
@@ -2358,7 +2358,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1155871001}
   - component: {fileID: 1155871002}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: BloodEffect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2375,7 +2375,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.75, y: 1, z: 3}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_LocalScale: {x: 1.7500001, y: 1.7500001, z: 1.7500001}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 784205747}
@@ -2430,7 +2430,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 433a3a26df22f804bad6feab58923302, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

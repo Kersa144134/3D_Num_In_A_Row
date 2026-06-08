@@ -65,6 +65,11 @@ namespace CameraSystem.Presentation
         [SerializeField]
         private float _farClip = 100.0f;
 
+        [Header("追従オブジェクト")]
+        /// <summary>カメラに追従する GameObject 配列</summary>
+        [SerializeField]
+        private GameObject[] _cameraFollowObjects;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -438,6 +443,9 @@ namespace CameraSystem.Presentation
 
             // ビュー反映
             _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
+
+            // 追従オブジェクトのスケール更新
+            UpdateFollowObjectScale();
         }
 
         /// <summary>
@@ -470,6 +478,9 @@ namespace CameraSystem.Presentation
 
             // ビュー反映
             _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
+
+            // 追従オブジェクトのスケール更新
+            UpdateFollowObjectScale();
         }
         
         /// <summary>
@@ -498,6 +509,31 @@ namespace CameraSystem.Presentation
 
             // ビュー反映
             _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+        }
+
+        /// <summary>
+        /// 追従オブジェクトのスケール更新
+        /// </summary>
+        private void UpdateFollowObjectScale()
+        {
+            if (_cameraFollowObjects == null)
+            {
+                return;
+            }
+
+            // 距離値をスケール値として使用
+            Vector3 scale = Vector3.one * _cameraModel.DistanceZ;
+
+            for (int i = 0; i < _cameraFollowObjects.Length; i++)
+            {
+                if (_cameraFollowObjects[i] == null)
+                {
+                    continue;
+                }
+
+                // スケール反映
+                _cameraFollowObjects[i].transform.localScale = scale;
+            }
         }
     }
 }

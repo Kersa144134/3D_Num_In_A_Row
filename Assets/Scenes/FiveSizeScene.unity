@@ -233,6 +233,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+--- !u!1001 &165385353
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -233.81369
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 734.5472
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4101215113111808119, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
+      propertyPath: m_Name
+      value: SoundManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
 --- !u!1 &214436002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5532509059127665710, guid: bc59f92d9379a324487c735d005fce27, type: 3}
@@ -246,6 +303,11 @@ GameObject:
 --- !u!1 &289088385 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8076115526396967607, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &343158956 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5440718773777006128, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
   m_PrefabInstance: {fileID: 1308190363228619896}
   m_PrefabAsset: {fileID: 0}
 --- !u!114 &372178781 stripped
@@ -270,6 +332,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!95 &510774241 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 1509690029580063380, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,6 +509,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2301386166385323549, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
   m_PrefabInstance: {fileID: 1308190363228619896}
   m_PrefabAsset: {fileID: 0}
+--- !u!95 &1494249748 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5350317415627012127, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1594460766
 GameObject:
   m_ObjectHideFlags: 0
@@ -521,6 +593,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &1602237225 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 2286596883944408228, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
+  m_PrefabInstance: {fileID: 1308190363228619896}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1605613824 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 184530456066788913, guid: bc59f92d9379a324487c735d005fce27, type: 3}
@@ -707,8 +784,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1998823820961547086}
-  - {fileID: 20419170}
   - {fileID: 7109541706489946967}
+  - {fileID: 20419170}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2111107906
@@ -1174,6 +1251,12 @@ MonoBehaviour:
   _turnText: {fileID: 372178781}
   _comboText: {fileID: 20419171}
   _maxComboCount: 99
+  _comboColors:
+  - {r: 0, g: 0.5019608, b: 1, a: 1}
+  - {r: 0, g: 0.8784314, b: 0, a: 1}
+  - {r: 0.8784314, g: 0, b: 1, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
+  - {r: 1, g: 0.7529412, b: 0, a: 1}
   _limitTimeTexts:
   - {fileID: 86523971652887636}
   - {fileID: 1605613824}
@@ -1187,6 +1270,11 @@ MonoBehaviour:
   _normalFocusOffColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   _initialSelectedPauseCanvasButton: {fileID: 10328055}
   _limitTimeAnimator: {fileID: 1605613826}
+  _addScoreAnimators:
+  - {fileID: 510774241}
+  - {fileID: 1602237225}
+  - {fileID: 343158956}
+  - {fileID: 1494249748}
 --- !u!1001 &5281146724075930659
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1531,4 +1619,5 @@ SceneRoots:
   - {fileID: 1667897187}
   - {fileID: 5281146724075930659}
   - {fileID: 6354334956973414696}
+  - {fileID: 165385353}
   - {fileID: 967534724}

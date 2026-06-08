@@ -99,6 +99,12 @@ namespace UISystem.Presentation
         [SerializeField]
         private int _maxComboCount;
 
+        /// <summary>
+        /// コンボ表示色配列
+        /// </summary>
+        [SerializeField]
+        private Color[] _comboColors;
+
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
@@ -147,6 +153,10 @@ namespace UISystem.Presentation
         [SerializeField]
         private Animator _limitTimeAnimator;
 
+        /// <summary>スコア加算量表示のアニメーター</summary>
+        [SerializeField]
+        private Animator[] _addScoreAnimators;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -193,9 +203,6 @@ namespace UISystem.Presentation
 
         /// <summary>アウトゲーム関連キャンバスのアニメーター</summary>
         private Animator _outgameCanvasAnimator;
-
-        /// <summary>スコア加算量表示のアニメーター</summary>
-        private Animator[] _addScoreAnimators;
 
         /// <summary>コンボ表示のアニメーター</summary>
         private Animator _comboAnimator;
@@ -284,6 +291,7 @@ namespace UISystem.Presentation
                 _limitTimeTexts,
                 _gameOptionManager.TurnCount,
                 _maxComboCount,
+                _comboColors,
                 _warningLimitTime
             );
             _uiView.Initialize(
@@ -342,22 +350,10 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // アニメーター初期化
             // --------------------------------------------------
-            // テキスト数に合わせて生成
-            _addScoreAnimators = new Animator[_addScoreTexts.Length];
-            
             // アニメーター取得
             _intermittentCanvasAnimator = _intermittentCanvas.GetComponent<Animator>();
             _outgameCanvasAnimator = _outgameCanvas.GetComponent<Animator>();
             _comboAnimator = _comboText.gameObject.GetComponent<Animator>();
-            for (int i = 0; i < _addScoreTexts.Length; i++)
-            {
-                if (_addScoreTexts[i] == null)
-                {
-                    continue;
-                }
-
-                _addScoreAnimators[i] = _addScoreTexts[i].gameObject.GetComponent<Animator>();
-            }
 
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_outgameCanvasAnimator);

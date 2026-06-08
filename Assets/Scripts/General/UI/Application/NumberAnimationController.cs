@@ -236,9 +236,10 @@ namespace UISystem.Application
                     SetValue(randomValue);
 
                     // 一定時間待機
+                    // タイムスケールを無視する
                     await UniTask.Delay(
                         TimeSpan.FromSeconds(UPDATE_INTERVAL),
-                        DelayType.DeltaTime,
+                        DelayType.UnscaledDeltaTime,
                         PlayerLoopTiming.Update,
                         cancellationToken
                     );

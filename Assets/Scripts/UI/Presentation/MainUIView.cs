@@ -84,6 +84,9 @@ namespace UISystem.Presentation
         /// <summary>最大コンボ表示数</summary>
         private readonly int _maxComboCount;
 
+        /// <summary>コンボ表示色配列</summary>
+        private readonly Color[] _comboColors;
+
         // --------------------------------------------------
         // タイマー
         // --------------------------------------------------
@@ -167,6 +170,7 @@ namespace UISystem.Presentation
             in TextMeshProUGUI[] limitTimeTexts,
             in int maxTurnCount,
             in int maxComboCount,
+            in Color[] comboColors,
             in int warningLimitTime)
         {
             _currentScoreTexts = currentScoreTexts;
@@ -176,6 +180,7 @@ namespace UISystem.Presentation
             _limitTimeTexts = limitTimeTexts;
             _maxTurnCount = maxTurnCount;
             _maxComboCount = maxComboCount;
+            _comboColors = comboColors;
             _warningLimitTime = warningLimitTime;
 
             _previousDisplayTotalSeconds = -1;
@@ -429,6 +434,9 @@ namespace UISystem.Presentation
                 _comboValues[0] = comboCount;
             }
 
+            // コンボ数に応じた色を設定
+            ApplyComboColor(comboCount);
+
             // フォーマット済みバッファ取得
             char[] buffer = _comboFormatter.FormatWithSpacePadding(_comboValues);
 
@@ -583,6 +591,52 @@ namespace UISystem.Presentation
 
             // TextMeshPro に反映
             targetText.SetCharArray(buffer);
+        }
+
+        // --------------------------------------------------
+        // コンボ
+        // --------------------------------------------------
+        /// <summary>
+        /// コンボ数に応じた文字色を設定
+        /// </summary>
+        /// <param name="comboCount">コンボ数</param>
+        private void ApplyComboColor(in int comboCount)
+        {
+            // 色設定が存在しない場合は処理なし
+            if (_comboColors == null)
+            {
+                return;
+            }
+
+            // 要素数が 0 の場合は処理なし
+            if (_comboColors.Length == 0)
+            {
+                return;
+            }
+
+            // テキスト未設定の場合は処理なし
+            if (_comboText == null)
+            {
+                return;
+            }
+
+            // コンボ数を配列インデックスへ変換
+            int colorIndex = comboCount - 1;
+
+            // 配列範囲外の場合は最後の色を使用
+            if (colorIndex >= _comboColors.Length)
+            {
+                colorIndex = _comboColors.Length - 1;
+            }
+
+            // 念のため下限補正
+            if (colorIndex < 0)
+            {
+                colorIndex = 0;
+            }
+
+            // 色反映
+            _comboText.color = _comboColors[colorIndex];
         }
     }
 }
