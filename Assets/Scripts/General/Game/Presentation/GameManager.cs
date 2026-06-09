@@ -6,15 +6,16 @@
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
-using System;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UniRx;
 using GameSystem.Application;
 using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using SoundSystem.Presentation;
+using System;
+using UniRx;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
 
@@ -131,7 +132,10 @@ namespace GameSystem.Presentation
         private readonly Subject<string> _onLoadPrepareStart = new Subject<string>();
 
         /// <summary>シーンロード準備完了通知用 Subject</summary>
-        private readonly Subject<float> _onLoadPrepareEnd = new Subject<float>();
+        private readonly Subject<Unit> _onLoadPrepareEnd = new Subject<Unit>();
+
+        /// <summary>画面フェード実行通知用 Subject</summary>
+        private readonly Subject<float> _onFadeStarted = new Subject<float>();
 
         /// <summary>シーン変更通知用 Subject</summary>
         private readonly Subject<float> _onSceneChanged = new Subject<float>();
@@ -161,10 +165,10 @@ namespace GameSystem.Presentation
             }
 
             // シーン、フェーズ初期設定
-            _currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            _currentScene = SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
-            _isAfterSceneChange = true;
             _targetPhase = _startPhase;
+            _isAfterSceneChange = true;
         }
 
         private void Update()
@@ -309,27 +313,40 @@ namespace GameSystem.Presentation
             _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
 
             _eventRouter.Subscribe(_phaseMachine);
-            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged);
+            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged, _onFadeStarted);
 
             _eventRouter.OnSceneChangeRequested
-                .Subscribe(e =>
+                .Subscribe(scene =>
                 {
-                    SetTargetScene(e);
+                    SetTargetScene(scene);
                 })
                 .AddTo(_disposables);
-
             _eventRouter.OnPhaseChangeRequested
                 .Subscribe(e =>
                 {
                     SetTargetPhase(e.NextPhaseType);
                 })
                 .AddTo(_disposables);
+            _eventRouter.OnExitGameRequested
+                .Subscribe(_ =>
+                {
+                    // 画面フェード開始イベント
+                    _onFadeStarted.OnNext(SCREEN_FADE_DURATION_SECONDS);
+                })
+                .AddTo(_disposables);
+            _eventRouter.OnExitGameExecuted
+                .Subscribe(_ =>
+                {
+                    // ゲーム終了
+                    ExitGameAsync().Forget();
+                })
+                .AddTo(_disposables);
 
             _phaseMachine.CurrentPhaseType
                 .Skip(1)
-                .Subscribe(e =>
+                .Subscribe(phase =>
                 {
-                    SetTargetPhase(e);
+                    SetTargetPhase(phase);
                 })
                 .AddTo(_disposables);
 
@@ -340,6 +357,33 @@ namespace GameSystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // ゲーム
+        // --------------------------------------------------
+        /// <summary>
+        /// ゲームを再起動する
+        /// </summary>
+        private void RestartGame()
+        {
+            // 現在のシーンを再読み込み
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        /// <summary>
+        /// アプリケーションを終了する
+        /// </summary>
+        private async UniTask ExitGameAsync()
+        {
+            // フェード完了後待機時間
+            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS), DelayType.UnscaledDeltaTime);
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+    Application.Quit();
+#endif
+        }
 
         // --------------------------------------------------
         // シーン
@@ -392,15 +436,18 @@ namespace GameSystem.Presentation
             );
 
             // ロード準備完了イベント
-            _onLoadPrepareEnd.OnNext(SCREEN_FADE_DURATION_SECONDS);
+            _onLoadPrepareEnd.OnNext(Unit.Default);
 
             // --------------------------------------------------
             // 画面フェード処理
             // --------------------------------------------------
+            // 画面フェード開始イベント
+            _onFadeStarted.OnNext(SCREEN_FADE_DURATION_SECONDS);
+
             await _eventRouter.OnFadeCompleted.ToUniTask(useFirstValue: true);
 
             // フェード完了後待機時間
-            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS));
+            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS), DelayType.UnscaledDeltaTime);
 
             // --------------------------------------------------
             // Updatable 終了処理
@@ -451,8 +498,8 @@ namespace GameSystem.Presentation
         /// </summary>
         private async UniTask TriggerSceneChangedEventAsync()
         {
-            // フェード開始タイミングまで待機
-            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS));
+            // フェード開始後待機時間
+            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS), DelayType.UnscaledDeltaTime);
 
             // フェードアウト時間を通知
             _onSceneChanged.OnNext(SCREEN_FADE_DURATION_SECONDS);

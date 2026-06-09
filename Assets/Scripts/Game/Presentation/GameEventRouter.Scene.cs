@@ -105,16 +105,13 @@ namespace GameSystem.Presentation
         }
 
         /// <summary>
-        /// シーンロード準備開始時の処理を行う
+        /// シーンロード準備終了時の処理を行う
         /// </summary>
-        private void HandleLoadPrepareEnd(in float fadeTime)
+        private void HandleLoadPrepareEnd()
         {
             // 購読解除
             _sceneLoadSubscription?.Dispose();
             _sceneLoadSubscription = null;
-
-            // フェードイン時間を通知
-            _fadeInTrigger.OnNext(fadeTime);
         }
     }
 }

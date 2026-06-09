@@ -7,10 +7,6 @@
 //            購読関連処理をまとめたファイル
 // ======================================================
 
-using System;
-using System.Linq;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using Cysharp.Threading.Tasks;
@@ -19,6 +15,11 @@ using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using SoundSystem.Domain;
+using SoundSystem.Presentation;
+using System;
+using System.Linq;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -50,7 +51,7 @@ namespace GameSystem.Presentation
                 .Subscribe(_ =>
                 {
                     // スキップイベント発火
-                    _onSkipRequested.OnNext(Unit.Default);
+                    _onSkipInput.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
             _onFadeCompleted
@@ -133,8 +134,8 @@ namespace GameSystem.Presentation
                 _inputManager.StartButton.OnDown
                     .Subscribe(_ =>
                     {
-                        // ゲーム終了リクエスト
-                        _onExitGameRequested.OnNext(Unit.Default);
+                        // ゲーム終了入力
+                        _onExitGameInput.OnNext(Unit.Default);
 
                         TogglePausePhase(_currentPhase.Value);
                     })
@@ -150,7 +151,7 @@ namespace GameSystem.Presentation
             if (_titleUIPresenter != null)
             {
                 _titleUIPresenter.BindStreams(
-                    _onExitGameRequested,
+                    _onExitGameInput,
                     _onGamepadUsed,
                     _onSceneStartAnimationSkiped);
 
@@ -168,6 +169,7 @@ namespace GameSystem.Presentation
                         UnbindEventSkipStream();
 
                         // BGM 再生
+                        _soundManager.SetBGMVolume(BgmType.Title, 0.5f);
                         _soundManager.PlayBGM(BgmType.Title);
                     })
                     .AddTo(_disposables);
@@ -188,13 +190,31 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .Subscribe(_ =>
+                    {
+                        _onFadeCompleted.OnNext(Unit.Default);
+
+                        if (_isExitingGame)
+                        {
+                            // ゲーム終了処理実行
+                            _onExitGameExecuted.OnNext(Unit.Default);
+                        }
+                    })
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _titleUIPresenter.OnExitGameRequested
+                    .Subscribe(_ =>
+                    {
+                        // ゲーム終了処理開始
+                        _isExitingGame = true;
+
+                        _onExitGameRequested.OnNext(Unit.Default);
+                    })
                     .AddTo(_disposables);
             }
 
@@ -238,13 +258,31 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .Subscribe(_ =>
+                    {
+                        _onFadeCompleted.OnNext(Unit.Default);
+
+                        if (_isExitingGame)
+                        {
+                            // ゲーム終了処理実行
+                            _onExitGameExecuted.OnNext(Unit.Default);
+                        }
+                    })
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _mainUIPresenter.OnExitGameRequested
+                    .Subscribe(_ =>
+                    {
+                        // ゲーム終了処理開始
+                        _isExitingGame = true;
+
+                        _onExitGameRequested.OnNext(Unit.Default);
+                    })
                     .AddTo(_disposables);
 
                 // BGM 再生
@@ -287,13 +325,31 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _resultUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
+                    .Subscribe(_ =>
+                    {
+                        _onFadeCompleted.OnNext(Unit.Default);
+
+                        if (_isExitingGame)
+                        {
+                            // ゲーム終了処理実行
+                            _onExitGameExecuted.OnNext(Unit.Default);
+                        }
+                    })
                     .AddTo(_disposables);
                 _resultUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _resultUIPresenter.OnSceneChangeRequested
                     .Subscribe(_ => NotifySceneChangeRequested())
+                    .AddTo(_disposables);
+                _resultUIPresenter.OnExitGameRequested
+                    .Subscribe(_ =>
+                    {
+                        // ゲーム終了処理開始
+                        _isExitingGame = true;
+
+                        _onExitGameRequested.OnNext(Unit.Default);
+                    })
                     .AddTo(_disposables);
             }
 
@@ -406,8 +462,9 @@ namespace GameSystem.Presentation
         /// </summary>
         public void BindStreams(
             in IObservable<string> onPrepareStart,
-            in IObservable<float> onPrepareEnd,
-            in IObservable<float> onSceneChanged)
+            in IObservable<Unit> onPrepareEnd,
+            in IObservable<float> onSceneChanged,
+            in IObservable<float> onFadeStarted)
         {
             onPrepareStart
                 .Subscribe(sceneName =>
@@ -418,10 +475,10 @@ namespace GameSystem.Presentation
                 .AddTo(_disposables);
 
             onPrepareEnd
-                .Subscribe(fadeTime =>
+                .Subscribe(_ =>
                 {
                     // ロード準備完了
-                    HandleLoadPrepareEnd(fadeTime);
+                    HandleLoadPrepareEnd();
                 })
                 .AddTo(_disposables);
 
@@ -434,6 +491,16 @@ namespace GameSystem.Presentation
                     // スキップ入力
                     // シーンスタートアニメーションスキップ通知
                     BindEventSkipStream(_onSceneStartAnimationSkiped, Unit.Default);
+                })
+                .AddTo(_disposables);
+
+            onFadeStarted
+                .Subscribe(seconds =>
+                {
+                    // フェードイン時間を通知
+                    _fadeInTrigger.OnNext(seconds);
+
+                    _soundManager.SetBGMVolume(0, seconds);
                 })
                 .AddTo(_disposables);
         }
@@ -484,7 +551,7 @@ namespace GameSystem.Presentation
             // 多重購読防止
             _skipInputSubscription?.Dispose();
 
-            _skipInputSubscription = _onSkipRequested
+            _skipInputSubscription = _onSkipInput
                 .Subscribe(_ =>
                 {
                     // スキップ入力時に指定イベントを発火

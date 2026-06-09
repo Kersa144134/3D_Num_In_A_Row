@@ -111,8 +111,7 @@ namespace SoundSystem.Presentation
             if (_bgmSets == null ||
                 _seSets == null)
             {
-                Debug.LogError(
-                    "[SoundManager] クラスの初期化に失敗しました。");
+                Debug.LogError("[SoundManager] クラスの初期化に失敗しました。");
 
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -125,6 +124,9 @@ namespace SoundSystem.Presentation
 
             // BGM 数取得
             int bgmCount = _bgmSets.Length;
+
+            // SE 数取得
+            int seCount = _seSets.Length;
 
             // --------------------------------------------------
             // クラス初期化
@@ -144,18 +146,23 @@ namespace SoundSystem.Presentation
             // ローパス設定初期化
             // --------------------------------------------------
             // ローパス配列生成
-            _lowPassFilters = new AudioLowPassFilter[bgmCount];
+            _lowPassFilters = new AudioLowPassFilter[bgmCount + seCount];
 
-            // 各 BGM 設定から AudioLowPassFilter 取得
-            for (int i = 0; i < bgmCount; i++)
+            // 全オーディオ対象を一括処理
+            for (int i = 0; i < _lowPassFilters.Length; i++)
             {
-                AudioSource source = _bgmSets[i].Source;
+                // 対象ソースの切り替え
+                AudioSource source =
+                    (i < bgmCount)
+                    ? _bgmSets[i].Source
+                    : _seSets[i - bgmCount].Source;
 
                 if (source == null)
                 {
                     continue;
                 }
 
+                // AudioLowPassFilter 取得
                 _lowPassFilters[i] = source.GetComponent<AudioLowPassFilter>();
             }
         }
@@ -281,7 +288,7 @@ namespace SoundSystem.Presentation
         }
 
         /// <summary>
-        /// BGM音量設定
+        /// BGM 音量設定
         /// </summary>
         /// <param name="type">BGM タイプ</param>
         /// <param name="volume">目標音量</param>
@@ -313,6 +320,37 @@ namespace SoundSystem.Presentation
                 bgm.Source,
                 targetVolume,
                 transitionDuration);
+        }
+
+        /// <summary>
+        /// 全 BGM 音量設定
+        /// </summary>
+        /// <param name="volume">目標音量</param>
+        /// <param name="transitionDuration">補間時間</param>
+        public void SetBGMVolume(
+            in float volume,
+            in float transitionDuration = 0f)
+        {
+            // 音量補正
+            float targetVolume = Mathf.Clamp01(volume);
+
+            // 全 BGM を走査
+            for (int i = 0; i < _bgmSets.Length; i++)
+            {
+                BgmSet bgm = _bgmSets[i];
+
+                if (bgm.Source == null)
+                {
+                    continue;
+                }
+
+                // 音量フェード実行
+                _audioFadeUseCase.StartVolumeFade(
+                    i,
+                    bgm.Source,
+                    targetVolume,
+                    transitionDuration);
+            }
         }
 
         /// <summary>
@@ -351,7 +389,6 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // SE 設定取得
             SeSet se = _seSets[index];
 
             // AudioClip 取得
@@ -363,15 +400,7 @@ namespace SoundSystem.Presentation
             // ループ SE 再生
             if (se.IsLoop)
             {
-                se.Source.Stop();
-                se.Source.clip = clip;
-                se.Source.volume = volume;
-
-                // ループ有効化
-                se.Source.loop = true;
-
-                // ループ再生
-                se.Source.Play();
+                PlayLoopSE(se.Source, clip, volume);
 
                 return;
             }
@@ -395,7 +424,6 @@ namespace SoundSystem.Presentation
                 return;
             }
 
-            // SE 設定取得
             SeSet se = _seSets[index];
 
             // AudioClip 取得
@@ -424,15 +452,7 @@ namespace SoundSystem.Presentation
             // ループ SE 再生
             if (se.IsLoop)
             {
-                se.Source.Stop();
-                se.Source.clip = clip;
-                se.Source.volume = volume;
-
-                // ループ有効化
-                se.Source.loop = true;
-
-                // ループ再生
-                se.Source.Play();
+                PlayLoopSE(se.Source, clip, volume);
 
                 return;
             }
@@ -462,7 +482,32 @@ namespace SoundSystem.Presentation
             }
 
             se.Source.Stop();
+
             se.Source.clip = null;
+        }
+
+        // ======================================================
+        // プライベートメソッド
+        // ======================================================
+
+        /// <summary>
+        /// ループ SE 再生
+        /// </summary>
+        /// <param name="se">SE 設定</param>
+        /// <param name="clip">再生クリップ</param>
+        /// <param name="volume">再生音量</param>
+        private void PlayLoopSE(
+            in AudioSource source,
+            in AudioClip clip,
+            in float volume)
+        {
+            source.Stop();
+
+            source.clip = clip;
+            source.volume = volume;
+            source.loop = true;
+
+            source.Play();
         }
     }
 }

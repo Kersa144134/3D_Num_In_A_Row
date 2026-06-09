@@ -15,18 +15,18 @@ MonoBehaviour:
   m_GroupName: Sounds_BGM
   m_GUID: d42276895b8eb404ca55f798c1c7b987
   m_SerializeEntries:
-  - m_GUID: 526d0fbad6f81bd4dbdd56acf2071591
-    m_Address: BGM/Result
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6f5efb5bac97a794fb4564e861e7b9a5
+  - m_GUID: 0403d85e38c414048a8147eb751da112
     m_Address: BGM/Title
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 7b25c6da1fc967742bc633cad1fab7c7
+  - m_GUID: 0dbc31f047689a540ba3d85d0d3b36d9
     m_Address: BGM/Main
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 41e8219971cb31941aa3b29c641e9a5f
+    m_Address: BGM/Result
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

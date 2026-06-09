@@ -275,6 +275,12 @@ namespace UISystem.Presentation
         /// <summary>シーン遷移リクエスト通知ストリーム</summary>
         public IObservable<Unit> OnSceneChangeRequested => _onSceneChangeRequested;
 
+        /// <summary>ゲーム終了リクエスト通知用 Subject</summary>
+        protected readonly Subject<Unit> _onExitGameRequested = new Subject<Unit>();
+
+        /// <summary>ゲーム終了リクエスト通知ストリーム</summary>
+        public IObservable<Unit> OnExitGameRequested => _onExitGameRequested;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -469,7 +475,8 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             fadeCompleted
-                .Subscribe(time =>
+                .Take(1)
+                .Subscribe(_ =>
                 {
                     // UI のイベント購読は画面フェード完了後に実行
                     Subscribe();
@@ -500,7 +507,7 @@ namespace UISystem.Presentation
                 }
 
                 dialogEvent.OnEvent
-                    .Subscribe(HandleDialogEventReceived)
+                    .Subscribe(eventType => HandleDialogEventReceived(eventType))
                     .AddTo(_disposables);
             }
 
@@ -679,6 +686,17 @@ namespace UISystem.Presentation
 
                 return;
             }
+
+            // ゲーム終了
+            if (eventType == DialogEventType.ExitGame)
+            {
+                _onExitGameRequested.OnNext(Unit.Default);
+
+                // フェードイン開始
+                OnFadeInStart();
+
+                return;
+            }
         }
 
         /// <summary>
@@ -731,8 +749,7 @@ namespace UISystem.Presentation
         protected void OnFocusButton(BaseButtonEvent buttonEvent)
         {
             // 現在アクティブなキャンバス状態を取得
-            CanvasType activeCanvasType =
-                _uiStateController.GetActiveCanvasType();
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
             // オプションキャンバスの場合
             if (activeCanvasType == CanvasType.Option)

@@ -85,12 +85,24 @@ namespace GameSystem.Presentation
         // フィールド
         // ======================================================
 
+        // --------------------------------------------------
+        // フェーズ
+        // --------------------------------------------------
         /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
         private PhaseType _cachedActivePhase = PhaseType.None;
 
         /// <summary>フェード待機中に来たフェーズキャッシュ</summary>
         private PhaseType? _pendingPhase;
 
+        // --------------------------------------------------
+        // システム
+        // --------------------------------------------------
+        /// <summary>ゲーム終了処理中かどうかを示すフラグ</summary>
+        private bool _isExitingGame = false;
+
+        // --------------------------------------------------
+        // スコア
+        // --------------------------------------------------
         /// <summary>スコア更新の保留フラグ</summary>
         private bool _hasPendingScoreEvent;
 
@@ -100,14 +112,20 @@ namespace GameSystem.Presentation
         /// <summary>保留中の加算スコアイベントリスト</summary>
         private readonly Queue<ScoreEvent> _pendingAddScoreEvents = new Queue<ScoreEvent>();
 
+        // --------------------------------------------------
+        // 入力
+        // --------------------------------------------------
         /// <summary>現在の入力マッピング番号</summary>
         private int _currentMappingIndex = -1;
 
         /// <summary>現在アクティブな入力デバイスのキャッシュ</summary>
         private InputDeviceType _cachedActiveDevice = InputDeviceType.Gamepad;
 
+        // --------------------------------------------------
+        // UI
+        // --------------------------------------------------
         /// <summary>フェード完了フラグ</summary>
-        private bool _isFadeCompleted;
+        private bool _isFadeCompleted = false;
 
         // ======================================================
         // 辞書
@@ -176,8 +194,17 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // システム
         // --------------------------------------------------
-        /// <summary>ゲーム終了入力用 Subject</summary>
+        /// <summary>ゲーム終了リクエスト用 Subject</summary>
         private readonly Subject<Unit> _onExitGameRequested = new Subject<Unit>();
+
+        /// <summary>ゲーム終了リクエストストリーム</summary>
+        public IObservable<Unit> OnExitGameRequested => _onExitGameRequested;
+
+        /// <summary>ゲーム終了実行用 Subject</summary>
+        private readonly Subject<Unit> _onExitGameExecuted = new Subject<Unit>();
+
+        /// <summary>ゲーム終了実行ストリーム</summary>
+        public IObservable<Unit> OnExitGameExecuted => _onExitGameExecuted;
 
         /// <summary>ゲームスピード変更用 Subject</summary>
         private readonly Subject<float> _onGameSpeedChangeRequested = new Subject<float>();
@@ -203,8 +230,11 @@ namespace GameSystem.Presentation
         /// <summary>ポインター座標変更用 Subject</summary>
         private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
 
+        /// <summary>ゲーム終了入力用 Subject</summary>
+        private readonly Subject<Unit> _onExitGameInput = new Subject<Unit>();
+        
         /// <summary>スキップ入力用 Subject</summary>
-        private readonly Subject<Unit> _onSkipRequested = new Subject<Unit>();
+        private readonly Subject<Unit> _onSkipInput = new Subject<Unit>();
 
         // --------------------------------------------------
         // UI
