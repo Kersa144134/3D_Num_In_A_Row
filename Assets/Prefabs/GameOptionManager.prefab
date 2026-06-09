@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GameApplication::GameSystem.Application.GameOptionService
   _playerCount: 2
-  _turnCount: 10
+  _turnCount: 20
   _limitTime: 30
   _boardSizeType: 5
   _connectCount: 3

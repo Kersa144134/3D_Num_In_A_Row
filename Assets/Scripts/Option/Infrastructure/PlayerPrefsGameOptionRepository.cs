@@ -54,7 +54,7 @@ namespace OptionSystem.Infrastructure
         private const int DEFAULT_PLAYER_COUNT = 2;
 
         /// <summary>ターン数 デフォルト値</summary>
-        private const int DEFAULT_TURN_COUNT = 5;
+        private const int DEFAULT_TURN_COUNT = 20;
 
         /// <summary>制限時間 デフォルト値</summary>
         private const float DEFAULT_LIMIT_TIME = 30f;

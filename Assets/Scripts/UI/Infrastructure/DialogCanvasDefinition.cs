@@ -25,6 +25,6 @@ namespace UISystem.Infrastructure
         public DialogType Type;
 
         /// <summary>対象ボタンイベント</summary>
-        public NormalButton[] Buttons;
+        public DialogButton[] Buttons;
     }
 }

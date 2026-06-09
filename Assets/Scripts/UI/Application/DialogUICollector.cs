@@ -25,7 +25,7 @@ namespace UISystem.Application
         public DialogEvent[] Events { get; private set; } = Array.Empty<DialogEvent>();
 
         /// <summary>ダイアログボタン</summary>
-        public NormalButton[] Buttons { get; private set; } = Array.Empty<NormalButton>();
+        public DialogButton[] Buttons { get; private set; } = Array.Empty<DialogButton>();
 
         /// <summary>パネルイベント</summary>
         public BasePanelEvent[] Panels { get; private set; } = Array.Empty<BasePanelEvent>();
@@ -45,7 +45,7 @@ namespace UISystem.Application
             {
                 // 空データを生成
                 Events = Array.Empty<DialogEvent>();
-                Buttons = Array.Empty<NormalButton>();
+                Buttons = Array.Empty<DialogButton>();
                 Panels = Array.Empty<BasePanelEvent>();
 
                 return;
@@ -55,7 +55,7 @@ namespace UISystem.Application
             // 一時格納リスト
             // --------------------------------------------------
             List<DialogEvent> eventList = new List<DialogEvent>();
-            List<NormalButton> buttonList = new List<NormalButton>();
+            List<DialogButton> buttonList = new List<DialogButton>();
             List<BasePanelEvent> panelList = new List<BasePanelEvent>();
 
             // --------------------------------------------------
@@ -92,7 +92,12 @@ namespace UISystem.Application
                             continue;
                         }
 
-                        buttonList.Add(canvasDefinition.Buttons[j]);
+                        DialogButton dialogButton = canvasDefinition.Buttons[j];
+
+                        // ダイアログ種別を登録
+                        dialogButton.Initialize(canvasDefinition.Type);
+
+                        buttonList.Add(dialogButton);
                     }
                 }
 

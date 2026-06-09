@@ -30,13 +30,14 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
+        /// <param name="uiActionButtonResolver">UI ボタンの参照解決クラス</param>
         /// <param name="dialogCanvasArray">ダイアログキャンバス配列</param>
-        /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>
-        /// <param name="initialSelectedPauseCanvasButton">ポーズキャンバス初期選択ボタン</param>
+        /// <param name="initialSelectedResultCanvasButton">リザルトキャンバス初期選択ボタン</param>
         public ResultUIStateController(
-            DialogCanvasDefinition[] dialogCanvasArray,
-            BaseButtonEvent initialSelectedResultCanvasButton)
-            : base(dialogCanvasArray)
+            in UIActionButtonResolver uiActionButtonResolver,
+            in DialogCanvasDefinition[] dialogCanvasArray,
+            in BaseButtonEvent initialSelectedResultCanvasButton)
+            : base(uiActionButtonResolver, dialogCanvasArray)
         {
             _initialSelectedResultCanvasButton = initialSelectedResultCanvasButton;
         }
@@ -81,16 +82,6 @@ namespace UISystem.Application
                     return _initialSelectedResultCanvasButton;
             }
 
-            return null;
-        }
-
-        /// <summary>
-        /// ダイアログ用初期選択ボタンを取得する
-        /// </summary>
-        /// <returns>ダイアログ初期選択ボタン</returns>
-        protected override BaseButtonEvent GetDialogInitialSelectedButton()
-        {
-            // ダイアログ未使用なので null
             return null;
         }
     }

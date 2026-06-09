@@ -33,9 +33,6 @@ namespace UISystem.Application
         // --------------------------------------------------
         // 初期選択ボタン
         // --------------------------------------------------
-        /// <summary>ダイアログキャンバス初期選択ボタン</summary>
-        private readonly BaseButtonEvent _initialSelectedDialogCanvasButton;
-
         /// <summary>スタートキャンバス初期選択ボタン</summary>
         private readonly BaseButtonEvent _initialSelectedStartCanvasButton;
 
@@ -55,24 +52,23 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
+        /// <param name="uiActionButtonResolver">UI ボタンの参照解決クラス</param>
         /// <param name="dialogCanvasArray">ダイアログキャンバス配列</param>
         /// <param name="startCanvas">スタートキャンバス</param>
         /// <param name="optionCanvas">オプションキャンバス</param>
-        /// <param name="initialSelectedDialogCanvasButton">ダイアログキャンバス初期選択ボタン/param>
         /// <param name="initialSelectedStartCanvasButton">スタートキャンバス初期選択ボタン</param>
         /// <param name="initialSelectedOptionCanvasButton">オプションキャンバス初期選択ボタン</param>
         public TitleUIStateController(
-            DialogCanvasDefinition[] dialogCanvasArray,
-            GameObject startCanvas,
-            GameObject optionCanvas,
-            BaseButtonEvent initialSelectedDialogCanvasButton,
-            BaseButtonEvent initialSelectedStartCanvasButton,
-            BaseButtonEvent initialSelectedOptionCanvasButton)
-            : base(dialogCanvasArray)
+            in UIActionButtonResolver uiActionButtonResolver,
+            in DialogCanvasDefinition[] dialogCanvasArray,
+            in GameObject startCanvas,
+            in GameObject optionCanvas,
+            in BaseButtonEvent initialSelectedStartCanvasButton,
+            in BaseButtonEvent initialSelectedOptionCanvasButton)
+            : base(uiActionButtonResolver, dialogCanvasArray)
         {
             _startCanvas = startCanvas;
             _optionCanvas = optionCanvas;
-            _initialSelectedDialogCanvasButton = initialSelectedDialogCanvasButton;
             _initialSelectedStartCanvasButton = initialSelectedStartCanvasButton;
             _initialSelectedOptionCanvasButton = initialSelectedOptionCanvasButton;
         }
@@ -143,7 +139,7 @@ namespace UISystem.Application
             switch (GetActiveCanvasType())
             {
                 case CanvasType.Dialog:
-                    return _initialSelectedDialogCanvasButton;
+                    return GetDialogInitialSelectedButton();
 
                 case CanvasType.Start:
                     return _initialSelectedStartCanvasButton;
@@ -153,15 +149,6 @@ namespace UISystem.Application
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// ダイアログ用初期選択ボタンを取得する
-        /// </summary>
-        /// <returns>ダイアログ初期選択ボタン</returns>
-        protected override BaseButtonEvent GetDialogInitialSelectedButton()
-        {
-            return _initialSelectedDialogCanvasButton;
         }
     }
 }

@@ -363,13 +363,13 @@ MonoBehaviour:
   _bgmSets:
   - Type: 1
     Source: {fileID: 4495602281730165961}
-    Offset: 1.072
+    Offset: 1
   - Type: 2
     Source: {fileID: 4554230721362172174}
-    Offset: 1.072
+    Offset: 1
   - Type: 3
     Source: {fileID: 9030453368920590179}
-    Offset: 1.072
+    Offset: 1
   _seSets:
   - Type: 1
     Source: {fileID: 3301035611443052703}

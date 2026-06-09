@@ -266,13 +266,20 @@ namespace UISystem.Presentation
             );
 
             // --------------------------------------------------
+            // ダイアログボタン初期化
+            // --------------------------------------------------
+            RegisterDialogButtons();
+
+            // --------------------------------------------------
             // 通常ボタン初期化
             // --------------------------------------------------
             // 通常ボタンイベント登録
             RegisterNormalButtons(_resultNormalButtons);
 
-            // 通常ボタンの参照解決クラス生成
-            _normalButtonResolver = new NormalButtonResolver(_normalButtonEventTable);
+            // --------------------------------------------------
+            // UI ボタンの参照解決クラス生成
+            // --------------------------------------------------
+            _uiActionButtonResolver = new UIActionButtonResolver(_dialogButtonEventTable, _normalButtonEventTable);
 
             // --------------------------------------------------
             // パネル初期化
@@ -285,6 +292,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // キャンバス状態管理クラス生成
             _uiStateController = new ResultUIStateController(
+                _uiActionButtonResolver,
                 _dialogCanvasArray,
                 _initialSelectedResultCanvasButton
             );
@@ -415,7 +423,7 @@ namespace UISystem.Presentation
         protected override void OnNormalButtonClick(NormalButtonEvent buttonEvent)
         {
             // UI アクション種別へ変換できない場合は処理なし
-            if (!_normalButtonResolver.TryGetType(buttonEvent, out UIActionType actionType))
+            if (!_uiActionButtonResolver.TryGetNormalType(buttonEvent, out UIActionType actionType))
             {
                 return;
             }

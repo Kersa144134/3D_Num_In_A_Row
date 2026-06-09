@@ -266,13 +266,20 @@ namespace UISystem.Presentation
             );
 
             // --------------------------------------------------
+            // ダイアログボタン初期化
+            // --------------------------------------------------
+            RegisterDialogButtons();
+
+            // --------------------------------------------------
             // 通常ボタン初期化
             // --------------------------------------------------
             // 通常ボタンイベント登録
             RegisterNormalButtons(_titleNormalButtons);
 
-            // 通常ボタンの参照解決クラス生成
-            _normalButtonResolver = new NormalButtonResolver(_normalButtonEventTable);
+            // --------------------------------------------------
+            // UI ボタンの参照解決クラス生成
+            // --------------------------------------------------
+            _uiActionButtonResolver = new UIActionButtonResolver(_dialogButtonEventTable, _normalButtonEventTable);
 
             // --------------------------------------------------
             // オプションボタン初期化
@@ -330,10 +337,10 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // キャンバス状態管理クラス生成
             _uiStateController = new TitleUIStateController(
+                _uiActionButtonResolver,
                 _dialogCanvasArray,
                 _startCanvas,
                 _optionCanvas,
-                _normalButtonResolver.GetButton(UIActionType.DialogYes),
                 _initialSelectedStartCanvasButton,
                 _initialSelectedOptionCanvasButton
             );
@@ -434,8 +441,30 @@ namespace UISystem.Presentation
         /// <param name="buttonEvent">対象ボタンイベント</param>
         protected override void OnNormalButtonClick(NormalButtonEvent buttonEvent)
         {
+            // --------------------------------------------------
+            // ダイアログ中の処理
+            // --------------------------------------------------
+            if (_uiStateController.GetActiveCanvasType() == CanvasType.Dialog)
+            {
+                HandleDialogButtonClick(buttonEvent);
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // 通常 UI 処理
+            // --------------------------------------------------
+            HandleNormalButtonClick(buttonEvent);
+        }
+
+        /// <summary>
+        /// ダイアログボタンクリック処理
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        private void HandleDialogButtonClick(in NormalButtonEvent buttonEvent)
+        {
             // UI アクション種別へ変換できない場合は処理なし
-            if (!_normalButtonResolver.TryGetType(buttonEvent, out UIActionType actionType))
+            if (!_uiActionButtonResolver.TryGetDialogType(buttonEvent, out UIActionType actionType, out DialogType dialogType))
             {
                 return;
             }
@@ -469,8 +498,8 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.DialogNo)
             {
                 // スタート画面のボタンを操作可能に更新
-                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), true);
-                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), true);
+                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
+                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
 
                 // ダイアログキャンバスを非表示にする
                 _uiStateController.HideDialogCanvas();
@@ -490,6 +519,19 @@ namespace UISystem.Presentation
 
                 return;
             }
+        }
+
+        /// <summary>
+        /// 通常ボタンクリック処理
+        /// </summary>
+        /// <param name="buttonEvent">対象ボタンイベント</param>
+        private void HandleNormalButtonClick(in NormalButtonEvent buttonEvent)
+        {
+            // UI アクション種別へ変換できない場合は処理なし
+            if (!_uiActionButtonResolver.TryGetNormalType(buttonEvent, out UIActionType actionType))
+            {
+                return;
+            }
 
             // --------------------------------------------------
             // タイトルスタート
@@ -497,20 +539,20 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.TitleStart)
             {
                 // スタート画面のボタンを操作不可に更新
-                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleStart), false);
-                SetButtonInteractable(_normalButtonResolver.GetButton(UIActionType.TitleOption), false);
+                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), false);
+                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), false);
 
                 // ダイアログ表示内容を更新
                 UpdateDialogOptionText();
 
                 // ダイアログキャンバスを表示する
-                _uiStateController.ShowDialogCanvas(DialogType.Confirm);
+                _uiStateController.ShowDialogCanvas(DialogType.StartGame);
 
                 // 次のキャンバス状態を取得する
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
 
-                // 初期フォーカスを Yes ボタンに設定する
-                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.DialogYes));
+                // 入力状態に応じて初期選択を適用する
+                SetSelectionState(nextCanvasType);
 
                 // ダイアログ表示を通知する
                 _onDialogVisibleChanged.OnNext(true);
@@ -592,7 +634,7 @@ namespace UISystem.Presentation
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
 
                 // 初期フォーカスをオプションボタンに設定する
-                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleOption));
+                SetSelectionState(nextCanvasType, _uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption));
 
                 // ボードアニメーションをリセットする
                 _boardAnimator?.SetInteger(BOARD_SIZE_HASH, BOARD_ANIMATION_DISABLED);
@@ -615,7 +657,7 @@ namespace UISystem.Presentation
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
 
                 // 初期フォーカスをスタートボタンに設定する
-                SetSelectionState(nextCanvasType, _normalButtonResolver.GetButton(UIActionType.TitleStart));
+                SetSelectionState(nextCanvasType, _uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart));
 
                 // 各オプションの選択状態を保存する
                 foreach (KeyValuePair<OptionType, OptionButtonBinder> binder in _optionBinders)

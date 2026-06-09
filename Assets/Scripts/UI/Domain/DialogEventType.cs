@@ -18,5 +18,8 @@ namespace UISystem.Domain
 
         /// <summary>シーン遷移要求</summary>
         RequestSceneChange,
+
+        /// <summary>ゲーム終了要求</summary>
+        ExitGame,
     }
 }

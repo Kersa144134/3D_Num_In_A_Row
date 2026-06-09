@@ -16,13 +16,13 @@ namespace UISystem.Domain
         /// <summary>未指定</summary>
         None,
 
-        /// <summary>確認ダイアログ</summary>
-        Confirm,
+        /// <summary>ゲーム開始ダイアログ</summary>
+        StartGame,
 
-        /// <summary>警告ダイアログ</summary>
-        Warning,
+        /// <summary>ゲーム終了ダイアログ</summary>
+        ExitGame,
 
-        /// <summary>エラーダイアログ</summary>
-        Error
+        /// <summary>ポーズダイアログ</summary>
+        Pause
     }
 }

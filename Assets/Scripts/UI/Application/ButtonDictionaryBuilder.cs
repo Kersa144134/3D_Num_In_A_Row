@@ -24,6 +24,43 @@ namespace UISystem.Application
         // ======================================================
 
         /// <summary>
+        /// DialogButton 辞書を構築する
+        /// </summary>
+        public Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent> BuildDialogButtons(
+            in DialogButton[] dialogButtons)
+        {
+            // --------------------------------------------------
+            // 辞書生成
+            // --------------------------------------------------
+            Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent> table
+                = new Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent>();
+
+            // --------------------------------------------------
+            // DialogButtonEvent 取得
+            // --------------------------------------------------
+            for (int index = 0; index < dialogButtons.Length; index++)
+            {
+                DialogButton dialogButton = dialogButtons[index];
+
+                if (dialogButton == null || dialogButton.Button == null)
+                {
+                    continue;
+                }
+
+                // ButtonEvent 取得
+                NormalButtonEvent buttonEvent = dialogButton.Button.GetComponent<NormalButtonEvent>();
+
+                // 複合キー生成
+                var key = (dialogButton.Type, dialogButton.DialogType);
+
+                // 辞書登録
+                table[key] = buttonEvent;
+            }
+
+            return table;
+        }
+        
+        /// <summary>
         /// NormalButton 辞書を構築する
         /// </summary>
         /// <param name="normalButtons">対象の NormalButton リスト</param>

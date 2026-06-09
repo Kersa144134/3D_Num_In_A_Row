@@ -1,9 +1,9 @@
 // ======================================================
-// NormalButtonResolver.cs
+// UIActionButtonResolver.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-05-12
-// 更新日時 : 2026-05-12
-// 概要     : UIActionType と NormalButtonEvent の参照解決クラス
+// 更新日時 : 2026-06-09
+// 概要     : UI ボタンの参照解決クラス
 // ======================================================
 
 using System.Collections.Generic;
@@ -13,25 +13,46 @@ using UISystem.Infrastructure;
 namespace UISystem.Application
 {
     /// <summary>
-    /// 通常ボタンの参照解決を行うサービスクラス
+    /// UI ボタンの参照解決を行うクラス
     /// </summary>
-    public sealed class NormalButtonResolver
+    public sealed class UIActionButtonResolver
     {
         // ======================================================
-        // 辞書
+        // フィールド
         // ======================================================
 
+        /// --------------------------------------------------
+        // ダイアログボタン辞書
+        // --------------------------------------------------
+        /// <summary>
+        /// 正引き辞書
+        /// (UIActionType, DialogType) → NormalButtonEvent
+        /// </summary>
+        private readonly Dictionary<(UIActionType, DialogType), NormalButtonEvent> _dialogForwardTable;
+
+        /// <summary>
+        /// 逆引き辞書
+        /// NormalButtonEvent → (UIActionType, DialogType)
+        /// </summary>
+        private readonly Dictionary<NormalButtonEvent, (UIActionType, DialogType)> _dialogReverseTable;
+
+        // ======================================================
+        // ======================================================
+
+        /// --------------------------------------------------
+        // 通常ボタン辞書
+        // --------------------------------------------------
         /// <summary>
         /// 正引き辞書
         /// UIActionType → NormalButtonEvent
         /// </summary>
-        private readonly Dictionary<UIActionType, NormalButtonEvent> _forwardTable;
+        private readonly Dictionary<UIActionType, NormalButtonEvent> _normalForwardTable;
 
         /// <summary>
         /// 逆引き辞書
         /// NormalButtonEvent → UIActionType
         /// </summary>
-        private readonly Dictionary<NormalButtonEvent, UIActionType> _reverseTable;
+        private readonly Dictionary<NormalButtonEvent, UIActionType> _normalReverseTable;
 
         // ======================================================
         // コンストラクタ
@@ -40,29 +61,42 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public NormalButtonResolver(in Dictionary<UIActionType, NormalButtonEvent> table)
+        public UIActionButtonResolver(
+            in Dictionary<(UIActionType, DialogType), NormalButtonEvent> dialogTable,
+            in Dictionary<UIActionType, NormalButtonEvent> normalTable)
         {
-            _forwardTable = table;
+            // --------------------------------------------------
+            // ダイアログテーブル保持
+            // --------------------------------------------------
+            _dialogForwardTable = dialogTable;
 
-            // 逆引き辞書構築
-            _reverseTable = new Dictionary<NormalButtonEvent, UIActionType>(table.Count);
+            _dialogReverseTable = new Dictionary<NormalButtonEvent, (UIActionType, DialogType)>(dialogTable.Count);
 
-            foreach (KeyValuePair<UIActionType, NormalButtonEvent> pair in table)
+            foreach (KeyValuePair<(UIActionType, DialogType), NormalButtonEvent> pair in dialogTable)
             {
-                _reverseTable[pair.Value] = pair.Key;
+                _dialogReverseTable[pair.Value] = pair.Key;
+            }
+            
+            // --------------------------------------------------
+            // 通常テーブル保持
+            // --------------------------------------------------
+            _normalForwardTable = normalTable;
+
+            _normalReverseTable = new Dictionary<NormalButtonEvent, UIActionType>(normalTable.Count);
+
+            foreach (KeyValuePair<UIActionType, NormalButtonEvent> pair in normalTable)
+            {
+                _normalReverseTable[pair.Value] = pair.Key;
             }
         }
 
         // ======================================================
-        // パブリックメソッド
+        // 通常ボタン解決
         // ======================================================
 
-        /// <summary>
-        /// UIActionType からボタンイベント取得
-        /// </summary>
-        public NormalButtonEvent GetButton(in UIActionType type)
+        public NormalButtonEvent GetNormalButton(in UIActionType type)
         {
-            if (_forwardTable.TryGetValue(type, out NormalButtonEvent buttonEvent))
+            if (_normalForwardTable.TryGetValue(type, out NormalButtonEvent buttonEvent))
             {
                 return buttonEvent;
             }
@@ -70,12 +104,37 @@ namespace UISystem.Application
             return null;
         }
 
-        /// <summary>
-        /// ボタンイベントから UIActionType を取得
-        /// </summary>
-        public bool TryGetType(in NormalButtonEvent buttonEvent, out UIActionType type)
+        public bool TryGetNormalType(in NormalButtonEvent buttonEvent, out UIActionType type)
         {
-            return _reverseTable.TryGetValue(buttonEvent, out type);
+            return _normalReverseTable.TryGetValue(buttonEvent, out type);
+        }
+
+        // ======================================================
+        // ダイアログボタン解決
+        // ======================================================
+
+        public NormalButtonEvent GetDialogButton(in UIActionType type, in DialogType dialogType)
+        {
+            if (_dialogForwardTable.TryGetValue((type, dialogType), out NormalButtonEvent buttonEvent))
+            {
+                return buttonEvent;
+            }
+
+            return null;
+        }
+
+        public bool TryGetDialogType(in NormalButtonEvent buttonEvent, out UIActionType type, out DialogType dialogType)
+        {
+            if (_dialogReverseTable.TryGetValue(buttonEvent, out var key))
+            {
+                type = key.Item1;
+                dialogType = key.Item2;
+                return true;
+            }
+
+            type = default;
+            dialogType = default;
+            return false;
         }
     }
 }

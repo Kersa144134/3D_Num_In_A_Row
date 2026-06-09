@@ -170,8 +170,8 @@ namespace UISystem.Presentation
         /// <summary>ボタンの辞書およびバインダー構築を行うクラス</summary>
         protected readonly ButtonDictionaryBuilder _buttonDictionaryBuilder = new ButtonDictionaryBuilder();
 
-        /// <summary>通常ボタンの参照解決クラス</summary>
-        protected NormalButtonResolver _normalButtonResolver;
+        /// <summary>UI ボタンの参照解決クラス</summary>
+        protected UIActionButtonResolver _uiActionButtonResolver;
 
         /// <summary>ダイアログ UI のイベント購読対象を収集するクラス</summary>
         protected readonly DialogUICollector _dialogUICollector = new DialogUICollector();
@@ -214,6 +214,12 @@ namespace UISystem.Presentation
         protected Dictionary<UIActionType, NormalButtonEvent> _normalButtonEventTable
             = new Dictionary<UIActionType, NormalButtonEvent>();
 
+        /// <summary>
+        /// ダイアログ用通常ボタンイベント辞書
+        /// </summary>
+        protected Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent> _dialogButtonEventTable
+            = new Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent>();
+        
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -572,37 +578,71 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// ダイアログボタンイベントを登録する
+        /// DialogType付きボタンのみ処理する
+        /// </summary>
+        protected void RegisterDialogButtons()
+        {
+            // --------------------------------------------------
+            // ダイアログボタン取得
+            // --------------------------------------------------
+            DialogButton[] dialogButtons = _dialogUICollector.Buttons;
+
+            if (dialogButtons == null || dialogButtons.Length == 0)
+            {
+                return;
+            }
+
+            // --------------------------------------------------
+            // ビルド処理
+            // --------------------------------------------------
+            Dictionary<(UIActionType, DialogType), NormalButtonEvent> dialogTable =
+                _buttonDictionaryBuilder.BuildDialogButtons(dialogButtons);
+
+            // --------------------------------------------------
+            // 辞書登録
+            // --------------------------------------------------
+            foreach (KeyValuePair<(UIActionType, DialogType), NormalButtonEvent> kv in dialogTable)
+            {
+                _dialogButtonEventTable[kv.Key] = kv.Value;
+            }
+
+            // --------------------------------------------------
+            // イベント登録
+            // --------------------------------------------------
+            foreach (NormalButtonEvent buttonEvent in _dialogButtonEventTable.Values)
+            {
+                _eventRouter.RegisterNormalButton(buttonEvent);
+            }
+        }
+        
+        /// <summary>
         /// 通常ボタンイベントを登録する
         /// </summary>
-        protected void RegisterNormalButtons(in NormalButton[] argumentButtons)
+        protected void RegisterNormalButtons(in NormalButton[] normalButtons)
         {
-            // ダイアログボタン数
-            int dialogCount = _dialogUICollector.Buttons != null
-                ? _dialogUICollector.Buttons.Length
-                : 0;
-            // 引数ボタン数
-            int argumentCount = argumentButtons != null
-                ? argumentButtons.Length
-                : 0;
-
-            // NormalButton 配列生成
-            NormalButton[] normalButtons = new NormalButton[dialogCount + argumentCount];
-
-            // ダイアログボタンコピー
-            for (int i = 0; i < dialogCount; i++)
+            if (normalButtons == null || normalButtons.Length == 0)
             {
-                normalButtons[i] = _dialogUICollector.Buttons[i];
-            }
-            // 引数ボタンコピー
-            for (int i = 0; i < argumentCount; i++)
-            {
-                normalButtons[dialogCount + i] = argumentButtons[i];
+                return;
             }
 
-            // 辞書生成
-            _normalButtonEventTable = _buttonDictionaryBuilder.BuildNormalButtons(normalButtons);
+            // --------------------------------------------------
+            // ビルド処理
+            // --------------------------------------------------
+            Dictionary<UIActionType, NormalButtonEvent> normalTable =
+                _buttonDictionaryBuilder.BuildNormalButtons(normalButtons);
 
+            // --------------------------------------------------
+            // 辞書登録
+            // --------------------------------------------------
+            foreach (KeyValuePair<UIActionType, NormalButtonEvent> kv in normalTable)
+            {
+                _normalButtonEventTable[kv.Key] = kv.Value;
+            }
+
+            // --------------------------------------------------
             // イベント登録
+            // --------------------------------------------------
             foreach (NormalButtonEvent buttonEvent in _normalButtonEventTable.Values)
             {
                 _eventRouter.RegisterNormalButton(buttonEvent);

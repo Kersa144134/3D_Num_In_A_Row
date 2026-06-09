@@ -18,6 +18,13 @@ namespace UISystem.Application
     public abstract class BaseUIStateController
     {
         // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>UI ボタンの参照解決クラス</summary>
+        protected readonly UIActionButtonResolver _uiActionButtonResolver;
+
+        // ======================================================
         // フィールド
         // ======================================================
 
@@ -25,13 +32,16 @@ namespace UISystem.Application
         // キャンバス
         // --------------------------------------------------
         /// <summary>ダイアログ UI キャンバス配列</summary>
-        protected readonly DialogCanvasDefinition[] DialogCanvasArray;
+        protected readonly DialogCanvasDefinition[] _dialogCanvasArray;
 
         // --------------------------------------------------
         // 状態
         // --------------------------------------------------
         /// <summary>現在アクティブなキャンバス状態</summary>
         private CanvasType _activeCanvasType = CanvasType.None;
+
+        /// <summary>現在アクティブなダイアログ種別</summary>
+        protected DialogType _activeDialogType = DialogType.None;
 
         /// <summary>キャンバスごとの最後に選択したボタンイベント</summary>
         private readonly BaseButtonEvent[] _lastSelectedButtonEvents =
@@ -44,10 +54,14 @@ namespace UISystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
+        /// <param name="uIActionButtonResolver">UI ボタンの参照解決クラス</param>
         /// <param name="dialogCanvasArray">ダイアログキャンバス配列</param>
-        protected BaseUIStateController(DialogCanvasDefinition[] dialogCanvasArray)
+        protected BaseUIStateController(
+            in UIActionButtonResolver uIActionButtonResolver,
+            in DialogCanvasDefinition[] dialogCanvasArray)
         {
-            DialogCanvasArray = dialogCanvasArray;
+            _uiActionButtonResolver = uIActionButtonResolver;
+            _dialogCanvasArray = dialogCanvasArray;
         }
 
         // ======================================================
@@ -59,12 +73,6 @@ namespace UISystem.Application
         /// </summary>
         /// <returns>初期選択ボタン</returns>
         protected abstract BaseButtonEvent GetInitialSelectedButton();
-
-        /// <summary>
-        /// ダイアログ用初期選択ボタンを取得する
-        /// </summary>
-        /// <returns>ダイアログ初期選択ボタン</returns>
-        protected abstract BaseButtonEvent GetDialogInitialSelectedButton();
 
         // ======================================================
         // パブリックメソッド
@@ -83,6 +91,15 @@ namespace UISystem.Application
         }
 
         /// <summary>
+        /// 現在アクティブなダイアログ種別を取得する
+        /// </summary>
+        /// <returns>現在アクティブなキャンバス種別</returns>
+        public DialogType GetActiveDialogType()
+        {
+            return _activeDialogType;
+        }
+
+        /// <summary>
         /// ダイアログキャンバスを表示する
         /// </summary>
         /// <param name="dialogType">表示するダイアログ種別</param>
@@ -92,25 +109,26 @@ namespace UISystem.Application
             HideAllDialogCanvas();
 
             // 指定ダイアログのみ有効化する
-            for (int i = 0; i < DialogCanvasArray.Length; i++)
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
             {
-                if (DialogCanvasArray[i] == null)
+                if (_dialogCanvasArray[i] == null)
                 {
                     continue;
                 }
 
                 // 対象ダイアログ以外はスキップ
-                if (DialogCanvasArray[i].Type != dialogType)
+                if (_dialogCanvasArray[i].Type != dialogType)
                 {
                     continue;
                 }
 
                 // 対象ダイアログを表示する
-                DialogCanvasArray[i].Canvas.SetActive(true);
+                _dialogCanvasArray[i].Canvas.SetActive(true);
             }
 
             // 現在状態を更新する
             _activeCanvasType = CanvasType.Dialog;
+            _activeDialogType = dialogType;
         }
 
         /// <summary>
@@ -207,15 +225,42 @@ namespace UISystem.Application
         protected void HideAllDialogCanvas()
         {
             // 全ダイアログを非表示にする
-            for (int i = 0; i < DialogCanvasArray.Length; i++)
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
             {
-                if (DialogCanvasArray[i] == null)
+                if (_dialogCanvasArray[i] == null)
                 {
                     continue;
                 }
 
-                DialogCanvasArray[i].Canvas.SetActive(false);
+                _dialogCanvasArray[i].Canvas.SetActive(false);
             }
+        }
+
+        /// <summary>
+        /// ダイアログ用初期選択ボタンを取得する
+        /// DialogType に応じて Yes / No を切り替える
+        /// </summary>
+        protected BaseButtonEvent GetDialogInitialSelectedButton()
+        {
+            // --------------------------------------------------
+            // 現在のダイアログ種別を取得
+            // --------------------------------------------------
+            DialogType dialogType = _activeDialogType;
+
+            // --------------------------------------------------
+            // DialogType に応じて初期選択を決定
+            // --------------------------------------------------
+            switch (dialogType)
+            {
+                case DialogType.StartGame:
+                case DialogType.Pause:
+                    return _uiActionButtonResolver.GetDialogButton(UIActionType.DialogYes, dialogType);
+
+                case DialogType.ExitGame:
+                    return _uiActionButtonResolver.GetDialogButton(UIActionType.DialogNo, dialogType);
+            }
+
+            return null;
         }
     }
 }

@@ -126,6 +126,7 @@ namespace ScoreSystem.Presentation
             if (_totalScores == null || _playerScores == null)
             {
                 CreateScoresInternal(playerCount);
+
                 return;
             }
 
@@ -134,6 +135,7 @@ namespace ScoreSystem.Presentation
             {
                 Dispose();
                 CreateScoresInternal(playerCount);
+
                 return;
             }
 
