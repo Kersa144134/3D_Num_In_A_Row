@@ -2,13 +2,11 @@
 // AudioClipRepository.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-06-08
-// 更新日時 : 2026-06-08
+// 更新日時 : 2026-06-09
 // 概要     : AudioClip 管理クラス
 // ======================================================
 
-using System;
 using System.Collections.Generic;
-using System.IO;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using SoundSystem.Domain;
@@ -24,23 +22,11 @@ namespace SoundSystem.Infrastructure
         // 定数
         // ======================================================
 
-        /// <summary>サウンドルートディレクトリ名</summary>
-        private const string SOUND_DIRECTORY_NAME = "Sounds";
+        /// <summary>BGM Addressables ルートキー</summary>
+        private const string BGM_ROOT_KEY = "BGM/";
 
-        /// <summary>BGM ディレクトリ名</summary>
-        private const string BGM_DIRECTORY_NAME = "BGM";
-
-        /// <summary>SE ディレクトリ名</summary>
-        private const string SE_DIRECTORY_NAME = "SE";
-
-        /// <summary>WAV 拡張子</summary>
-        private const string WAV_EXTENSION = ".wav";
-
-        /// <summary>OGG 拡張子</summary>
-        private const string OGG_EXTENSION = ".ogg";
-
-        /// <summary>MP3 拡張子</summary>
-        private const string MP3_EXTENSION = ".mp3";
+        /// <summary>SE Addressables ルートキー</summary>
+        private const string SE_ROOT_KEY = "SE/";
 
         // ======================================================
         // フィールド
@@ -49,11 +35,17 @@ namespace SoundSystem.Infrastructure
         /// <summary>AudioClip ローダー</summary>
         private readonly AudioClipLoader _audioClipLoader;
 
-        /// <summary>BGM クリップ辞書</summary>
+        /// <summary>ロード済み BGM の AudioClip を保持するテーブル</summary>
         private readonly Dictionary<BgmType, AudioClip> _bgmClipMap;
 
-        /// <summary>SE クリップ辞書</summary>
+        /// <summary>ロード済み SE の AudioClip を保持するテーブル</summary>
         private readonly Dictionary<SeType, AudioClip> _seClipMap;
+
+        /// <summary>BgmType → Addressables キー文字列の変換結果を保持するテーブル</summary>
+        private readonly Dictionary<BgmType, string> _bgmKeyMap;
+
+        /// <summary>SeType → Addressables キー文字列の変換結果を保持するテーブル</summary>
+        private readonly Dictionary<SeType, string> _seKeyMap;
 
         // ======================================================
         // コンストラクタ
@@ -64,50 +56,70 @@ namespace SoundSystem.Infrastructure
         /// </summary>
         public AudioClipRepository()
         {
-            // AudioClip ローダー生成
             _audioClipLoader = new AudioClipLoader();
 
-            // BGM 辞書生成
             _bgmClipMap = new Dictionary<BgmType, AudioClip>();
-
-            // SE 辞書生成
             _seClipMap = new Dictionary<SeType, AudioClip>();
+
+            _bgmKeyMap = new Dictionary<BgmType, string>();
+            _seKeyMap = new Dictionary<SeType, string>();
+
+            InitializeKeyCache();
         }
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // ロード
+        // --------------------------------------------------
         /// <summary>
-        /// 全 AudioClip をロードする
+        /// 全 BGM ロード
         /// </summary>
-        public async UniTask LoadAllAsync()
+        public async UniTask LoadBgmAsync()
         {
-            await UniTask.WhenAll(
-                LoadBgmAsync(),
-                LoadSeAsync()
-            );
+            List<UniTask> tasks = new List<UniTask>(_bgmKeyMap.Count);
+
+            foreach (KeyValuePair<BgmType, string> pair in _bgmKeyMap)
+            {
+                tasks.Add(LoadBgmClipAsync(pair.Key, pair.Value));
+            }
+
+            await UniTask.WhenAll(tasks);
         }
 
         /// <summary>
-        /// BGM を取得する
+        /// 全 SE ロード
         /// </summary>
-        /// <param name="type">BGM タイプ</param>
-        /// <param name="clip">取得結果</param>
-        public bool TryGetBgmClip(in BgmType type, out AudioClip clip)
+        public async UniTask LoadSeAsync()
         {
-            // BGM を取得
+            List<UniTask> tasks = new List<UniTask>(_seKeyMap.Count);
+
+            foreach (KeyValuePair<SeType, string> pair in _seKeyMap)
+            {
+                tasks.Add(LoadSeClipAsync(pair.Key, pair.Value));
+            }
+
+            await UniTask.WhenAll(tasks);
+        }
+
+        // --------------------------------------------------
+        // 取得
+        // --------------------------------------------------
+        /// <summary>
+        /// BGM 取得
+        /// </summary>
+        public bool TryGetBgmClip(BgmType type, out AudioClip clip)
+        {
             return _bgmClipMap.TryGetValue(type, out clip);
         }
 
         /// <summary>
-        /// SE を取得する
+        /// SE 取得
         /// </summary>
-        /// <param name="type">SE タイプ</param>
-        /// <param name="clip">取得結果</param>
-        public bool TryGetSeClip(in SeType type, out AudioClip clip)
+        public bool TryGetSeClip(SeType type, out AudioClip clip)
         {
-            // SE を取得
             return _seClipMap.TryGetValue(type, out clip);
         }
 
@@ -116,154 +128,65 @@ namespace SoundSystem.Infrastructure
         // ======================================================
 
         /// <summary>
-        /// ディレクトリ内の BGM 音声ファイルをロードする
+        /// Enum → Addressables キー変換キャッシュ生成
         /// </summary>
-        private async UniTask LoadBgmAsync()
+        private void InitializeKeyCache()
         {
-            // BGM ディレクトリ取得
-            string directoryPath = Path.Combine(
-                Application.streamingAssetsPath,
-                SOUND_DIRECTORY_NAME,
-                BGM_DIRECTORY_NAME);
-
-            // ディレクトリが存在しない
-            if (!Directory.Exists(directoryPath))
+            // --------------------------------------------------
+            // BGMキー生成
+            // --------------------------------------------------
+            foreach (BgmType type in System.Enum.GetValues(typeof(BgmType)))
             {
-                Debug.LogWarning($"[AudioClipRepository] サウンドディレクトリが存在しません。 Path : {directoryPath}");
-
-                return;
-            }
-
-            // ロードタスク一覧
-            List<UniTask> loadTasks = new List<UniTask>();
-
-            // 全ファイル走査
-            foreach (string filePath in Directory.GetFiles(directoryPath))
-            {
-                if (!IsAudioFile(filePath))
+                if (type == BgmType.None)
                 {
                     continue;
                 }
 
-                // タスク追加
-                loadTasks.Add(LoadBgmClipAsync(filePath));
+                _bgmKeyMap[type] = BGM_ROOT_KEY + type;
             }
 
-            // 完了待機
-            await UniTask.WhenAll(loadTasks);
+            // --------------------------------------------------
+            // SEキー生成
+            // --------------------------------------------------
+            foreach (SeType type in System.Enum.GetValues(typeof(SeType)))
+            {
+                if (type == SeType.None)
+                {
+                    continue;
+                }
+
+                _seKeyMap[type] = SE_ROOT_KEY + type;
+            }
         }
 
         /// <summary>
-        /// BGM ファイルを読み込み辞書へ登録する
+        /// BGM 単体ロード
         /// </summary>
-        /// <param name="filePath">ファイルパス</param>
-        private async UniTask LoadBgmClipAsync(string filePath)
+        private async UniTask LoadBgmClipAsync(BgmType type, string key)
         {
-            // ファイル名取得
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-
-            // Enum 変換失敗
-            if (!Enum.TryParse(fileName, out BgmType type))
-            {
-                Debug.LogWarning($"[AudioClipRepository] BgmType に存在しないファイルです。 FileName : {fileName}");
-
-                return;
-            }
-
-            // AudioClip ロード
-            AudioClip clip = await _audioClipLoader.LoadAsync(filePath);
+            AudioClip clip = await _audioClipLoader.LoadBgmAsync(key);
 
             if (clip == null)
             {
                 return;
             }
 
-            // 登録
             _bgmClipMap[type] = clip;
         }
 
         /// <summary>
-        /// ディレクトリ内の SE 音声ファイルをロードする
+        /// SE 単体ロード
         /// </summary>
-        private async UniTask LoadSeAsync()
+        private async UniTask LoadSeClipAsync(SeType type, string key)
         {
-            // SE ディレクトリ取得
-            string directoryPath = Path.Combine(
-                Application.streamingAssetsPath,
-                SOUND_DIRECTORY_NAME,
-                SE_DIRECTORY_NAME);
-
-            // ディレクトリが存在しない
-            if (!Directory.Exists(directoryPath))
-            {
-                Debug.LogWarning($"[AudioClipRepository] サウンドディレクトリが存在しません。 Path : {directoryPath}");
-
-                return;
-            }
-
-            // ロードタスク一覧
-            List<UniTask> loadTasks = new List<UniTask>();
-
-            // 全ファイル走査
-            foreach (string filePath in Directory.GetFiles(directoryPath))
-            {
-                if (!IsAudioFile(filePath))
-                {
-                    continue;
-                }
-
-                // タスク追加
-                loadTasks.Add(LoadSeClipAsync(filePath));
-            }
-
-            // 全ロード完了待機
-            await UniTask.WhenAll(loadTasks);
-        }
-
-        /// <summary>
-        /// SE ファイルを読み込み辞書へ登録する
-        /// </summary>
-        /// <param name="filePath">SE ファイルパス</param>
-        private async UniTask LoadSeClipAsync(string filePath)
-        {
-            // ファイル名取得
-            string fileName = Path.GetFileNameWithoutExtension(filePath);
-
-            // Enum 変換失敗
-            if (!Enum.TryParse(fileName, out SeType type))
-            {
-                Debug.LogWarning($"[AudioClipRepository] SeType に存在しないファイルです。 FileName : {fileName}");
-
-                return;
-            }
-
-            // AudioClip ロード
-            AudioClip clip = await _audioClipLoader.LoadAsync(filePath);
+            AudioClip clip = await _audioClipLoader.LoadSeAsync(key);
 
             if (clip == null)
             {
                 return;
             }
 
-            // 辞書登録
             _seClipMap[type] = clip;
-        }
-
-        /// <summary>
-        /// 対応音声ファイルか判定する
-        /// </summary>
-        /// <param name="filePath">ファイルパス</param>
-        /// <returns>判定結果</returns>
-        private bool IsAudioFile(in string filePath)
-        {
-            // 拡張子取得
-            string extension =
-                Path.GetExtension(filePath)
-                    .ToLowerInvariant();
-
-            return extension == WAV_EXTENSION ||
-                   extension == OGG_EXTENSION ||
-                   extension == MP3_EXTENSION;
         }
     }
 }

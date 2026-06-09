@@ -174,12 +174,15 @@ namespace SoundSystem.Presentation
         // 初期化
         // --------------------------------------------------
         /// <summary>
-        /// 非同期初期化処理
+        /// オーディオ初期化処理
         /// </summary>
-        public async UniTask InitializeAsync()
+        public async UniTask InitializeAudioAsync()
         {
-            // AudioClip をロード
-            await _audioClipRepository.LoadAllAsync();
+            // 並列ロード実行
+            await UniTask.WhenAll(
+                _audioClipRepository.LoadBgmAsync(),
+                _audioClipRepository.LoadSeAsync()
+            );
         }
         
         // --------------------------------------------------

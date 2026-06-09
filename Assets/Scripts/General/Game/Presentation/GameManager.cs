@@ -234,7 +234,7 @@ namespace GameSystem.Presentation
         // UniTask イベント
         // ======================================================
 
-        private async UniTaskVoid Start()
+        private async void Start()
         {
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
@@ -257,7 +257,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // サウンド初期化
             // --------------------------------------------------
-            await _soundManager.InitializeAsync();
+            await _soundManager.InitializeAudioAsync();
             
             // --------------------------------------------------
             // Updatable 初期化
