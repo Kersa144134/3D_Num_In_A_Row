@@ -469,55 +469,115 @@ namespace UISystem.Presentation
                 return;
             }
 
-            // --------------------------------------------------
-            // ダイアログ：YES
-            // --------------------------------------------------
-            if (actionType == UIActionType.DialogYes)
+            switch (dialogType)
             {
-                // ダイアログデータ取得
-                DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
+                // --------------------------------------------------
+                // ゲーム開始ダイアログ
+                // --------------------------------------------------
+                case DialogType.StartGame:
+                    // --------------------------------------------------
+                    // ダイアログ：YES
+                    // --------------------------------------------------
+                    if (actionType == UIActionType.DialogYes)
+                    {
+                        // ダイアログデータ取得
+                        DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
 
-                if (dialogEvent != null)
-                {
-                    // ダイアログイベント発火
-                    dialogEvent.InvokeEvent();
-                }
+                        if (dialogEvent != null)
+                        {
+                            // ダイアログイベント発火
+                            dialogEvent.InvokeEvent();
+                        }
 
-                // ダイアログキャンバスを非表示にする
-                _uiStateController.HideDialogCanvas();
+                        // ダイアログキャンバスを非表示にする
+                        _uiStateController.HideDialogCanvas();
 
-                // ダイアログ非表示を通知する
-                _onDialogVisibleChanged.OnNext(false);
+                        // ダイアログ非表示を通知する
+                        _onDialogVisibleChanged.OnNext(false);
 
-                return;
-            }
+                        return;
+                    }
 
-            // --------------------------------------------------
-            // ダイアログ：NO
-            // --------------------------------------------------
-            if (actionType == UIActionType.DialogNo)
-            {
-                // スタート画面のボタンを操作可能に更新
-                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
-                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
+                    // --------------------------------------------------
+                    // ダイアログ：NO
+                    // --------------------------------------------------
+                    if (actionType == UIActionType.DialogNo)
+                    {
+                        // スタート画面のボタンを操作可能に更新
+                        SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
+                        SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
 
-                // ダイアログキャンバスを非表示にする
-                _uiStateController.HideDialogCanvas();
+                        // ダイアログキャンバスを非表示にする
+                        _uiStateController.HideDialogCanvas();
 
-                // 次のキャンバス状態を取得する
-                CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+                        // 次のキャンバス状態を取得する
+                        CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
 
-                // 最後に選択されていたボタンを取得する
-                BaseButtonEvent selectedButtonEvent =
-                    _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+                        // 最後に選択されていたボタンを取得する
+                        BaseButtonEvent selectedButtonEvent =
+                            _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
 
-                // 入力状態に応じて初期選択を適用する
-                SetSelectionState(nextCanvasType, selectedButtonEvent);
+                        // 入力状態に応じて初期選択を適用する
+                        SetSelectionState(nextCanvasType, selectedButtonEvent);
 
-                // ダイアログ非表示を通知する
-                _onDialogVisibleChanged.OnNext(false);
+                        // ダイアログ非表示を通知する
+                        _onDialogVisibleChanged.OnNext(false);
 
-                return;
+                        return;
+                    }
+
+                    break;
+
+                // --------------------------------------------------
+                // ゲーム終了ダイアログ
+                // --------------------------------------------------
+                case DialogType.ExitGame:
+                    // --------------------------------------------------
+                    // ダイアログ：YES
+                    // --------------------------------------------------
+                    if (actionType == UIActionType.DialogYes)
+                    {
+                        // ダイアログデータ取得
+                        DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
+
+                        if (dialogEvent != null)
+                        {
+                            // ダイアログイベント発火
+                            dialogEvent.InvokeEvent();
+                        }
+
+                        return;
+                    }
+
+                    // --------------------------------------------------
+                    // ダイアログ：NO
+                    // --------------------------------------------------
+                    if (actionType == UIActionType.DialogNo)
+                    {
+                        // スタート画面のボタンを操作可能に更新
+                        SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
+                        SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
+
+                        // ダイアログキャンバスを非表示にする
+                        _uiStateController.HideDialogCanvas();
+
+                        // 次のキャンバス状態を取得する
+                        CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+                        // 最後に選択されていたボタンを取得する
+                        BaseButtonEvent selectedButtonEvent =
+                            _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+                        // 入力状態に応じて初期選択を適用する
+                        SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+                        // ダイアログ非表示を通知する
+                        _onDialogVisibleChanged.OnNext(false);
+
+                        return;
+                    }
+
+                    break;
             }
         }
 
@@ -807,12 +867,34 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベントストリームをまとめて購読する
         /// </summary>
+        /// <param name="exitGameRequested">ゲーム終了入力を通知するストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="titleStartAnimationSkiped">タイトルスタートアニメーションのスキップを通知するストリーム</param>
         public void BindStreams(
+            in IObservable<Unit> exitGameRequested,
             in IObservable<bool> gamepadUsed,
             in IObservable<Unit> titleStartAnimationSkiped)
         {
+            exitGameRequested
+                .Subscribe(_ =>
+                {
+                    if (_uiStateController.GetActiveCanvasType() == CanvasType.Start)
+                    {
+                        // ダイアログキャンバスを表示する
+                        _uiStateController.ShowDialogCanvas(DialogType.ExitGame);
+
+                        // 次のキャンバス状態を取得する
+                        CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+                        // 入力状態に応じて初期選択を適用する
+                        SetSelectionState(nextCanvasType);
+
+                        // ダイアログ表示を通知する
+                        _onDialogVisibleChanged.OnNext(true);
+                    }
+                })
+                .AddTo(_disposables); 
+            
             gamepadUsed
                 .DistinctUntilChanged()
                 .Subscribe(isUsed =>

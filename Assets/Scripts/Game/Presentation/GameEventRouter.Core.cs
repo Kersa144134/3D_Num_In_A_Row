@@ -176,6 +176,9 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // システム
         // --------------------------------------------------
+        /// <summary>ゲーム終了入力用 Subject</summary>
+        private readonly Subject<Unit> _onExitGameRequested = new Subject<Unit>();
+
         /// <summary>ゲームスピード変更用 Subject</summary>
         private readonly Subject<float> _onGameSpeedChangeRequested = new Subject<float>();
 

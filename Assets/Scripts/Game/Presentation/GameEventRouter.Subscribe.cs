@@ -131,10 +131,16 @@ namespace GameSystem.Presentation
 
                 // スタートボタン押す
                 _inputManager.StartButton.OnDown
-                    .Subscribe(e => TogglePausePhase(_currentPhase.Value))
+                    .Subscribe(_ =>
+                    {
+                        // ゲーム終了リクエスト
+                        _onExitGameRequested.OnNext(Unit.Default);
+
+                        TogglePausePhase(_currentPhase.Value);
+                    })
                     .AddTo(_disposables);
                 _inputManager.ActiveDeviceType
-                    .Subscribe(e => NotifyActiveControllerChanged(e))
+                    .Subscribe(type => NotifyActiveControllerChanged(type))
                     .AddTo(_disposables);
             }
 
@@ -144,6 +150,7 @@ namespace GameSystem.Presentation
             if (_titleUIPresenter != null)
             {
                 _titleUIPresenter.BindStreams(
+                    _onExitGameRequested,
                     _onGamepadUsed,
                     _onSceneStartAnimationSkiped);
 
