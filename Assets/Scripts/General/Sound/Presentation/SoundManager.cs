@@ -339,7 +339,9 @@ namespace SoundSystem.Presentation
             {
                 BgmSet bgm = _bgmSets[i];
 
-                if (bgm.Source == null || bgm.Source.clip == null)
+                // AudioSource 未設定・未再生なら処理なし
+                if (bgm.Source == null ||
+                    !bgm.Source.isPlaying)
                 {
                     continue;
                 }
