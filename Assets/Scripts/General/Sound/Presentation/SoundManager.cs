@@ -339,7 +339,7 @@ namespace SoundSystem.Presentation
             {
                 BgmSet bgm = _bgmSets[i];
 
-                if (bgm.Source == null)
+                if (bgm.Source == null || bgm.Source.clip == null)
                 {
                     continue;
                 }
