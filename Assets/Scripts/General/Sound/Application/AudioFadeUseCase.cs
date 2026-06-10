@@ -12,6 +12,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UniRx;
 
 namespace SoundSystem.Application
 {
@@ -29,6 +30,16 @@ namespace SoundSystem.Application
 
         /// <summary>ローパスフェード制御用 CancellationTokenSource</summary>
         private CancellationTokenSource _lowPassCancellationTokenSource;
+
+        // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>一時停止リクエスト通知用 Subject</summary>
+        private readonly Subject<AudioSource> _onPauseRequested = new Subject<AudioSource>();
+
+        /// <summary>一時停止リクエスト通知用 Subject</summary>
+        public IObservable<AudioSource> OnPauseRequested => _onPauseRequested;
 
         // ======================================================
         // コンストラクタ
@@ -142,6 +153,8 @@ namespace SoundSystem.Application
         /// </summary>
         public void Dispose()
         {
+            _onPauseRequested?.Dispose();
+
             for (int i = 0; i < _bgmVolumeCancellationArray.Length; i++)
             {
                 // BGM フェード停止
@@ -227,6 +240,13 @@ namespace SoundSystem.Application
 
                 // 最終値保証
                 audioSource.volume = targetVolume;
+
+                // 完全消音になった場合
+                if (Mathf.Approximately(targetVolume, 0.0f))
+                {
+                    // 一時停止要求通知
+                    _onPauseRequested.OnNext(audioSource);
+                }
             }
             catch (OperationCanceledException) { }
         }
@@ -234,7 +254,6 @@ namespace SoundSystem.Application
         // --------------------------------------------------
         // ローパスフェード
         // --------------------------------------------------
-
         /// <summary>
         /// ローパスフェード処理
         /// </summary>

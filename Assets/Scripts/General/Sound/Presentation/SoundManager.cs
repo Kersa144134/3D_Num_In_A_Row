@@ -8,6 +8,7 @@
 
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UniRx;
 using SoundSystem.Application;
 using SoundSystem.Domain;
 using SoundSystem.Infrastructure;
@@ -94,6 +95,13 @@ namespace SoundSystem.Presentation
         private const float MAX_LOW_PASS_FREQUENCY = 22000f;
 
         // ======================================================
+        // UniRx 変数
+        // ======================================================
+
+        /// <summary>イベント購読管理</summary>
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        // ======================================================
         // Unityイベント
         // ======================================================
 
@@ -169,6 +177,9 @@ namespace SoundSystem.Presentation
                 // AudioLowPassFilter 取得
                 _lowPassFilters[i] = source.GetComponent<AudioLowPassFilter>();
             }
+
+            // イベント購読
+            Subscribe();
         }
 
         private void OnDestroy()
@@ -332,7 +343,7 @@ namespace SoundSystem.Presentation
         /// <param name="transitionDuration">補間時間</param>
         public void SetBGMVolume(in BgmType type, in float volume, float? transitionDuration = null)
         {
-            // BGMインデックス取得
+            // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
                 return;
@@ -345,13 +356,23 @@ namespace SoundSystem.Presentation
                 return;
             }
 
+            // 一時停止中の場合は再開
+            if (!bgm.Source.isPlaying &&
+                bgm.Source.time > 0.0f)
+            {
+                bgm.Source.UnPause();
+            }
+            // 未再生なら処理なし
+            else if (!bgm.Source.isPlaying)
+            {
+                return;
+            }
+            
             // 音量補正
             float targetVolume = Mathf.Clamp01(volume);
 
             // 補間時間決定
-            float duration =
-                transitionDuration ??
-                _volumeFadeTransition;
+            float duration = transitionDuration ?? _volumeFadeTransition;
 
             // 音量フェード実行
             _audioFadeUseCase.StartVolumeFade(
@@ -372,20 +393,23 @@ namespace SoundSystem.Presentation
             float targetVolume = Mathf.Clamp01(volume);
 
             // 補間時間決定
-            float duration =
-                transitionDuration ??
-                _volumeFadeTransition;
+            float duration = transitionDuration ?? _volumeFadeTransition;
 
             // 全 BGM を走査
             for (int i = 0; i < _bgmSets.Length; i++)
             {
                 BgmSet bgm = _bgmSets[i];
 
-                // AudioSource 未設定・未再生なら処理なし
-                if (bgm.Source == null ||
-                    !bgm.Source.isPlaying)
+                // 一時停止中の場合は再開
+                if (!bgm.Source.isPlaying &&
+                    bgm.Source.time > 0.0f)
                 {
-                    continue;
+                    bgm.Source.UnPause();
+                }
+                // 未再生なら処理なし
+                else if (!bgm.Source.isPlaying)
+                {
+                    return;
                 }
 
                 // 音量フェード実行
@@ -410,9 +434,7 @@ namespace SoundSystem.Presentation
                 : MAX_LOW_PASS_FREQUENCY;
 
             // 補間時間決定
-            float duration =
-                transitionDuration ??
-                _lowPassTransition;
+            float duration = transitionDuration ?? _lowPassTransition;
 
             // ローパスフェード開始
             _audioFadeUseCase.StartLowPassFade(
@@ -535,6 +557,17 @@ namespace SoundSystem.Presentation
         // ======================================================
         // プライベートメソッド
         // ======================================================
+
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        private void Subscribe()
+        {
+            // BGM 一時停止
+            _audioFadeUseCase.OnPauseRequested
+                .Subscribe(source => source.Pause())
+                .AddTo(_disposables);
+        }
 
         /// <summary>
         /// ループ SE 再生

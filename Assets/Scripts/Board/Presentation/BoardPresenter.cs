@@ -280,21 +280,8 @@ namespace BoardSystem.Presentation
                 }
             }
 
-            // --------------------------------------------------
-            // SE 再生
-            // --------------------------------------------------
-            // 選択列更新
-            _view.OnSelectColumnChanged
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Board_ColumnSelect))
-                .AddTo(_disposables);
-            // ピース発光
-            _deleteHandler.OnPieceEmissionExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
-                .AddTo(_disposables);
-            // ライン削除
-            _deleteHandler.OnLineDeleteExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete))
-                .AddTo(_disposables);
+            // イベント購読
+            Subscribe();
         }
 
         public void OnUpdate(in float unscaledDeltaTime)
@@ -472,7 +459,21 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void Subscribe()
         {
-
+            // --------------------------------------------------
+            // SE 再生
+            // --------------------------------------------------
+            // 選択列更新
+            _view.OnSelectColumnChanged
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Board_ColumnSelect))
+                .AddTo(_disposables);
+            // ピース発光
+            _deleteHandler.OnPieceEmissionExecuted
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
+                .AddTo(_disposables);
+            // ライン削除
+            _deleteHandler.OnLineDeleteExecuted
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete))
+                .AddTo(_disposables);
         }
 
         /// <summary>
