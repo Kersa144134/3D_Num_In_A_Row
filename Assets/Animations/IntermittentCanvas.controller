@@ -66,7 +66,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Player_4_Start
+  m_Name: Intermittent_Player_4_Start
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -295,7 +295,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Player_1_Start
+  m_Name: Intermittent_Player_1_Start
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -452,7 +452,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Player_2_Start
+  m_Name: Intermittent_Player_2_Start
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -531,7 +531,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Player_3_Start
+  m_Name: Intermittent_Player_3_Start
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:

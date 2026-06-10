@@ -242,10 +242,8 @@ namespace GameSystem.Presentation
         {
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
-            _soundManager = SoundManager.Instance;
 
-            if (_gameOptionManager == null ||
-                _soundManager == null)
+            if (_gameOptionManager == null)
             {
                 Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
 

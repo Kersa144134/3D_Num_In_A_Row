@@ -119,7 +119,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: IsSkip
+    m_ConditionEvent: IsFlash
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 6838608467664464870}
@@ -150,7 +150,7 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: IsSkip
+  - m_Name: IsFlash
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -234,7 +234,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ResultCanvas_Skip
+  m_Name: ResultCanvas_Flash
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:

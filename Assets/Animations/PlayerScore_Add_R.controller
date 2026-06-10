@@ -7,7 +7,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Score_None
+  m_Name: PlayerScore_None
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -87,7 +87,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Score_Add_R
+  m_Name: PlayerScore_Add_R
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:

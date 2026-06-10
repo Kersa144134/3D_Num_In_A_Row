@@ -6,20 +6,22 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
-using System;
-using System.Collections.Generic;
-using TMPro;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
-using UniRx;
-using UnityEngine;
-using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -190,6 +192,9 @@ namespace UISystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -277,6 +282,7 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
+            _soundManager = SoundManager.Instance;
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
@@ -577,6 +583,8 @@ namespace UISystem.Presentation
                         case DialogType.ExitGame:
                             // ダイアログイベント実行
                             _onDialogEvent.OnNext(dialogType);
+
+                            _soundManager?.SetBGMVolume(0);
 
                             return;
                     }
@@ -992,6 +1000,10 @@ namespace UISystem.Presentation
 
                     // ポインター表示
                     SetPointerVisible(true);
+
+                    // BGM 再生
+                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f);
+                    _soundManager?.PlayBGM(BgmType.Title);
 
                     // アニメーション終了通知
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);

@@ -9,13 +9,15 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using UniRx;
+using TMPro;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -170,15 +172,27 @@ namespace UISystem.Presentation
         /// <summary>断続更新対象のキャンバスのアニメーションイベント通知クラス</summary>
         private AnimationEventNotifier _intermittentCanvasAnimationEventNotifier;
 
+        /// <summary>アウトゲームキャンバスのアニメーションイベント通知クラス</summary>
+        private AnimationEventNotifier _outgameCanvasCanvasAnimationEventNotifier;
+
+        // --------------------------------------------------
+        // システム
+        // --------------------------------------------------
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
 
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
+
         // ======================================================
         // フィールド
         // ======================================================
+
+        /// <summary>現在フェーズ</summary>
+        private PhaseType _currentPhase = PhaseType.None;
 
         /// <summary>ポインターターゲット検出中フラグ</summary>
         private bool _isPointerTarget = false;
@@ -211,16 +225,19 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
-        /// <summary>Ready パラメータ名</summary>
-        private static readonly int IS_READY_HASH = Animator.StringToHash("IsReady");
+        /// <summary>IsStart パラメータ名</summary>
+        private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
 
-        /// <summary>Pause パラメータ名</summary>
+        /// <summary>IsChangePlayer パラメータ名</summary>
+        private static readonly int IS_CHANGE_PLAYER_HASH = Animator.StringToHash("IsChangePlayer");
+
+        /// <summary>IsPause パラメータ名</summary>
         private static readonly int IS_PAUSE_HASH = Animator.StringToHash("IsPause");
 
-        /// <summary>Finish パラメータ名</summary>
+        /// <summary>IsFinish パラメータ名</summary>
         private static readonly int IS_FINISH_HASH = Animator.StringToHash("IsFinish");
 
-        /// <summary>PlayerID パラメータ名</summary>
+        /// <summary>IsPlayerID パラメータ名</summary>
         private static readonly int IS_PLAYER_ID_HASH = Animator.StringToHash("IsPlayerID");
 
         /// <summary>AddScore パラメータ名</summary>
@@ -231,9 +248,6 @@ namespace UISystem.Presentation
 
         /// <summary>IsWarning パラメータ名</summary>
         private static readonly int IS_WARNING_HASH = Animator.StringToHash("IsWarning");
-
-        /// <summary>ChangePlayer パラメータ名</summary>
-        private static readonly int CHANGE_PLAYER_HASH = Animator.StringToHash("ChangePlayer");
         
         /// <summary>SwitchProjection パラメータ名</summary>
         private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
@@ -245,11 +259,23 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>メインスタートアニメーション終了通知用 Subject</summary>
-        private readonly Subject<Unit> _onStartMainAnimationEnd = new Subject<Unit>();
+        /// <summary>Ready アニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onReadyAnimationEnd = new Subject<Unit>();
 
-        /// <summary>メインスタートアニメーション終了ストリーム</summary>
-        public IObservable<Unit> OnStartMainAnimationEnd => _onStartMainAnimationEnd;
+        /// <summary>Ready アニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnReadyAnimationEnd => _onReadyAnimationEnd;
+
+        /// <summary>Finish アニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onFinishAnimationEnd = new Subject<Unit>();
+
+        /// <summary>Finish アニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnFinishAnimationEnd => _onFinishAnimationEnd;
+
+        /// <summary>プレイヤー切り替えアニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onChangePlayerAnimationEnd = new Subject<Unit>();
+
+        /// <summary>プレイヤー切り替えアニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnChangePlayerAnimationEnd => _onChangePlayerAnimationEnd;
 
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
@@ -268,6 +294,12 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
+            _soundManager = SoundManager.Instance;
+
+            // --------------------------------------------------
+            // UI 管理
+            // --------------------------------------------------
+
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
@@ -374,6 +406,7 @@ namespace UISystem.Presentation
 
             // アニメーションイベント通知クラス取得
             _intermittentCanvasAnimationEventNotifier = _intermittentCanvas.GetComponent<AnimationEventNotifier>();
+            _outgameCanvasCanvasAnimationEventNotifier = _outgameCanvas.GetComponent<AnimationEventNotifier>();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -684,32 +717,35 @@ namespace UISystem.Presentation
             in IObservable<float> limitTimeChanged)
         {
             phase
+                .Skip(1)
                 .Subscribe(type =>
                 {
+                    _currentPhase = type;
+
                     // Ready
-                    bool isReady = type == PhaseType.Ready;
+                    bool isReady = _currentPhase == PhaseType.Ready;
                     SetReadyState(isReady);
 
                     // Play
-                    bool isPlay = type == PhaseType.Play;
+                    bool isPlay = _currentPhase == PhaseType.Play;
                     SetLimitTimeVisible(isPlay);
                     SetWarningAnimationSpeed(isPlay
                         ? 1.0f
                         : 0.0f);
 
                     // ChangePlayer
-                    bool isChangePlayer = type == PhaseType.ChangePlayer;
+                    bool isChangePlayer = _currentPhase == PhaseType.ChangePlayer;
                     if (isChangePlayer)
                     {
                         TriggerPlayerChange();
                     }
 
                     // Pause
-                    bool isPause = type == PhaseType.Pause;
+                    bool isPause = _currentPhase == PhaseType.Pause;
                     SetPauseState(isPause);
 
                     // Finish
-                    bool isFinish = type == PhaseType.Finish;
+                    bool isFinish = _currentPhase == PhaseType.Finish;
                     SetFinishState(isFinish);
                 })
                 .AddTo(_disposables);
@@ -800,6 +836,9 @@ namespace UISystem.Presentation
                 .DistinctUntilChanged()
                 .Subscribe(time => UpdateLimitTimeDisplay(time))
                 .AddTo(_disposables);
+
+            // BGM 再生
+            _soundManager?.PlayBGM(BgmType.Main);
         }
 
         // ======================================================
@@ -818,7 +857,25 @@ namespace UISystem.Presentation
 
             // アニメーション終了通知
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ => _onStartMainAnimationEnd.OnNext(Unit.Default))
+                .Subscribe(_ => _onChangePlayerAnimationEnd.OnNext(Unit.Default))
+                .AddTo(_disposables);
+
+            // アニメーション終了通知
+            _outgameCanvasCanvasAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    if (_currentPhase == PhaseType.Ready)
+                    {
+                        _onReadyAnimationEnd.OnNext(Unit.Default);
+
+                        return;
+                    }
+
+                    if (_currentPhase == PhaseType.Finish)
+                    {
+                        _onFinishAnimationEnd.OnNext(Unit.Default);
+                    }
+                })
                 .AddTo(_disposables);
 
             // シーン遷移状態解除
@@ -1039,7 +1096,10 @@ namespace UISystem.Presentation
                 return;
             }
 
-            _outgameCanvasAnimator.SetBool(IS_READY_HASH, isReady);
+            if (!isReady)
+            {
+                _outgameCanvasAnimator.SetTrigger(IS_START_HASH);
+            }
         }
 
         /// <summary>
@@ -1105,8 +1165,11 @@ namespace UISystem.Presentation
             {
                 return;
             }
-            
-            _outgameCanvasAnimator.SetBool(IS_FINISH_HASH, isFinish);
+
+            if (isFinish)
+            {
+                _outgameCanvasAnimator.SetTrigger(IS_FINISH_HASH);
+            }
         }
 
         /// <summary>
@@ -1144,7 +1207,7 @@ namespace UISystem.Presentation
         /// </summary>
         private void TriggerPlayerChange()
         {
-            _limitTimeAnimator?.SetTrigger(CHANGE_PLAYER_HASH);
+            _limitTimeAnimator?.SetTrigger(IS_CHANGE_PLAYER_HASH);
         }
 
         /// <summary>

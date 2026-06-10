@@ -16,6 +16,8 @@ using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -169,13 +171,16 @@ namespace UISystem.Presentation
         private AnimationEventNotifier _resultCanvasAnimationEventNotifier;
 
         // --------------------------------------------------
-        // システム参照
+        // システム
         // --------------------------------------------------
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
         /// <summary>ScoreManager キャッシュ</summary>
         private ScoreManager _scoreManager;
+
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
 
         // ======================================================
         // フィールド
@@ -184,8 +189,11 @@ namespace UISystem.Presentation
         /// <summary>リザルトキャンバスのアニメーター</summary>
         private Animator _resultCanvasAnimator;
 
-        /// <summary>ランクアニメーションのチェックポイントカウント回数</summary>
+        /// <summary>ランクアニメーションのチェックポイントイベントカウント回数</summary>
         private int _rankAnimationCheckPointCount = 0;
+
+        /// <summary>ランクアニメーションの終了イベントカウント回数</summary>
+        private int _rankAnimationEndCount = 0;
 
         // ======================================================
         // 定数
@@ -197,8 +205,8 @@ namespace UISystem.Presentation
         /// <summary>IsStart パラメータ名</summary>
         private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
 
-        /// <summary>IsSkip パラメータ名</summary>
-        private static readonly int IS_SKIP_HASH = Animator.StringToHash("IsSkip");
+        /// <summary>IsFlash パラメータ名</summary>
+        private static readonly int IS_FLASH_HASH = Animator.StringToHash("IsFlash");
 
         /// <summary>IsEnd パラメータ名</summary>
         private static readonly int IS_END_HASH = Animator.StringToHash("IsEnd");
@@ -227,6 +235,7 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
+            _soundManager = SoundManager.Instance;
 
             if (_inputManager == null ||
                 _scoreManager == null ||
@@ -564,6 +573,9 @@ namespace UISystem.Presentation
             resultStartAnimationSkiped
                 .Subscribe(_ =>
                 {
+                    // アニメーション終了カウントを +1 する
+                    _rankAnimationEndCount++;
+
                     // 順位アニメーション終了
                     _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
@@ -592,10 +604,10 @@ namespace UISystem.Presentation
                 {
                     _rankAnimationCheckPointCount++;
 
-                    if (_rankAnimationCheckPointCount == 4)
+                    if (_rankAnimationCheckPointCount >= 4)
                     {
-                        // スキップアニメーション自動起動
-                        _resultCanvasAnimator.SetTrigger(IS_SKIP_HASH);
+                        // フラッシュアニメーション起動
+                        _resultCanvasAnimator.SetTrigger(IS_FLASH_HASH);
                     }
                 })
                 .AddTo(_disposables);
@@ -604,13 +616,21 @@ namespace UISystem.Presentation
             _resultRankAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
+                    _rankAnimationEndCount++;
+
                     // 順位アニメーション終了
                     _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
 
-                    // アニメーション終了通知
-                    _onStarttResultAnimationEnd.OnNext(Unit.Default);
+                    if (_rankAnimationEndCount >= 2)
+                    {
+                        // BGM 再生
+                        _soundManager?.PlayBGM(BgmType.Result);
+
+                        // アニメーション終了通知
+                        _onStarttResultAnimationEnd.OnNext(Unit.Default);
+                    }
                 })
                 .AddTo(_disposables);
 

@@ -164,14 +164,7 @@ namespace GameSystem.Presentation
 
                 // タイトルスタートアニメーション終了時
                 _titleUIPresenter.OnStartTitleAnimationEnd
-                    .Subscribe(_ =>
-                    {
-                        UnbindEventSkipStream();
-
-                        // BGM 再生
-                        _soundManager.SetBGMVolume(BgmType.Title, 0.5f);
-                        _soundManager.PlayBGM(BgmType.Title);
-                    })
+                    .Subscribe(_ => UnbindEventSkipStream())
                     .AddTo(_disposables);
                 // ゲーム開始アニメーション終了時
                 _titleUIPresenter.OnStartPlayAnimationEnd
@@ -241,9 +234,28 @@ namespace GameSystem.Presentation
                 // 直後にキャッシュ状態を同期
                 _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
 
+                // Ready アニメーション終了時
+                _mainUIPresenter.OnReadyAnimationEnd
+                    .Subscribe(_ =>
+                    {
+                        UnbindEventSkipStream();
+                        
+                        NotifyPhaseChangeRequested(PhaseType.ChangePlayer);
+                    })
+                    .AddTo(_disposables);
                 // ChangePlayer アニメーション終了時
-                _mainUIPresenter.OnStartMainAnimationEnd
+                _mainUIPresenter.OnChangePlayerAnimationEnd
                     .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.Play))
+                    .AddTo(_disposables);
+                // Finish アニメーション終了時
+                _mainUIPresenter.OnFinishAnimationEnd
+                    .Subscribe(_ =>
+                    {
+                        UnbindEventSkipStream();
+
+                        // リザルトシーン遷移実行発火
+                        _onSceneChangeExecuted.OnNext(Unit.Default);
+                    })
                     .AddTo(_disposables);
 
                 // --------------------------------------------------
@@ -288,9 +300,6 @@ namespace GameSystem.Presentation
                         _onExitGameRequested.OnNext(Unit.Default);
                     })
                     .AddTo(_disposables);
-
-                // BGM 再生
-                _soundManager.PlayBGM(BgmType.Main);
             }
 
             if (_resultUIPresenter != null)
@@ -304,13 +313,7 @@ namespace GameSystem.Presentation
 
                 // リザルト順位アニメーション終了時
                 _resultUIPresenter.OnStartResultAnimationEnd
-                    .Subscribe(_ =>
-                    {
-                        UnbindEventSkipStream();
-
-                        // BGM 再生
-                        _soundManager.PlayBGM(BgmType.Result);
-                    })
+                    .Subscribe(_ => UnbindEventSkipStream())
                     .AddTo(_disposables);
 
                 // --------------------------------------------------
@@ -505,8 +508,6 @@ namespace GameSystem.Presentation
                 {
                     // フェードイン時間を通知
                     _fadeInTrigger.OnNext(seconds);
-
-                    _soundManager.SetBGMVolume(0, seconds);
                 })
                 .AddTo(_disposables);
         }

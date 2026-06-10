@@ -3,7 +3,6 @@
   <Project Path="UniRx.csproj" />
   <Project Path="UIApplication.csproj" />
   <Project Path="GeneralSoundInfrastructure.csproj" />
-  <Project Path="GeneralSoundDomain.csproj" />
   <Project Path="InputApplication.csproj" />
   <Project Path="CameraPresentation.csproj" />
   <Project Path="GeneralAnimationInfrastructure.csproj" />

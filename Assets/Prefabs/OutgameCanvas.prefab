@@ -1488,6 +1488,7 @@ GameObject:
   - component: {fileID: 1060742061140342501}
   - component: {fileID: 8753305302576703763}
   - component: {fileID: 8703451247910137326}
+  - component: {fileID: 3695032417889524636}
   m_Layer: 5
   m_Name: OutgameCanvas
   m_TagString: Untagged
@@ -1606,6 +1607,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3695032417889524636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3293744753317407296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3be3ecbf90d49da4eb00d703f5bd6a67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GeneralAnimationInfrastructure::AnimationSystem.Infrastructure.AnimationEventNotifier
 --- !u!1 &3566000759106627767
 GameObject:
   m_ObjectHideFlags: 0

@@ -42,13 +42,17 @@ namespace SoundSystem.Presentation
         private SeSet[] _seSets;
 
         [Header("BGM 設定")]
+        /// <summary>音量フェード補間基準値（秒）</summary>
+        [SerializeField]
+        private float _volumeFadeTransition = 1.0f;
+
+        /// <summary>ローパス補間基準値（秒）</summary>
+        [SerializeField]
+        private float _lowPassTransition = 1.0f;
+
         /// <summary>ローパス適用時の目標周波数</summary>
         [SerializeField]
         private float _lowPassTargetFrequency = 500f;
-
-        /// <summary>ローパス補間時間</summary>
-        [SerializeField]
-        private float _lowPassTransition = 1.0f;
 
         [Header("SE 設定")]
         /// <summary>SE 最大音量となる距離</summary>
@@ -296,7 +300,7 @@ namespace SoundSystem.Presentation
         public void SetBGMVolume(
             in BgmType type,
             in float volume,
-            in float transitionDuration = 0f)
+            float? transitionDuration = null)
         {
             // BGMインデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
@@ -314,12 +318,17 @@ namespace SoundSystem.Presentation
             // 音量補正
             float targetVolume = Mathf.Clamp01(volume);
 
+            // 補間時間決定
+            float duration =
+                transitionDuration ??
+                _volumeFadeTransition;
+
             // 音量フェード実行
             _audioFadeUseCase.StartVolumeFade(
                 bgmIndex,
                 bgm.Source,
                 targetVolume,
-                transitionDuration);
+                duration);
         }
 
         /// <summary>
@@ -329,10 +338,15 @@ namespace SoundSystem.Presentation
         /// <param name="transitionDuration">補間時間</param>
         public void SetBGMVolume(
             in float volume,
-            in float transitionDuration = 0f)
+            float? transitionDuration = null)
         {
             // 音量補正
             float targetVolume = Mathf.Clamp01(volume);
+
+            // 補間時間決定
+            float duration =
+                transitionDuration ??
+                _volumeFadeTransition;
 
             // 全 BGM を走査
             for (int i = 0; i < _bgmSets.Length; i++)
@@ -351,7 +365,7 @@ namespace SoundSystem.Presentation
                     i,
                     bgm.Source,
                     targetVolume,
-                    transitionDuration);
+                    duration);
             }
         }
 
@@ -359,18 +373,26 @@ namespace SoundSystem.Presentation
         /// ローパスフィルター ON / OFF
         /// </summary>
         /// <param name="enable">true: ON / false: OFF</param>
-        public void SetBgmLowPass(in bool enable)
+        /// <param name="transitionDuration">補間時間</param>
+        public void SetBgmLowPass(
+            in bool enable,
+            float? transitionDuration = null)
         {
             // 目標周波数決定
             float targetFrequency = enable
                 ? _lowPassTargetFrequency
                 : MAX_LOW_PASS_FREQUENCY;
 
+            // 補間時間決定
+            float duration =
+                transitionDuration ??
+                _lowPassTransition;
+
             // ローパスフェード開始
             _audioFadeUseCase.StartLowPassFade(
                 _lowPassFilters,
                 targetFrequency,
-                _lowPassTransition);
+                duration);
         }
 
         // --------------------------------------------------
