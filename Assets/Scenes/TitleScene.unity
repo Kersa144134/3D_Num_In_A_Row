@@ -268,7 +268,6 @@ GameObject:
   - component: {fileID: 3422657}
   - component: {fileID: 3422656}
   - component: {fileID: 3422655}
-  - component: {fileID: 3422654}
   m_Layer: 5
   m_Name: TitleDialogCanvas_Exit
   m_TagString: Untagged
@@ -276,19 +275,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &3422654
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3422653}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da2038514706de64fbd48b495cb95d04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UIInfrastructure::UI.Dialog.Domain.DialogEvent
-  _eventType: 2
 --- !u!114 &3422655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5532,10 +5518,6 @@ PrefabInstance:
     - target: {fileID: 141186, guid: 53c22e1773be7f84aad8ed8b7b58fa6e, type: 3}
       propertyPath: m_Name
       value: FadeCanvas
-      objectReference: {fileID: 0}
-    - target: {fileID: 141186, guid: 53c22e1773be7f84aad8ed8b7b58fa6e, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 22424616, guid: 53c22e1773be7f84aad8ed8b7b58fa6e, type: 3}
       propertyPath: m_Pivot.x
@@ -12654,7 +12636,6 @@ GameObject:
   - component: {fileID: 7128448951046788786}
   - component: {fileID: 8869984361626024082}
   - component: {fileID: 3031525955421169552}
-  - component: {fileID: 5765532390528440693}
   m_Layer: 5
   m_Name: TitleDialogCanvas_Start
   m_TagString: Untagged
@@ -14061,19 +14042,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7109541707989862078}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5765532390528440693
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1410349672651826721}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da2038514706de64fbd48b495cb95d04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UIInfrastructure::UI.Dialog.Domain.DialogEvent
-  _eventType: 1
 --- !u!114 &5773155756750953659
 MonoBehaviour:
   m_ObjectHideFlags: 0
