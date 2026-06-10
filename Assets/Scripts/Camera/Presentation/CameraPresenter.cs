@@ -180,7 +180,7 @@ namespace CameraSystem.Presentation
         private const float DEFAULT_CAMERA_Z_DISTANCE = 2f;
 
         /// <summary>ƒ‰ƒCƒ“¬—§‚ÌƒJƒƒ‰ Z À•W‹——£</summary>
-        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.25f;
+        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.05f;
 
         // ======================================================
         // UniRx •Ï”

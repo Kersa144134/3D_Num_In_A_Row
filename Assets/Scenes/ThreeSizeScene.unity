@@ -925,18 +925,6 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
-      propertyPath: _limitTime
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
-      propertyPath: _turnCount
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
-      propertyPath: _cameraSpeed
-      value: 360
-      objectReference: {fileID: 0}
-    - target: {fileID: 1051580105314468983, guid: 95b9d0bf55c8c0940910533df1788db3, type: 3}
       propertyPath: _boardSizeType
       value: 3
       objectReference: {fileID: 0}

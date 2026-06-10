@@ -44,7 +44,7 @@ namespace OptionSystem.Presentation
         // --------------------------------------------------
         [Header("ゲーム進行")]
         [SerializeField, Range(1, 100)]
-        private int _turnCount = 10;
+        private int _turnCount = 20;
 
         [SerializeField, Range(0f, 300f)]
         private float _limitTime = 30f;
@@ -237,8 +237,7 @@ namespace OptionSystem.Presentation
         /// 盤面サイズを更新する
         /// </summary>
         /// <param name="boardSize">盤面サイズ</param>
-        public void SetBoardSize(
-            in GameRules.BoardSizeType boardSize)
+        public void SetBoardSize(in GameRules.BoardSizeType boardSize)
         {
             _currentRules.BoardSize = boardSize;
         }
