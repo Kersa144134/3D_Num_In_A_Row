@@ -54,8 +54,8 @@ namespace CameraSystem.Presentation
         /// <param name="position">適用座標</param>
         public void ApplyPosition(in Vector3 position)
         {
-            // ワールド座標を反映
-            _cameraTransform.position = position;
+            // 親 Transform に反映する
+            _parentTransform.position = position;
         }
 
         /// <summary>

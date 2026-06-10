@@ -161,6 +161,12 @@ namespace CameraSystem.Presentation
         /// <summary>真上俯瞰角のカメラ回転</summary>
         private const float CAMERA_ROTATION_TOP_VIEW_X = 90.0f;
 
+        /// <summary>Y 軸方向ライン判定用の二乗距離閾値</summary>
+        private const float VERTICAL_LINE_SQR_MAGNITUDE_THRESHOLD = 0.0001f;
+
+        /// <summary>ライン中心が原点とみなされる二乗距離閾値</summary>
+        private const float CENTER_POSITION_SQR_MAGNITUDE_THRESHOLD = 0.001f;
+
         // --------------------------------------------------
         // 距離
         // --------------------------------------------------
@@ -174,7 +180,7 @@ namespace CameraSystem.Presentation
         private const float DEFAULT_CAMERA_Z_DISTANCE = 2f;
 
         /// <summary>ライン成立時のカメラ Z 座標距離</summary>
-        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.3f;
+        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.25f;
 
         // ======================================================
         // UniRx 変数
@@ -446,14 +452,20 @@ namespace CameraSystem.Presentation
                         lineDirection.x,
                         lineDirection.z);
 
-                    // Y軸方向ライン判定閾値
-                    const float VERTICAL_LINE_THRESHOLD = 0.0001f;
-
-                    // ラインがY軸方向の場合
-                    if (lineDirectionXZ.sqrMagnitude < VERTICAL_LINE_THRESHOLD)
+                    // ラインが Y 軸方向の場合
+                    if (lineDirectionXZ.sqrMagnitude < VERTICAL_LINE_SQR_MAGNITUDE_THRESHOLD)
                     {
-                        // 原点からライン中心への方向を採用
-                        _targetAngle = centerPosition.normalized;
+                        // ライン中心が原点と重なる場合
+                        if (centerPosition.sqrMagnitude < CENTER_POSITION_SQR_MAGNITUDE_THRESHOLD)
+                        {
+                            // デフォルト方向として前方方向を採用
+                            _targetAngle = Vector3.forward;
+                        }
+                        else
+                        {
+                            // 原点からライン中心への方向を採用
+                            _targetAngle = centerPosition.normalized;
+                        }
                     }
                     else
                     {
