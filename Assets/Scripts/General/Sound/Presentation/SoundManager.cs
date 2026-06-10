@@ -236,6 +236,14 @@ namespace SoundSystem.Presentation
             // BGM 設定取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
+            // 既に再生中の場合は再生位置更新
+            if (bgm.Source.isPlaying)
+            {
+                SetPlaybackPosition(type);
+                
+                return;
+            }
+            
             // AudioClip 取得
             if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
             {
@@ -245,14 +253,8 @@ namespace SoundSystem.Presentation
             // 再生クリップ設定
             bgm.Source.clip = clip;
 
-            // オフセット値をクリップ長範囲へ補正
-            float offset = Mathf.Clamp(
-                bgm.Offset,
-                0f,
-                clip.length);
-
-            // 再生開始位置設定
-            bgm.Source.time = offset;
+            // 再生位置設定
+            SetPlaybackPosition(type);
 
             // BGM 再生
             bgm.Source.Play();
@@ -292,15 +294,43 @@ namespace SoundSystem.Presentation
         }
 
         /// <summary>
+        /// BGM の再生位置を設定する
+        /// </summary>
+        /// <param name="type">設定対象 BGM タイプ</param>
+        /// <param name="time">再生位置（秒）</param>
+        public void SetPlaybackPosition(in BgmType type, float? time = null)
+        {
+            // BGM インデックス取得
+            if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
+            {
+                return;
+            }
+
+            BgmSet bgm = _bgmSets[bgmIndex];
+
+            // AudioClip 取得
+            if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
+            {
+                return;
+            }
+
+            // 指定秒数がない場合はオフセット値を使用
+            float playbackTime = time ?? bgm.Offset;
+
+            // 再生位置をクリップ長範囲へ補正
+            playbackTime = Mathf.Clamp(playbackTime, 0.0f, clip.length);
+
+            // 再生位置設定
+            bgm.Source.time = playbackTime;
+        }
+
+        /// <summary>
         /// BGM 音量設定
         /// </summary>
         /// <param name="type">BGM タイプ</param>
         /// <param name="volume">目標音量</param>
         /// <param name="transitionDuration">補間時間</param>
-        public void SetBGMVolume(
-            in BgmType type,
-            in float volume,
-            float? transitionDuration = null)
+        public void SetBGMVolume(in BgmType type, in float volume, float? transitionDuration = null)
         {
             // BGMインデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
@@ -336,9 +366,7 @@ namespace SoundSystem.Presentation
         /// </summary>
         /// <param name="volume">目標音量</param>
         /// <param name="transitionDuration">補間時間</param>
-        public void SetBGMVolume(
-            in float volume,
-            float? transitionDuration = null)
+        public void SetBGMVolume(in float volume, float? transitionDuration = null)
         {
             // 音量補正
             float targetVolume = Mathf.Clamp01(volume);
@@ -374,9 +402,7 @@ namespace SoundSystem.Presentation
         /// </summary>
         /// <param name="enable">true: ON / false: OFF</param>
         /// <param name="transitionDuration">補間時間</param>
-        public void SetBgmLowPass(
-            in bool enable,
-            float? transitionDuration = null)
+        public void SetBgmLowPass(in bool enable, float? transitionDuration = null)
         {
             // 目標周波数決定
             float targetFrequency = enable
@@ -403,9 +429,7 @@ namespace SoundSystem.Presentation
         /// </summary>
         /// <param name="type">SE タイプ</param>
         /// <param name="volume">再生音量</param>
-        public void PlaySE(
-            in SeType type,
-            in float volume = 1.0f)
+        public void PlaySE(in SeType type, in float volume = 1.0f)
         {
             // SE インデックス取得
             if (!_audioSetFinder.TryFindSeIndex(type, out int index))
@@ -438,9 +462,7 @@ namespace SoundSystem.Presentation
         /// </summary>
         /// <param name="type">SE タイプ</param>
         /// <param name="position">音源位置</param>
-        public void PlayDistanceSE(
-            in SeType type,
-            in Vector3? position = null)
+        public void PlayDistanceSE(in SeType type, in Vector3? position = null)
         {
             // SE インデックス取得
             if (!_audioSetFinder.TryFindSeIndex(type, out int index))

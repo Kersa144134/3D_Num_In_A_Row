@@ -14,6 +14,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UniRx;
 using PhaseSystem.Domain;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -182,6 +184,9 @@ namespace UISystem.Presentation
         /// <summary>EventSystem キャッシュ</summary>
         protected EventSystem _eventSystem;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        protected SoundManager _soundManager;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -300,6 +305,7 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _eventSystem = EventSystem.current;
             _fade = Fade.Instance;
+            _soundManager = SoundManager.Instance;
 
             if (_eventSystem == null ||
                 _fade == null ||
@@ -411,7 +417,7 @@ namespace UISystem.Presentation
         protected virtual void OnClickEventInternal(UIClickEvent clickEvent) { }
 
         /// <summary>通常ボタンクリック時</summary>
-        protected virtual void OnNormalButtonClick(NormalButtonEvent buttonEvent) { }
+        protected virtual void OnNormalButtonClick(NormalButtonEvent buttonEvent){ }
 
         /// <summary>オプションボタンクリック時</summary>
         protected virtual void OnOptionButtonClick(OptionButtonEvent buttonEvent) { }
@@ -705,33 +711,46 @@ namespace UISystem.Presentation
                 return;
             }
 
-            if (panelEvent is NormalPanelEvent)
+            // 現在アクティブなキャンバス状態を取得
+            CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // SE 再生
+            // ダイアログの場合
+            if (activeCanvasType == CanvasType.Dialog)
             {
-                // 現在アクティブなキャンバス状態を取得
-                CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+                _soundManager?.PlaySE(SeType.UI_HideDialog);
+            }
+            else
+            {
+                _soundManager?.PlaySE(SeType.UI_Click);
+            }
 
-                // ダイアログの場合
-                if (activeCanvasType == CanvasType.Dialog)
-                {
-                    // ダイアログキャンバス非表示
-                    _uiStateController.HideDialogCanvas();
-
-                    // 遷移先のキャンバス状態を取得
-                    CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
-
-                    // 遷移先のキャンバスで最後に選択していたボタンを適用
-                    SetSelectionState(nextCanvasType, selectedButtonEvent);
-
-                    // ダイアログ非表示を通知
-                    _onDialogVisibleChanged.OnNext(false);
-                }
-
+            // ダイアログ以外は処理なし
+            if (activeCanvasType != CanvasType.Dialog)
+            {
                 return;
             }
+
+            // NormalPanelEvent 以外は処理なし
+            if (panelEvent is not NormalPanelEvent)
+            {
+                return;
+            }
+
+            // ダイアログキャンバス非表示
+            _uiStateController.HideDialogCanvas();
+
+            // 遷移先のキャンバス状態を取得
+            CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // 最後に選択していたボタンを取得
+            BaseButtonEvent selectedButtonEvent = _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+            // 遷移先のキャンバスで最後に選択していたボタンを適用
+            SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+            // ダイアログ非表示を通知
+            _onDialogVisibleChanged.OnNext(false);
         }
 
         // --------------------------------------------------
@@ -743,6 +762,9 @@ namespace UISystem.Presentation
         /// <param name="buttonEvent">対象ボタンイベント</param>
         protected void OnFocusButton(BaseButtonEvent buttonEvent)
         {
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_Focus);
+
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 

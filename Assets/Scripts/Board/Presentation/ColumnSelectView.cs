@@ -6,9 +6,10 @@
 // 概要     : 列選択表示オブジェクトの位置制御および表示切替を行うクラス
 // ======================================================
 
-using UnityEngine;
-using UniRx;
 using BoardSystem.Application;
+using System;
+using UniRx;
+using UnityEngine;
 
 namespace BoardSystem.Presentation
 {
@@ -34,10 +35,10 @@ namespace BoardSystem.Presentation
         /// <summary>セル間隔</summary>
         private readonly float _cellSpacing;
 
-        /// <summary>X軸のみ移動する対象配列</summary>
+        /// <summary>X 軸のみ移動する対象配列</summary>
         private Transform[] _frameXTargets;
 
-        /// <summary>Z軸のみ移動する対象配列</summary>
+        /// <summary>Z 軸のみ移動する対象配列</summary>
         private Transform[] _frameZTargets;
 
         /// <summary>制限なしで移動する対象配列</summary>
@@ -48,6 +49,12 @@ namespace BoardSystem.Presentation
 
         /// <summary>位置計算用キャッシュ</summary>
         private Vector3 _cachedPosition;
+
+        /// <summary>前回の選択列インデックス X</summary>
+        private int _previousColumnX = -1;
+
+        /// <summary>前回の選択列インデックス Z</summary>
+        private int _previousColumnZ = -1;
 
         // ======================================================
         // 定数
@@ -66,11 +73,17 @@ namespace BoardSystem.Presentation
         // UniRx 変数
         // ======================================================
 
-        /// <summary>列選択表示の表示状態</summary>
+        /// <summary>列選択表示の表示状態通知用 Subject</summary>
         private readonly ReactiveProperty<bool> _isColumnSelectVisible = new ReactiveProperty<bool>(false);
 
-        /// <summary>列選択表示の表示状態</summary>
+        /// <summary>列選択表示の表示状態通知ストリーム</summary>
         public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible => _isColumnSelectVisible;
+
+        /// <summary>選択列変更通知用 Subject</summary>
+        private readonly Subject<Unit> _onSelectColumnChanged = new Subject<Unit>();
+
+        /// <summary>選択列変更通知ストリーム</summary>
+        public IObservable<Unit> OnSelectColumnChanged => _onSelectColumnChanged;
 
         // ======================================================
         // コンストラクタ
@@ -227,6 +240,23 @@ namespace BoardSystem.Presentation
                         _cachedPosition.z
                     );
             }
+
+            // --------------------------------------------------
+            // 列インデックス変更判定
+            // --------------------------------------------------
+            bool isColumnChanged =
+                _previousColumnX != x ||
+                _previousColumnZ != z;
+
+            // 選択列変更通知
+            if (isColumnChanged)
+            {
+                _onSelectColumnChanged.OnNext(Unit.Default);
+            }
+
+            // 最新値を保存
+            _previousColumnX = x;
+            _previousColumnZ = z;
         }
 
         // ======================================================

@@ -14,6 +14,8 @@ using CameraSystem.Application;
 using CameraSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UpdateSystem.Domain;
 
 namespace CameraSystem.Presentation
@@ -102,6 +104,9 @@ namespace CameraSystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -117,6 +122,12 @@ namespace CameraSystem.Presentation
 
         /// <summary>ゲームパッド使用中フラグ</summary>
         private bool _isGamepadUsed = false;
+
+        /// <summary>前回のズーム入力方向</summary>
+        private float _previousZoomInput;
+
+        /// <summary>ズーム SE 再生済みフラグ</summary>
+        private bool _isZoomSePlayed;
 
         /// <summary>入力用の距離変更最大速度（度 / 秒）</summary>
         private float _maxDistanceSpeed;
@@ -198,6 +209,7 @@ namespace CameraSystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
+            _soundManager = SoundManager.Instance;
 
             // カメラ取得
             _camera = Camera.main;
@@ -294,16 +306,61 @@ namespace CameraSystem.Presentation
             // 入力更新
             // --------------------------------------------------
             // DPad Vertical 入力取得
-            float dpadVerticdal = _inputManager.DPad.Angle.y;
+            float dpadVertical = _inputManager.DPad.Angle.y;
 
             // 左スティック入力取得
             float leftStickHorizontal = _inputManager.LeftStick.Angle.x;
             float leftStickVertical = _inputManager.LeftStick.Angle.y;
             Vector2 leftStickInput = new Vector2(leftStickHorizontal, leftStickVertical);
 
-            // 上入力で近づける、下入力で遠ざける処理にするため、入力を反転して渡す
-            UpdateInputDistance(-dpadVerticdal, _isGamepadUsed, unscaledDeltaTime);
-            UpdateInputRotation(leftStickInput, unscaledDeltaTime);
+            // DPad
+            if (Mathf.Abs(dpadVertical) > 0.0f)
+            {
+                // 上入力で近づける、下入力で遠ざける処理にするため入力を反転
+                UpdateInputDistance(-dpadVertical, _isGamepadUsed, unscaledDeltaTime);
+
+                // 未入力時
+                if (Mathf.Approximately(dpadVertical, 0.0f))
+                {
+                    _isZoomSePlayed = false;
+                    _previousZoomInput = 0.0f;
+
+                    return;
+                }
+
+                // 入力方向反転時
+                if (_previousZoomInput != 0.0f &&
+                    Mathf.Sign(_previousZoomInput) != Mathf.Sign(dpadVertical))
+                {
+                    _isZoomSePlayed = false;
+                }
+
+                // 未再生時
+                if (!_isZoomSePlayed)
+                {
+                    // 近づける場合
+                    if (dpadVertical > 0.0f)
+                    {
+                        _soundManager?.PlaySE(SeType.Camera_ZoomIn);
+                    }
+                    // 遠ざける場合
+                    else
+                    {
+                        _soundManager?.PlaySE(SeType.Camera_ZoomOut);
+                    }
+
+                    _isZoomSePlayed = true;
+                }
+
+                // 現在入力保存
+                _previousZoomInput = dpadVertical;
+            }
+
+            // 左スティック
+            if (leftStickInput.sqrMagnitude > 0.0f)
+            {
+                UpdateInputRotation(leftStickInput, unscaledDeltaTime);
+            }
         }
 
         public void OnExit()
@@ -376,6 +433,9 @@ namespace CameraSystem.Presentation
             rotationPreparation
                 .Subscribe(isPerspective =>
                 {
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Camera_SwitchProjection);
+
                     // --------------------------------------------------
                     // 平行投影切り替え時
                     // --------------------------------------------------

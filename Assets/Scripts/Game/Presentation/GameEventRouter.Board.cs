@@ -10,6 +10,7 @@
 using System.Collections.Generic;
 using BoardSystem.Domain;
 using ScoreSystem.Domain;
+using SoundSystem.Domain;
 
 namespace GameSystem.Presentation
 {
@@ -32,6 +33,19 @@ namespace GameSystem.Presentation
 
             // スコア累積カウント加算
             _scoreManager.AddAllCumulativeCount();
+
+            // SE 再生
+            SeType comboSE = _scoreManager.CumulativeCount.Value
+                switch
+                {
+                    1 => SeType.Combo_1,
+                    2 => SeType.Combo_2,
+                    3 => SeType.Combo_3,
+                    4 => SeType.Combo_4,
+                    _ => SeType.Combo_5
+                };
+
+            _soundManager?.PlaySE(comboSE);
 
             // --------------------------------------------------
             // 各イベントを個別に処理

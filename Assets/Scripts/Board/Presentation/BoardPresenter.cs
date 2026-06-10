@@ -16,6 +16,8 @@ using BoardSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
 using PhaseSystem.Domain;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
 using UpdateSystem.Domain;
 
 namespace BoardSystem.Presentation
@@ -88,6 +90,9 @@ namespace BoardSystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        private SoundManager _soundManager;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -114,7 +119,7 @@ namespace BoardSystem.Presentation
         private int _connectCount;
 
         /// <summary>現在のプレイヤーID</summary>
-        private int _currentPlayer;
+        private int _currentPlayer = PLAYER_NONE;
 
         // ======================================================
         // 定数
@@ -170,8 +175,8 @@ namespace BoardSystem.Presentation
         /// <summary>ライン位置通知ストリーム</summary>
         public IObservable<LinePositionInfo> OnLinePositionNotified => _deleteHandler.OnLinePositionNotified;
 
-        /// <summary>ライン発光開始ストリーム</summary>
-        public IObservable<Unit> OnLineEmissionStarted => _deleteHandler.OnLineEmissionStarted;
+        /// <summary>ライン発光実行ストリーム</summary>
+        public IObservable<Unit> OnLineEmissionExecuted => _deleteHandler.OnLineEmissionExecuted;
 
         /// <summary>プレイヤー行動終了通知用 Subject</summary>
         private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
@@ -189,8 +194,7 @@ namespace BoardSystem.Presentation
         private IDisposable _rotateInputSubscription;
 
         /// <summary>列選択表示の表示状態</summary>
-        public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible
-            => _view.IsColumnSelectVisible;
+        public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible => _view.IsColumnSelectVisible;
 
         // ======================================================
         // IUpdatable イベント
@@ -201,6 +205,7 @@ namespace BoardSystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
+            _soundManager = SoundManager.Instance;
 
             // シーン内のメインカメラを取得
             _camera = Camera.main;
@@ -275,7 +280,21 @@ namespace BoardSystem.Presentation
                 }
             }
 
-            _currentPlayer = PLAYER_NONE;
+            // --------------------------------------------------
+            // SE 再生
+            // --------------------------------------------------
+            // 選択列更新
+            _view.OnSelectColumnChanged
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Board_ColumnSelect))
+                .AddTo(_disposables);
+            // ピース発光
+            _deleteHandler.OnPieceEmissionExecuted
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
+                .AddTo(_disposables);
+            // ライン削除
+            _deleteHandler.OnLineDeleteExecuted
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete))
+                .AddTo(_disposables);
         }
 
         public void OnUpdate(in float unscaledDeltaTime)
@@ -445,6 +464,17 @@ namespace BoardSystem.Presentation
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // イベント購読
+        // --------------------------------------------------
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        private void Subscribe()
+        {
+
+        }
+
         /// <summary>
         /// プレイヤー変更ストリームの購読を解除する
         /// </summary>
@@ -454,6 +484,9 @@ namespace BoardSystem.Presentation
             _playerIndexSubscription = null;
         }
 
+        // --------------------------------------------------
+        // イベントハンドラ
+        // --------------------------------------------------
         /// <summary>
         /// クリック座標から駒落下処理を開始
         /// </summary>
@@ -495,6 +528,9 @@ namespace BoardSystem.Presentation
             // 駒配置入力購読解除
             UnbindDropInputStream();
 
+            // SE 再生
+            _soundManager?.PlaySE(SeType.Piece_Drop);
+
             // 駒生成
             PieceData piece = await _view.SpawnPieceAsync(x, y, z, _currentPlayer);
 
@@ -523,6 +559,9 @@ namespace BoardSystem.Presentation
 
             // ボード回転入力購読解除
             UnbindRotateInputStream();
+
+            // SE 再生
+            _soundManager?.PlaySE(SeType.Board_Rotate);
 
             // --------------------------------------------------
             // 回転ユースケース実行
@@ -557,7 +596,7 @@ namespace BoardSystem.Presentation
         private async UniTask HandleLineDeleteAsync(IReadOnlyList<LineCompleteEvent> lineEvents)
         {
             // 再配置対象となる列の算出
-            LineDeleteResult result = await _deleteHandler.HandleLineDeleteAsync(lineEvents);
+            LineDeleteResult deleteResult = await _deleteHandler.HandleLineDeleteAsync(lineEvents);
 
             // ライン削除実行通知
             _onLineDelete.OnNext(Unit.Default);
@@ -568,25 +607,11 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // 再配置処理
             //// --------------------------------------------------
-            await PiecesRepositionAsync(result.RepositionColumns);
-
-            // ライン成立チェック
-            await CheckLine(_model.CheckLine());
-        }
-
-        /// <summary>
-        /// 駒再配置処理
-        /// </summary>
-        private async UniTask PiecesRepositionAsync(IReadOnlyList<(int x, int z)> pieces)
-        {
-            // --------------------------------------------------
-            // ユースケース実行
-            // --------------------------------------------------
-            BoardRepositionResult result =
-                await _repositionUseCase.HandleRepositionAsync(pieces);
+            BoardRepositionResult repositionResult =
+                await _repositionUseCase.HandleRepositionAsync(deleteResult.RepositionColumns);
 
             // 移動がない場合は処理なし
-            if (result.Moves.Count == 0)
+            if (repositionResult.Moves.Count == 0)
             {
                 return;
             }
@@ -594,14 +619,20 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // ビューアニメーション
             // --------------------------------------------------
-            await _view.MovePiecesAsync(result.Moves);
+            await _view.MovePiecesAsync(repositionResult.Moves);
 
             // --------------------------------------------------
             // ビュー辞書更新
             // --------------------------------------------------
-            ApplyViewMoves(result.Moves);
+            ApplyViewMoves(repositionResult.Moves);
+
+            // ライン成立チェック
+            await CheckLine(_model.CheckLine());
         }
 
+        // --------------------------------------------------
+        // 共通
+        // --------------------------------------------------
         /// <summary>
         /// ライン成立判定時の共通処理
         /// </summary>

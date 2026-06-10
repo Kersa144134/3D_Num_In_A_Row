@@ -6,6 +6,7 @@
 // 概要     : 3D 目並べゲームの表示を制御するクラス
 // ======================================================
 
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -130,6 +131,9 @@ namespace BoardSystem.Presentation
         public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible
             => _columnSelectView.IsColumnSelectVisible;
 
+        /// <summary>選択列変更通知ストリーム</summary>
+        public IObservable<Unit> OnSelectColumnChanged => _columnSelectView.OnSelectColumnChanged;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -206,7 +210,7 @@ namespace BoardSystem.Presentation
         private GameObject CreatePieceObject(in Vector3 startPosition, in int player)
         {
             // 指定された位置にプレハブから駒を生成
-            GameObject piece = Object.Instantiate(
+            GameObject piece = UnityEngine.Object.Instantiate(
                 _piecePrefab,
                 startPosition,
                 Quaternion.identity,
@@ -272,7 +276,7 @@ namespace BoardSystem.Presentation
                 // 削除演出を再生
                 _pieceAnimationController.PlayDeleteEffect(piece.Transform.position);
 
-                Object.Destroy(piece.Transform.gameObject);
+                UnityEngine.Object.Destroy(piece.Transform.gameObject);
             }
             else
             {

@@ -73,6 +73,9 @@ namespace GameSystem.Presentation
         /// <summary>ResultUIPresenter キャッシュ</summary>
         private readonly ResultUIPresenter _resultUIPresenter;
 
+        /// <summary>SoundManager キャッシュ</summary>
+        private readonly SoundManager _soundManager;
+
         /// <summary>CameraPresenter キャッシュ</summary>
         private readonly CameraPresenter _cameraPresenter;
 
@@ -351,6 +354,7 @@ namespace GameSystem.Presentation
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
+            _soundManager = SoundManager.Instance;
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||

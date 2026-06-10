@@ -17,7 +17,6 @@ using OptionSystem.Presentation;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using SoundSystem.Domain;
-using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -184,9 +183,6 @@ namespace UISystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
-        /// <summary>SoundManager キャッシュ</summary>
-        private SoundManager _soundManager;
-
         // ======================================================
         // フィールド
         // ======================================================
@@ -294,7 +290,6 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
-            _soundManager = SoundManager.Instance;
 
             // --------------------------------------------------
             // UI 管理
@@ -517,6 +512,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogYes)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Decide);
+
                 // ダイアログイベント実行
                 _onDialogEvent.OnNext(dialogType);
 
@@ -528,6 +526,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogNo)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_HideDialog);
+
                 // ポーズ画面のボタンを操作可能に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), true);
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToTitle), true);
@@ -580,6 +581,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.ReturnToTitle)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_ShowDialog);
+
                 // ポーズ画面のボタンを操作不可に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), false);
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToTitle), false);
@@ -917,6 +921,8 @@ namespace UISystem.Presentation
             if (_uiView is MainUIView mainUIView)
             {
                 mainUIView.UpdateCurrentScore(playerId, score);
+
+                _soundManager?.PlaySE(SeType.Score_Add);
             }
         }
 
@@ -1133,6 +1139,10 @@ namespace UISystem.Presentation
             {
                 if (isPause)
                 {
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.UI_ShowPause);
+
+                    // ポーズキャンバスを表示する
                     mainUIStateController.ShowPauseCanvas();
 
                     // 次のキャンバス状態を取得する
@@ -1150,6 +1160,9 @@ namespace UISystem.Presentation
                 }
                 else
                 {
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.UI_HidePause);
+
                     mainUIStateController.HidePauseCanvas();
                 }
             }

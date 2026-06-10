@@ -430,7 +430,7 @@ namespace GameSystem.Presentation
                     boardPresenter.OnLinePositionNotified
                         .Subscribe(linePosition => _onLinePositionNotified.OnNext(linePosition))
                         .AddTo(_disposables);
-                    boardPresenter.OnLineEmissionStarted
+                    boardPresenter.OnLineEmissionExecuted
                         .Subscribe(_ =>
                         {
                             if (_pendingAddScoreEvents.Count == 0)

@@ -35,17 +35,29 @@ namespace BoardSystem.Application
         // UniRx 変数
         // ======================================================
 
-        /// <summary>ライン発光開始通知用 Subject</summary>
-        private readonly Subject<Unit> _onLineEmissionStarted = new Subject<Unit>();
+        /// <summary>ライン発光実行通知用 Subject</summary>
+        private readonly Subject<Unit> _onLineEmissionExecuted = new Subject<Unit>();
 
-        /// <summary>ライン発光開始ストリーム</summary>
-        public IObservable<Unit> OnLineEmissionStarted => _onLineEmissionStarted;
+        /// <summary>ライン発光実行ストリーム</summary>
+        public IObservable<Unit> OnLineEmissionExecuted => _onLineEmissionExecuted;
 
         /// <summary>ライン位置通知用 Subject</summary>
         private readonly Subject<LinePositionInfo> _onLinePositionNotified = new Subject<LinePositionInfo>();
 
         /// <summary>ライン位置通知ストリーム</summary>
         public IObservable<LinePositionInfo> OnLinePositionNotified => _onLinePositionNotified;
+
+        /// <summary>ライン削除実行通知用 Subject</summary>
+        private readonly Subject<Unit> _onLineDeleteExecuted = new Subject<Unit>();
+
+        /// <summary>ライン削除実行ストリーム</summary>
+        public IObservable<Unit> OnLineDeleteExecuted => _onLineDeleteExecuted;
+
+        /// <summary>ピース発光実行通知用 Subject</summary>
+        private readonly Subject<Unit> _onPieceEmissionExecuted = new Subject<Unit>();
+
+        /// <summary>ライン発光実行ストリーム</summary>
+        public IObservable<Unit> OnPieceEmissionExecuted => _onPieceEmissionExecuted;
 
         // ======================================================
         // 定数
@@ -174,10 +186,12 @@ namespace BoardSystem.Application
                 // --------------------------------------------------
                 // 発光演出
                 // --------------------------------------------------
-                _onLineEmissionStarted.OnNext(Unit.Default);
+                _onLineEmissionExecuted.OnNext(Unit.Default);
 
                 foreach (BoardIndex index in lineEmissionList)
                 {
+                    _onPieceEmissionExecuted.OnNext(Unit.Default);
+
                     _view.SetPieceEmissionColor(index);
 
                     // 駒単位で待機
@@ -197,6 +211,8 @@ namespace BoardSystem.Application
             // 全削除対象をリスト化
             List<BoardIndex> allDeleteList =
                 new List<BoardIndex>(allDeleteSet);
+
+            _onLineDeleteExecuted.OnNext(Unit.Default);
 
             for (int i = 0; i < allDeleteList.Count; i++)
             {

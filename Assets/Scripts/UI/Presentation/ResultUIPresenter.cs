@@ -17,7 +17,6 @@ using InputSystem.Presentation;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using SoundSystem.Domain;
-using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -179,9 +178,6 @@ namespace UISystem.Presentation
         /// <summary>ScoreManager キャッシュ</summary>
         private ScoreManager _scoreManager;
 
-        /// <summary>SoundManager キャッシュ</summary>
-        private SoundManager _soundManager;
-
         // ======================================================
         // フィールド
         // ======================================================
@@ -235,7 +231,6 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
-            _soundManager = SoundManager.Instance;
 
             if (_inputManager == null ||
                 _scoreManager == null ||
@@ -409,20 +404,6 @@ namespace UISystem.Presentation
             }
 
             // --------------------------------------------------
-            // オプションボタン
-            // --------------------------------------------------
-            if (clickEvent.UIEvent is OptionButtonEvent optionButton)
-            {
-                // 左クリックのみ処理
-                if (clickEvent.ClickType == UIClickType.Left)
-                {
-                    OnOptionButtonClick(optionButton);
-                }
-
-                return;
-            }
-
-            // --------------------------------------------------
             // パネル
             // --------------------------------------------------
             if (clickEvent.UIEvent is BasePanelEvent panelEvent)
@@ -448,6 +429,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.ResultEnd)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Click);
+
                 // シーン遷移リクエスト
                 _onSceneChangeRequested.OnNext(Unit.Default);
 

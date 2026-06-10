@@ -18,7 +18,6 @@ using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
 using SoundSystem.Domain;
-using SoundSystem.Presentation;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
@@ -192,9 +191,6 @@ namespace UISystem.Presentation
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
-        /// <summary>SoundManager キャッシュ</summary>
-        private SoundManager _soundManager;
-
         // ======================================================
         // フィールド
         // ======================================================
@@ -282,7 +278,6 @@ namespace UISystem.Presentation
             // インスタンスからコンポーネント取得
             _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
-            _soundManager = SoundManager.Instance;
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
@@ -555,6 +550,9 @@ namespace UISystem.Presentation
                 // ダイアログ：YES
                 // --------------------------------------------------
                 case UIActionType.DialogYes:
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.UI_Decide);
+                    
                     switch (dialogType)
                     {
                         // --------------------------------------------------
@@ -595,6 +593,9 @@ namespace UISystem.Presentation
                 // ダイアログ：NO
                 // --------------------------------------------------
                 case UIActionType.DialogNo:
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.UI_HideDialog);
+
                     // スタート画面のボタンを操作可能に更新
                     SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
                     SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
@@ -636,6 +637,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.TitleStart)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_ShowDialog);
+
                 // スタート画面のボタンを操作不可に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), false);
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), false);
@@ -663,6 +667,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.TitleOption)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Click);
+
                 if (_uiStateController is TitleUIStateController titleUIStateController)
                 {
                     // オプションキャンバスを表示する
@@ -722,6 +729,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.OptionCancel)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Cancel);
+
                 if (_uiStateController is TitleUIStateController titleUIStateController)
                 {
                     // スタートキャンバスを表示する
@@ -745,6 +755,9 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.OptionDecide)
             {
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Decide);
+
                 if (_uiStateController is TitleUIStateController titleUIStateController)
                 {
                     // スタートキャンバスを表示する
@@ -782,6 +795,9 @@ namespace UISystem.Presentation
             {
                 return;
             }
+
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_Click);
 
             // 種別取得
             OptionType type = buttonEvent.Data.Type;
@@ -919,6 +935,9 @@ namespace UISystem.Presentation
                     // シーン遷移中でないかつスタートキャンバスの場合
                     if (!_isSceneTransitioning && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
                     {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.UI_ShowDialog);
+
                         // ダイアログキャンバスを表示する
                         _uiStateController.ShowDialogCanvas(DialogType.ExitGame);
 
