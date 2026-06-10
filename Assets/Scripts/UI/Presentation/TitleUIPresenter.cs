@@ -6,20 +6,21 @@
 // 概要     : タイトルシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Domain;
 using OptionSystem.Infrastructure;
 using OptionSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using TMPro;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
+using UniRx;
+using UnityEngine;
+using UnityEngine.UI;
 using UpdateSystem.Domain;
-using TMPro;
 
 namespace UISystem.Presentation
 {
@@ -34,6 +35,34 @@ namespace UISystem.Presentation
         // ======================================================
 
         [Header("タイトルシーン固有インスペクタ")]
+
+        // --------------------------------------------------
+        // エフェクト
+        // --------------------------------------------------
+        [Header("エフェクト")]
+        /// <summary>画面中心からの残像エフェクト用レンダラー</summary>
+        [SerializeField]
+        private RawImage _radialAfterimageRenderer;
+
+        /// <summary>エフェクト全体の強さ</summary>
+        [SerializeField, Range(0.0f, 1.0f)]
+        private float _radialAfterimageEffectStrength = 1.0f;
+
+        /// <summary>表示する残像数</summary>
+        [SerializeField, Range(1, 8)]
+        private int _radialAfterimageSampleCount = 3;
+
+        /// <summary>残像の拡大率間隔</summary>
+        [SerializeField, Range(0.01f, 1.0f)]
+        private float _radialAfterimageScaleStep = 0.15f;
+
+        /// <summary>残像が外側へ流れる速度</summary>
+        [SerializeField, Range(0.0f, 10.0f)]
+        private float _radialAfterimageScaleSpeed = 1.0f;
+
+        /// <summary>透明度が 0 になる距離</summary>
+        [SerializeField, Range(0.01f, 10.0f)]
+        private float _radialAfterimageAlphaFadeDistance = 1.0f;
 
         // --------------------------------------------------
         // キャンバス
@@ -124,6 +153,10 @@ namespace UISystem.Presentation
         [SerializeField]
         private Animator _boardAnimator;
 
+        /// <summary>ゲーム開始演出アニメーター</summary>
+        [SerializeField]
+        private Animator _startPlayAnimator;
+
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -137,6 +170,9 @@ namespace UISystem.Presentation
 
         /// <summary>OptionButtonBinder 生成クラス</summary>
         private OptionButtonBinderFactory _optionButtonBinderFactory;
+
+        /// <summary>ゲーム開始演出のアニメーションイベント通知クラス</summary>
+        private AnimationEventNotifier _startPlayAnimationEventNotifier;
 
         /// <summary>スタートキャンバスのアニメーションイベント通知クラス</summary>
         private AnimationEventNotifier _startCanvasAnimationEventNotifier;
@@ -159,7 +195,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>スタートキャンバスのアニメーター</summary>
-        private Animator _startAnimator;
+        private Animator _startCanvasAnimator;
 
         // ======================================================
         // 辞書
@@ -190,6 +226,12 @@ namespace UISystem.Presentation
         /// <summary>IsSkip パラメータ名</summary>
         private static readonly int IS_SKIP_HASH = Animator.StringToHash("IsSkip");
 
+        /// <summary>IsPlay パラメータ名</summary>
+        private static readonly int IS_PLAY_HASH = Animator.StringToHash("IsPlay");
+
+        /// <summary>PlayerCount パラメータ名</summary>
+        private static readonly int PLAYER_COUNT_HASH = Animator.StringToHash("PlayerCount");
+
         /// <summary>BoardSize パラメータ名</summary>
         private static readonly int BOARD_SIZE_HASH = Animator.StringToHash("BoardSize");
 
@@ -202,6 +244,18 @@ namespace UISystem.Presentation
 
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>タイトルスタートアニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onStartTitleAnimationEnd = new Subject<Unit>();
+
+        /// <summary>タイトルスタートアニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnStartTitleAnimationEnd => _onStartTitleAnimationEnd;
+
+        /// <summary>ゲーム開始アニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onStartPlayAnimationEnd = new Subject<Unit>();
+
+        /// <summary>ゲーム開始アニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnStartPlayAnimationEnd => _onStartPlayAnimationEnd;
 
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
@@ -248,6 +302,7 @@ namespace UISystem.Presentation
             // ビュー生成
             // --------------------------------------------------
             _uiView = new TitleUIView(
+                _radialAfterimageRenderer,
                 _optionSelectOnColor,
                 _optionSelectOffColor,
                 _optionFocusOnColor,
@@ -354,13 +409,15 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // アニメーター初期化
             // --------------------------------------------------
-            _startAnimator = _startCanvas.GetComponent<Animator>();
+            _startCanvasAnimator = _startCanvas.GetComponent<Animator>();
 
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_boardAnimator);
-            SetAnimatorUnscaledTime(_startAnimator);
+            SetAnimatorUnscaledTime(_startPlayAnimator);
+            SetAnimatorUnscaledTime(_startCanvasAnimator);
 
             // アニメーションイベント通知クラス取得
+            _startPlayAnimationEventNotifier = _startPlayAnimator.GetComponent<AnimationEventNotifier>();
             _startCanvasAnimationEventNotifier = _startCanvas.GetComponent<AnimationEventNotifier>();
 
             // ポインター非表示
@@ -375,12 +432,29 @@ namespace UISystem.Presentation
             {
                 return;
             }
-            
+
+            // --------------------------------------------------
+            // ポインター更新
+            // --------------------------------------------------
             // ポインター取得
             Vector2 screenPos = _inputManager.Pointer;
 
             // ビューへ反映
             _uiView.UpdatePointer(screenPos);
+
+            // --------------------------------------------------
+            // エフェクト更新
+            // --------------------------------------------------
+            if (_uiView is TitleUIView titleUIView)
+            {
+                titleUIView.UpdateRadialAfterimageEffect(
+                    _radialAfterimageEffectStrength,
+                    _radialAfterimageSampleCount,
+                    _radialAfterimageScaleStep,
+                    _radialAfterimageScaleSpeed,
+                    _radialAfterimageAlphaFadeDistance
+                );
+            }
         }
 
         protected override void OnExitInternal()
@@ -482,13 +556,18 @@ namespace UISystem.Presentation
                         // --------------------------------------------------
                         case DialogType.StartGame:
                             // ダイアログイベント実行
-                            InvokeDialogEvent(buttonEvent);
+                            _onDialogEvent.OnNext(dialogType);
 
                             // ダイアログキャンバスを非表示にする
                             _uiStateController.HideDialogCanvas();
 
                             // ダイアログ非表示を通知する
                             _onDialogVisibleChanged.OnNext(false);
+
+                            // ゲーム開始アニメーションを起動
+                            _effectAnimator?.SetTrigger(IS_PLAY_HASH);
+                            _startCanvasAnimator?.SetTrigger(IS_PLAY_HASH);
+                            _startPlayAnimator?.SetInteger(PLAYER_COUNT_HASH, _gameOptionManager.PlayerCount);
 
                             return;
 
@@ -497,7 +576,7 @@ namespace UISystem.Presentation
                         // --------------------------------------------------
                         case DialogType.ExitGame:
                             // ダイアログイベント実行
-                            InvokeDialogEvent(buttonEvent);
+                            _onDialogEvent.OnNext(dialogType);
 
                             return;
                     }
@@ -530,22 +609,6 @@ namespace UISystem.Presentation
 
                     break;
             }
-        }
-
-        /// <summary>
-        /// ダイアログイベントを実行する
-        /// </summary>
-        /// <param name="buttonEvent">対象ボタン</param>
-        private void InvokeDialogEvent(in NormalButtonEvent buttonEvent)
-        {
-            DialogEvent dialogEvent = buttonEvent.GetComponentInParent<DialogEvent>();
-
-            if (dialogEvent == null)
-            {
-                return;
-            }
-
-            dialogEvent.InvokeEvent();
         }
 
         /// <summary>
@@ -824,7 +887,7 @@ namespace UISystem.Presentation
         protected override void OnFadeOutStart()
         {
             // タイトルスタートアニメーション起動
-            _startAnimator.SetTrigger(IS_START_HASH);
+            _startCanvasAnimator?.SetTrigger(IS_START_HASH);
         }
 
         // ======================================================
@@ -886,7 +949,7 @@ namespace UISystem.Presentation
                 .Subscribe(_ =>
                 {
                     // タイトルスタートスキップアニメーション起動
-                    _startAnimator.SetTrigger(IS_SKIP_HASH);
+                    _startCanvasAnimator?.SetTrigger(IS_SKIP_HASH);
 
                     // シーン遷移状態解除
                     _isSceneTransitioning = false;
@@ -911,7 +974,16 @@ namespace UISystem.Presentation
         {
             base.Subscribe();
 
-            // アニメーション終了通知
+            // ゲーム開始アニメーション終了通知
+            _startPlayAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    // シーン遷移実行
+                    _onStartPlayAnimationEnd.OnNext(Unit.Default);
+                })
+                .AddTo(_disposables);
+
+            // スタートアニメーション終了通知
             _startCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
@@ -922,7 +994,7 @@ namespace UISystem.Presentation
                     SetPointerVisible(true);
 
                     // アニメーション終了通知
-                    _onAnimationEnd.OnNext(Unit.Default);
+                    _onStartTitleAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
         }

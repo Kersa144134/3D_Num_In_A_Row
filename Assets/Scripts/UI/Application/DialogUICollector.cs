@@ -21,9 +21,6 @@ namespace UISystem.Application
         // プロパティ
         // ======================================================
 
-        /// <summary>ダイアログイベント</summary>
-        public DialogEvent[] Events { get; private set; } = Array.Empty<DialogEvent>();
-
         /// <summary>ダイアログボタン</summary>
         public DialogButton[] Buttons { get; private set; } = Array.Empty<DialogButton>();
 
@@ -44,7 +41,6 @@ namespace UISystem.Application
             if (canvasArray == null)
             {
                 // 空データを生成
-                Events = Array.Empty<DialogEvent>();
                 Buttons = Array.Empty<DialogButton>();
                 Panels = Array.Empty<BasePanelEvent>();
 
@@ -54,7 +50,6 @@ namespace UISystem.Application
             // --------------------------------------------------
             // 一時格納リスト
             // --------------------------------------------------
-            List<DialogEvent> eventList = new List<DialogEvent>();
             List<DialogButton> buttonList = new List<DialogButton>();
             List<BasePanelEvent> panelList = new List<BasePanelEvent>();
 
@@ -69,16 +64,6 @@ namespace UISystem.Application
                 }
 
                 DialogCanvasDefinition canvasDefinition = canvasArray[i];
-
-                // --------------------------------------------------
-                // ダイアログイベント
-                // --------------------------------------------------
-                DialogEvent dialogEvent = canvasDefinition.Canvas.GetComponent<DialogEvent>();
-
-                if (dialogEvent != null)
-                {
-                    eventList.Add(dialogEvent);
-                }
 
                 // --------------------------------------------------
                 // ボタン
@@ -124,7 +109,6 @@ namespace UISystem.Application
             // --------------------------------------------------
             // 収集結果反映
             // --------------------------------------------------
-            Events = eventList.ToArray();
             Buttons = buttonList.ToArray();
             Panels = panelList.ToArray();
         }

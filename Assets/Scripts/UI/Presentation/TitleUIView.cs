@@ -6,6 +6,7 @@
 // 概要     : タイトル UI の描画処理を担当するビュー
 // ======================================================
 
+using ShaderSystem.Application;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,6 +18,13 @@ namespace UISystem.Presentation
     /// </summary>
     public sealed class TitleUIView : BaseUIView
     {
+        // ======================================================
+        // コンポーネント参照
+        // ======================================================
+
+        /// <summary>画面中心からの残像エフェクト制御クラス</summary>
+        private readonly RadialAfterimageEffectController _radialAfterimage;
+
         // ======================================================
         // フィールド
         // ======================================================
@@ -58,6 +66,7 @@ namespace UISystem.Presentation
         /// コンストラクタ
         /// </summary>
         public TitleUIView(
+            in RawImage radialAfterimageRenderer,
             in Color optionSelectOnColor,
             in Color optionSelectOffColor,
             in Color optionFocusOnColor,
@@ -67,11 +76,35 @@ namespace UISystem.Presentation
             _optionSelectOffColor = optionSelectOffColor;
             _optionFocusOnColor = optionFocusOnColor;
             _optionFocusOffColor = optionFocusOffColor;
+
+            _radialAfterimage = new RadialAfterimageEffectController(radialAfterimageRenderer.material);
         }
 
         // ======================================================
         // パブリックメソッド
         // ======================================================
+
+        // --------------------------------------------------
+        // エフェクト
+        // --------------------------------------------------
+        /// <summary>
+        /// 画面中心からの残像エフェクト更新
+        /// </summary>
+        public void UpdateRadialAfterimageEffect(
+            in float propEffectStrength,
+            in float propSampleCount,
+            in float propScaleStep,
+            in float propScaleSpeed,
+            in float propAlphaFadeDistance)
+        {
+            _radialAfterimage.Update(
+                propEffectStrength,
+                propSampleCount,
+                propScaleStep,
+                propScaleSpeed,
+                propAlphaFadeDistance
+            );
+        }
 
         // --------------------------------------------------
         // ボタン

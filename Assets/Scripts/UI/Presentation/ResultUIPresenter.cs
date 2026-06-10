@@ -197,11 +197,11 @@ namespace UISystem.Presentation
         /// <summary>IsStart パラメータ名</summary>
         private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
 
+        /// <summary>IsSkip パラメータ名</summary>
+        private static readonly int IS_SKIP_HASH = Animator.StringToHash("IsSkip");
+
         /// <summary>IsEnd パラメータ名</summary>
         private static readonly int IS_END_HASH = Animator.StringToHash("IsEnd");
-
-        /// <summary>IsFlash パラメータ名</summary>
-        private static readonly int IS_FLASH_HASH = Animator.StringToHash("IsFlash");
 
         // ======================================================
         // UniRx 変数
@@ -209,6 +209,12 @@ namespace UISystem.Presentation
 
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        /// <summary>リザルトスタートアニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onStarttResultAnimationEnd = new Subject<Unit>();
+
+        /// <summary>リザルトスタートアニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnStartResultAnimationEnd => _onStarttResultAnimationEnd;
 
         // ======================================================
         // IUpdatable 派生イベント
@@ -588,8 +594,8 @@ namespace UISystem.Presentation
 
                     if (_rankAnimationCheckPointCount == 4)
                     {
-                        // フラッシュアニメーション開始
-                        _resultCanvasAnimator.SetTrigger(IS_FLASH_HASH);
+                        // スキップアニメーション自動起動
+                        _resultCanvasAnimator.SetTrigger(IS_SKIP_HASH);
                     }
                 })
                 .AddTo(_disposables);
@@ -604,7 +610,7 @@ namespace UISystem.Presentation
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
 
                     // アニメーション終了通知
-                    _onAnimationEnd.OnNext(Unit.Default);
+                    _onStarttResultAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
 

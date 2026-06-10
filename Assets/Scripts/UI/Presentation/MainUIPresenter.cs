@@ -245,6 +245,12 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
+        /// <summary>メインスタートアニメーション終了通知用 Subject</summary>
+        private readonly Subject<Unit> _onStartMainAnimationEnd = new Subject<Unit>();
+
+        /// <summary>メインスタートアニメーション終了ストリーム</summary>
+        public IObservable<Unit> OnStartMainAnimationEnd => _onStartMainAnimationEnd;
+
         /// <summary>投影切り替え用 Subject</summary>
         private readonly Subject<bool> _onSwitchProjection = new Subject<bool>();
 
@@ -478,14 +484,8 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogYes)
             {
-                // ダイアログデータ取得
-                DialogEvent dialogEvent = buttonEvent.gameObject.GetComponentInParent<DialogEvent>();
-
-                if (dialogEvent != null)
-                {
-                    // ダイアログイベント発火
-                    dialogEvent.InvokeEvent();
-                }
+                // ダイアログイベント実行
+                _onDialogEvent.OnNext(dialogType);
 
                 return;
             }
@@ -552,7 +552,7 @@ namespace UISystem.Presentation
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToTitle), false);
 
                 // ダイアログキャンバスを表示する
-                _uiStateController.ShowDialogCanvas(DialogType.Pause);
+                _uiStateController.ShowDialogCanvas(DialogType.ReturnTitle);
 
                 // 次のキャンバス状態を取得する
                 CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
@@ -818,7 +818,7 @@ namespace UISystem.Presentation
 
             // アニメーション終了通知
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ => _onAnimationEnd.OnNext(Unit.Default))
+                .Subscribe(_ => _onStartMainAnimationEnd.OnNext(Unit.Default))
                 .AddTo(_disposables);
 
             // シーン遷移状態解除

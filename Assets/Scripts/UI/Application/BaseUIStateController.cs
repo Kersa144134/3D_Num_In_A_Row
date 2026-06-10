@@ -253,7 +253,7 @@ namespace UISystem.Application
             switch (dialogType)
             {
                 case DialogType.StartGame:
-                case DialogType.Pause:
+                case DialogType.ReturnTitle:
                     return _uiActionButtonResolver.GetDialogButton(UIActionType.DialogYes, dialogType);
 
                 case DialogType.ExitGame:

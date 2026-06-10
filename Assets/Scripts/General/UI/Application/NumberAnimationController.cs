@@ -126,8 +126,8 @@ namespace UISystem.Application
                 return;
             }
 
-            _randomAnimationCancellation.Cancel();
-            _randomAnimationCancellation.Dispose();
+            _randomAnimationCancellation?.Cancel();
+            _randomAnimationCancellation?.Dispose();
             _randomAnimationCancellation = null;
         }
 

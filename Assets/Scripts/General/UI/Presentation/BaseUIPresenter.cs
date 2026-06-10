@@ -242,12 +242,6 @@ namespace UISystem.Presentation
         /// <summary>ダイアログ表示状態通知ストリーム</summary>
         public IObservable<bool> OnDialogVisibleChanged => _onDialogVisibleChanged;
 
-        /// <summary>アニメーション終了通知用 Subject</summary>
-        protected readonly Subject<Unit> _onAnimationEnd = new Subject<Unit>();
-
-        /// <summary>アニメーション終了ストリーム</summary>
-        public IObservable<Unit> OnAnimationEnd => _onAnimationEnd;
-
         /// <summary>フォーカス座標通知用 Subject</summary>
         private readonly Subject<Vector2> _onFocusPosition = new Subject<Vector2>();
 
@@ -269,6 +263,12 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // ダイアログイベント
         // --------------------------------------------------
+        /// <summary>ダイアログイベント通知用 Subject</summary>
+        protected readonly Subject<DialogType> _onDialogEvent = new Subject<DialogType>();
+
+        /// <summary>ダイアログイベントストリーム</summary>
+        public IObservable<DialogType> OnDialogEvent => _onDialogEvent;
+
         /// <summary>シーン遷移リクエスト通知用 Subject</summary>
         protected readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
 
@@ -497,16 +497,9 @@ namespace UISystem.Presentation
         protected virtual void Subscribe()
         {
             // ダイアログイベント
-            for (int i = 0; i < _dialogUICollector.Events.Length; i++)
+            for (int i = 0; i < _dialogCanvasArray.Length; i++)
             {
-                DialogEvent dialogEvent = _dialogUICollector.Events[i];
-
-                if (dialogEvent == null)
-                {
-                    continue;
-                }
-
-                dialogEvent.OnEvent
+                _onDialogEvent
                     .Subscribe(eventType => HandleDialogEventReceived(eventType))
                     .AddTo(_disposables);
             }
@@ -674,10 +667,12 @@ namespace UISystem.Presentation
         /// <summary>
         /// ダイアログイベント実行時
         /// </summary>
-        private void HandleDialogEventReceived(DialogEventType eventType)
+        private void HandleDialogEventReceived(DialogType dialogType)
         {
-            // シーン遷移
-            if (eventType == DialogEventType.RequestSceneChange)
+            // ゲーム開始
+            // タイトルに戻る
+            if (dialogType == DialogType.StartGame ||
+                dialogType == DialogType.ReturnTitle)
             {
                 _onSceneChangeRequested.OnNext(Unit.Default);
 
@@ -688,7 +683,7 @@ namespace UISystem.Presentation
             }
 
             // ゲーム終了
-            if (eventType == DialogEventType.ExitGame)
+            if (dialogType == DialogType.ExitGame)
             {
                 _onExitGameRequested.OnNext(Unit.Default);
 

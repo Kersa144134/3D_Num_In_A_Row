@@ -1198,7 +1198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UIManager::UISystem.Manager.MainUIManager
   _dialogCanvasArray:
   - Canvas: {fileID: 9040206411591447947}
-    Type: 1
+    Type: 3
     Buttons:
     - _type: 1
       _button: {fileID: 3116120016426225550}
