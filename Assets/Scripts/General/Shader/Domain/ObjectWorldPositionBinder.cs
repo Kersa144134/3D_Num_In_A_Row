@@ -11,10 +11,8 @@ using UnityEngine;
 namespace ShaderSystem.Domain
 {
     /// <summary>
-    /// オブジェクトのワールド座標をマテリアルに渡すコンポーネント
-    /// Shader Graph側で _ObjectPosition を利用可能にする
+    /// オブジェクトのワールド座標をシェーダーへ送信するバインダー
     /// </summary>
-    [ExecuteAlways]
     public sealed class ObjectWorldPositionBinder : MonoBehaviour
     {
         // ======================================================
@@ -45,7 +43,7 @@ namespace ShaderSystem.Domain
         // Unity イベント
         // ======================================================
 
-        private void Awake()
+        private void OnEnable()
         {
             if (_targetRenderer == null)
             {
@@ -57,6 +55,16 @@ namespace ShaderSystem.Domain
 
         private void Update()
         {
+            if (_targetRenderer == null)
+            {
+                return;
+            }
+
+            if (_propertyBlock == null)
+            {
+                _propertyBlock = new MaterialPropertyBlock();
+            }
+            
             Vector3 worldPosition = transform.position;
 
             // 現在の MaterialPropertyBlock を取得

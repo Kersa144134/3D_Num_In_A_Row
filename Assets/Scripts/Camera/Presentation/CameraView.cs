@@ -49,6 +49,16 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// カメラ位置を適用する
+        /// </summary>
+        /// <param name="position">適用座標</param>
+        public void ApplyPosition(in Vector3 position)
+        {
+            // ワールド座標を反映
+            _cameraTransform.position = position;
+        }
+
+        /// <summary>
         /// カメラのワールド X, Y 回転を適用する
         /// </summary>
         /// <param name="rotationX">X 回転</param>

@@ -363,6 +363,9 @@ namespace GameSystem.Presentation
             if (_cameraPresenter != null)
             {
                 _cameraPresenter.BindStreams(
+                    _currentPhase
+                        .Where(phase => phase == PhaseType.ChangePlayer)
+                        .Select(_ => Unit.Default),
                     Observable.CombineLatest(
                         _currentPhase,
                         _currentBoardInputType,
@@ -376,8 +379,7 @@ namespace GameSystem.Presentation
                         }),
                     _onGamepadUsed,
                     _mainUIPresenter.OnSwitchProjection,
-                    _onCenterPositionCalculated,
-                    _onCenterOffsetVectorCalculated
+                    _onLinePositionNotified
                 );
             }
 
@@ -422,8 +424,8 @@ namespace GameSystem.Presentation
                             _hasPendingScoreEvent = false;
                         })
                         .AddTo(_disposables);
-                    boardPresenter.OnCenterPositionCalculated
-                        .Subscribe(linePosition => ProcessCenterOffset(boardPresenter, linePosition))
+                    boardPresenter.OnLinePositionNotified
+                        .Subscribe(linePosition => _onLinePositionNotified.OnNext(linePosition))
                         .AddTo(_disposables);
                     boardPresenter.OnLineEmissionStarted
                         .Subscribe(_ =>

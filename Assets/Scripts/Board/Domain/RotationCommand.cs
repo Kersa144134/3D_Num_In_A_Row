@@ -6,9 +6,7 @@
 // 概要     : 回転入力を表現するコマンド構造体
 // ======================================================
 
-using BoardSystem.Domain;
-
-namespace UpdateSystem.Domain
+namespace BoardSystem.Domain
 {
     /// <summary>
     /// 回転入力コマンド

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UniRx;
+using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
 using InputSystem.Domain;
@@ -272,11 +273,8 @@ namespace GameSystem.Presentation
         /// <summary>コンボ加算通知用 Subject</summary>
         private readonly Subject<int> _onComboAdded = new Subject<int>();
 
-        /// <summary>中心座標算出ストリーム</summary>
-        private readonly Subject<Vector3> _onCenterPositionCalculated = new Subject<Vector3>();
-
-        /// <summary>成立ライン中心差分ベクトル算出通知用 Subject</summary>
-        private readonly Subject<Vector3> _onCenterOffsetVectorCalculated = new Subject<Vector3>();
+        /// <summary>ライン位置通知用 Subject</summary>
+        private readonly Subject<LinePositionInfo> _onLinePositionNotified = new Subject<LinePositionInfo>();
 
         /// <summary>列選択表示の表示状態通知用 Subject</summary>
         private readonly Subject<bool> _onColumnSelectVisibleChanged = new Subject<bool>();

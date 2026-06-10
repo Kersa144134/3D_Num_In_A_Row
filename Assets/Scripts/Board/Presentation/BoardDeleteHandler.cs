@@ -31,26 +31,22 @@ namespace BoardSystem.Application
         /// <summary>盤面ビュー</summary>
         private readonly BoardView _view;
 
-        /// <summary>ピース中心座標計算ユーティリティ</summary>
-        private readonly PiecesCenterPositionCalculator _centerPositionCalculator
-            = new PiecesCenterPositionCalculator();
-
         // ======================================================
         // UniRx 変数
         // ======================================================
-
-        /// <summary>中心座標算出通知用 Subject</summary>
-        private readonly Subject<Vector3> _onCenterPositionCalculated = new Subject<Vector3>();
-
-        /// <summary>中心座標算出ストリーム</summary>
-        public IObservable<Vector3> OnCenterPositionCalculated => _onCenterPositionCalculated;
 
         /// <summary>ライン発光開始通知用 Subject</summary>
         private readonly Subject<Unit> _onLineEmissionStarted = new Subject<Unit>();
 
         /// <summary>ライン発光開始ストリーム</summary>
         public IObservable<Unit> OnLineEmissionStarted => _onLineEmissionStarted;
-        
+
+        /// <summary>ライン位置通知用 Subject</summary>
+        private readonly Subject<LinePositionInfo> _onLinePositionNotified = new Subject<LinePositionInfo>();
+
+        /// <summary>ライン位置通知ストリーム</summary>
+        public IObservable<LinePositionInfo> OnLinePositionNotified => _onLinePositionNotified;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -102,10 +98,19 @@ namespace BoardSystem.Application
                 // 現在処理中のラインイベント
                 LineCompleteEvent lineEvent = lineEvents[i];
 
-                /// 発光対象リスト
+                // 発光対象リスト
                 List<BoardIndex> lineEmissionList = new List<BoardIndex>();
                 /// 重複チェック用ハッシュセット
                 HashSet<BoardIndex> lineEmissionSet = new HashSet<BoardIndex>();
+
+                // 実際に発光対象として採用された先頭駒
+                Transform firstTransform = null;
+
+                // 実際に発光対象として採用された末尾駒
+                Transform lastTransform = null;
+
+                // 有効なセルが 1 つ以上存在するか
+                bool hasValidIndex = false;
 
                 // --------------------------------------------------
                 // ライン構成セル走査
@@ -113,7 +118,7 @@ namespace BoardSystem.Application
                 for (int j = 0; j < lineEvent.LinePositions.Count; j++)
                 {
                     BoardIndex index = lineEvent.LinePositions[j];
-
+                    
                     // 既に登録済みの場合はスキップ
                     if (lineEmissionSet.Contains(index))
                     {
@@ -126,9 +131,6 @@ namespace BoardSystem.Application
                         continue;
                     }
 
-                    // 中心座標計算用に Transform 登録
-                    _centerPositionCalculator.AddPosition(piece.Transform);
-
                     // 発光対象へ追加
                     lineEmissionList.Add(index);
                     lineEmissionSet.Add(index);
@@ -138,14 +140,36 @@ namespace BoardSystem.Application
 
                     // 再配置対象列登録
                     allColumns.Add((index.X, index.Z));
+
+                    // 最初の有効セルを更新
+                    if (hasValidIndex == false)
+                    {
+                        firstTransform = piece.Transform;
+                        hasValidIndex = true;
+                    }
+
+                    // 最新セルを末尾の有効セルとして更新
+                    lastTransform = piece.Transform;
                 }
 
                 // --------------------------------------------------
-                // 中心座標通知
+                // ライン座標通知
                 // --------------------------------------------------
-                Vector3 centerPosition = _centerPositionCalculator.CalculateCenterPosition();
+                // 発光対象として採用されたセルが存在する場合のみ実行
+                if (hasValidIndex)
+                {
+                    // ライン始点ワールド座標
+                    Vector3 startPosition = firstTransform.position;
 
-                _onCenterPositionCalculated.OnNext(centerPosition);
+                    // ライン終点ワールド座標
+                    Vector3 endPosition = lastTransform.position;
+
+                    // ライン始点・終点情報を生成
+                    LinePositionInfo linePositionInfo = new LinePositionInfo(startPosition, endPosition);
+
+                    // ライン演出用に通知
+                    _onLinePositionNotified.OnNext(linePositionInfo);
+                }
 
                 // --------------------------------------------------
                 // 発光演出
@@ -206,7 +230,7 @@ namespace BoardSystem.Application
         /// </summary>
         public void Dispose()
         {
-            _onCenterPositionCalculated?.Dispose();
+            _onLinePositionNotified?.Dispose();
         }
     }
 }

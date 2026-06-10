@@ -73,9 +73,6 @@ namespace BoardSystem.Presentation
         /// <summary>駒削除ハンドラ</summary>
         private BoardDeleteHandler _deleteHandler;
 
-        /// <summary>駒落下ハンドラ</summary>
-        private BoardDropHandler _dropHandler;
-
         /// <summary>ボード回転ユースケース</summary>
         private BoardRotationUseCase _rotationUseCase;
 
@@ -170,8 +167,8 @@ namespace BoardSystem.Presentation
         /// <summary>ライン削除通知ストリーム</summary>
         public IObservable<Unit> OnLineDelete => _onLineDelete;
 
-        /// <summary>中心座標算出ストリーム</summary>
-        public IObservable<Vector3> OnCenterPositionCalculated => _deleteHandler.OnCenterPositionCalculated;
+        /// <summary>ライン位置通知ストリーム</summary>
+        public IObservable<LinePositionInfo> OnLinePositionNotified => _deleteHandler.OnLinePositionNotified;
 
         /// <summary>ライン発光開始ストリーム</summary>
         public IObservable<Unit> OnLineEmissionStarted => _deleteHandler.OnLineEmissionStarted;
@@ -257,7 +254,6 @@ namespace BoardSystem.Presentation
             // クラス初期化
             // --------------------------------------------------
             _deleteHandler = new BoardDeleteHandler(_model, _view);
-            _dropHandler = new BoardDropHandler(_model, _view);
             _rotationUseCase = new BoardRotationUseCase(_model, _boardSize);
             _repositionUseCase = new BoardRepositionUseCase(_model);
             _viewPieceMapUpdater = new BoardViewPieceMapUpdater(_view);
@@ -499,8 +495,17 @@ namespace BoardSystem.Presentation
             // 駒配置入力購読解除
             UnbindDropInputStream();
 
-            // ユースケース実行
-            await _dropHandler.HandleDropAsync(x, y, z, _currentPlayer);
+            // 駒生成
+            PieceData piece = await _view.SpawnPieceAsync(x, y, z, _currentPlayer);
+
+            // インデックス生成
+            BoardIndex index = new BoardIndex(x, y, z);
+
+            // ビューに駒情報登録
+            _view.SetPiece(index, piece);
+
+            // モデルの盤面更新
+            _model.ApplyPlace(index, _currentPlayer);
 
             // ライン成立チェック
             await CheckLine(_model.CheckLine());

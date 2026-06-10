@@ -125,7 +125,7 @@ namespace CameraSystem.Application
                 _velocityDistanceZ * deltaTime;
 
             // モデルへ適用
-            _cameraModel.SetDistanceZ(nextDistanceZ);
+            _cameraModel.ApplyDistanceZ(nextDistanceZ);
 
             // --------------------------------------------------
             // OrthographicSize 算出
@@ -134,7 +134,7 @@ namespace CameraSystem.Application
                 CalculateOrthographicSize(_cameraModel.DistanceZ);
 
             // モデルへ適用
-            _cameraModel.SetOrthographicSize(nextOrthographicSize);
+            _cameraModel.ApplyOrthographicSize(nextOrthographicSize);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace CameraSystem.Application
                 deltaTime);
 
             // モデルへ適用
-            _cameraModel.SetDistanceZ(nextDistanceZ);
+            _cameraModel.ApplyDistanceZ(nextDistanceZ);
 
             // --------------------------------------------------
             // OrthographicSize 算出
@@ -165,7 +165,7 @@ namespace CameraSystem.Application
                 CalculateOrthographicSize(_cameraModel.DistanceZ);
 
             // モデルへ適用
-            _cameraModel.SetOrthographicSize(nextOrthographicSize);
+            _cameraModel.ApplyOrthographicSize(nextOrthographicSize);
         }
 
         /// <summary>

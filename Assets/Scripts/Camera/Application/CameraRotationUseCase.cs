@@ -132,8 +132,8 @@ namespace CameraSystem.Application
             float nextY = _cameraModel.RotationY + _velocityY * deltaTime;
 
             // モデルへ適用
-            _cameraModel.SetRotationX(nextX);
-            _cameraModel.SetRotationY(nextY);
+            _cameraModel.ApplyRotationX(nextX);
+            _cameraModel.ApplyRotationY(nextY);
         }
 
         /// <summary>
@@ -212,8 +212,8 @@ namespace CameraSystem.Application
                 deltaTime);
 
             // モデルへ適用
-            _cameraModel.SetRotationX(nextX);
-            _cameraModel.SetRotationY(nextY);
+            _cameraModel.ApplyRotationX(nextX);
+            _cameraModel.ApplyRotationY(nextY);
         }
 
         /// <summary>

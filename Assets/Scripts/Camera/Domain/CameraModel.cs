@@ -5,7 +5,8 @@
 // 概要     : カメラの距離と回転状態を管理するモデル
 // ======================================================
 
-using System.Diagnostics;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CameraSystem.Domain
 {
@@ -18,14 +19,17 @@ namespace CameraSystem.Domain
         // フィールド
         // ======================================================
 
-        /// <summary>Z 軸距離</summary>
-        private float _distanceZ;
+        /// <summary>現在のカメラ位置</summary>
+        private Vector3 _position;
 
         /// <summary>X 軸回転</summary>
         private float _rotationX;
 
         /// <summary>Y 軸回転</summary>
         private float _rotationY;
+
+        /// <summary>Z 軸距離</summary>
+        private float _distanceZ;
 
         /// <summary>OrthographicSize</summary>
         private float _orthographicSize;
@@ -56,23 +60,25 @@ namespace CameraSystem.Domain
         /// 初期化
         /// </summary>
         public CameraModel(
-            in float initialDistanceZ,
+            in Vector3 initialPosition,
             in float initialRotationX,
             in float initialRotationY,
-            in float distanceZMin,
-            in float distanceZMax,
+            in float initialDistanceZ,
             in float pitchMinX,
             in float pitchMaxX,
+            in float distanceZMin,
+            in float distanceZMax,
             in float orthographicSizeMin,
             in float orthographicSizeMax)
         {
-            _distanceZ = initialDistanceZ;
+            _position = initialPosition;
             _rotationX = initialRotationX;
             _rotationY = initialRotationY;
-            _distanceZMin = distanceZMin;
-            _distanceZMax = distanceZMax;
+            _distanceZ = initialDistanceZ;
             _pitchMinX = pitchMinX;
             _pitchMaxX = pitchMaxX;
+            _distanceZMin = distanceZMin;
+            _distanceZMax = distanceZMax;
             _orthographicSizeMin = orthographicSizeMin;
             _orthographicSizeMax = orthographicSizeMax;
         }
@@ -80,6 +86,9 @@ namespace CameraSystem.Domain
         // ======================================================
         // プロパティ
         // ======================================================
+
+        /// <summary>現在のカメラ位置</summary>
+        public Vector3 Position => _position;
 
         /// <summary>現在の Z 距離</summary>
         public float DistanceZ => _distanceZ;
@@ -116,17 +125,17 @@ namespace CameraSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// Z 距離を直接設定する
+        /// カメラ位置を適用する
         /// </summary>
-        public void SetDistanceZ(in float value)
+        public void ApplyPosition(in Vector3 position)
         {
-            _distanceZ = Clamp(value, _distanceZMin, _distanceZMax);
+            _position = position;
         }
-
+        
         /// <summary>
         /// X 回転を直接設定する
         /// </summary>
-        public void SetRotationX(in float value)
+        public void ApplyRotationX(in float value)
         {
             _rotationX = Clamp(value, _pitchMinX, _pitchMaxX);
         }
@@ -134,15 +143,23 @@ namespace CameraSystem.Domain
         /// <summary>
         /// Y 回転を直接設定する
         /// </summary>
-        public void SetRotationY(in float value)
+        public void ApplyRotationY(in float value)
         {
             _rotationY = value;
         }
 
         /// <summary>
+        /// Z 距離を直接設定する
+        /// </summary>
+        public void ApplyDistanceZ(in float value)
+        {
+            _distanceZ = Clamp(value, _distanceZMin, _distanceZMax);
+        }
+
+        /// <summary>
         /// OrthographicSizeを直接設定する
         /// </summary>
-        public void SetOrthographicSize(in float value)
+        public void ApplyOrthographicSize(in float value)
         {
             _orthographicSize = Clamp(value, _orthographicSizeMin, _orthographicSizeMax);
         }

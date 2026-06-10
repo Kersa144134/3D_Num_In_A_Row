@@ -9,10 +9,11 @@
 using System;
 using UnityEngine;
 using UniRx;
+using BoardSystem.Domain;
 using CameraSystem.Application;
 using CameraSystem.Domain;
-using OptionSystem.Presentation;
 using InputSystem.Presentation;
+using OptionSystem.Presentation;
 using UpdateSystem.Domain;
 
 namespace CameraSystem.Presentation
@@ -84,13 +85,16 @@ namespace CameraSystem.Presentation
         private readonly CameraAngleUtility _angleUtility = new CameraAngleUtility();
 
         /// <summary>投影補間サービス</summary>
-        private CameraProjectionService _projectionService;
+        private CameraProjectionUseCase _projectionUseCase;
 
-        /// <summary>距離ユースケース</summary>
-        private CameraDistanceUseCase _distanceUseCase;
+        /// <summary>位置ユースケース</summary>
+        private CameraPositionUseCase _positionUseCase;
 
         /// <summary>回転ユースケース</summary>
         private CameraRotationUseCase _rotationUseCase;
+
+        /// <summary>距離ユースケース</summary>
+        private CameraDistanceUseCase _distanceUseCase;
 
         /// <summary>GameOptionManager キャッシュ</summary>
         private GameOptionManager _gameOptionManager;
@@ -132,18 +136,30 @@ namespace CameraSystem.Presentation
         /// <summary>ロック前の Y 回転キャッシュ</summary>
         private float _cachedRotationY;
 
-        /// <summary>成立ライン中心座標</summary>
-        private Vector3 _centerPosition = Vector3.zero;
+        /// <summary>カメラ目標位置</summary>
+        private Vector3 _targetPosition = Vector3.zero;
 
-        /// <summary>成立ライン中心差分ベクトル</summary>
-        private Vector3 _centerOffsetVector = Vector3.zero;
+        /// <summary>カメラ目標角度</summary>
+        private Vector3 _targetAngle = Vector3.zero;
 
         /// <summary>成立ライン中心座標からの目標 Z 距離</summary>
-        private float _targetCenterZDistance = DEFAULT_CAMERA_Z_DISTANCE;
+        private float _targetDistance = DEFAULT_CAMERA_Z_DISTANCE;
 
         // ======================================================
         // 定数
         // ======================================================
+
+        // --------------------------------------------------
+        // 回転
+        // --------------------------------------------------
+        /// <summary>入力用回転加速度倍率</summary>
+        private const float INPUT_ROTATION_ACCELERATION_MULTIPLIER = 2f;
+
+        /// <summary>イベント用回転収束時間</summary>
+        private const float EVENT_SMOOTH_TIME = 0.2f;
+
+        /// <summary>真上俯瞰角のカメラ回転</summary>
+        private const float CAMERA_ROTATION_TOP_VIEW_X = 90.0f;
 
         // --------------------------------------------------
         // 距離
@@ -158,22 +174,7 @@ namespace CameraSystem.Presentation
         private const float DEFAULT_CAMERA_Z_DISTANCE = 2f;
 
         /// <summary>ライン成立時のカメラ Z 座標距離</summary>
-        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.25f;
-
-        // --------------------------------------------------
-        // 回転
-        // --------------------------------------------------
-        /// <summary>入力用回転加速度倍率</summary>
-        private const float INPUT_ROTATION_ACCELERATION_MULTIPLIER = 2f;
-
-        /// <summary>イベント用回転収束時間</summary>
-        private const float EVENT_SMOOTH_TIME = 0.2f;
-
-        /// <summary>真上俯瞰角のカメラ回転</summary>
-        private const float CAMERA_ROTATION_TOP_VIEW_X = 90.0f;
-
-        /// <summary>成立ライン中心差分の基準ベクトル</summary>
-        private static readonly Vector3 DEFAULT_CENTER_OFFSET_VECTOR = new Vector3(1.0f, 0.0f, 0f);
+        private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.3f;
 
         // ======================================================
         // UniRx 変数
@@ -230,29 +231,22 @@ namespace CameraSystem.Presentation
 
             // モデル、ビュー初期化
             _cameraModel = new CameraModel(
-                DEFAULT_CAMERA_Z_DISTANCE,
+                Vector3.zero,
                 initialRotationX,
                 initialRotationY,
-                _minDistanceZ,
-                _maxDistanceZ,
+                DEFAULT_CAMERA_Z_DISTANCE,
                 _minRotationX,
                 _maxRotationX,
+                _minDistanceZ,
+                _maxDistanceZ,
                 _orthographicSizeMin,
                 _orthographicSizeMax
             );
             _cameraView = new CameraView(transform, _cameraTransform);
 
             // 初期化
-            _projectionService = new CameraProjectionService(
-                _perspectiveFov,
-                _orthographicSizeMax,
-                _nearClip,
-                _farClip
-            );
-            _distanceUseCase = new CameraDistanceUseCase(
+            _positionUseCase = new CameraPositionUseCase(
                 _cameraModel,
-                _maxDistanceSpeed,
-                _distanceAcceleration,
                 EVENT_SMOOTH_TIME
             );
             _rotationUseCase = new CameraRotationUseCase(
@@ -261,22 +255,38 @@ namespace CameraSystem.Presentation
                 _rotationAcceleration,
                 EVENT_SMOOTH_TIME
             );
+            _distanceUseCase = new CameraDistanceUseCase(
+                _cameraModel,
+                _maxDistanceSpeed,
+                _distanceAcceleration,
+                EVENT_SMOOTH_TIME
+            );
+            _projectionUseCase = new CameraProjectionUseCase(
+                _perspectiveFov,
+                _orthographicSizeMax,
+                _nearClip,
+                _farClip
+            );
+
         }
 
         public void OnLateUpdate(in float unscaledDeltaTime)
         {
-            // 入力ロック中はイベントによる回転
             if (_isInputLock)
             {
-                // イベント Z 距離
-                UpdateEventDistance(_targetCenterZDistance, unscaledDeltaTime);
-
-                // イベント回転
-                UpdateEventRotation(_centerOffsetVector, unscaledDeltaTime);
+                // --------------------------------------------------
+                // イベント更新
+                // --------------------------------------------------
+                UpdateEventPosition(_targetPosition, unscaledDeltaTime);
+                UpdateEventRotation(_targetAngle, unscaledDeltaTime);
+                UpdateEventDistance(_targetDistance, unscaledDeltaTime);
 
                 return;
             }
 
+            // --------------------------------------------------
+            // 入力更新
+            // --------------------------------------------------
             // DPad Vertical 入力取得
             float dpadVerticdal = _inputManager.DPad.Angle.y;
 
@@ -285,11 +295,8 @@ namespace CameraSystem.Presentation
             float leftStickVertical = _inputManager.LeftStick.Angle.y;
             Vector2 leftStickInput = new Vector2(leftStickHorizontal, leftStickVertical);
 
-            // 入力 Z 距離
             // 上入力で近づける、下入力で遠ざける処理にするため、入力を反転して渡す
             UpdateInputDistance(-dpadVerticdal, _isGamepadUsed, unscaledDeltaTime);
-
-            // 入力回転
             UpdateInputRotation(leftStickInput, unscaledDeltaTime);
         }
 
@@ -304,24 +311,31 @@ namespace CameraSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// 入力ロック状態およびボード回転準備関連ストリームをまとめて購読する
+        /// イベントストリームをまとめて購読する
         /// </summary>
+        /// <param name="positionReset">カメラ位置リセット通知ストリーム</param>
         /// <param name="inputLock">入力ロック状態通知ストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態通知ストリーム</param>
         /// <param name="rotationPreparation">ボード回転準備状態通知ストリーム</param>
-        /// <param name="centerPosition">成立ライン中心座標通知ストリーム</param>
-        /// <param name="centerOffsetVector">成立ライン中心との差分ベクトル通知ストリーム</param>
+        /// <param name="linePositionNotified">ライン位置通知ストリーム</param>
         public void BindStreams(
+            in IObservable<Unit> positionReset,
             in IObservable<bool> inputLock,
             in IObservable<bool> gamepadUsed,
             in IObservable<bool> rotationPreparation,
-            in IObservable<Vector3> centerPosition,
-            in IObservable<Vector3> centerOffsetVector)
+            in IObservable<LinePositionInfo> linePositionNotified)
         {
+            positionReset
+                .Subscribe(isLock =>
+                {
+                    _targetPosition = Vector3.zero;
+                    _targetDistance = DEFAULT_CAMERA_Z_DISTANCE;
+                })
+                .AddTo(_disposables);
+
             inputLock
                 .Subscribe(isLock =>
                 {
-                    // 入力ロック状態を更新
                     _isInputLock = isLock;
 
                     // --------------------------------------------------
@@ -339,9 +353,9 @@ namespace CameraSystem.Presentation
                     // ロック解除時
                     // --------------------------------------------------
                     // 目標値をリセット
-                    _centerPosition = Vector3.zero;
-                    _centerOffsetVector = Vector3.zero;
-                    _targetCenterZDistance = DEFAULT_CAMERA_Z_DISTANCE;
+                    _targetPosition = Vector3.zero;
+                    _targetAngle = Vector3.zero;
+                    _targetDistance = DEFAULT_CAMERA_Z_DISTANCE;
                 })
                 .AddTo(_disposables);
 
@@ -365,18 +379,18 @@ namespace CameraSystem.Presentation
                         _isInputLock = false;
 
                         // 初期値を設定
-                        _cameraModel.SetDistanceZ(_maxDistanceZ);
+                        _cameraModel.ApplyDistanceZ(_maxDistanceZ);
 
                         // キャッシュを復元
-                        _cameraModel.SetRotationX(_cachedRotationX);
-                        _cameraModel.SetRotationY(_cachedRotationY);
+                        _cameraModel.ApplyRotationX(_cachedRotationX);
+                        _cameraModel.ApplyRotationY(_cachedRotationY);
 
                         // ビュー反映
                         _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
                         _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
 
                         // カメラ投影設定を更新
-                        _projectionService.SetProjection(_camera, isPerspective);
+                        _projectionUseCase.ApplyProjection(_camera, isPerspective);
 
                         return;
                     }
@@ -392,36 +406,79 @@ namespace CameraSystem.Presentation
                     _cachedRotationY = _cameraModel.RotationY;
 
                     // 真上視点用の距離、回転へ変更
-                    _cameraModel.SetDistanceZ(_maxDistanceZ);
-                    _cameraModel.SetRotationX(CAMERA_ROTATION_TOP_VIEW_X);
-                    _cameraModel.SetRotationY(0f);
+                    _cameraModel.ApplyDistanceZ(_maxDistanceZ);
+                    _cameraModel.ApplyRotationX(CAMERA_ROTATION_TOP_VIEW_X);
+                    _cameraModel.ApplyRotationY(0f);
 
                     // ビュー反映
                     _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
                     _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
 
                     // カメラ投影設定を更新
-                    _projectionService.SetProjection(_camera, isPerspective);
+                    _projectionUseCase.ApplyProjection(_camera, isPerspective);
                 })
                 .AddTo(_disposables);
 
-            centerPosition
-                .Subscribe(centerPosition =>
+            linePositionNotified
+                .Subscribe(linePosition =>
                 {
-                    _centerPosition = centerPosition;
-                    _targetCenterZDistance = LINE_COMPLETE_CAMERA_Z_DISTANCE;
-                })
-                .AddTo(_disposables);
+                    // --------------------------------------------------
+                    // 目標位置更新
+                    // --------------------------------------------------
+                    // ライン端点取得
+                    Vector3 startPosition = linePosition.StartPosition;
+                    Vector3 endPosition = linePosition.EndPosition;
 
-            centerOffsetVector
-                .Subscribe(centerOffsetVector =>
-                {
-                    _centerOffsetVector = centerOffsetVector;
+                    // ライン中心座標算出
+                    Vector3 centerPosition = (startPosition + endPosition) * 0.5f;
 
-                    if (_centerOffsetVector == Vector3.zero)
+                    // 目標位置更新
+                    _targetPosition = centerPosition;
+
+                    // --------------------------------------------------
+                    // 目標方向更新
+                    // --------------------------------------------------
+                    // ライン方向ベクトル算出
+                    Vector3 lineDirection = (endPosition - startPosition).normalized;
+
+                    // XZ平面上の方向成分算出
+                    Vector2 lineDirectionXZ = new Vector2(
+                        lineDirection.x,
+                        lineDirection.z);
+
+                    // Y軸方向ライン判定閾値
+                    const float VERTICAL_LINE_THRESHOLD = 0.0001f;
+
+                    // ラインがY軸方向の場合
+                    if (lineDirectionXZ.sqrMagnitude < VERTICAL_LINE_THRESHOLD)
                     {
-                        _centerOffsetVector = DEFAULT_CENTER_OFFSET_VECTOR;
+                        // 原点からライン中心への方向を採用
+                        _targetAngle = centerPosition.normalized;
                     }
+                    else
+                    {
+                        // ラインに垂直な方向ベクトル算出
+                        Vector3 perpendicularDirection = Vector3.Cross(
+                            lineDirection,
+                            Vector3.up).normalized;
+
+                        // ライン中心 → 原点方向ベクトル算出
+                        Vector3 centerToOriginDirection = (Vector3.zero - centerPosition).normalized;
+
+                        // 原点側を向いている場合は反転
+                        if (Vector3.Dot(perpendicularDirection, centerToOriginDirection) > 0.0f)
+                        {
+                            perpendicularDirection = -perpendicularDirection;
+                        }
+
+                        // 目標方向更新
+                        _targetAngle = perpendicularDirection;
+                    }
+
+                    // --------------------------------------------------
+                    // 目標距離更新
+                    // --------------------------------------------------
+                    _targetDistance = LINE_COMPLETE_CAMERA_Z_DISTANCE;
                 })
                 .AddTo(_disposables);
         }
@@ -430,59 +487,28 @@ namespace CameraSystem.Presentation
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // 位置
+        // --------------------------------------------------
         /// <summary>
-        /// 入力によるカメラ回転処理
+        /// イベントによるカメラ位置更新処理
         /// </summary>
-        /// <param name="input">入力値</param>
-        /// <param name="isGamepadUsed">ゲームパッドを使用しているか</param>
+        /// <param name="targetPosition">目標座標</param>
         /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
-        private void UpdateInputDistance(in float input, in bool isGamepadUsed, in float unscaledDeltaTime)
-        {
-            // Z 距離更新
-            _distanceUseCase.UpdateInputDistance(input, isGamepadUsed, unscaledDeltaTime);
-
-            // ビュー反映
-            _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
-
-            // 追従オブジェクトのスケール更新
-            UpdateFollowObjectScale();
-        }
-
-        /// <summary>
-        /// イベントによるカメラ距離更新処理
-        /// </summary>
-        /// <param name="targetDistanceZ">目標 Z 距離</param>
-        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
-        private void UpdateEventDistance(
-            in float targetDistanceZ,
+        private void UpdateEventPosition(
+            in Vector3 targetPosition,
             in float unscaledDeltaTime)
         {
-            // カメラと成立ライン中心座標間の距離を算出
-            float currentDistance = Vector3.Distance(
-                _cameraTransform.position,
-                _centerPosition);
-
-            // --------------------------------------------------
-            // 距離補正量算出
-            // --------------------------------------------------
-            // 現在距離と目標距離との差分を算出
-            float distanceDifference = currentDistance - targetDistanceZ;
-
-            // 現在のモデル距離から差分を減算
-            float correctedDistanceZ = Mathf.Abs(_cameraModel.DistanceZ) - distanceDifference;
-
-            // 距離更新
-            _distanceUseCase.UpdateEventDistance(
-                correctedDistanceZ,
-                unscaledDeltaTime);
+            // 位置更新
+            _positionUseCase.UpdateEventPosition(targetPosition, unscaledDeltaTime);
 
             // ビュー反映
-            _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
-
-            // 追従オブジェクトのスケール更新
-            UpdateFollowObjectScale();
+            _cameraView.ApplyPosition(_cameraModel.Position);
         }
-        
+
+        // --------------------------------------------------
+        // 回転
+        // --------------------------------------------------
         /// <summary>
         /// 入力によるカメラ回転処理
         /// </summary>
@@ -511,6 +537,46 @@ namespace CameraSystem.Presentation
             _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
         }
 
+        // --------------------------------------------------
+        // 距離
+        // --------------------------------------------------
+        /// <summary>
+        /// 入力によるカメラ距離更新処理
+        /// </summary>
+        /// <param name="input">入力値</param>
+        /// <param name="isGamepadUsed">ゲームパッドを使用しているか</param>
+        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
+        private void UpdateInputDistance(in float input, in bool isGamepadUsed, in float unscaledDeltaTime)
+        {
+            // Z 距離更新
+            _distanceUseCase.UpdateInputDistance(input, isGamepadUsed, unscaledDeltaTime);
+
+            // ビュー反映
+            _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
+
+            // 追従オブジェクトのスケール更新
+            UpdateFollowObjectScale();
+        }
+
+        /// <summary>
+        /// イベントによるカメラ距離更新処理
+        /// </summary>
+        /// <param name="targetDistanceZ">目標 Z 距離</param>
+        /// <param name="unscaledDeltaTime">非スケールデルタ時間</param>
+        private void UpdateEventDistance(
+            in float targetDistanceZ,
+            in float unscaledDeltaTime)
+        {
+            // Z 距離更新
+            _distanceUseCase.UpdateEventDistance(targetDistanceZ, unscaledDeltaTime);
+
+            // ビュー反映
+            _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
+
+            // 追従オブジェクトのスケール更新
+            UpdateFollowObjectScale();
+        }
+        
         /// <summary>
         /// 追従オブジェクトのスケール更新
         /// </summary>

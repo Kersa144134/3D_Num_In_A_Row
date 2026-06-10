@@ -1097,7 +1097,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: f2e66bfe3d525924ba75c89a8079bc83, type: 2}
   _deleteParticle: {fileID: 1418257676711501017, guid: 2548beebacf54b24dbaa6c1e37eb4314, type: 3}
   _pieceScaleFactor: 0.9
-  _boardHit: {fileID: 0}
+  _boardHit: {fileID: 6924588591990532693}
   _raycastLayerMask:
     serializedVersion: 2
     m_Bits: 2048

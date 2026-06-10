@@ -1,9 +1,9 @@
 // ======================================================
-// CameraProjectionService.cs
+// CameraProjectionUseCase.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-20
 // 更新日時 : 2026-04-20
-// 概要     : カメラ投影方法を切り替えるサービス
+// 概要     : カメラ投影方法を切り替えるユースケース
 // ======================================================
 
 using UnityEngine;
@@ -11,9 +11,9 @@ using UnityEngine;
 namespace CameraSystem.Application
 {
     /// <summary>
-    /// カメラ投影切り替えサービス
+    /// カメラ投影切り替えユースケース
     /// </summary>
-    public sealed class CameraProjectionService
+    public sealed class CameraProjectionUseCase
     {
         // ======================================================
         // フィールド
@@ -38,7 +38,7 @@ namespace CameraSystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public CameraProjectionService(
+        public CameraProjectionUseCase(
             in float perspectiveFov,
             in float orthographicSize,
             in float nearClip,
@@ -55,11 +55,11 @@ namespace CameraSystem.Application
         // ======================================================
 
         /// <summary>
-        /// 投影方法を切り替える
+        /// 投影方法を適用する
         /// </summary>
         /// <param name="camera">対象カメラ</param>
         /// <param name="isPerspective">true:透視 / false:平行</param>
-        public void SetProjection(
+        public void ApplyProjection(
             in Camera camera,
             in bool isPerspective)
         {
