@@ -357,10 +357,7 @@ namespace CameraSystem.Presentation
             }
 
             // 左スティック
-            if (leftStickInput.sqrMagnitude > 0.0f)
-            {
-                UpdateInputRotation(leftStickInput, unscaledDeltaTime);
-            }
+            UpdateInputRotation(leftStickInput, unscaledDeltaTime);
         }
 
         public void OnExit()

@@ -364,25 +364,37 @@ MonoBehaviour:
   - _type: 1
     _source: {fileID: 4495602281730165961}
     _bpm: 150
-    _offset: 10.19
+    _offset: 10.2
     _timeSignatureNumerator: 4
     _timeSignatureDenominator: 4
     _playbackBlocks:
-    - IsLoop: 0
+    - IsLoop: 1
       StartBar: 1
       LoopStartBar: 1
-      LoopEndBar: 2
-    - IsLoop: 1
-      StartBar: 5
-      LoopStartBar: 5
-      LoopEndBar: 6
+      LoopEndBar: 16
+    - IsLoop: 0
+      StartBar: 25
+      LoopStartBar: 25
+      LoopEndBar: 28
+    - IsLoop: 0
+      StartBar: 29
+      LoopStartBar: 29
+      LoopEndBar: 31
+    - IsLoop: 0
+      StartBar: 128
+      LoopStartBar: 128
+      LoopEndBar: 128
   - _type: 2
     _source: {fileID: 4554230721362172174}
     _bpm: 150
-    _offset: 1
+    _offset: 10.2
     _timeSignatureNumerator: 4
     _timeSignatureDenominator: 4
-    _playbackBlocks: []
+    _playbackBlocks:
+    - IsLoop: 1
+      StartBar: 32
+      LoopStartBar: 33
+      LoopEndBar: 49
   - _type: 3
     _source: {fileID: 9030453368920590179}
     _bpm: 150

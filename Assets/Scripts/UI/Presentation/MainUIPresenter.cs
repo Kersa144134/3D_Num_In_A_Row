@@ -869,7 +869,7 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             // BGM 再生
-            _soundManager?.PlayBGM(BgmType.Main);
+            _soundManager?.PlayBGM(BgmType.Main, 0);
         }
 
         // ======================================================

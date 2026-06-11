@@ -23,6 +23,11 @@ namespace SoundSystem.Infrastructure
         public readonly int BgmIndex;
 
         /// <summary>
+        /// 再生ブロックインデックス
+        /// </summary>
+        public readonly int BlockIndex;
+
+        /// <summary>
         /// 再生位置
         /// </summary>
         public readonly int BarIndex;
@@ -35,10 +40,12 @@ namespace SoundSystem.Infrastructure
         /// コンストラクタ
         /// </summary>
         /// <param name="bgmIndex">対象 BGM インデックス</param>
-        /// <param name="barIndex">再生位置</param>
-        public AudioPlaybackEvent(in int bgmIndex, in int barIndex)
+        /// <param name="blockIndex">再生ブロックインデックス</param>
+        /// <param name="barIndex">再生位置（小節）</param>
+        public AudioPlaybackEvent(in int bgmIndex, in int blockIndex, in int barIndex)
         {
             BgmIndex = bgmIndex;
+            BlockIndex = blockIndex;
             BarIndex = barIndex;
         }
     }

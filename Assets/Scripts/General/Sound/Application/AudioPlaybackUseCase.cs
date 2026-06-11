@@ -102,6 +102,7 @@ namespace SoundSystem.Application
             _onPlaybackRequested.OnNext(
                 new AudioPlaybackEvent(
                     bgmIndex,
+                    blockIndex,
                     block.StartBar
                 )
             );
@@ -154,7 +155,7 @@ namespace SoundSystem.Application
                 {
                     // 再生位置をループ開始へ戻す通知
                     _onPlaybackRequested.OnNext(
-                        new AudioPlaybackEvent(e.BgmIndex, block.LoopStartBar));
+                        new AudioPlaybackEvent(e.BgmIndex, currentIndex, block.LoopStartBar));
 
                     return;
                 }
@@ -174,17 +175,39 @@ namespace SoundSystem.Application
 
                         // 次ブロック開始位置へ移動通知
                         _onPlaybackRequested.OnNext(
-                            new AudioPlaybackEvent(e.BgmIndex, nextBlock.StartBar));
+                            new AudioPlaybackEvent(e.BgmIndex, nextIndex, nextBlock.StartBar));
                     }
                 }
             }
         }
 
         /// <summary>
+        /// BGM 現在再生ブロックを更新する
+        /// </summary>
+        /// <param name="bgmIndex">対象BGMインデックス</param>
+        /// <param name="blockIndex">設定するブロックインデックス</param>
+        public void SetCurrentBlock(in int bgmIndex, in int blockIndex)
+        {
+            if (bgmIndex < 0 || bgmIndex >= _currentBlockIndex.Length)
+            {
+                return;
+            }
+
+            // 不正値チェック
+            if (blockIndex < 0)
+            {
+                return;
+            }
+
+            // ブロック位置セット
+            _currentBlockIndex[bgmIndex] = blockIndex;
+        }
+        
+        /// <summary>
         /// BGM 再生状態をリセットする
         /// </summary>
         /// <param name="bgmIndex">対象BGMインデックス</param>
-        public void Reset(in int bgmIndex)
+        public void ResetCurrentBlock(in int bgmIndex)
         {
             if (bgmIndex < 0 || bgmIndex >= _currentBlockIndex.Length)
             {

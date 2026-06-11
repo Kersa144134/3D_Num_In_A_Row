@@ -196,7 +196,7 @@ namespace SoundSystem.Presentation
 
             if (Input.GetKeyDown(KeyCode.Alpha0))
             {
-                SetPlaybackPosition(BgmType.Title, 0);
+                SetPlaybackPosition(BgmType.Main, 0);
             }
             if (Input.GetKeyDown(KeyCode.Alpha1 ))
             {
@@ -350,7 +350,7 @@ namespace SoundSystem.Presentation
             bgm.Source.Stop();
 
             // 再生ブロック情報リセット
-            _audioPlaybackUseCase.Reset(bgmIndex);
+            _audioPlaybackUseCase.ResetCurrentBlock(bgmIndex);
         }
 
         /// <summary>
@@ -361,6 +361,7 @@ namespace SoundSystem.Presentation
         /// <returns>再生位置設定に成功した場合は true</returns>
         public bool SetPlaybackPosition(in BgmType type, in int blockIndex = 0)
         {
+            Debug.Log(blockIndex);
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
@@ -637,6 +638,11 @@ namespace SoundSystem.Presentation
             // 予約データがある場合、BGM 再生位置更新処理実行
             if (_isPlaybackSeekRequested)
             {
+                // 再生ブロック情報更新
+                _audioPlaybackUseCase.SetCurrentBlock(
+                    _pendingPlaybackEvent.BgmIndex,
+                    _pendingPlaybackEvent.BlockIndex);
+
                 OnPlaybackBgm(_pendingPlaybackEvent);
 
                 _isPlaybackSeekRequested = false;

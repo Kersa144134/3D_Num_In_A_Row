@@ -69,19 +69,6 @@ namespace SoundSystem.Application
         }
 
         /// <summary>
-        /// 状態リセット
-        /// </summary>
-        public void Reset(in int bgmIndex)
-        {
-            if (bgmIndex < 0 || bgmIndex >= _currentBarIndex.Length)
-            {
-                return;
-            }
-
-            _currentBarIndex[bgmIndex] = -1;
-        }
-
-        /// <summary>
         /// 指定小節番号の再生時間（秒）を取得する
         /// </summary>
         /// <param name="bgmSet">対象BGM設定</param>
