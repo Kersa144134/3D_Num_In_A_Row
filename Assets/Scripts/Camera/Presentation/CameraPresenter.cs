@@ -337,6 +337,9 @@ namespace CameraSystem.Presentation
             {
                 _isZoomSePlayed = false;
 
+                _soundManager?.StopLoopSE(SeType.Camera_ZoomIn);
+                _soundManager?.StopLoopSE(SeType.Camera_ZoomOut);
+
                 return;
             }
 

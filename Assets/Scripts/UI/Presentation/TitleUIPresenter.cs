@@ -913,6 +913,19 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
+        // サウンド派生イベント
+        // ======================================================
+
+        /// <summary>
+        /// BGM 開始時
+        /// </summary>
+        protected override void StartBgm()
+        {
+            _soundManager?.SetBGMVolume(BgmType.Title, 0.5f, 0);
+            _soundManager?.PlayBGM(BgmType.Title, 0);
+        }
+
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
@@ -983,8 +996,7 @@ namespace UISystem.Presentation
                     SetPointerVisible(true);
 
                     // BGM 再生
-                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f, 0);
-                    _soundManager?.PlayBGM(BgmType.Title, 0);
+                    StartBgm();
                 })
                 .AddTo(_disposables);
         }
@@ -1023,8 +1035,7 @@ namespace UISystem.Presentation
                     SetPointerVisible(true);
 
                     // BGM 再生
-                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f);
-                    _soundManager?.PlayBGM(BgmType.Title);
+                    StartBgm();
 
                     // アニメーション終了通知
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);

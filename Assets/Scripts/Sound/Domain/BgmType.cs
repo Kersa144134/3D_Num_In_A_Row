@@ -17,12 +17,12 @@ namespace SoundSystem.Domain
         None = 0,
 
         /// <summary>タイトル</summary>
-        Title,
+        Title = 10,
 
         /// <summary>メイン</summary>
-        Main,
+        Main = 20,
 
         /// <summary>リザルト</summary>
-        Result
+        Result = 30,
     }
 }

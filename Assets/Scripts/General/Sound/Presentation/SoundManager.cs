@@ -194,25 +194,45 @@ namespace SoundSystem.Presentation
             // 小節制御更新
             _audioBarUseCase?.Update(_bgmSets);
 
-            if (Input.GetKeyDown(KeyCode.Alpha0))
+            if (Input.GetKeyDown(KeyCode.Alpha1 ))
             {
                 SetPlaybackPosition(BgmType.Main, 0);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha1 ))
+            if (Input.GetKeyDown(KeyCode.Alpha2))
             {
                 SetPlaybackPosition(BgmType.Main, 1);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                SetPlaybackPosition(BgmType.Main, 2);
-            }
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                SetPlaybackPosition(BgmType.Main, 3);
+                SetPlaybackPosition(BgmType.Main, 2);
             }
             if (Input.GetKeyDown(KeyCode.Alpha4))
             {
                 SetPlaybackPosition(BgmType.Main, 4);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha5))
+            {
+                SetPlaybackPosition(BgmType.Main, 5);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha6))
+            {
+                SetPlaybackPosition(BgmType.Main, 6);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha7))
+            {
+                SetPlaybackPosition(BgmType.Main, 7);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha8))
+            {
+                SetPlaybackPosition(BgmType.Main, 9);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha9))
+            {
+                SetPlaybackPosition(BgmType.Main, 10);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha0))
+            {
+                SetPlaybackPosition(BgmType.Main, 11);
             }
         }
 
@@ -574,6 +594,12 @@ namespace SoundSystem.Presentation
                 return;
             }
 
+            // 再生中でない場合は処理なし
+            if (!se.Source.isPlaying)
+            {
+                return;
+            }
+
             se.Source.Stop();
 
             se.Source.clip = null;
@@ -634,21 +660,30 @@ namespace SoundSystem.Presentation
             // ---------------------------------------------
             // 再生制御判定
             // ---------------------------------------------
-            // 予約データがある場合、BGM 再生位置更新処理実行
+            // 予約データがある場合
             if (_isPlaybackSeekRequested)
             {
-                // 再生ブロック情報更新
-                _audioPlaybackUseCase.SetCurrentBlock(
-                    _pendingPlaybackEvent.BgmIndex,
-                    _pendingPlaybackEvent.BlockIndex);
+                // 現在小節と予約小節の偶奇が一致しているか判定
+                bool isSameParity =
+                    _pendingPlaybackEvent.BarIndex % 2 == e.BarIndex % 2;
 
-                OnPlaybackBgm(_pendingPlaybackEvent);
+                // 偶奇が一致した場合のみ再生位置更新
+                if (isSameParity)
+                {
+                    // 再生ブロック情報更新
+                    _audioPlaybackUseCase.SetCurrentBlock(
+                        _pendingPlaybackEvent.BgmIndex,
+                        _pendingPlaybackEvent.BlockIndex);
 
-                _isPlaybackSeekRequested = false;
+                    OnPlaybackBgm(_pendingPlaybackEvent);
 
-                return;
+                    _isPlaybackSeekRequested = false;
+
+                    return;
+                }
             }
 
+            // 予約データなしまたは偶奇不一致の場合、通常処理
             _audioPlaybackUseCase.HandleBarEvent(e, bgm);
         }
         
@@ -722,7 +757,11 @@ namespace SoundSystem.Presentation
             in AudioClip clip,
             in float volume)
         {
-            source.Stop();
+            // 既に再生中の場合は処理なし
+            if (source.isPlaying)
+            {
+                return;
+            }
 
             source.clip = clip;
             source.volume = volume;

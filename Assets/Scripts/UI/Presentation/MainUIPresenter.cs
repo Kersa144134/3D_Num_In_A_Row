@@ -402,6 +402,9 @@ namespace UISystem.Presentation
             // アニメーションイベント通知クラス取得
             _intermittentCanvasAnimationEventNotifier = _intermittentCanvas.GetComponent<AnimationEventNotifier>();
             _outgameCanvasCanvasAnimationEventNotifier = _outgameCanvas.GetComponent<AnimationEventNotifier>();
+
+            // BGM 再生
+            StartBgm();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
