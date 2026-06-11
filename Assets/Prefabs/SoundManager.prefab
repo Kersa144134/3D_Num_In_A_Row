@@ -361,7 +361,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SoundSystem.Manager.SoundManager
   _bgmSets:
-  - _type: 1
+  - _type: 10
     _source: {fileID: 4495602281730165961}
     _bpm: 150
     _offset: 10.2
@@ -384,24 +384,72 @@ MonoBehaviour:
       StartBar: 128
       LoopStartBar: 128
       LoopEndBar: 128
-  - _type: 2
+  - _type: 20
     _source: {fileID: 4554230721362172174}
-    _bpm: 150
-    _offset: 10.2
+    _bpm: 200
+    _offset: 39.423
     _timeSignatureNumerator: 4
     _timeSignatureDenominator: 4
     _playbackBlocks:
+    - IsLoop: 0
+      StartBar: 1
+      LoopStartBar: 1
+      LoopEndBar: 7
     - IsLoop: 1
-      StartBar: 32
-      LoopStartBar: 34
-      LoopEndBar: 41
-  - _type: 3
+      StartBar: 8
+      LoopStartBar: 9
+      LoopEndBar: 24
+    - IsLoop: 0
+      StartBar: 25
+      LoopStartBar: 25
+      LoopEndBar: 32
+    - IsLoop: 0
+      StartBar: 33
+      LoopStartBar: 33
+      LoopEndBar: 39
+    - IsLoop: 1
+      StartBar: 40
+      LoopStartBar: 40
+      LoopEndBar: 55
+    - IsLoop: 1
+      StartBar: 56
+      LoopStartBar: 57
+      LoopEndBar: 72
+    - IsLoop: 0
+      StartBar: 121
+      LoopStartBar: 121
+      LoopEndBar: 128
+    - IsLoop: 0
+      StartBar: 129
+      LoopStartBar: 129
+      LoopEndBar: 136
+    - IsLoop: 0
+      StartBar: 141
+      LoopStartBar: 141
+      LoopEndBar: 143
+    - IsLoop: 1
+      StartBar: 144
+      LoopStartBar: 144
+      LoopEndBar: 159
+    - IsLoop: 1
+      StartBar: 160
+      LoopStartBar: 161
+      LoopEndBar: 176
+    - IsLoop: 0
+      StartBar: 177
+      LoopStartBar: 177
+      LoopEndBar: 177
+  - _type: 30
     _source: {fileID: 9030453368920590179}
     _bpm: 150
-    _offset: 1
+    _offset: 85.3
     _timeSignatureNumerator: 4
     _timeSignatureDenominator: 4
-    _playbackBlocks: []
+    _playbackBlocks:
+    - IsLoop: 0
+      StartBar: 1
+      LoopStartBar: 0
+      LoopEndBar: 0
   _seSets:
   - Type: 1
     Source: {fileID: 3301035611443052703}
