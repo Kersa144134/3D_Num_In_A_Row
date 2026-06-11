@@ -166,8 +166,11 @@ namespace PhaseSystem.Application
         /// <param name="nextPhaseType">要求された遷移先フェーズ</param>
         public void RequestChangePhase(in PhaseType nextPhaseType)
         {
-            // 実際に遷移するフェーズを決定
-            PhaseType resolvedPhaseType = _transitionRule.ResolveRequestedPhase(nextPhaseType);
+            // 現在フェーズと要求フェーズから実際の遷移先を決定
+            PhaseType resolvedPhaseType =
+                _transitionRule.ResolveRequestedPhase(
+                    _currentPhaseType.Value,
+                    nextPhaseType);
 
             ChangePhase(resolvedPhaseType);
         }

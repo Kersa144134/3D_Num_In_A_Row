@@ -14,13 +14,10 @@ using InputSystem.Domain;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
-using SoundSystem.Domain;
-using SoundSystem.Presentation;
 using System;
 using System.Linq;
 using UniRx;
 using UnityEngine;
-using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
 {
@@ -137,7 +134,8 @@ namespace GameSystem.Presentation
                         // ゲーム終了入力
                         _onExitGameInput.OnNext(Unit.Default);
 
-                        TogglePausePhase(_currentPhase.Value);
+                        // ポーズ入力入力
+                        _onPauseInput.OnNext(Unit.Default);
                     })
                     .AddTo(_disposables);
                 _inputManager.ActiveDeviceType
@@ -222,6 +220,7 @@ namespace GameSystem.Presentation
                     _onPlayerChanged,
                     _onScoreUpdated,
                     _onScoreAdded,
+                    _onPauseInput,
                     _currentPhase.Select(phase => phase != PhaseType.Play && phase != PhaseType.Pause),
                     _onGamepadUsed,
                     _onColumnSelectVisibleChanged,

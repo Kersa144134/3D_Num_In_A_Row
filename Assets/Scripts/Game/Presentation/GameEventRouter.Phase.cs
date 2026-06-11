@@ -166,33 +166,5 @@ namespace GameSystem.Presentation
                     break;
             }
         }
-
-        /// <summary>
-        /// ポーズ用のフェーズトグル処理を行う
-        /// </summary>
-        private void TogglePausePhase(in PhaseType phase)
-        {
-            // フェーズ遷移先を決定する
-            PhaseType nextPhase;
-
-            if (phase == PhaseType.Play)
-            {
-                nextPhase = PhaseType.Pause;
-
-                // 現在のアクティブ状態フェーズをキャッシュ
-                _cachedActivePhase = phase;
-            }
-            else if (phase == PhaseType.Pause)
-            {
-                // キャッシュしていたアクティブ状態フェーズへ復帰
-                nextPhase = _cachedActivePhase;
-            }
-            else
-            {
-                return;
-            }
-
-            NotifyPhaseChangeRequested(nextPhase);
-        }
     }
 }

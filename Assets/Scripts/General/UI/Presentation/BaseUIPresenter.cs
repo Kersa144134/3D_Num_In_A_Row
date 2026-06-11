@@ -203,6 +203,12 @@ namespace UISystem.Presentation
         /// <summary>フォーカス中ボタン RectTransform</summary>
         private RectTransform _focusButtonRectTransform;
 
+        /// <summary>フォーカス中ボタンのルート Canvas</summary>
+        private Canvas _focusCanvas;
+
+        /// <summary>フォーカス中ボタンのルート Canvas の RectTransform</summary>
+        private RectTransform _focusCanvasRectTransform;
+        
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -224,7 +230,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent> _dialogButtonEventTable
             = new Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent>();
-        
+
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -362,19 +368,19 @@ namespace UISystem.Presentation
             );
 
             // ゲームパッド入力かつフォーカス中ボタンが存在する場合
-            if (_isGamePadInput && _focusButtonRectTransform != null)
+            if (_isGamePadInput &&
+                _focusButtonRectTransform != null &&
+                _focusCanvasRectTransform != null)
             {
-                // フォーカス中ボタンのワールド座標をスクリーン座標へ変換
-                Vector2 screenPosition =
-                    RectTransformUtility.WorldToScreenPoint(
-                        null,
-                        _focusButtonRectTransform.position
-                    );
+                // Canvas ローカル座標へ変換
+                Vector2 localPosition = _focusCanvasRectTransform.InverseTransformPoint(_focusButtonRectTransform.position);
+
+                // Canvas 左下基準へ変換
+                Vector2 canvasPosition =localPosition + (_focusCanvasRectTransform.rect.size * 0.5f);
 
                 // フォーカス座標通知
-                _onFocusPosition.OnNext(screenPosition);
+                _onFocusPosition.OnNext(canvasPosition);
             }
-
             OnLateUpdateInternal(unscaledDeltaTime);
         }
 
@@ -795,6 +801,22 @@ namespace UISystem.Presentation
 
             // ボタンの RectTransform をキャッシュ
             _focusButtonRectTransform = buttonEvent.RectTransform;
+
+            // フォーカス対象未設定の場合
+            if (_focusButtonRectTransform == null)
+            {
+                // Canvas キャッシュクリア
+                _focusCanvas = null;
+                _focusCanvasRectTransform = null;
+
+                return;
+            }
+
+            // 親 Canvas 取得
+            _focusCanvas = _focusButtonRectTransform.GetComponentInParent<Canvas>();
+
+            // Canvas の RectTransform キャッシュ
+            _focusCanvasRectTransform = _focusCanvas.transform as RectTransform;
         }
 
         /// <summary>
@@ -809,8 +831,10 @@ namespace UISystem.Presentation
             // ターゲット検出状態を解除
             UpdatePointerTargetAnimation(false);
 
-            // ボタンの RectTransform キャッシュを破棄
+            // RectTransform キャッシュを破棄
             _focusButtonRectTransform = null;
+            _focusCanvas = null;
+            _focusCanvasRectTransform = null;
         }
 
         /// <summary>

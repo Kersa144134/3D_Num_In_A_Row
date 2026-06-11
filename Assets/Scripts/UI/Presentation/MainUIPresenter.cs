@@ -699,6 +699,7 @@ namespace UISystem.Presentation
         /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
         /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
         /// <param name="scoreUpdated">スコア加算を通知するストリーム</param>
+        /// <param name="onPauseInput">ポーズ入力を通知するストリーム</param>
         /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
@@ -711,6 +712,7 @@ namespace UISystem.Presentation
             in IObservable<int> playerChange,
             in IObservable<ScoreEvent> scoreUpdated,
             in IObservable<ScoreEvent> scoreAdded,
+            in IObservable<Unit> onPauseInput,
             in IObservable<bool> pointerLock,
             in IObservable<bool> gamepadUsed,
             in IObservable<bool> columnSelectVisibleChanged,
@@ -764,6 +766,31 @@ namespace UISystem.Presentation
 
             scoreAdded
                 .Subscribe(e => UpdateAddScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
+
+            onPauseInput
+                .Subscribe(_ =>
+                {
+                    switch (_currentPhase)
+                    {
+                        case PhaseType.Play:
+                            // ポーズフェーズ遷移リクエスト
+                            _onPhaseChangeRequested.OnNext(PhaseType.Pause);
+
+                            break;
+
+                        case PhaseType.Pause:
+
+                            // ポーズ画面表示中の場合
+                            if (_uiStateController.GetActiveCanvasType() == CanvasType.Pause)
+                            {
+                                // プレイフェーズ遷移リクエスト
+                                _onPhaseChangeRequested.OnNext(PhaseType.Play);
+                            }
+
+                            break;
+                    }
+                })
                 .AddTo(_disposables);
 
             pointerLock

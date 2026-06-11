@@ -88,9 +88,12 @@ namespace PhaseSystem.Application
         /// <summary>
         /// 外部からリクエストされたフェーズ遷移を確定する
         /// </summary>
+        /// <param name="currentPhaseType">現在フェーズ</param>
         /// <param name="nextPhaseType">要求された遷移先フェーズ</param>
         /// <returns>実際に遷移するフェーズ</returns>
-        public PhaseType ResolveRequestedPhase(in PhaseType nextPhaseType)
+        public PhaseType ResolveRequestedPhase(
+            in PhaseType currentPhaseType,
+            in PhaseType nextPhaseType)
         {
             // --------------------------------------------------
             // ChangePlayer
@@ -104,6 +107,18 @@ namespace PhaseSystem.Application
                 if (IsFinishTransition())
                 {
                     return PhaseType.Finish;
+                }
+            }
+
+            // --------------------------------------------------
+            // Pause
+            // --------------------------------------------------
+            if (nextPhaseType is PhaseType.Pause)
+            {
+                // Play フェーズ以外では Pause 遷移を実行しない
+                if (currentPhaseType is not PhaseType.Play)
+                {
+                    return currentPhaseType;
                 }
             }
 

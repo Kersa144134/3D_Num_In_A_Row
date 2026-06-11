@@ -89,9 +89,6 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
-        /// <summary>直前のアクティブ状態フェーズキャッシュ</summary>
-        private PhaseType _cachedActivePhase = PhaseType.None;
-
         /// <summary>フェード待機中に来たフェーズキャッシュ</summary>
         private PhaseType? _pendingPhase;
 
@@ -236,6 +233,9 @@ namespace GameSystem.Presentation
         
         /// <summary>スキップ入力用 Subject</summary>
         private readonly Subject<Unit> _onSkipInput = new Subject<Unit>();
+
+        /// <summary>ポーズ入力用 Subject</summary>
+        private readonly Subject<Unit> _onPauseInput = new Subject<Unit>();
 
         // --------------------------------------------------
         // UI
