@@ -71,11 +71,17 @@ namespace SoundSystem.Presentation
         /// <summary>AudioClip リポジトリ</summary>
         private readonly AudioClipRepository _audioClipRepository = new AudioClipRepository();
 
+        /// <summary>オーディオ小節管理ユースケース</summary>
+        private AudioBarUseCase _audioBarUseCase;
+
         /// <summary>オーディオ距離計算ユースケース</summary>
         private AudioDistanceUseCase _audioDistanceUseCase;
 
         /// <summary>オーディオフェードユースケース</summary>
         private AudioFadeUseCase _audioFadeUseCase;
+
+        /// <summary>オーディオ再生位置管理ユースケース</summary>
+        private AudioPlaybackUseCase _audioPlaybackUseCase;
 
         /// <summary>オーディオ設定検索クラス</summary>
         private AudioSetFinder _audioSetFinder;
@@ -86,6 +92,12 @@ namespace SoundSystem.Presentation
 
         /// <summary>BGM に紐付くローパスフィルター配列</summary>
         private AudioLowPassFilter[] _lowPassFilters;
+
+        /// <summary>再生位置更新予約フラグ</summary>
+        private bool _isPlaybackSeekRequested;
+
+        /// <summary>予約された再生位置イベント</summary>
+        private AudioPlaybackEvent _pendingPlaybackEvent;
 
         // ======================================================
         // 定数
@@ -143,15 +155,10 @@ namespace SoundSystem.Presentation
             // --------------------------------------------------
             // クラス初期化
             // --------------------------------------------------
-            // オーディオ距離計算ユースケース生成
-            _audioDistanceUseCase = new AudioDistanceUseCase(
-                _seMinDistance,
-                _seMaxDistance);
-
-            // オーディオフェードユースケース生成
+            _audioBarUseCase = new AudioBarUseCase(bgmCount);
+            _audioDistanceUseCase = new AudioDistanceUseCase(_seMinDistance, _seMaxDistance);
             _audioFadeUseCase = new AudioFadeUseCase(bgmCount);
-            
-            // オーディオ検索クラス生成
+            _audioPlaybackUseCase = new AudioPlaybackUseCase(bgmCount);
             _audioSetFinder = new AudioSetFinder(_bgmSets, _seSets);
 
             // --------------------------------------------------
@@ -182,10 +189,37 @@ namespace SoundSystem.Presentation
             Subscribe();
         }
 
+        private void Update()
+        {
+            // 小節制御更新
+            _audioBarUseCase?.Update(_bgmSets);
+
+            if (Input.GetKeyDown(KeyCode.Alpha0))
+            {
+                SetPlaybackPosition(BgmType.Title, 0);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha1 ))
+            {
+                SetPlaybackPosition(BgmType.Title, 1);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+            {
+                SetPlaybackPosition(BgmType.Title, 2);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+            {
+                SetPlaybackPosition(BgmType.Title, 3);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha4))
+            {
+                SetPlaybackPosition(BgmType.Title, 4);
+            }
+        }
+
         private void OnDestroy()
         {
             // イベント購読解除
-            _audioFadeUseCase?.Dispose();
+            Dispose();
         }
 
         // ======================================================
@@ -233,10 +267,11 @@ namespace SoundSystem.Presentation
         // BGM
         // --------------------------------------------------
         /// <summary>
-        /// BGM を再生する
+        /// BGM 再生
         /// </summary>
         /// <param name="type">BGM タイプ</param>
-        public void PlayBGM(in BgmType type)
+        /// <param name="blockIndex">再生ブロック番号</param>
+        public void PlayBGM(in BgmType type, int? blockIndex = null)
         {
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
@@ -247,11 +282,15 @@ namespace SoundSystem.Presentation
             // BGM 設定取得
             BgmSet bgm = _bgmSets[bgmIndex];
 
-            // 既に再生中の場合は再生位置更新
+            // 再生中の場合
             if (bgm.Source.isPlaying)
             {
-                SetPlaybackPosition(type);
-                
+                // ブロック番号指定時のみ再生位置更新
+                if (blockIndex.HasValue)
+                {
+                    SetPlaybackPosition(type, blockIndex.Value);
+                }
+
                 return;
             }
             
@@ -265,16 +304,23 @@ namespace SoundSystem.Presentation
             bgm.Source.clip = clip;
 
             // 再生位置設定
-            SetPlaybackPosition(type);
+            if (blockIndex.HasValue)
+            {
+                SetPlaybackPosition(type, blockIndex.Value);
+            }
+            else
+            {
+                bgm.Source.time = bgm.Offset;
+            }
 
             // BGM 再生
             bgm.Source.Play();
         }
 
         /// <summary>
-        /// BGM停止
+        /// BGM 停止
         /// </summary>
-        /// <param name="type">停止対象</param>
+        /// <param name="type">BGM タイプ</param>
         public void StopBGM(in BgmType type = BgmType.None)
         {
             // None の場合、全 BGM 停止
@@ -302,19 +348,23 @@ namespace SoundSystem.Presentation
             BgmSet bgm = _bgmSets[bgmIndex];
 
             bgm.Source.Stop();
+
+            // 再生ブロック情報リセット
+            _audioPlaybackUseCase.Reset(bgmIndex);
         }
 
         /// <summary>
-        /// BGM の再生位置を設定する
+        /// BGM 再生位置設定
         /// </summary>
-        /// <param name="type">設定対象 BGM タイプ</param>
-        /// <param name="time">再生位置（秒）</param>
-        public void SetPlaybackPosition(in BgmType type, float? time = null)
+        /// <param name="type">BGM タイプ</param>
+        /// <param name="blockIndex">再生ブロック番号</param>
+        /// <returns>再生位置設定に成功した場合は true</returns>
+        public bool SetPlaybackPosition(in BgmType type, in int blockIndex = 0)
         {
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
-                return;
+                return false;
             }
 
             BgmSet bgm = _bgmSets[bgmIndex];
@@ -322,17 +372,13 @@ namespace SoundSystem.Presentation
             // AudioClip 取得
             if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
             {
-                return;
+                return false;
             }
 
-            // 指定秒数がない場合はオフセット値を使用
-            float playbackTime = time ?? bgm.Offset;
-
-            // 再生位置をクリップ長範囲へ補正
-            playbackTime = Mathf.Clamp(playbackTime, 0.0f, clip.length);
-
-            // 再生位置設定
-            bgm.Source.time = playbackTime;
+            return _audioPlaybackUseCase.SetPlaybackPosition(
+                bgmIndex,
+                bgm,
+                blockIndex);
         }
 
         /// <summary>
@@ -341,7 +387,10 @@ namespace SoundSystem.Presentation
         /// <param name="type">BGM タイプ</param>
         /// <param name="volume">目標音量</param>
         /// <param name="transitionDuration">補間時間</param>
-        public void SetBGMVolume(in BgmType type, in float volume, float? transitionDuration = null)
+        public void SetBGMVolume(
+            in BgmType type,
+            in float volume,
+            float? transitionDuration = null)
         {
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
@@ -352,18 +401,6 @@ namespace SoundSystem.Presentation
             BgmSet bgm = _bgmSets[bgmIndex];
 
             if (bgm.Source == null)
-            {
-                return;
-            }
-
-            // 一時停止中の場合は再開
-            if (!bgm.Source.isPlaying &&
-                bgm.Source.time > 0.0f)
-            {
-                bgm.Source.UnPause();
-            }
-            // 未再生なら処理なし
-            else if (!bgm.Source.isPlaying)
             {
                 return;
             }
@@ -399,18 +436,6 @@ namespace SoundSystem.Presentation
             for (int i = 0; i < _bgmSets.Length; i++)
             {
                 BgmSet bgm = _bgmSets[i];
-
-                // 一時停止中の場合は再開
-                if (!bgm.Source.isPlaying &&
-                    bgm.Source.time > 0.0f)
-                {
-                    bgm.Source.UnPause();
-                }
-                // 未再生なら処理なし
-                else if (!bgm.Source.isPlaying)
-                {
-                    return;
-                }
 
                 // 音量フェード実行
                 _audioFadeUseCase.StartVolumeFade(
@@ -563,16 +588,128 @@ namespace SoundSystem.Presentation
         /// </summary>
         private void Subscribe()
         {
+            // 小節更新イベント購読
+            _audioBarUseCase.OnBarChanged
+                .Subscribe(OnBarChanged)
+                .AddTo(_disposables);
+
             // BGM 一時停止
             _audioFadeUseCase.OnPauseRequested
-                .Subscribe(source => source.Pause())
+                .Subscribe(OnPauseBgm)
                 .AddTo(_disposables);
+
+            // 再生位置更新リクエスト
+            _audioPlaybackUseCase.OnPlaybackRequested
+                .Subscribe(OnRequestPlaybackBgm)
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        private void Dispose()
+        {
+            _audioBarUseCase?.Dispose();
+            _audioFadeUseCase?.Dispose();
+            _audioPlaybackUseCase?.Dispose();
+        }
+
+        /// <summary>
+        /// 小節更新イベント処理
+        /// </summary>
+        private void OnBarChanged(AudioBarEvent e)
+        {
+            if (e.BgmIndex < 0 || e.BgmIndex >= _bgmSets.Length)
+            {
+                return;
+            }
+
+            BgmSet bgm = _bgmSets[e.BgmIndex];
+
+            if (bgm.Source == null)
+            {
+                return;
+            }
+
+            // ---------------------------------------------
+            // 再生制御判定
+            // ---------------------------------------------
+            // 予約データがある場合、BGM 再生位置更新処理実行
+            if (_isPlaybackSeekRequested)
+            {
+                OnPlaybackBgm(_pendingPlaybackEvent);
+
+                _isPlaybackSeekRequested = false;
+
+                return;
+            }
+
+            _audioPlaybackUseCase.HandleBarEvent(e, bgm);
+        }
+        
+        /// <summary>
+        /// BGM 一時停止処理
+        /// </summary>
+        /// <param name="source">対象 AudioSource</param>
+        private void OnPauseBgm(AudioSource source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            source.Pause();
+        }
+
+        /// <summary>
+        /// BGM 再生位置更新予約処理
+        /// </summary>
+        /// <param name="e">再生位置イベント</param>
+        private void OnRequestPlaybackBgm(AudioPlaybackEvent e)
+        {
+            if (e.BgmIndex < 0 || e.BgmIndex >= _bgmSets.Length)
+            {
+                return;
+            }
+
+            // 予約データとして保持
+            _pendingPlaybackEvent = e;
+
+            _isPlaybackSeekRequested = true;
+        }
+
+        /// <summary>
+        /// BGM 再生位置更新処理
+        /// </summary>
+        /// <param name="e">再生位置イベント</param>
+        private void OnPlaybackBgm(AudioPlaybackEvent e)
+        {
+            if (e.BgmIndex < 0 || e.BgmIndex >= _bgmSets.Length)
+            {
+                return;
+            }
+
+            BgmSet bgm = _bgmSets[e.BgmIndex];
+
+            if (bgm.Source == null)
+            {
+                return;
+            }
+
+            // 小節 → 秒変換
+            float time = _audioBarUseCase.GetTimeFromBar(bgm, e.BarIndex);
+
+            // 現在のラグを取得
+            float lag = _audioBarUseCase.GetPlaybackLagFromBar(bgm, bgm.Source.time);
+
+            // 再生位置反映
+            bgm.Source.time = bgm.Offset + time + lag;
         }
 
         /// <summary>
         /// ループ SE 再生
         /// </summary>
-        /// <param name="se">SE 設定</param>
+        /// <param name="source">再生ソース</param>
         /// <param name="clip">再生クリップ</param>
         /// <param name="volume">再生音量</param>
         private void PlayLoopSE(

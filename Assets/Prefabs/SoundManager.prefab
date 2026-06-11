@@ -361,15 +361,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SoundSystem.Manager.SoundManager
   _bgmSets:
-  - Type: 1
-    Source: {fileID: 4495602281730165961}
-    Offset: 10.2
-  - Type: 2
-    Source: {fileID: 4554230721362172174}
-    Offset: 1
-  - Type: 3
-    Source: {fileID: 9030453368920590179}
-    Offset: 1
+  - _type: 1
+    _source: {fileID: 4495602281730165961}
+    _bpm: 150
+    _offset: 10.19
+    _timeSignatureNumerator: 4
+    _timeSignatureDenominator: 4
+    _playbackBlocks:
+    - IsLoop: 0
+      StartBar: 1
+      LoopStartBar: 1
+      LoopEndBar: 2
+    - IsLoop: 1
+      StartBar: 5
+      LoopStartBar: 5
+      LoopEndBar: 6
+  - _type: 2
+    _source: {fileID: 4554230721362172174}
+    _bpm: 150
+    _offset: 1
+    _timeSignatureNumerator: 4
+    _timeSignatureDenominator: 4
+    _playbackBlocks: []
+  - _type: 3
+    _source: {fileID: 9030453368920590179}
+    _bpm: 150
+    _offset: 1
+    _timeSignatureNumerator: 4
+    _timeSignatureDenominator: 4
+    _playbackBlocks: []
   _seSets:
   - Type: 1
     Source: {fileID: 3301035611443052703}
@@ -410,8 +430,9 @@ MonoBehaviour:
   - Type: 21
     Source: {fileID: 6155689394752938357}
     IsLoop: 1
-  _lowPassTargetFrequency: 500
+  _volumeFadeTransition: 1
   _lowPassTransition: 1
+  _lowPassTargetFrequency: 500
   _seMinDistance: 0
   _seMaxDistance: 0
 --- !u!1 &4624915317019307897
@@ -462,7 +483,7 @@ AudioSource:
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -617,7 +638,7 @@ AudioSource:
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -772,7 +793,7 @@ AudioSource:
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0

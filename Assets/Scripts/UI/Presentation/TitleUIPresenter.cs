@@ -983,6 +983,10 @@ namespace UISystem.Presentation
 
                     // ポインター表示
                     SetPointerVisible(true);
+
+                    // BGM 再生
+                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f);
+                    _soundManager?.PlayBGM(BgmType.Title);
                 })
                 .AddTo(_disposables);
         }
