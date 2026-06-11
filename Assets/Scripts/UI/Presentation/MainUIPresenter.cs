@@ -689,6 +689,19 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
+        // サウンド派生イベント
+        // ======================================================
+
+        /// <summary>
+        /// BGM 開始時
+        /// </summary>
+        protected override void StartBgm()
+        {
+            _soundManager?.SetBGMVolume(BgmType.Main, 0.5f, 0);
+            _soundManager?.PlayBGM(BgmType.Main, 0);
+        }
+        
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
@@ -867,9 +880,6 @@ namespace UISystem.Presentation
                 .DistinctUntilChanged()
                 .Subscribe(time => UpdateLimitTimeDisplay(time))
                 .AddTo(_disposables);
-
-            // BGM 再生
-            _soundManager?.PlayBGM(BgmType.Main, 0);
         }
 
         // ======================================================

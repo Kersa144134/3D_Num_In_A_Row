@@ -68,7 +68,7 @@ namespace SoundSystem.Domain
         UI_HidePause = 17,
 
         /// <summary>UI スキップ</summary>
-        UI_Skip = 17,
+        UI_Skip = 18,
 
         // --------------------------------------------------
         // カメラ
@@ -80,7 +80,7 @@ namespace SoundSystem.Domain
         Camera_ZoomOut = 21,
 
         /// <summary>カメラ 投影切り替え</summary>
-        Camera_SwitchProjection = 21,
+        Camera_SwitchProjection = 22,
 
         // --------------------------------------------------
         // ボード

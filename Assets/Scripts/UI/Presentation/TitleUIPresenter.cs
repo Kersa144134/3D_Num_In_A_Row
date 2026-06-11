@@ -582,8 +582,6 @@ namespace UISystem.Presentation
                             // ダイアログイベント実行
                             _onDialogEvent.OnNext(dialogType);
 
-                            _soundManager?.SetBGMVolume(0);
-
                             return;
                     }
 
@@ -985,8 +983,8 @@ namespace UISystem.Presentation
                     SetPointerVisible(true);
 
                     // BGM 再生
-                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f);
-                    _soundManager?.PlayBGM(BgmType.Title);
+                    _soundManager?.SetBGMVolume(BgmType.Title, 0.5f, 0);
+                    _soundManager?.PlayBGM(BgmType.Title, 0);
                 })
                 .AddTo(_disposables);
         }

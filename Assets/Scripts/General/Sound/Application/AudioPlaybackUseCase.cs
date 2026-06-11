@@ -139,12 +139,6 @@ namespace SoundSystem.Application
             // 現在ブロック取得
             BgmPlaybackBlock block = bgm.PlaybackBlocks[currentIndex];
 
-            // 単一ブロック時は処理なし
-            if (bgm.PlaybackBlocks.Length <= 1)
-            {
-                return;
-            }
-            
             // ---------------------------------------------
             // ループ終了判定
             // ---------------------------------------------

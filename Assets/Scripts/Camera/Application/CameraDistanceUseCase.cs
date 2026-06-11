@@ -36,6 +36,13 @@ namespace CameraSystem.Application
         private float _velocityDistanceZ;
 
         // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>Z 距離現在速度</summary>
+        public float VelocityDistanceZ => _velocityDistanceZ;
+        
+        // ======================================================
         // 定数
         // ======================================================
 

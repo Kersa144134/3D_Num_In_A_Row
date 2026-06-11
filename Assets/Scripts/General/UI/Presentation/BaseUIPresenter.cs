@@ -454,6 +454,13 @@ namespace UISystem.Presentation
         protected virtual void OnFadeOutStart() { }
 
         // ======================================================
+        // サウンド継承イベント
+        // ======================================================
+
+        /// <summary>BGM 開始時</summary>
+        protected virtual void StartBgm() { }
+
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
@@ -492,6 +499,9 @@ namespace UISystem.Presentation
                 {
                     // UI のイベント購読は画面フェード完了後に実行
                     Subscribe();
+
+                    // BGM 再生
+                    StartBgm();
                 })
                 .AddTo(_disposables);
         }

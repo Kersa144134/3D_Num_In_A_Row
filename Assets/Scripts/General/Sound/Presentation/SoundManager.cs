@@ -200,19 +200,19 @@ namespace SoundSystem.Presentation
             }
             if (Input.GetKeyDown(KeyCode.Alpha1 ))
             {
-                SetPlaybackPosition(BgmType.Title, 1);
+                SetPlaybackPosition(BgmType.Main, 1);
             }
             if (Input.GetKeyDown(KeyCode.Alpha2))
             {
-                SetPlaybackPosition(BgmType.Title, 2);
+                SetPlaybackPosition(BgmType.Main, 2);
             }
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                SetPlaybackPosition(BgmType.Title, 3);
+                SetPlaybackPosition(BgmType.Main, 3);
             }
             if (Input.GetKeyDown(KeyCode.Alpha4))
             {
-                SetPlaybackPosition(BgmType.Title, 4);
+                SetPlaybackPosition(BgmType.Main, 4);
             }
         }
 
@@ -361,7 +361,6 @@ namespace SoundSystem.Presentation
         /// <returns>再生位置設定に成功した場合は true</returns>
         public bool SetPlaybackPosition(in BgmType type, in int blockIndex = 0)
         {
-            Debug.Log(blockIndex);
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {

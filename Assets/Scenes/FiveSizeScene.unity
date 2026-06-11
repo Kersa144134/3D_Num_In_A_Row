@@ -286,24 +286,12 @@ PrefabInstance:
       value: SoundManager
       objectReference: {fileID: 0}
     - target: {fileID: 6752705837836720255, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
-      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.size
-      value: 2
+      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[0].LoopEndBar
+      value: 41
       objectReference: {fileID: 0}
     - target: {fileID: 6752705837836720255, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
-      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[1].IsLoop
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6752705837836720255, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
-      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[1].StartBar
-      value: 32
-      objectReference: {fileID: 0}
-    - target: {fileID: 6752705837836720255, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
-      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[1].LoopEndBar
-      value: 49
-      objectReference: {fileID: 0}
-    - target: {fileID: 6752705837836720255, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
-      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[1].LoopStartBar
-      value: 33
+      propertyPath: _bgmSets.Array.data[1]._playbackBlocks.Array.data[0].LoopStartBar
+      value: 34
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

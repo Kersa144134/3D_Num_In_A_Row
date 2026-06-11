@@ -393,8 +393,8 @@ MonoBehaviour:
     _playbackBlocks:
     - IsLoop: 1
       StartBar: 32
-      LoopStartBar: 33
-      LoopEndBar: 49
+      LoopStartBar: 34
+      LoopEndBar: 41
   - _type: 3
     _source: {fileID: 9030453368920590179}
     _bpm: 150

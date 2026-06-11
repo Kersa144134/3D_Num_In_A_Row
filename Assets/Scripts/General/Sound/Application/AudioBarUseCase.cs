@@ -45,6 +45,12 @@ namespace SoundSystem.Application
         public AudioBarUseCase(in int bgmCount)
         {
             _currentBarIndex = new int[bgmCount];
+
+            // 初期値は未設定状態
+            for (int i = 0; i < _currentBarIndex.Length; i++)
+            {
+                _currentBarIndex[i] = -1;
+            }
         }
 
         // ======================================================
@@ -110,7 +116,8 @@ namespace SoundSystem.Application
             // 現在の小節を取得
             int currentBar = GetBarFromTime(bgm, currentTime);
 
-            if (currentBar < 0)
+            // 小節番号が 0 以下の場合ラグを 0f とする
+            if (currentBar <= 0)
             {
                 return 0f;
             }
@@ -154,43 +161,37 @@ namespace SoundSystem.Application
             {
                 return;
             }
-            
+
             // 現在時刻を基準オフセットからの相対時間に変換
             float relativeTime = bgm.Source.time - bgm.Offset;
 
-            // 基準より前の時間は対象外
+            // --------------------------------------------------
+            // 例外処理
+            // --------------------------------------------------
+            // オフセット未満の再生位置の場合、0 小節目とする
             if (relativeTime < 0f)
             {
+                int zeroBar = 0;
+
+                // 初回タイミングとして 0 小節で更新・通知
+                _currentBarIndex[bgmIndex] = zeroBar;
+                _onBarChanged.OnNext(new AudioBarEvent(bgmIndex, zeroBar));
+
                 return;
             }
 
-            // 0 ベース小節
-            int zeroBar = Mathf.FloorToInt(relativeTime / bgm.SecondsPerBar);
+            // --------------------------------------------------
+            // 通常処理
+            // --------------------------------------------------
+            // 1 ベース小節計算
+            int oneBasedBar = Mathf.FloorToInt(relativeTime / bgm.SecondsPerBar) + 1;
 
-            // 1 ベース変換
-            int oneBasedBar = zeroBar + 1;
-
-            // 初回は強制イベント発火
-            if (_currentBarIndex[bgmIndex] == -1)
+            // 値が変わったときだけ更新・通知
+            if (_currentBarIndex[bgmIndex] != oneBasedBar)
             {
                 _currentBarIndex[bgmIndex] = oneBasedBar;
-
                 _onBarChanged.OnNext(new AudioBarEvent(bgmIndex, oneBasedBar));
-
-                return;
             }
-
-            // 変化がない場合は処理なし
-            if (oneBasedBar == _currentBarIndex[bgmIndex])
-            {
-                return;
-            }
-
-            // 状態更新
-            _currentBarIndex[bgmIndex] = oneBasedBar;
-
-            // 小節更新イベント発火
-            _onBarChanged.OnNext(new AudioBarEvent(bgmIndex, oneBasedBar));
         }
 
         /// <summary>
@@ -210,9 +211,10 @@ namespace SoundSystem.Application
             // オフセットを除外した時間を算出
             float relativeTime = time - bgm.Offset;
 
+            // オフセット未満の再生位置の場合、0 小節目とする
             if (relativeTime < 0f)
             {
-                return 1;
+                return 0;
             }
 
             // 0 ベースの小節番号を算出

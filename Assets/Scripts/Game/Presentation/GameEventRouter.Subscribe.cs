@@ -507,6 +507,9 @@ namespace GameSystem.Presentation
                 {
                     // フェードイン時間を通知
                     _fadeInTrigger.OnNext(seconds);
+
+                    // BGM フェードイン
+                    _soundManager.SetBGMVolume(0);
                 })
                 .AddTo(_disposables);
         }

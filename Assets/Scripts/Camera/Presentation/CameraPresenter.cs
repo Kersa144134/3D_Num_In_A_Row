@@ -123,12 +123,6 @@ namespace CameraSystem.Presentation
         /// <summary>ゲームパッド使用中フラグ</summary>
         private bool _isGamepadUsed = false;
 
-        /// <summary>前回のズーム入力方向</summary>
-        private float _previousZoomInput;
-
-        /// <summary>ズーム SE 再生済みフラグ</summary>
-        private bool _isZoomSePlayed;
-
         /// <summary>入力用の距離変更最大速度（度 / 秒）</summary>
         private float _maxDistanceSpeed;
 
@@ -147,6 +141,9 @@ namespace CameraSystem.Presentation
         /// <summary>ロック前の Y 回転キャッシュ</summary>
         private float _cachedRotationY;
 
+        /// <summary>Z 距離キャッシュ</summary>
+        private float _cachedDistanceZ;
+
         /// <summary>カメラ目標位置</summary>
         private Vector3 _targetPosition = Vector3.zero;
 
@@ -155,6 +152,9 @@ namespace CameraSystem.Presentation
 
         /// <summary>成立ライン中心座標からの目標 Z 距離</summary>
         private float _targetDistance = DEFAULT_CAMERA_Z_DISTANCE;
+
+        /// <summary>ズーム SE 再生済みフラグ</summary>
+        private bool _isZoomSePlayed;
 
         // ======================================================
         // 定数
@@ -193,6 +193,12 @@ namespace CameraSystem.Presentation
         /// <summary>ライン成立時のカメラ Z 座標距離</summary>
         private const float LINE_COMPLETE_CAMERA_Z_DISTANCE = 1.0f;
 
+        // --------------------------------------------------
+        // サウンド
+        // --------------------------------------------------
+        /// <summary>ズーム SE 判定用の速度しきい値</summary>
+        private const float ZOOM_SE_VELOCITY_THRESHOLD = 0.01f;
+        
         // ======================================================
         // UniRx 変数
         // ======================================================
@@ -314,50 +320,43 @@ namespace CameraSystem.Presentation
             Vector2 leftStickInput = new Vector2(leftStickHorizontal, leftStickVertical);
 
             // DPad
-            if (Mathf.Abs(dpadVertical) > 0.0f)
-            {
-                // 上入力で近づける、下入力で遠ざける処理にするため入力を反転
-                UpdateInputDistance(-dpadVertical, _isGamepadUsed, unscaledDeltaTime);
-
-                // 未入力時
-                if (Mathf.Approximately(dpadVertical, 0.0f))
-                {
-                    _isZoomSePlayed = false;
-                    _previousZoomInput = 0.0f;
-
-                    return;
-                }
-
-                // 入力方向反転時
-                if (_previousZoomInput != 0.0f &&
-                    Mathf.Sign(_previousZoomInput) != Mathf.Sign(dpadVertical))
-                {
-                    _isZoomSePlayed = false;
-                }
-
-                // 未再生時
-                if (!_isZoomSePlayed)
-                {
-                    // 近づける場合
-                    if (dpadVertical > 0.0f)
-                    {
-                        _soundManager?.PlaySE(SeType.Camera_ZoomIn);
-                    }
-                    // 遠ざける場合
-                    else
-                    {
-                        _soundManager?.PlaySE(SeType.Camera_ZoomOut);
-                    }
-
-                    _isZoomSePlayed = true;
-                }
-
-                // 現在入力保存
-                _previousZoomInput = dpadVertical;
-            }
+            // 上入力で近づける、下入力で遠ざける処理にするため入力を反転
+            UpdateInputDistance(-dpadVertical, _isGamepadUsed, unscaledDeltaTime);
 
             // 左スティック
             UpdateInputRotation(leftStickInput, unscaledDeltaTime);
+
+            // --------------------------------------------------
+            // SE 再生
+            // --------------------------------------------------
+            // カメラのZ方向移動速度を取得
+            float velocity = _distanceUseCase.VelocityDistanceZ;
+
+            // 微小速度は停止扱いとする
+            if (Mathf.Abs(velocity) < ZOOM_SE_VELOCITY_THRESHOLD)
+            {
+                _isZoomSePlayed = false;
+
+                return;
+            }
+
+            // 未再生状態の場合のみ SE を再生
+            if (!_isZoomSePlayed)
+            {
+                if (velocity > 0f)
+                {
+                    // ズームアウト
+                    _soundManager?.PlaySE(SeType.Camera_ZoomOut);
+                }
+                else
+                {
+                    // ズームイン
+                    _soundManager?.PlaySE(SeType.Camera_ZoomIn);
+                }
+
+                // SE 再生済みとしてフラグを立てる
+                _isZoomSePlayed = true;
+            }
         }
 
         public void OnExit()
