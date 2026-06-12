@@ -252,7 +252,7 @@ namespace GameSystem.Presentation
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    UnityEngine.Application.Quit();
+                UnityEngine.Application.Quit();
 #endif
 
                 return;
@@ -381,7 +381,7 @@ namespace GameSystem.Presentation
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-    Application.Quit();
+            UnityEngine.Application.Quit();
 #endif
         }
 

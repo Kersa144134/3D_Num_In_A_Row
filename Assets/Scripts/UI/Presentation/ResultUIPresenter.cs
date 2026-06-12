@@ -531,7 +531,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Result, 0.5f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 0);
             _soundManager?.PlayBGM(BgmType.Result, 0);
         }
 
@@ -577,6 +577,9 @@ namespace UISystem.Presentation
                     _effectAnimator.SetTrigger(IS_END_HASH);
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
+
+                    // BGM 再生
+                    StartBgm();
                 })
                 .AddTo(_disposables);
         }
@@ -601,10 +604,28 @@ namespace UISystem.Presentation
                 {
                     _rankAnimationCheckPointCount++;
 
+                    if (_rankAnimationCheckPointCount == 1)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_4th);
+                    }
+                    if (_rankAnimationCheckPointCount == 2)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_3rd);
+                    }
+                    if (_rankAnimationCheckPointCount == 3)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_2nd);
+                    }
                     if (_rankAnimationCheckPointCount >= 4)
                     {
                         // フラッシュアニメーション起動
                         _resultCanvasAnimator.SetTrigger(IS_FLASH_HASH);
+
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Rise);
                     }
                 })
                 .AddTo(_disposables);
@@ -622,12 +643,15 @@ namespace UISystem.Presentation
 
                     if (_rankAnimationEndCount >= 2)
                     {
-                        // BGM 再生
-                        StartBgm();
-
                         // アニメーション終了通知
                         _onStarttResultAnimationEnd.OnNext(Unit.Default);
                     }
+
+                    // SE 停止
+                    _soundManager?.StopLoopSE(SeType.Effect_Rise);
+
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Effect_Result_1st);
                 })
                 .AddTo(_disposables);
 

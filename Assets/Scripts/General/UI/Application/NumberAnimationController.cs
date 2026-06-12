@@ -44,6 +44,18 @@ namespace UISystem.Application
         /// <summary>現在表示値</summary>
         public IReadOnlyReactiveProperty<int> CurrentValue => _currentValue;
 
+        /// <summary>アニメーション開始通知用 Subject</summary>
+        private readonly Subject<Unit> _onAnimationStarted = new Subject<Unit>();
+
+        /// <summary>アニメーション開始通知ストリーム</summary>
+        public IObservable<Unit> OnAnimationStarted => _onAnimationStarted;
+
+        /// <summary>アニメーション終了通知</summary>
+        private readonly Subject<Unit> _onAnimationFinished = new Subject<Unit>();
+
+        /// <summary>アニメーション終了通知ストリーム</summary>
+        public IObservable<Unit> OnAnimationFinished => _onAnimationFinished;
+
         // ======================================================
         // 定数
         // ======================================================
@@ -148,7 +160,9 @@ namespace UISystem.Application
         {
             StopRandomAnimation();
 
-            _currentValue.Dispose();
+            _currentValue?.Dispose();
+            _onAnimationStarted?.Dispose();
+            _onAnimationFinished?.Dispose();
         }
 
         // ======================================================
@@ -162,6 +176,7 @@ namespace UISystem.Application
         {
             // 実行開始
             _isAnimating = true;
+            _onAnimationStarted.OnNext(Unit.Default);
 
             // 補間時間内の更新回数
             int updateCount = Math.Max(1, (int)(INTERPOLATION_TIME / UPDATE_INTERVAL));
@@ -208,6 +223,7 @@ namespace UISystem.Application
 
             // アニメーション終了
             _isAnimating = false;
+            _onAnimationFinished.OnNext(Unit.Default);
         }
 
         /// <summary>

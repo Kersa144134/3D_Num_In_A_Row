@@ -39,6 +39,16 @@ namespace CameraSystem.Application
         private float _velocityY;
 
         // ======================================================
+        // プロパティ
+        // ======================================================
+
+        /// <summary>X 軸現在速度</summary>
+        public float VelocityX => _velocityX;
+
+        /// <summary>Y 軸現在速度</summary>
+        public float VelocityY => _velocityY;
+
+        // ======================================================
         // 定数
         // ======================================================
 

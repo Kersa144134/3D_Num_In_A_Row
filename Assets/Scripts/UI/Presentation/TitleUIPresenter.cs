@@ -921,7 +921,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Title, 0.5f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Title, 0.1f, 0);
             _soundManager?.PlayBGM(BgmType.Title, 0);
         }
 

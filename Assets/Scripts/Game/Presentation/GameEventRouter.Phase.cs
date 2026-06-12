@@ -9,6 +9,7 @@
 
 using UniRx;
 using PhaseSystem.Domain;
+using SoundSystem.Domain;
 
 namespace GameSystem.Presentation
 {
@@ -121,6 +122,9 @@ namespace GameSystem.Presentation
                 // ChangePlayer
                 // --------------------------------------------------
                 case PhaseType.ChangePlayer:
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Effect_Main_ChangePlayer);
+
                     // スコア累積カウントリセット
                     _scoreManager.ResetAllCumulativeCount();
 

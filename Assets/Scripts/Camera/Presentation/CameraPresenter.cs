@@ -153,6 +153,9 @@ namespace CameraSystem.Presentation
         /// <summary>成立ライン中心座標からの目標 Z 距離</summary>
         private float _targetDistance = DEFAULT_CAMERA_Z_DISTANCE;
 
+        /// <summary>回転 SE 再生済みフラグ</summary>
+        private bool _isRotationSePlayed;
+
         /// <summary>ズーム SE 再生済みフラグ</summary>
         private bool _isZoomSePlayed;
 
@@ -196,8 +199,8 @@ namespace CameraSystem.Presentation
         // --------------------------------------------------
         // サウンド
         // --------------------------------------------------
-        /// <summary>ズーム SE 判定用の速度しきい値</summary>
-        private const float ZOOM_SE_VELOCITY_THRESHOLD = 0.01f;
+        /// <summary>SE 判定用の速度しきい値</summary>
+        private const float SE_VELOCITY_THRESHOLD = 0.001f;
         
         // ======================================================
         // UniRx 変数
@@ -327,38 +330,58 @@ namespace CameraSystem.Presentation
             UpdateInputRotation(leftStickInput, unscaledDeltaTime);
 
             // --------------------------------------------------
-            // SE 再生
+            // 回転 SE 再生
             // --------------------------------------------------
-            // カメラのZ方向移動速度を取得
-            float velocity = _distanceUseCase.VelocityDistanceZ;
+            // カメラの回転速度を取得
+            Vector2 rotationVelocity = new Vector2(
+                _rotationUseCase.VelocityX,
+                _rotationUseCase.VelocityY);
 
+            // 速度の大きさを取得
+            float velocityMagnitude = rotationVelocity.magnitude;
+            Debug.Log(velocityMagnitude);
             // 微小速度は停止扱いとする
-            if (Mathf.Abs(velocity) < ZOOM_SE_VELOCITY_THRESHOLD)
+            if (velocityMagnitude < SE_VELOCITY_THRESHOLD)
             {
-                _isZoomSePlayed = false;
-
-                _soundManager?.StopLoopSE(SeType.Camera_ZoomIn);
-                _soundManager?.StopLoopSE(SeType.Camera_ZoomOut);
-
-                return;
+                if (_isRotationSePlayed)
+                {
+                    _soundManager?.StopLoopSE(SeType.Camera_Rotation);
+                    _isRotationSePlayed = false;
+                }
+            }
+            else
+            {
+                // 未再生状態の場合のみ SE を再生
+                if (!_isRotationSePlayed)
+                {
+                    _soundManager?.PlaySE(SeType.Camera_Rotation);
+                    _isRotationSePlayed = true;
+                }
             }
 
-            // 未再生状態の場合のみ SE を再生
-            if (!_isZoomSePlayed)
-            {
-                if (velocity > 0f)
-                {
-                    // ズームアウト
-                    _soundManager?.PlaySE(SeType.Camera_ZoomOut);
-                }
-                else
-                {
-                    // ズームイン
-                    _soundManager?.PlaySE(SeType.Camera_ZoomIn);
-                }
+            // --------------------------------------------------
+            // ズーム SE 再生
+            // --------------------------------------------------
+            // カメラの Z 方向移動速度を取得
+            float distanceVelocity = _distanceUseCase.VelocityDistanceZ;
 
-                // SE 再生済みとしてフラグを立てる
-                _isZoomSePlayed = true;
+            // 微小速度は停止扱いとする
+            if (Mathf.Abs(distanceVelocity) < SE_VELOCITY_THRESHOLD)
+            {
+                if (_isZoomSePlayed)
+                {
+                    _soundManager?.StopLoopSE(SeType.Camera_Zoom);
+                    _isZoomSePlayed = false;
+                }
+            }
+            else
+            {
+                // 未再生状態の場合のみ SE を再生
+                if (!_isZoomSePlayed)
+                {
+                    _soundManager?.PlaySE(SeType.Camera_Zoom);
+                    _isZoomSePlayed = true;
+                }
             }
         }
 

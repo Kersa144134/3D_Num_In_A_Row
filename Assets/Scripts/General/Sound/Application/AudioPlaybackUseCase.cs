@@ -111,6 +111,27 @@ namespace SoundSystem.Application
         }
 
         /// <summary>
+        /// BGM 再生ブロック番号取得
+        /// </summary>
+        /// <param name="bgmIndex">対象 BGM インデックス</param>
+        /// <param name="blockIndex">再生ブロック番号</param>
+        /// <returns>取得に成功した場合は true</returns>
+        public bool TryGetPlaybackBlockIndex(in int bgmIndex, out int blockIndex)
+        {
+            blockIndex = -1;
+
+            // BGM インデックス範囲チェック
+            if (bgmIndex < 0 || bgmIndex >= _currentBlockIndex.Length)
+            {
+                return false;
+            }
+
+            blockIndex = _currentBlockIndex[bgmIndex];
+
+            return true;
+        }
+
+        /// <summary>
         /// 小節イベントを基に再生制御を行う
         /// </summary>
         public void HandleBarEvent(in AudioBarEvent e, in BgmSet bgm)

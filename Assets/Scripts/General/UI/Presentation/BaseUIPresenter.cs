@@ -460,6 +460,10 @@ namespace UISystem.Presentation
         /// <summary>BGM 開始時</summary>
         protected virtual void StartBgm() { }
 
+        /// <summary>BGM 再生位置更新時</summary>
+        /// <param name="block">対象再生ブロック</param>
+        protected virtual void SetPlaybackPosition(in int block) { }
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -527,12 +531,6 @@ namespace UISystem.Presentation
             _eventRouter.OnClick
                 .Subscribe(clickEvent =>
                 {
-                    // シーン遷移中はクリック無効
-                    if (_isSceneTransitioning)
-                    {
-                        return;
-                    }
-
                     OnClickEventInternal(clickEvent);
                 })
                 .AddTo(_routerDisposables);
@@ -695,6 +693,9 @@ namespace UISystem.Presentation
             {
                 _onSceneChangeRequested.OnNext(Unit.Default);
 
+                // UI イベント購読解除
+                _eventRouter?.Dispose();
+
                 // シーン遷移中フラグを有効化
                 _isSceneTransitioning = true;
 
@@ -705,6 +706,9 @@ namespace UISystem.Presentation
             if (dialogType == DialogType.ExitGame)
             {
                 _onExitGameRequested.OnNext(Unit.Default);
+
+                // UI イベント購読解除
+                _eventRouter?.Dispose();
 
                 // フェードイン開始
                 OnFadeInStart();
@@ -776,7 +780,7 @@ namespace UISystem.Presentation
         protected void OnFocusButton(BaseButtonEvent buttonEvent)
         {
             // SE 再生
-            _soundManager?.PlaySE(SeType.UI_Focus);
+            _soundManager?.PlaySE(SeType.UI_Focus, 0.75f);
 
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();

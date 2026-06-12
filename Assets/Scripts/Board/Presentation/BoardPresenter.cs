@@ -276,7 +276,8 @@ namespace BoardSystem.Presentation
                 if (child.CompareTag(TAG_PLANE))
                 {
                     _columnSelectPlane = child;
-                    return;
+
+                    break;
                 }
             }
 
@@ -344,27 +345,6 @@ namespace BoardSystem.Presentation
             UnbindPlayerChangeStream();
             UnbindDropInputStream();
             UnbindRotateInputStream();
-        }
-
-        public void OnPhaseEnter(in PhaseType phase)
-        {
-            // --------------------------------------------------
-            // イベント購読
-            // --------------------------------------------------
-            if (_disposables.Count != 0)
-            {
-                return;
-            }
-            
-            // ライン成立
-            _model.OnLineComplete
-                .Subscribe(async lineEvent =>
-                {
-                    _onLineComplete.OnNext(lineEvent);
-
-                    await HandleLineDeleteAsync(lineEvent);
-                })
-                .AddTo(_disposables);
         }
 
         // ======================================================
@@ -459,6 +439,16 @@ namespace BoardSystem.Presentation
         /// </summary>
         private void Subscribe()
         {
+            // ライン成立
+            _model.OnLineComplete
+                .Subscribe(async lineEvent =>
+                {
+                    _onLineComplete.OnNext(lineEvent);
+
+                    await HandleLineDeleteAsync(lineEvent);
+                })
+                .AddTo(_disposables);
+            
             // --------------------------------------------------
             // SE 再生
             // --------------------------------------------------
@@ -468,7 +458,7 @@ namespace BoardSystem.Presentation
                 .AddTo(_disposables);
             // ピース発光
             _deleteHandler.OnPieceEmissionExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission, 0.25f))
                 .AddTo(_disposables);
             // ライン削除
             _deleteHandler.OnLineDeleteExecuted
@@ -562,7 +552,7 @@ namespace BoardSystem.Presentation
             UnbindRotateInputStream();
 
             // SE 再生
-            _soundManager?.PlaySE(SeType.Board_Rotate);
+            _soundManager?.PlaySE(SeType.Board_Rotate, 0.5f);
 
             // --------------------------------------------------
             // 回転ユースケース実行
@@ -598,7 +588,7 @@ namespace BoardSystem.Presentation
         {
             // 再配置対象となる列の算出
             LineDeleteResult deleteResult = await _deleteHandler.HandleLineDeleteAsync(lineEvents);
-
+            
             // ライン削除実行通知
             _onLineDelete.OnNext(Unit.Default);
 
@@ -611,9 +601,15 @@ namespace BoardSystem.Presentation
             BoardRepositionResult repositionResult =
                 await _repositionUseCase.HandleRepositionAsync(deleteResult.RepositionColumns);
 
-            // 移動がない場合は処理なし
+            // 移動がない場合は以降の処理なし
             if (repositionResult.Moves.Count == 0)
             {
+                // 演出待機
+                await UniTask.Delay(TimeSpan.FromSeconds(FINISH_LINE_CHECK_DELAY));
+
+                // フェーズ終了通知
+                _onPlayerEnd.OnNext(Unit.Default);
+
                 return;
             }
 

@@ -48,7 +48,10 @@ namespace CameraSystem.Application
 
         /// <summary>仮想パッド用入力倍率</summary>
         private const float VIRTUAL_PAD_INPUT_MULTIPLIER = 15.0f;
-        
+
+        /// <summary>仮想パッド用入力減速倍率</summary>
+        private const float VIRTUAL_PAD_INPUT_DECELERATION_MULTIPLIER = 5.0f;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -84,16 +87,18 @@ namespace CameraSystem.Application
         /// <param name="deltaTime">デルタ時間</param>
         public void UpdateInputDistance(in float input, in bool isGamepadUsed, in float deltaTime)
         {
+            float speedMultiplier = 1.0f;
+            float accelerationMultiplier = 1.0f;
+            float decelerationMultiplier = 1.0f;
+
             // --------------------------------------------------
             // デバイス倍率算出
             // --------------------------------------------------
-            float speedMultiplier = 1.0f;
-            float accelerationMultiplier = 1.0f;
-
             if (!isGamepadUsed)
             {
                 speedMultiplier = VIRTUAL_PAD_INPUT_MULTIPLIER;
                 accelerationMultiplier = VIRTUAL_PAD_INPUT_MULTIPLIER;
+                decelerationMultiplier = VIRTUAL_PAD_INPUT_DECELERATION_MULTIPLIER;
             }
 
             // --------------------------------------------------
@@ -122,6 +127,7 @@ namespace CameraSystem.Application
                 _velocityDistanceZ,
                 targetVelocityZ,
                 _acceleration * accelerationMultiplier,
+                _acceleration * decelerationMultiplier,
                 deltaTime);
 
             // --------------------------------------------------
@@ -194,21 +200,25 @@ namespace CameraSystem.Application
         /// <param name="currentVelocity">現在速度</param>
         /// <param name="targetVelocity">目標速度</param>
         /// <param name="acceleration">加速度</param>
+        /// <param name="deceleration">減速度</param>
         /// <param name="deltaTime">デルタ時間</param>
         /// <returns>補間後速度</returns>
         private float UpdateVelocity(
             in float currentVelocity,
             in float targetVelocity,
             in float acceleration,
+            in float deceleration,
             in float deltaTime)
         {
-            // 速度差分を取得
-            float velocityDelta =
-                targetVelocity - currentVelocity;
+            // 目標速度に応じて変化量を切り替える
+            float velocityChangeRate =
+                targetVelocity == 0.0f
+                    ? deceleration
+                    : acceleration;
 
-            // 今回加算可能な最大速度量
+            // 今回変化可能な最大速度量
             float maxDelta =
-                acceleration * deltaTime;
+                velocityChangeRate * deltaTime;
 
             // 最大変化量以内で補間
             return Mathf.MoveTowards(

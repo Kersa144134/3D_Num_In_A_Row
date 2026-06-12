@@ -140,7 +140,7 @@ namespace SoundSystem.Presentation
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-                Application.Quit();
+                UnityEngine.Application.Quit();
 #endif
 
                 return;
@@ -193,47 +193,6 @@ namespace SoundSystem.Presentation
         {
             // 小節制御更新
             _audioBarUseCase?.Update(_bgmSets);
-
-            if (Input.GetKeyDown(KeyCode.Alpha1 ))
-            {
-                SetPlaybackPosition(BgmType.Main, 0);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                SetPlaybackPosition(BgmType.Main, 1);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha3))
-            {
-                SetPlaybackPosition(BgmType.Main, 2);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha4))
-            {
-                SetPlaybackPosition(BgmType.Main, 4);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha5))
-            {
-                SetPlaybackPosition(BgmType.Main, 5);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha6))
-            {
-                SetPlaybackPosition(BgmType.Main, 6);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha7))
-            {
-                SetPlaybackPosition(BgmType.Main, 7);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha8))
-            {
-                SetPlaybackPosition(BgmType.Main, 9);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha9))
-            {
-                SetPlaybackPosition(BgmType.Main, 10);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha0))
-            {
-                SetPlaybackPosition(BgmType.Main, 11);
-            }
         }
 
         private void OnDestroy()
@@ -291,7 +250,7 @@ namespace SoundSystem.Presentation
         /// </summary>
         /// <param name="type">BGM タイプ</param>
         /// <param name="blockIndex">再生ブロック番号</param>
-        public void PlayBGM(in BgmType type, int? blockIndex = null)
+        public void PlayBGM(in BgmType type, int blockIndex = 0)
         {
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
@@ -305,11 +264,8 @@ namespace SoundSystem.Presentation
             // 再生中の場合
             if (bgm.Source.isPlaying)
             {
-                // ブロック番号指定時のみ再生位置更新
-                if (blockIndex.HasValue)
-                {
-                    SetPlaybackPosition(type, blockIndex.Value);
-                }
+                // 再生位置更新
+                SetPlaybackPosition(type, blockIndex);
 
                 return;
             }
@@ -324,14 +280,7 @@ namespace SoundSystem.Presentation
             bgm.Source.clip = clip;
 
             // 再生位置設定
-            if (blockIndex.HasValue)
-            {
-                SetPlaybackPosition(type, blockIndex.Value);
-            }
-            else
-            {
-                bgm.Source.time = bgm.Offset;
-            }
+            SetPlaybackPosition(type, blockIndex);
 
             // BGM 再生
             bgm.Source.Play();
@@ -399,6 +348,25 @@ namespace SoundSystem.Presentation
                 bgmIndex,
                 bgm,
                 blockIndex);
+        }
+
+        /// <summary>
+        /// BGM 再生ブロック番号取得
+        /// </summary>
+        /// <param name="type">BGM タイプ</param>
+        /// <param name="blockIndex">再生ブロック番号</param>
+        /// <returns>取得に成功した場合は true</returns>
+        public bool TryGetPlaybackBlockIndex(in BgmType type, out int blockIndex)
+        {
+            blockIndex = -1;
+
+            // BGM インデックス取得
+            if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
+            {
+                return false;
+            }
+
+            return _audioPlaybackUseCase.TryGetPlaybackBlockIndex(bgmIndex, out blockIndex);
         }
 
         /// <summary>
@@ -664,11 +632,10 @@ namespace SoundSystem.Presentation
             if (_isPlaybackSeekRequested)
             {
                 // 現在小節と予約小節の偶奇が一致しているか判定
-                bool isSameParity =
-                    _pendingPlaybackEvent.BarIndex % 2 == e.BarIndex % 2;
+                bool isSameParity = _pendingPlaybackEvent.BarIndex % 2 == e.BarIndex % 2;
 
-                // 偶奇が一致した場合のみ再生位置更新
-                if (isSameParity)
+                // 先頭小節の場合または偶奇が一致した場合、再生位置更新
+                if (e.BarIndex == 0 || isSameParity)
                 {
                     // 再生ブロック情報更新
                     _audioPlaybackUseCase.SetCurrentBlock(

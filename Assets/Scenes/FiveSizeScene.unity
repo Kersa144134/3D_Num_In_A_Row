@@ -867,14 +867,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4411821207981939308, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
-      propertyPath: m_fontColor32.rgba
-      value: 4286611584
-      objectReference: {fileID: 0}
-    - target: {fileID: 7638330661285618663, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
-      propertyPath: m_fontColor32.rgba
-      value: 4286611584
-      objectReference: {fileID: 0}
     - target: {fileID: 8300703382523715873, guid: 19c58b1e9e683de4e85c450522fb3951, type: 3}
       propertyPath: m_Name
       value: IntermittentCanvas

@@ -28,12 +28,6 @@ namespace SoundSystem.Domain
         /// <summary>コンボ × 3</summary>
         Combo_3 = 3,
 
-        /// <summary>コンボ × 4</summary>
-        Combo_4 = 4,
-
-        /// <summary>コンボ × 5</summary>
-        Combo_5 = 5,
-
         /// <summary>スコア 加算</summary>
         Score_Add = 6,
 
@@ -73,11 +67,11 @@ namespace SoundSystem.Domain
         // --------------------------------------------------
         // カメラ
         // --------------------------------------------------
-        /// <summary>カメラ ズームイン</summary>
-        Camera_ZoomIn = 20,
+        /// <summary>カメラ 回転</summary>
+        Camera_Rotation = 20,
 
         /// <summary>カメラ ズームアウト</summary>
-        Camera_ZoomOut = 21,
+        Camera_Zoom = 21,
 
         /// <summary>カメラ 投影切り替え</summary>
         Camera_SwitchProjection = 22,

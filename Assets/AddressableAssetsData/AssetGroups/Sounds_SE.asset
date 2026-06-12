@@ -14,7 +14,102 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
   m_GroupName: Sounds_SE
   m_GUID: fddec1043f60bd040bb4e0c885fb59a6
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: 104142932ffde8c42a0b40e8fe7e3686
+    m_Address: SE/UI_ShowDialog
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 116e2fba5021e3b4288b4ea1a164980d
+    m_Address: SE/Score_Add
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1ee900ecd30580c48bedf30d268fa8fa
+    m_Address: SE/UI_Decide
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3ddd51b74baf7de428689fc71e94f064
+    m_Address: SE/Effect_Main_ChangePlayer
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6fa683a351691554f82a2223dd4f5e04
+    m_Address: SE/UI_HideDialog
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a3036a2de2c0a149bb0495604917174
+    m_Address: SE/Camera_Zoom
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7cc0bf7501dde9849a232d58ea72a551
+    m_Address: SE/Combo_3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8e7cbd4ba5c07a74191dd104af3d0d07
+    m_Address: SE/UI_HidePause
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8fe996dd2af01d4469e0fb2292f30815
+    m_Address: SE/Board_Rotate
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9109193afdca16b4a9ee2a8f94ab752f
+    m_Address: SE/Camera_Rotation
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a13ff88ba1d54934cbaeafb5297bfd78
+    m_Address: SE/Combo_1
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b9e0633ec1ac1824e8cc254dc890c793
+    m_Address: SE/Combo_2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bbcdb9b41ea1f8c40b72e0e0a3cdfbf9
+    m_Address: SE/Board_ColumnSelect
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d076e28bf33afcd44a21c97a0efa7c4c
+    m_Address: SE/Piece_Emission
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d2d4e9c1abd24474ea09a219466675e8
+    m_Address: SE/Score_Subtract
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e05935e3dca0df1488adf999431bf33c
+    m_Address: SE/UI_Cancel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e0e1f674425ed3046a5553cf8cc10586
+    m_Address: SE/UI_Click
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: eec50644dc2b63848a20a0a4b9aa1cd5
+    m_Address: SE/UI_Focus
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f59398f2fcd29da479e53df371c33c54
+    m_Address: SE/UI_ShowPause
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 101f74b5af7a28e4c93f8068a5c606e1, type: 2}
   m_SchemaSet:

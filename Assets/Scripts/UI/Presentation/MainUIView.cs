@@ -7,10 +7,12 @@
 // ======================================================
 
 using System;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
-using UniRx;
 using UISystem.Application;
+using UniRx;
+using UnityEngine;
 
 namespace UISystem.Presentation
 {
@@ -72,12 +74,18 @@ namespace UISystem.Presentation
         /// <summary>最大ターン数</summary>
         private readonly int _maxTurnCount;
 
+        /// <summary>ラストターン演出開始ターン数</summary>
+        private readonly int _lastTurnEffectStartTurnCount;
+
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------
+        /// <summary>現在表示中のプレイヤースコア配列</summary>
+        private int[] _playerScores;
+
         /// <summary>ランダムアニメーション開始フラグ</summary>
         private bool _isRandomAnimationStarted = false;
-
+        
         // --------------------------------------------------
         // コンボ
         // --------------------------------------------------
@@ -108,7 +116,7 @@ namespace UISystem.Presentation
         // ======================================================
         // 定数
         // ======================================================
-
+        
         /// <summary>現在スコア表示フォーマット</summary>
         private const string CURRENT_SCORE_FORMAT = "Score: {0}";
 
@@ -155,6 +163,14 @@ namespace UISystem.Presentation
         /// <summary>警告表示ストリーム</summary>
         public IObservable<Unit> OnWarningVisible => _onWarningVisible;
 
+        /// <summary>アニメーション開始通知ストリーム</summary>
+        public IObservable<int> OnAnimationStarted => Observable.Merge(
+            _scoreAnimationControllers.Select((controller, index) => controller.OnAnimationStarted.Select(_ => index)));
+
+        /// <summary>アニメーション終了通知ストリーム</summary>
+        public IObservable<int> OnAnimationFinished => Observable.Merge(
+            _scoreAnimationControllers.Select((controller, index) => controller.OnAnimationFinished.Select(_ => index)));
+        
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -171,7 +187,8 @@ namespace UISystem.Presentation
             in int maxTurnCount,
             in int maxComboCount,
             in Color[] comboColors,
-            in int warningLimitTime)
+            in int warningLimitTime,
+            in int lastTurnEffectStartTurnCount)
         {
             _currentScoreTexts = currentScoreTexts;
             _addScoreTexts = addScoreTexts;
@@ -182,12 +199,15 @@ namespace UISystem.Presentation
             _maxComboCount = maxComboCount;
             _comboColors = comboColors;
             _warningLimitTime = warningLimitTime;
+            _lastTurnEffectStartTurnCount = lastTurnEffectStartTurnCount;
 
             _previousDisplayTotalSeconds = -1;
 
             // --------------------------------------------------
             // スコア初期化
             // --------------------------------------------------
+            _playerScores = new int[_currentScoreTexts.Length];
+
             if (_currentScoreTexts != null)
             {
                 int length = _currentScoreTexts.Length;
@@ -284,7 +304,14 @@ namespace UISystem.Presentation
 
                 // 数値変化通知を購読
                 _scoreAnimationControllers[i].CurrentValue
-                    .Subscribe(score => UpdateCurrentScoreText(cacheIndex, score))
+                    .Subscribe(score =>
+                    {
+                        // プレイヤースコア更新
+                        _playerScores[cacheIndex] = score;
+
+                        // スコア表示更新
+                        UpdateCurrentScoreText(cacheIndex, score);
+                    })
                     .AddTo(_disposables);
             }
         }
@@ -300,12 +327,12 @@ namespace UISystem.Presentation
 
             for (int i = 0; i < _scoreAnimationControllers.Length; i++)
             {
-                _scoreAnimationControllers[i].Dispose();
-
                 if (_isRandomAnimationStarted)
                 {
                     _scoreAnimationControllers[i].StopRandomAnimation();
                 }
+
+                _scoreAnimationControllers[i].Dispose();
             }
         }
 
@@ -382,11 +409,8 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             // スコア演出更新
             // --------------------------------------------------
-            // 残りターン数を計算
-            int remainingTurnCount = _maxTurnCount - turnCount;
-
-            // 残りターン数が3以下かつ未実行の場合のみ開始
-            if (remainingTurnCount <= 3 &&
+            // ターン数がラストターン演出開始ターンかつ未実行の場合のみ開始
+            if (turnCount >= _lastTurnEffectStartTurnCount &&
                 !_isRandomAnimationStarted)
             {
                 // 開始済みフラグを設定

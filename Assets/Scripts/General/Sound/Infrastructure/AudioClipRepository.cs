@@ -6,6 +6,7 @@
 // 概要     : AudioClip 管理クラス
 // ======================================================
 
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -135,7 +136,7 @@ namespace SoundSystem.Infrastructure
             // --------------------------------------------------
             // BGMキー生成
             // --------------------------------------------------
-            foreach (BgmType type in System.Enum.GetValues(typeof(BgmType)))
+            foreach (BgmType type in Enum.GetValues(typeof(BgmType)))
             {
                 if (type == BgmType.None)
                 {
@@ -148,7 +149,7 @@ namespace SoundSystem.Infrastructure
             // --------------------------------------------------
             // SEキー生成
             // --------------------------------------------------
-            foreach (SeType type in System.Enum.GetValues(typeof(SeType)))
+            foreach (SeType type in Enum.GetValues(typeof(SeType)))
             {
                 if (type == SeType.None)
                 {

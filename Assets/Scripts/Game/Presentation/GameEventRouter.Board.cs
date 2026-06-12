@@ -40,9 +40,7 @@ namespace GameSystem.Presentation
                 {
                     1 => SeType.Combo_1,
                     2 => SeType.Combo_2,
-                    3 => SeType.Combo_3,
-                    4 => SeType.Combo_4,
-                    _ => SeType.Combo_5
+                    _ => SeType.Combo_3
                 };
 
             _soundManager?.PlaySE(comboSE);

@@ -6,11 +6,12 @@
 // 概要     : スコア管理クラス
 // ======================================================
 
-using System.Collections.Generic;
-using UnityEngine;
-using UniRx;
 using ScoreSystem.Application;
 using ScoreSystem.Domain;
+using System.Collections.Generic;
+using System.Linq;
+using UniRx;
+using UnityEngine;
 
 namespace ScoreSystem.Presentation
 {
@@ -270,7 +271,7 @@ namespace ScoreSystem.Presentation
         }
 
         /// <summary>
-        /// スコア順に並んだプレイヤーIDランキングを取得する
+        /// スコア順に並んだプレイヤー ID ランキングを取得する
         /// </summary>
         /// <returns>
         /// 上位から順にランキング情報を格納したリスト
@@ -282,8 +283,7 @@ namespace ScoreSystem.Presentation
                 return new List<RankingData>();
             }
 
-            List<RankingData> result =
-                new List<RankingData>();
+            List<RankingData> result = new List<RankingData>();
 
             for (int i = 0; i < _totalScores.Length; i++)
             {
@@ -312,6 +312,45 @@ namespace ScoreSystem.Presentation
             });
 
             return result;
+        }
+
+        /// <summary>
+        /// 最もスコアが高いプレイヤーインデックスリスト取得
+        /// </summary>
+        /// <returns>最もスコアが高いプレイヤーインデックスリスト</returns>
+        public List<int> GetHighestScorePlayerIndices()
+        {
+            if (_playerScores == null || _playerScores.Length == 0)
+            {
+                return new List<int>();
+            }
+
+            // 最大スコアプレイヤー一覧
+            List<int> highestScorePlayerIndices = new List<int>();
+
+            // 最大スコア
+            int highestScore = 0;
+
+            for (int i = 0; i < _playerScores.Length; i++)
+            {
+                // プレイヤースコア取得
+                int score = _playerScores[i].TotalScore;
+
+                // より高いスコア
+                if (score > highestScore)
+                {
+                    highestScore = score;
+                    highestScorePlayerIndices.Clear();
+                    highestScorePlayerIndices.Add(i);
+                }
+                // 同点の場合は削除なし
+                else if (score == highestScore && score > 0)
+                {
+                    highestScorePlayerIndices.Add(i);
+                }
+            }
+
+            return highestScorePlayerIndices;
         }
 
         // ======================================================
