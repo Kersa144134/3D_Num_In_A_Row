@@ -339,13 +339,14 @@ namespace CameraSystem.Presentation
 
             // 速度の大きさを取得
             float velocityMagnitude = rotationVelocity.magnitude;
-            Debug.Log(velocityMagnitude);
+
             // 微小速度は停止扱いとする
             if (velocityMagnitude < SE_VELOCITY_THRESHOLD)
             {
                 if (_isRotationSePlayed)
                 {
                     _soundManager?.StopLoopSE(SeType.Camera_Rotation);
+
                     _isRotationSePlayed = false;
                 }
             }
@@ -355,6 +356,7 @@ namespace CameraSystem.Presentation
                 if (!_isRotationSePlayed)
                 {
                     _soundManager?.PlaySE(SeType.Camera_Rotation);
+
                     _isRotationSePlayed = true;
                 }
             }
@@ -428,8 +430,10 @@ namespace CameraSystem.Presentation
                     // --------------------------------------------------
                     if (_isInputLock)
                     {
-                        // 回転速度を初期化
+                        // 速度を初期化
+                        _positionUseCase.ResetVelocity();
                         _rotationUseCase.ResetVelocity();
+                        _distanceUseCase.ResetVelocity();
 
                         return;
                     }
@@ -463,9 +467,6 @@ namespace CameraSystem.Presentation
                     // --------------------------------------------------
                     if (!isPerspective)
                     {
-                        // カメラ入力ロック解除
-                        _isInputLock = false;
-
                         // 初期値を設定
                         _cameraModel.ApplyDistanceZ(_maxDistanceZ);
 

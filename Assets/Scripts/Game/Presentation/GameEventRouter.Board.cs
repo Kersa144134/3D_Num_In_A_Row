@@ -34,7 +34,9 @@ namespace GameSystem.Presentation
             // スコア累積カウント加算
             _scoreManager.AddAllCumulativeCount();
 
+            // --------------------------------------------------
             // SE 再生
+            // --------------------------------------------------
             SeType comboSE = _scoreManager.CumulativeCount.Value
                 switch
                 {
@@ -64,8 +66,13 @@ namespace GameSystem.Presentation
                     continue;
                 }
 
+                // 入力タイプに応じたスコア倍率を設定
+                float multiplier = _currentBoardInputType.Value == BoardInputType.Rotate
+                    ? ROTATE_SCORE_MULTIPLIER
+                    : NORMAL_SCORE_MULTIPLIER;
+
                 // 1 ライン分のスコア加算
-                int addScore = _scoreManager.AddLineScore(playerId, line.Count);
+                int addScore = _scoreManager.AddLineScore(playerId, line.Count, multiplier);
 
                 // 発光開始時に通知するため保持
                 _pendingAddScoreEvents.Enqueue(new ScoreEvent(playerId, addScore));

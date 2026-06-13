@@ -794,6 +794,19 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
+        // 画面フェード派生イベント
+        // ======================================================
+
+        /// <summary>
+        /// フェードアウト終了時
+        /// </summary>
+        protected override void OnFadeOutFinish()
+        {
+            // UI イベント購読
+            SubscribeUiEvents();
+        }
+
+        // ======================================================
         // サウンド派生イベント
         // ======================================================
 
@@ -1003,9 +1016,6 @@ namespace UISystem.Presentation
                     }
                 })
                 .AddTo(_disposables);
-
-            // シーン遷移状態解除
-            _isSceneTransitioning = false;
 
             if (_uiView is MainUIView mainUIView)
             {

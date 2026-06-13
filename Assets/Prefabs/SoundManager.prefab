@@ -431,14 +431,18 @@ MonoBehaviour:
   - _type: 30
     _source: {fileID: 9030453368920590179}
     _bpm: 200
-    _offset: 250.622
+    _offset: 77.822
     _timeSignatureNumerator: 4
     _timeSignatureDenominator: 4
     _playbackBlocks:
     - IsLoop: 0
       StartBar: 1
       LoopStartBar: 1
-      LoopEndBar: 1
+      LoopEndBar: 7
+    - IsLoop: 0
+      StartBar: 144
+      LoopStartBar: 145
+      LoopEndBar: 145
   _seSets:
   - Type: 1
     Source: {fileID: 3301035611443052703}

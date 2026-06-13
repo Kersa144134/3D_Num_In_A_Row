@@ -6,9 +6,10 @@
 // 概要     : サウンド管理クラス
 // ======================================================
 
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 using UniRx;
+using UnityEngine;
 using SoundSystem.Application;
 using SoundSystem.Domain;
 using SoundSystem.Infrastructure;
@@ -99,12 +100,18 @@ namespace SoundSystem.Presentation
         /// <summary>予約された再生位置イベント</summary>
         private AudioPlaybackEvent _pendingPlaybackEvent;
 
+        /// <summary>SE の最終再生時刻管理辞書</summary>
+        private readonly Dictionary<SeType, float> _lastSePlayTimes = new Dictionary<SeType, float>();
+
         // ======================================================
         // 定数
         // ======================================================
 
         /// <summary>ローパス無効時の周波数</summary>
         private const float MAX_LOW_PASS_FREQUENCY = 22000f;
+
+        /// <summary>同一 SE の再生間隔制限秒数</summary>
+        private const float SE_PLAY_INTERVAL = 0.05f;
 
         // ======================================================
         // UniRx 変数
@@ -489,7 +496,7 @@ namespace SoundSystem.Presentation
             }
 
             // 通常 SE 再生
-            se.Source.PlayOneShot(clip, volume);
+            PlayOneShotSE(type, se.Source, clip, volume);
         }
 
         /// <summary>
@@ -539,7 +546,7 @@ namespace SoundSystem.Presentation
             }
 
             // 通常 SE 再生
-            se.Source.PlayOneShot(clip, volume);
+            PlayOneShotSE(type, se.Source, clip, volume);
         }
 
         /// <summary>
@@ -577,24 +584,27 @@ namespace SoundSystem.Presentation
         // プライベートメソッド
         // ======================================================
 
+        // ---------------------------------------------
+        // イベント購読
+        // ---------------------------------------------
         /// <summary>
         /// イベント購読
         /// </summary>
         private void Subscribe()
         {
-            // 小節更新イベント購読
-            _audioBarUseCase.OnBarChanged
-                .Subscribe(OnBarChanged)
-                .AddTo(_disposables);
-
             // BGM 一時停止
             _audioFadeUseCase.OnPauseRequested
-                .Subscribe(OnPauseBgm)
+                .Subscribe(source => source.Pause())
+                .AddTo(_disposables);
+
+            // 小節更新イベント
+            _audioBarUseCase.OnBarChanged
+                .Subscribe(e => OnBarChanged(e))
                 .AddTo(_disposables);
 
             // 再生位置更新リクエスト
             _audioPlaybackUseCase.OnPlaybackRequested
-                .Subscribe(OnRequestPlaybackBgm)
+                .Subscribe(e => OnRequestPlaybackBgm(e))
                 .AddTo(_disposables);
         }
 
@@ -608,6 +618,9 @@ namespace SoundSystem.Presentation
             _audioPlaybackUseCase?.Dispose();
         }
 
+        // ---------------------------------------------
+        // BGM
+        // ---------------------------------------------
         /// <summary>
         /// 小節更新イベント処理
         /// </summary>
@@ -626,7 +639,7 @@ namespace SoundSystem.Presentation
             }
 
             // ---------------------------------------------
-            // 再生制御判定
+            // 再生位置更新判定
             // ---------------------------------------------
             // 予約データがある場合
             if (_isPlaybackSeekRequested)
@@ -654,20 +667,6 @@ namespace SoundSystem.Presentation
             _audioPlaybackUseCase.HandleBarEvent(e, bgm);
         }
         
-        /// <summary>
-        /// BGM 一時停止処理
-        /// </summary>
-        /// <param name="source">対象 AudioSource</param>
-        private void OnPauseBgm(AudioSource source)
-        {
-            if (source == null)
-            {
-                return;
-            }
-
-            source.Pause();
-        }
-
         /// <summary>
         /// BGM 再生位置更新予約処理
         /// </summary>
@@ -713,6 +712,9 @@ namespace SoundSystem.Presentation
             bgm.Source.time = bgm.Offset + time + lag;
         }
 
+        // ---------------------------------------------
+        // SE
+        // ---------------------------------------------
         /// <summary>
         /// ループ SE 再生
         /// </summary>
@@ -735,6 +737,41 @@ namespace SoundSystem.Presentation
             source.loop = true;
 
             source.Play();
+        }
+
+        /// <summary>
+        /// OneShot SE 再生
+        /// </summary>
+        /// <param name="type">SE タイプ</param>
+        /// <param name="source">再生元 AudioSource</param>
+        /// <param name="clip">再生クリップ</param>
+        /// <param name="volume">音量</param>
+        private void PlayOneShotSE(
+            in SeType type,
+            AudioSource source,
+            AudioClip clip,
+            in float volume)
+        {
+            // ---------------------------------------------
+            // 再生可能判定
+            // ---------------------------------------------
+            // 前回再生時刻取得
+            if (_lastSePlayTimes.TryGetValue(type, out float lastPlayTime))
+            {
+                // 再生間隔未満なら再生不可
+                if (Time.time - lastPlayTime < SE_PLAY_INTERVAL)
+                {
+                    return;
+                }
+            }
+
+            // 再生時刻更新
+            _lastSePlayTimes[type] = Time.time;
+
+            // ---------------------------------------------
+            // SE 再生
+            // ---------------------------------------------
+            source.PlayOneShot(clip, volume);
         }
     }
 }

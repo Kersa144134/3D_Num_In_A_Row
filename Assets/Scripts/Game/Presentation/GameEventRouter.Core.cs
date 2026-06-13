@@ -87,16 +87,16 @@ namespace GameSystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
+        // ゲーム
+        // --------------------------------------------------
+        /// <summary>ゲーム再起動長押し判定中かどうか</summary>
+        private bool _isCheckingRestartGame;
+
+        // --------------------------------------------------
         // フェーズ
         // --------------------------------------------------
         /// <summary>フェード待機中に来たフェーズキャッシュ</summary>
         private PhaseType? _pendingPhase;
-
-        // --------------------------------------------------
-        // システム
-        // --------------------------------------------------
-        /// <summary>ゲーム終了処理中かどうかを示すフラグ</summary>
-        private bool _isExitingGame = false;
 
         // --------------------------------------------------
         // スコア
@@ -118,6 +118,21 @@ namespace GameSystem.Presentation
 
         /// <summary>現在アクティブな入力デバイスのキャッシュ</summary>
         private InputDeviceType _cachedActiveDevice = InputDeviceType.Gamepad;
+
+        /// <summary>X ボタン が押下中かどうか</summary>
+        private bool _isButtonXPressed;
+
+        /// <summary>左トリガー が押下中かどうか</summary>
+        private bool _isLeftTriggerPressed;
+
+        /// <summary>右トリガー が押下中かどうか</summary>
+        private bool _isRightTriggerPressed;
+
+        /// <summary>DPad 上入力が押下中かどうか</summary>
+        private bool _isDPadUpPressed;
+        
+        /// <summary>セレクトボタン が押下中かどうか</summary>
+        private bool _isSelectButtonPressed;
 
         // --------------------------------------------------
         // UI
@@ -198,11 +213,11 @@ namespace GameSystem.Presentation
         /// <summary>ゲーム終了リクエストストリーム</summary>
         public IObservable<Unit> OnExitGameRequested => _onExitGameRequested;
 
-        /// <summary>ゲーム終了実行用 Subject</summary>
-        private readonly Subject<Unit> _onExitGameExecuted = new Subject<Unit>();
+        /// <summary>ゲーム再起動リクエスト用 Subject</summary>
+        private readonly Subject<Unit> _onRestartGameRequested = new Subject<Unit>();
 
-        /// <summary>ゲーム終了実行ストリーム</summary>
-        public IObservable<Unit> OnExitGameExecuted => _onExitGameExecuted;
+        /// <summary>ゲーム再起動リクエストストリーム</summary>
+        public IObservable<Unit> OnRestartGameRequested => _onRestartGameRequested;
 
         /// <summary>ゲームスピード変更用 Subject</summary>
         private readonly Subject<float> _onGameSpeedChangeRequested = new Subject<float>();
@@ -284,6 +299,12 @@ namespace GameSystem.Presentation
         // ======================================================
 
         // --------------------------------------------------
+        // ゲーム
+        // --------------------------------------------------
+        /// <summary>ゲーム再起動判定時間（秒）</summary>
+        private const int RESTART_GAME_HOLD_SECONDS = 5;
+
+        // --------------------------------------------------
         // シーン
         // --------------------------------------------------
         /// <summary>タイトルシーン名</summary>
@@ -312,6 +333,12 @@ namespace GameSystem.Presentation
 
         /// <summary>5 x 5 ボードサイズ</summary>
         private const int BOARD_SIZE_FIVE = 5;
+
+        /// <summary>通常スコア倍率</summary>
+        private const float NORMAL_SCORE_MULTIPLIER = 1.0f;
+
+        /// <summary>回転入力スコア倍率</summary>
+        private const float ROTATE_SCORE_MULTIPLIER = 3.0f;
 
         // --------------------------------------------------
         // 入力

@@ -6,19 +6,20 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.Rendering.Universal;
-using UniRx;
+using Cysharp.Threading.Tasks;
 using PhaseSystem.Domain;
 using SoundSystem.Domain;
 using SoundSystem.Presentation;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
+using UniRx;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Rendering.Universal;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -238,8 +239,8 @@ namespace UISystem.Presentation
         /// <summary>イベント購読管理</summary>
         private readonly CompositeDisposable _disposables = new CompositeDisposable();
 
-        /// <summary>ルーター用購読管理</summary>
-        protected readonly CompositeDisposable _routerDisposables = new CompositeDisposable();
+        /// <summary>UI イベント用購読管理</summary>
+        protected CompositeDisposable _uiEventDisposables;
 
         /// <summary>フェーズ遷移予約通知用 Subject</summary>
         protected readonly Subject<PhaseType> _onPhaseChangeRequested = new Subject<PhaseType>();
@@ -450,8 +451,14 @@ namespace UISystem.Presentation
         /// <summary>フェードイン開始時</summary>
         protected virtual void OnFadeInStart() { }
 
+        /// <summary>フェードイン終了時</summary>
+        protected virtual void OnFadeInFinish() { }
+
         /// <summary>フェードアウト開始時</summary>
         protected virtual void OnFadeOutStart() { }
+
+        /// <summary>フェードアウト終了時</summary>
+        protected virtual void OnFadeOutFinish() { }
 
         // ======================================================
         // サウンド継承イベント
@@ -480,30 +487,16 @@ namespace UISystem.Presentation
             in IObservable<Unit> fadeCompleted)
         {
             fadeInSeconds
-                .Subscribe(time =>
-                {
-                    StartCoroutine(FadeInRoutine(time));
-
-                    OnFadeInStart();
-                })
+                .Subscribe(time => FadeInAsync(time).Forget())
                 .AddTo(_disposables);
 
             fadeOutSeconds
-                .Subscribe(time =>
-                {
-                    StartCoroutine(FadeOutRoutine(time));
-
-                    OnFadeOutStart();
-                })
+                .Subscribe(time => FadeOutAsync(time).Forget())
                 .AddTo(_disposables);
 
             fadeCompleted
                 .Take(1)
-                .Subscribe(_ =>
-                {
-                    // UI のイベント購読は画面フェード完了後に実行
-                    Subscribe();
-                })
+                .Subscribe(_ => Subscribe())
                 .AddTo(_disposables);
         }
         
@@ -526,6 +519,15 @@ namespace UISystem.Presentation
                     .Subscribe(eventType => HandleDialogEventReceived(eventType))
                     .AddTo(_disposables);
             }
+        }
+
+        /// <summary>
+        /// UI イベント購読
+        /// </summary>
+        protected virtual void SubscribeUiEvents()
+        {
+            // CompositeDisposable 生成
+            _uiEventDisposables = new CompositeDisposable();
 
             // クリック通知
             _eventRouter.OnClick
@@ -533,7 +535,7 @@ namespace UISystem.Presentation
                 {
                     OnClickEventInternal(clickEvent);
                 })
-                .AddTo(_routerDisposables);
+                .AddTo(_uiEventDisposables);
 
             // ホバー通知
             _eventRouter.OnHover
@@ -541,7 +543,7 @@ namespace UISystem.Presentation
                 {
                     OnHoverEventInternal(uiEvent);
                 })
-                .AddTo(_routerDisposables);
+                .AddTo(_uiEventDisposables);
 
             // ホバー解除通知
             _eventRouter.OnUnHover
@@ -549,7 +551,7 @@ namespace UISystem.Presentation
                 {
                     OnUnHoverEventInternal(uiEvent);
                 })
-                .AddTo(_routerDisposables);
+                .AddTo(_uiEventDisposables);
 
             // フォーカス通知
             _eventRouter.OnFocus
@@ -566,7 +568,7 @@ namespace UISystem.Presentation
 
                     OnFocusEventInternal(uiEvent);
                 })
-                .AddTo(_routerDisposables);
+                .AddTo(_uiEventDisposables);
 
             // フォーカス解除通知
             _eventRouter.OnUnFocus
@@ -580,7 +582,7 @@ namespace UISystem.Presentation
 
                     OnUnFocusEventInternal(uiEvent);
                 })
-                .AddTo(_routerDisposables);
+                .AddTo(_uiEventDisposables);
         }
 
         /// <summary>
@@ -589,7 +591,7 @@ namespace UISystem.Presentation
         protected virtual void Dispose()
         {
             _disposables?.Dispose();
-            _routerDisposables?.Dispose();
+            _uiEventDisposables?.Dispose();
 
             _eventRouter?.Dispose();
         }
@@ -968,22 +970,22 @@ namespace UISystem.Presentation
         /// <summary>
         /// フェードイン処理
         /// </summary>
-        private IEnumerator FadeInRoutine(float time)
+        private async UniTask FadeInAsync(float time)
         {
-            // 完了状態フラグ
-            bool isCompleted = false;
+            // フェード開始イベント
+            OnFadeInStart();
 
-            // フェード開始
-            _fade.FadeIn(time, () =>
-            {
-                isCompleted = true;
-            });
+            // 1 フレーム待機
+            await UniTask.NextFrame();
 
-            // 完了待機
-            while (isCompleted == false)
-            {
-                yield return null;
-            }
+            // フェード処理
+            await _fade.FadeInAsync(time);
+
+            // 1 フレーム待機
+            await UniTask.NextFrame();
+
+            // フェード終了イベント
+            OnFadeInFinish();
 
             // 完了通知
             _onFadeInCompleted.OnNext(Unit.Default);
@@ -992,22 +994,22 @@ namespace UISystem.Presentation
         /// <summary>
         /// フェードアウト処理
         /// </summary>
-        private IEnumerator FadeOutRoutine(float time)
+        private async UniTask FadeOutAsync(float time)
         {
-            // 完了状態フラグ
-            bool isCompleted = false;
+            // フェード開始イベント
+            OnFadeOutStart();
 
-            // フェード開始
-            _fade.FadeOut(time, () =>
-            {
-                isCompleted = true;
-            });
+            // 1 フレーム待機
+            await UniTask.NextFrame();
 
-            // 完了待機
-            while (isCompleted == false)
-            {
-                yield return null;
-            }
+            // フェード処理
+            await _fade.FadeOutAsync(time);
+
+            // 1 フレーム待機
+            await UniTask.NextFrame();
+
+            // フェード終了イベント
+            OnFadeOutFinish();
 
             // 完了通知
             _onFadeOutCompleted.OnNext(Unit.Default);

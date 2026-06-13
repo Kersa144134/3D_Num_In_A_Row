@@ -127,19 +127,83 @@ namespace GameSystem.Presentation
             {
                 _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
 
-                // スタートボタン押す
+                // スタートボタン 押す
                 _inputManager.StartButton.OnDown
                     .Subscribe(_ =>
                     {
-                        // ゲーム終了入力
                         _onExitGameInput.OnNext(Unit.Default);
-
-                        // ポーズ入力入力
                         _onPauseInput.OnNext(Unit.Default);
                     })
                     .AddTo(_disposables);
+
+                // 入力デバイス更新
                 _inputManager.ActiveDeviceType
+                    .DistinctUntilChanged()
                     .Subscribe(type => NotifyActiveControllerChanged(type))
+                    .AddTo(_disposables);
+
+                // X ボタン 押す
+                _inputManager.ButtonX.OnDown
+                    .Subscribe(_ =>
+                    {
+                        _isButtonXPressed = true;
+
+                        // 再起動コマンド判定
+                        TryStartRestartGameCommand();
+                    })
+                    .AddTo(_disposables);
+
+                // X ボタン 離す
+                _inputManager.ButtonX.OnUp
+                    .Subscribe(_ => _isButtonXPressed = false)
+                    .AddTo(_disposables);
+
+                // 左トリガー 押す
+                _inputManager.LeftTrigger.OnDown
+                    .Subscribe(_ =>
+                    {
+                        _isLeftTriggerPressed = true;
+
+                        // 再起動コマンド判定
+                        TryStartRestartGameCommand();
+                    })
+                    .AddTo(_disposables);
+
+                // 左トリガー 離す
+                _inputManager.LeftTrigger.OnUp
+                    .Subscribe(_ => _isLeftTriggerPressed = false)
+                    .AddTo(_disposables);
+
+                // 右トリガー 押す
+                _inputManager.RightTrigger.OnDown
+                    .Subscribe(_ =>
+                    {
+                        _isRightTriggerPressed = true;
+
+                        // 再起動コマンド判定
+                        TryStartRestartGameCommand();
+                    })
+                    .AddTo(_disposables);
+
+                // 右トリガー 離す
+                _inputManager.RightTrigger.OnUp
+                    .Subscribe(_ => _isRightTriggerPressed = false)
+                    .AddTo(_disposables);
+
+                // セレクトボタン 押す
+                _inputManager.SelectButton.OnDown
+                    .Subscribe(_ =>
+                    {
+                        _isSelectButtonPressed = true;
+
+                        // 再起動コマンド判定
+                        TryStartRestartGameCommand();
+                    })
+                    .AddTo(_disposables);
+
+                // セレクトボタン 離す
+                _inputManager.SelectButton.OnUp
+                    .Subscribe(_ => _isSelectButtonPressed = false)
                     .AddTo(_disposables);
             }
 
@@ -185,16 +249,7 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ =>
-                    {
-                        _onFadeCompleted.OnNext(Unit.Default);
-
-                        if (_isExitingGame)
-                        {
-                            // ゲーム終了処理実行
-                            _onExitGameExecuted.OnNext(Unit.Default);
-                        }
-                    })
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _titleUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -203,13 +258,7 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _titleUIPresenter.OnExitGameRequested
-                    .Subscribe(_ =>
-                    {
-                        // ゲーム終了処理開始
-                        _isExitingGame = true;
-
-                        _onExitGameRequested.OnNext(Unit.Default);
-                    })
+                    .Subscribe(_ => _onExitGameRequested.OnNext(Unit.Default))
                     .AddTo(_disposables);
             }
 
@@ -273,16 +322,7 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ =>
-                    {
-                        _onFadeCompleted.OnNext(Unit.Default);
-
-                        if (_isExitingGame)
-                        {
-                            // ゲーム終了処理実行
-                            _onExitGameExecuted.OnNext(Unit.Default);
-                        }
-                    })
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _mainUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -291,13 +331,7 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _mainUIPresenter.OnExitGameRequested
-                    .Subscribe(_ =>
-                    {
-                        // ゲーム終了処理開始
-                        _isExitingGame = true;
-
-                        _onExitGameRequested.OnNext(Unit.Default);
-                    })
+                    .Subscribe(_ => _onExitGameRequested.OnNext(Unit.Default))
                     .AddTo(_disposables);
             }
 
@@ -331,16 +365,7 @@ namespace GameSystem.Presentation
                     .Subscribe(e => _onPointerPositionChanged.OnNext(e))
                     .AddTo(_disposables);
                 _resultUIPresenter.OnFadeInCompletedStream
-                    .Subscribe(_ =>
-                    {
-                        _onFadeCompleted.OnNext(Unit.Default);
-
-                        if (_isExitingGame)
-                        {
-                            // ゲーム終了処理実行
-                            _onExitGameExecuted.OnNext(Unit.Default);
-                        }
-                    })
+                    .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
                     .AddTo(_disposables);
                 _resultUIPresenter.OnFadeOutCompletedStream
                     .Subscribe(_ => _onFadeCompleted.OnNext(Unit.Default))
@@ -349,13 +374,7 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => NotifySceneChangeRequested())
                     .AddTo(_disposables);
                 _resultUIPresenter.OnExitGameRequested
-                    .Subscribe(_ =>
-                    {
-                        // ゲーム終了処理開始
-                        _isExitingGame = true;
-
-                        _onExitGameRequested.OnNext(Unit.Default);
-                    })
+                    .Subscribe(_ => _onExitGameRequested.OnNext(Unit.Default))
                     .AddTo(_disposables);
             }
 

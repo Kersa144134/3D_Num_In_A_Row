@@ -6,16 +6,16 @@
 // 概要     : シーン遷移、フェーズ管理、Update 管理を統括する
 // ======================================================
 
+using System;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UniRx;
 using GameSystem.Application;
 using OptionSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using SoundSystem.Presentation;
-using System;
-using UniRx;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
 
@@ -115,6 +115,9 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // アニメーション
         // --------------------------------------------------
+        /// <summary>ゲーム終了待機時間</summary>
+        private const float GAME_END_WAIT_TIME_SECONDS = 1.0f;
+
         /// <summary>画面フェード時間</summary>
         private const float SCREEN_FADE_DURATION_SECONDS = 0.5f;
 
@@ -171,8 +174,77 @@ namespace GameSystem.Presentation
             _isAfterSceneChange = true;
         }
 
+        private void Start()
+        {
+            // インスタンスからコンポーネント取得
+            _gameOptionManager = GameOptionManager.Instance;
+            _soundManager = SoundManager.Instance;
+
+            if (_gameOptionManager == null ||
+                _soundManager == null)
+            {
+                UnityEngine.Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                UnityEngine.Application.Quit();
+#endif
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // Updatable 初期化
+            // --------------------------------------------------
+            // インスペクタから IUpdatable を収集
+            IUpdatable[] updatables = _updatableCollector.Collect(_components);
+
+            // コンテキスト作成
+            _updatableContexts = new UpdatableContexts();
+
+            // 書き込み専用として扱う
+            IUpdatableWriter updatableWriter = _updatableContexts;
+
+            // Attribute ベース自動登録
+            _updatableAttributeScanner.RegisterFromAssembly(
+                writer: updatableWriter,
+                instances: updatables
+            );
+
+            // 列挙専用として扱う
+            IUpdatableEnumerable updatableEnumerable = _updatableContexts;
+
+            // Updatable の開始時処理
+            _updatableLifecycleRunner.RunEnter(updatableEnumerable);
+
+            // --------------------------------------------------
+            // フェーズ管理初期化
+            // --------------------------------------------------
+            // フェーズ遷移設定
+            _phaseTransitionConfig = new PhaseTransitionConfig(
+                _gameOptionManager.PlayerCount,
+                _gameOptionManager.TurnCount,
+                _gameOptionManager.LimitTime
+            );
+
+            // フェーズ管理マシン初期化
+            _phaseMachine = new PhaseMachine(
+                _phaseTransitionConfig,
+                _updatableContexts
+            );
+
+            // --------------------------------------------------
+            // 非同期初期化処理
+            // --------------------------------------------------
+            InitializeAsync().Forget();
+        }
+        
         private void Update()
         {
+            // --------------------------------------------------
+            // 再起動判定
+            // --------------------------------------------------
             // --------------------------------------------------
             // シーン遷移判定
             // --------------------------------------------------
@@ -230,128 +302,7 @@ namespace GameSystem.Presentation
         private void OnDestroy()
         {
             // イベント購読解除
-            _disposables?.Dispose();
-            _eventRouter?.Dispose();
-        }
-
-        // ======================================================
-        // UniTask イベント
-        // ======================================================
-
-        private async void Start()
-        {
-            // インスタンスからコンポーネント取得
-            _gameOptionManager = GameOptionManager.Instance;
-            _soundManager = SoundManager.Instance;
-
-            if (_gameOptionManager == null ||
-                _soundManager == null)
-            {
-                Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
-
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-                UnityEngine.Application.Quit();
-#endif
-
-                return;
-            }
-
-            // --------------------------------------------------
-            // サウンド初期化
-            // --------------------------------------------------
-            await _soundManager.InitializeAudioAsync();
-            
-            // --------------------------------------------------
-            // Updatable 初期化
-            // --------------------------------------------------
-            // インスペクタから IUpdatable を収集
-            IUpdatable[] updatables = _updatableCollector.Collect(_components);
-
-            // コンテキスト作成
-            _updatableContexts = new UpdatableContexts();
-
-            // 書き込み専用として扱う
-            IUpdatableWriter updatableWriter = _updatableContexts;
-
-            // Attribute ベース自動登録
-            _updatableAttributeScanner.RegisterFromAssembly(
-                writer: updatableWriter,
-                instances: updatables
-            );
-
-            // 列挙専用として扱う
-            IUpdatableEnumerable updatableEnumerable = _updatableContexts;
-
-            // Updatable の開始時処理
-            _updatableLifecycleRunner.RunEnter(updatableEnumerable);
-
-            // --------------------------------------------------
-            // フェーズ管理初期化
-            // --------------------------------------------------
-            // フェーズ遷移設定
-            _phaseTransitionConfig = new PhaseTransitionConfig(
-                _gameOptionManager.PlayerCount,
-                _gameOptionManager.TurnCount,
-                _gameOptionManager.LimitTime
-            );
-
-            // フェーズ管理マシン初期化
-            _phaseMachine = new PhaseMachine(
-                _phaseTransitionConfig,
-                _updatableContexts
-            );
-
-            // --------------------------------------------------
-            // イベント購読
-            // --------------------------------------------------
-            // 読み込み専用として扱う
-            IUpdatableReader updatableReader = _updatableContexts;
-
-            // ルーター生成
-            _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
-
-            _eventRouter.Subscribe(_phaseMachine);
-            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged, _onFadeStarted);
-
-            _eventRouter.OnSceneChangeRequested
-                .Subscribe(scene =>
-                {
-                    SetTargetScene(scene);
-                })
-                .AddTo(_disposables);
-            _eventRouter.OnPhaseChangeRequested
-                .Subscribe(e =>
-                {
-                    SetTargetPhase(e.NextPhaseType);
-                })
-                .AddTo(_disposables);
-            _eventRouter.OnExitGameRequested
-                .Subscribe(_ =>
-                {
-                    // 画面フェード開始イベント
-                    _onFadeStarted.OnNext(SCREEN_FADE_DURATION_SECONDS);
-                })
-                .AddTo(_disposables);
-            _eventRouter.OnExitGameExecuted
-                .Subscribe(_ =>
-                {
-                    // ゲーム終了
-                    ExitGameAsync().Forget();
-                })
-                .AddTo(_disposables);
-
-            _phaseMachine.CurrentPhaseType
-                .Skip(1)
-                .Subscribe(phase =>
-                {
-                    SetTargetPhase(phase);
-                })
-                .AddTo(_disposables);
-
-            // シーン変更後イベント
-            TriggerSceneChangedEventAsync().Forget();
+            Dispose();
         }
 
         // ======================================================
@@ -362,12 +313,18 @@ namespace GameSystem.Presentation
         // ゲーム
         // --------------------------------------------------
         /// <summary>
-        /// ゲームを再起動する
+        /// 非同期初期化処理を実行する
         /// </summary>
-        private void RestartGame()
+        private async UniTask InitializeAsync()
         {
-            // 現在のシーンを再読み込み
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            // サウンド初期化
+            await _soundManager.InitializeAudioAsync();
+
+            // イベント購読
+            Subscribe();
+
+            // シーン変更後イベント
+            TriggerSceneChangedEventAsync().Forget();
         }
 
         /// <summary>
@@ -375,8 +332,13 @@ namespace GameSystem.Presentation
         /// </summary>
         private async UniTask ExitGameAsync()
         {
-            // フェード完了後待機時間
-            await UniTask.Delay(TimeSpan.FromSeconds(SCREEN_FADE_HOLD_TIME_SECONDS), DelayType.UnscaledDeltaTime);
+            // 画面フェード開始イベント
+            _onFadeStarted.OnNext(SCREEN_FADE_DURATION_SECONDS);
+
+            await _eventRouter.OnFadeCompleted.ToUniTask(useFirstValue: true);
+
+            // ゲーム終了待機時間
+            await UniTask.Delay(TimeSpan.FromSeconds(GAME_END_WAIT_TIME_SECONDS), DelayType.UnscaledDeltaTime);
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -385,6 +347,100 @@ namespace GameSystem.Presentation
 #endif
         }
 
+        /// <summary>
+        /// アプリケーションを再起動する
+        /// </summary>
+        private async UniTask RestartGameAsync()
+        {
+            // 画面フェード開始イベント
+            _onFadeStarted.OnNext(SCREEN_FADE_DURATION_SECONDS);
+
+            await _eventRouter.OnFadeCompleted.ToUniTask(useFirstValue: true);
+
+            // ゲーム終了待機時間
+            await UniTask.Delay(TimeSpan.FromSeconds(GAME_END_WAIT_TIME_SECONDS), DelayType.UnscaledDeltaTime);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+
+#else
+            // 現在実行中のプロセス情報を取得
+            Process currentProcess = Process.GetCurrentProcess();
+
+            // 実行ファイルパスを取得
+            string executablePath = currentProcess.MainModule?.FileName;
+
+            // 実行ファイルが取得できた場合のみ再起動する
+            if (!string.IsNullOrEmpty(executablePath))
+            {
+                // 新しいプロセスとして起動
+                Process.Start(executablePath);
+            }
+
+            // 現在のアプリケーションを終了
+            UnityEngine.Application.Quit();
+#endif
+        }
+
+        // ---------------------------------------------
+        // イベント購読
+        // ---------------------------------------------
+        /// <summary>
+        /// イベント購読
+        /// </summary>
+        private void Subscribe()
+        {
+            // ---------------------------------------------
+            // ルーター初期化
+            // ---------------------------------------------
+            // 読み込み専用として扱う
+            IUpdatableReader updatableReader = _updatableContexts;
+
+            // ルーター生成
+            _eventRouter = new GameEventRouter(updatableReader, CurrentPhase);
+
+            // イベント購読
+            _eventRouter.Subscribe(_phaseMachine);
+            _eventRouter.BindStreams(_onLoadPrepareStart, _onLoadPrepareEnd, _onSceneChanged, _onFadeStarted);
+
+            // ---------------------------------------------
+            // ルーター
+            // ---------------------------------------------
+            _eventRouter.OnSceneChangeRequested
+                .Subscribe(scene => SetTargetScene(scene))
+                .AddTo(_disposables);
+            _eventRouter.OnPhaseChangeRequested
+                .Subscribe(e => SetTargetPhase(e.NextPhaseType))
+                .AddTo(_disposables);
+            _eventRouter.OnExitGameRequested
+                .Subscribe(_ => ExitGameAsync().Forget())
+                .AddTo(_disposables);
+            _eventRouter.OnRestartGameRequested
+                .Subscribe(_ => RestartGameAsync().Forget())
+                .AddTo(_disposables);
+
+            // ---------------------------------------------
+            // フェーズ
+            // ---------------------------------------------
+            _phaseMachine.CurrentPhaseType
+                .Skip(1)
+                .Subscribe(phase => SetTargetPhase(phase))
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベント購読解除
+        /// </summary>
+        private void Dispose()
+        {
+            _disposables?.Dispose();
+            _onLoadPrepareStart?.Dispose();
+            _onLoadPrepareEnd?.Dispose();
+            _onFadeStarted?.Dispose();
+            _onSceneChanged?.Dispose();
+
+            _eventRouter?.Dispose();
+        }
+        
         // --------------------------------------------------
         // シーン
         // --------------------------------------------------
@@ -410,6 +466,7 @@ namespace GameSystem.Presentation
             if (string.IsNullOrEmpty(nextScene))
             {
                 _isSceneTransitioning = false;
+
                 return;
             }
 

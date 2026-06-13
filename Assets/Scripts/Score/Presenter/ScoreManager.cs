@@ -121,6 +121,7 @@ namespace ScoreSystem.Presentation
         /// <summary>
         /// スコアマネージャーの初期化
         /// </summary>
+        /// /// <param name="playerCount">プレイヤー人数</param>
         public void Initialize(int playerCount)
         {
             // 未生成
@@ -146,7 +147,11 @@ namespace ScoreSystem.Presentation
         /// <summary>
         /// ライン成立スコア加算
         /// </summary>
-        public int AddLineScore(int playerId, int lineLength)
+        /// /// <param name="playerId">スコアを加算するプレイヤー ID</param>
+        /// <param name="lineLength">成立したラインの長さ</param>
+        /// <param name="multiplier">スコア倍率</param>
+        /// <returns>加算後のスコア</returns>
+        public int AddLineScore(int playerId, int lineLength, float multiplier = 1.0f)
         {
             if (_totalScores == null)
             {
@@ -169,8 +174,11 @@ namespace ScoreSystem.Presentation
                 _lineComleteChainBonus
             );
 
+            // 倍率適用後の加算スコアを算出
+            int scaledDelta = (int)(delta * multiplier);
+
             // 実際に反映されたスコア量
-            return ApplyScore(playerIndex, delta);
+            return ApplyScore(playerIndex, scaledDelta);
         }
 
         /// <summary>
@@ -271,6 +279,44 @@ namespace ScoreSystem.Presentation
         }
 
         /// <summary>
+        /// 最もスコアが高いプレイヤーインデックスリスト取得
+        /// </summary>
+        public List<int> GetHighestScorePlayerIndices()
+        {
+            if (_playerScores == null || _playerScores.Length == 0)
+            {
+                return new List<int>();
+            }
+
+            // 最大スコアプレイヤー一覧
+            List<int> highestScorePlayerIndices = new List<int>();
+
+            // 最大スコア
+            int highestScore = 0;
+
+            for (int i = 0; i < _playerScores.Length; i++)
+            {
+                // プレイヤースコア取得
+                int score = _playerScores[i].TotalScore;
+
+                // より高いスコア場合はリストクリア
+                if (score > highestScore)
+                {
+                    highestScore = score;
+                    highestScorePlayerIndices.Clear();
+                    highestScorePlayerIndices.Add(i);
+                }
+                // 同点の場合はリストクリアせずに追加
+                else if (score == highestScore && score > 0)
+                {
+                    highestScorePlayerIndices.Add(i);
+                }
+            }
+
+            return highestScorePlayerIndices;
+        }
+
+        /// <summary>
         /// スコア順に並んだプレイヤー ID ランキングを取得する
         /// </summary>
         /// <returns>
@@ -312,45 +358,6 @@ namespace ScoreSystem.Presentation
             });
 
             return result;
-        }
-
-        /// <summary>
-        /// 最もスコアが高いプレイヤーインデックスリスト取得
-        /// </summary>
-        /// <returns>最もスコアが高いプレイヤーインデックスリスト</returns>
-        public List<int> GetHighestScorePlayerIndices()
-        {
-            if (_playerScores == null || _playerScores.Length == 0)
-            {
-                return new List<int>();
-            }
-
-            // 最大スコアプレイヤー一覧
-            List<int> highestScorePlayerIndices = new List<int>();
-
-            // 最大スコア
-            int highestScore = 0;
-
-            for (int i = 0; i < _playerScores.Length; i++)
-            {
-                // プレイヤースコア取得
-                int score = _playerScores[i].TotalScore;
-
-                // より高いスコア
-                if (score > highestScore)
-                {
-                    highestScore = score;
-                    highestScorePlayerIndices.Clear();
-                    highestScorePlayerIndices.Add(i);
-                }
-                // 同点の場合は削除なし
-                else if (score == highestScore && score > 0)
-                {
-                    highestScorePlayerIndices.Add(i);
-                }
-            }
-
-            return highestScorePlayerIndices;
         }
 
         // ======================================================

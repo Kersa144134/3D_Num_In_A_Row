@@ -20,6 +20,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using Cysharp.Threading.Tasks;
 using System.Collections;
 using UnityEngine;
 
@@ -132,4 +133,48 @@ public class Fade : MonoBehaviour
 	{
 		return FadeIn (time, null);
 	}
+
+    // ======================================================
+    // --------------------------------------------------
+    // 追加コード
+    // 作成者   : 高橋一翔
+    // --------------------------------------------------
+
+    /// <summary>
+    /// フェードイン
+    /// </summary>
+    /// <param name="time">フェード時間</param>
+    public UniTask FadeInAsync(float time)
+    {
+        UniTaskCompletionSource completionSource = new();
+
+        FadeIn(
+            time,
+            () =>
+            {
+                completionSource.TrySetResult();
+            });
+
+        return completionSource.Task;
+    }
+
+    /// <summary>
+    /// フェードアウト
+    /// </summary>
+    /// <param name="time">フェード時間</param>
+    public UniTask FadeOutAsync(float time)
+    {
+        UniTaskCompletionSource completionSource = new();
+
+        FadeOut(
+            time,
+            () =>
+            {
+                completionSource.TrySetResult();
+            });
+
+        return completionSource.Task;
+    }
+
+    // ======================================================
 }

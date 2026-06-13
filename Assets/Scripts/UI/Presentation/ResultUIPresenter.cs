@@ -338,7 +338,6 @@ namespace UISystem.Presentation
             {
                 resultUIView.UpdateRankingInfo(ranking);
             }
-            
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -430,13 +429,10 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.ResultEnd)
             {
                 // SE 再生
-                _soundManager?.PlaySE(SeType.UI_Click);
+                _soundManager?.PlaySE(SeType.UI_Decide);
 
                 // シーン遷移リクエスト
                 _onSceneChangeRequested.OnNext(Unit.Default);
-
-                // シーン遷移中フラグを有効化
-                _isSceneTransitioning = true;
 
                 return;
             }
@@ -520,6 +516,18 @@ namespace UISystem.Presentation
             // リザルト順位表示アニメーション開始
             _resultRankAnimator.SetTrigger(IS_START_HASH);
             _resultCanvasAnimator.SetTrigger(IS_START_HASH);
+
+            // BGM 再生
+            StartBgm();
+        }
+
+        /// <summary>
+        /// フェードアウト終了時
+        /// </summary>
+        protected override void OnFadeOutFinish()
+        {
+            // BGM フェード
+            _soundManager?.SetBGMVolume(BgmType.Result, 0.15f, 5);
         }
 
         // ======================================================
@@ -531,8 +539,17 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Result, 0.05f, 0);
             _soundManager?.PlayBGM(BgmType.Result, 0);
+        }
+
+        /// <summary>
+        /// BGM 再生位置更新時
+        /// </summary>
+        /// <param name="block">対象再生ブロック</param>
+        protected override void SetPlaybackPosition(in int block)
+        {
+            _soundManager?.SetPlaybackPosition(BgmType.Result, block);
         }
 
         // ======================================================
@@ -578,8 +595,11 @@ namespace UISystem.Presentation
                     _resultRankAnimator.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator.SetTrigger(IS_END_HASH);
 
-                    // BGM 再生
-                    StartBgm();
+                    // BGM 音量更新
+                    _soundManager?.SetBGMVolume(BgmType.Result, 0.15f, 0.5f);
+
+                    // BGM 再生位置更新
+                    SetPlaybackPosition(1);
                 })
                 .AddTo(_disposables);
         }
@@ -645,6 +665,9 @@ namespace UISystem.Presentation
                     {
                         // アニメーション終了通知
                         _onStarttResultAnimationEnd.OnNext(Unit.Default);
+
+                        // BGM フェード
+                        _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 1);
                     }
 
                     // SE 停止
@@ -659,8 +682,8 @@ namespace UISystem.Presentation
             _resultCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
-                    // シーン遷移状態解除
-                    _isSceneTransitioning = false;
+                    // UI イベント購読
+                    SubscribeUiEvents();
 
                     // ポインター表示
                     SetPointerVisible(true);

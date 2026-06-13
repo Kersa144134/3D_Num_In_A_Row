@@ -921,7 +921,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Title, 0.1f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Title, 0.15f, 0);
             _soundManager?.PlayBGM(BgmType.Title, 0);
         }
 
@@ -943,8 +943,8 @@ namespace UISystem.Presentation
             exitGameInput
                 .Subscribe(_ =>
                 {
-                    // シーン遷移中でないかつスタートキャンバスの場合
-                    if (!_isSceneTransitioning && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
+                    // UI イベント購読後かつスタートキャンバスの場合
+                    if (_uiEventDisposables != null && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
                     {
                         // SE 再生
                         _soundManager?.PlaySE(SeType.UI_ShowDialog);
@@ -989,9 +989,9 @@ namespace UISystem.Presentation
                     // タイトルスタートスキップアニメーション起動
                     _startCanvasAnimator?.SetTrigger(IS_SKIP_HASH);
 
-                    // シーン遷移状態解除
-                    _isSceneTransitioning = false;
-
+                    // UI イベント購読
+                    SubscribeUiEvents();
+                    
                     // ポインター表示
                     SetPointerVisible(true);
 
@@ -1028,8 +1028,8 @@ namespace UISystem.Presentation
             _startCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
-                    // シーン遷移状態解除
-                    _isSceneTransitioning = false;
+                    // UI イベント購読
+                    SubscribeUiEvents();
 
                     // ポインター表示
                     SetPointerVisible(true);

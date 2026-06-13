@@ -61,6 +61,9 @@ namespace CameraSystem.Application
         /// <summary>Pitch 角の最大絶対値</summary>
         private const float MAX_PITCH_ANGLE = 60f;
 
+        /// <summary>回転補間終了角度</summary>
+        private const float ROTATION_COMPLETE_ANGLE = 0.01f;
+
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -178,14 +181,12 @@ namespace CameraSystem.Application
 
             // X 軸回転角を算出（Pitch）
             // Y 成分と水平方向距離から上下方向の角度を生成し、ラジアン値を度数法へ変換
-            float targetRotationX =
-                Mathf.Atan2(direction.y, horizontalDistance) * Mathf.Rad2Deg;
+            float targetRotationX = Mathf.Atan2(direction.y, horizontalDistance) * Mathf.Rad2Deg;
 
             // Y 軸回転角を算出（Yaw）
             // XZ 平面上の方向ベクトルから左右方向の角度を生成し、ラジアン値を度数法へ変換
             // カメラを対象方向の反対側へ向けるため、180 度加算する
-            float targetRotationY =
-                Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + 180f;
+            float targetRotationY = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + 180f;
 
             // --------------------------------------------------
             // Pitch 角度制限
@@ -200,6 +201,36 @@ namespace CameraSystem.Application
                 targetRotationX = MAX_PITCH_ANGLE;
             }
 
+            // --------------------------------------------------
+            // 補間終了判定
+            // --------------------------------------------------
+            // X 軸角度差を取得
+            float deltaX = Mathf.Abs(
+                Mathf.DeltaAngle(
+                    _cameraModel.RotationX,
+                    targetRotationX));
+
+            // Y 軸角度差を取得
+            float deltaY = Mathf.Abs(
+                Mathf.DeltaAngle(
+                    _cameraModel.RotationY,
+                    targetRotationY));
+
+            // 十分近ければ補間を終了する
+            if (deltaX <= ROTATION_COMPLETE_ANGLE &&
+                deltaY <= ROTATION_COMPLETE_ANGLE)
+            {
+                // 補間速度をリセット
+                _velocityX = 0f;
+                _velocityY = 0f;
+
+                // 目標角度を直接反映
+                _cameraModel.ApplyRotationX(targetRotationX);
+                _cameraModel.ApplyRotationY(targetRotationY);
+
+                return;
+            }
+            
             // --------------------------------------------------
             // 回転反映
             // --------------------------------------------------
@@ -227,7 +258,7 @@ namespace CameraSystem.Application
         }
 
         /// <summary>
-        /// 回転速度を即座にリセットする
+        /// 回転速度をリセットする
         /// </summary>
         public void ResetVelocity()
         {

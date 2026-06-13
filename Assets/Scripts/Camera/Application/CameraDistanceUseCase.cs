@@ -52,6 +52,9 @@ namespace CameraSystem.Application
         /// <summary>仮想パッド用入力減速倍率</summary>
         private const float VIRTUAL_PAD_INPUT_DECELERATION_MULTIPLIER = 5.0f;
 
+        /// <summary>距離補間終了閾値</summary>
+        private const float DISTANCE_COMPLETE_THRESHOLD = 0.001f;
+        
         // ======================================================
         // コンストラクタ
         // ======================================================
@@ -143,8 +146,7 @@ namespace CameraSystem.Application
             // --------------------------------------------------
             // OrthographicSize 算出
             // --------------------------------------------------
-            float nextOrthographicSize =
-                CalculateOrthographicSize(_cameraModel.DistanceZ);
+            float nextOrthographicSize = CalculateOrthographicSize(_cameraModel.DistanceZ);
 
             // モデルへ適用
             _cameraModel.ApplyOrthographicSize(nextOrthographicSize);
@@ -159,6 +161,31 @@ namespace CameraSystem.Application
             in float targetDistanceZ,
             in float deltaTime)
         {
+            // 目標距離との差を取得
+            float distanceDifference = Mathf.Abs(_cameraModel.DistanceZ - targetDistanceZ);
+
+            // 一定距離以内で補間終了
+            if (distanceDifference <= DISTANCE_COMPLETE_THRESHOLD)
+            {
+                // 補間速度をリセット
+                ResetVelocity();
+
+                // 目標距離を直接反映
+                _cameraModel.ApplyDistanceZ(targetDistanceZ);
+
+                // OrthographicSize を更新
+                float orthographicSize =
+                    CalculateOrthographicSize(targetDistanceZ);
+
+                // モデルへ適用
+                _cameraModel.ApplyOrthographicSize(orthographicSize);
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // 速度補間
+            // --------------------------------------------------
             // 現在距離を目標距離へ補間
             float nextDistanceZ = Mathf.SmoothDamp(
                 _cameraModel.DistanceZ,
@@ -174,8 +201,7 @@ namespace CameraSystem.Application
             // --------------------------------------------------
             // OrthographicSize 算出
             // --------------------------------------------------
-            float nextOrthographicSize =
-                CalculateOrthographicSize(_cameraModel.DistanceZ);
+            float nextOrthographicSize = CalculateOrthographicSize(nextDistanceZ);
 
             // モデルへ適用
             _cameraModel.ApplyOrthographicSize(nextOrthographicSize);
@@ -186,7 +212,6 @@ namespace CameraSystem.Application
         /// </summary>
         public void ResetVelocity()
         {
-            // 現在速度を初期化
             _velocityDistanceZ = 0.0f;
         }
 
@@ -235,11 +260,10 @@ namespace CameraSystem.Application
         private float CalculateOrthographicSize(in float distanceZ)
         {
             // Z 距離を 0 ～ 1 に正規化
-            float normalizedDistance =
-                Mathf.InverseLerp(
-                    _cameraModel.DistanceZMin,
-                    _cameraModel.DistanceZMax,
-                    distanceZ);
+            float normalizedDistance = Mathf.InverseLerp(
+                _cameraModel.DistanceZMin,
+                _cameraModel.DistanceZMax,
+                distanceZ);
 
             // OrthographicSize へ変換
             return Mathf.Lerp(

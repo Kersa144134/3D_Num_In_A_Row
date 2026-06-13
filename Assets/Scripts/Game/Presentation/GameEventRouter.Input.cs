@@ -7,6 +7,10 @@
 //            入力関連処理をまとめたファイル
 // ======================================================
 
+using System;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UniRx;
 using InputSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -52,6 +56,75 @@ namespace GameSystem.Presentation
             {
                 _onGamepadUsed.OnNext(false);
             }
+        }
+
+        /// <summary>
+        /// ゲーム再起動コマンド判定
+        /// </summary>
+        private void TryStartRestartGameCommand()
+        {
+            // 多重実行防止
+            if (_isCheckingRestartGame)
+            {
+                return;
+            }
+
+            // 指定入力が揃っていない場合は処理なし
+            if (!IsRestartGameCommandPressed())
+            {
+                return;
+            }
+
+            CheckRestartGameCommandAsync().Forget();
+        }
+
+        /// <summary>
+        /// ゲーム再起動コマンドの長押し判定を実行する
+        /// </summary>
+        private async UniTask CheckRestartGameCommandAsync()
+        {
+            // 判定開始
+            _isCheckingRestartGame = true;
+
+            // 指定秒待機
+            await UniTask.Delay(TimeSpan.FromSeconds(RESTART_GAME_HOLD_SECONDS));
+
+            // 指定秒経過後も指定入力が揃っている場合
+            if (IsRestartGameCommandPressed())
+            {
+                _onRestartGameRequested.OnNext(Unit.Default);
+            }
+
+            // 判定終了
+            _isCheckingRestartGame = false;
+        }
+
+        /// <summary>
+        /// ゲーム再起動コマンドの入力状態かどうかを判定する
+        /// </summary>
+        private bool IsRestartGameCommandPressed()
+        {
+            // X ボタン押下状態
+            bool isButtonXPressed = _isButtonXPressed;
+
+            // Left Trigger 押下状態
+            bool isLeftTriggerPressed = _isLeftTriggerPressed;
+
+            // Right Trigger 押下状態
+            bool isRightTriggerPressed = _isRightTriggerPressed;
+
+            // DPad 上入力状態
+            bool isDPadUpPressed = _inputManager.DPad.Angle == Vector2.up;
+
+            // Select ボタン押下状態
+            bool isSelectButtonPressed = _isSelectButtonPressed;
+
+            // 全入力が揃っている場合のみ true
+            return isButtonXPressed
+                && isLeftTriggerPressed
+                && isRightTriggerPressed
+                && isDPadUpPressed
+                && isSelectButtonPressed;
         }
     }
 }

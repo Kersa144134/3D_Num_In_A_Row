@@ -30,6 +30,13 @@ namespace CameraSystem.Application
         private readonly float _smoothTime;
 
         // ======================================================
+        // フィールド
+        // ======================================================
+
+        /// <summary>位置補間終了距離</summary>
+        private const float POSITION_COMPLETE_DISTANCE = 0.001f;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -57,15 +64,31 @@ namespace CameraSystem.Application
             in Vector3 targetPosition,
             in float deltaTime)
         {
+            // 目標位置との距離を取得
+            float distance = Vector3.Distance(
+                _cameraModel.Position,
+                targetPosition);
+
+            // 一定距離以内なら補間終了
+            if (distance <= POSITION_COMPLETE_DISTANCE)
+            {
+                // 速度リセット
+                ResetVelocity();
+
+                // モデルへ反映
+                _cameraModel.ApplyPosition(targetPosition);
+
+                return;
+            }
+
             // 現在位置を目標位置へ補間
-            Vector3 nextPosition =
-                Vector3.SmoothDamp(
-                    _cameraModel.Position,
-                    targetPosition,
-                    ref _velocityPosition,
-                    _smoothTime,
-                    Mathf.Infinity,
-                    deltaTime);
+            Vector3 nextPosition = Vector3.SmoothDamp(
+                _cameraModel.Position,
+                targetPosition,
+                ref _velocityPosition,
+                _smoothTime,
+                Mathf.Infinity,
+                deltaTime);
 
             // モデルへ反映
             _cameraModel.ApplyPosition(nextPosition);
@@ -76,7 +99,6 @@ namespace CameraSystem.Application
         /// </summary>
         public void ResetVelocity()
         {
-            // 補間速度を初期化
             _velocityPosition = Vector3.zero;
         }
     }

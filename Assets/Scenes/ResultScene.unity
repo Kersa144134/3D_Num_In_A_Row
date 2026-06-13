@@ -866,7 +866,7 @@ GameObject:
   - component: {fileID: 526036176}
   - component: {fileID: 526036178}
   - component: {fileID: 526036177}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLine (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1183,7 +1183,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 640
+    m_Bits: 768
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 1a620c72558e24c43af90a917beaf90b, type: 2}
   m_TargetDisplay: 0
@@ -1310,7 +1310,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 963.11115
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1318,7 +1318,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1106.2972
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2880631602809677986, guid: 71a88d2b1b8185447b221fed92f1648f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1456,7 +1456,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 781652647}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLineParent (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2149,7 +2149,7 @@ GameObject:
   - component: {fileID: 1074475306}
   - component: {fileID: 1074475309}
   - component: {fileID: 1074475308}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RankBackground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2330,7 +2330,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1155871001}
   - component: {fileID: 1155871002}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: BloodEffect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2594,7 +2594,7 @@ GameObject:
   - component: {fileID: 1312949732}
   - component: {fileID: 1312949734}
   - component: {fileID: 1312949733}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2721,7 +2721,7 @@ GameObject:
   - component: {fileID: 1389812157}
   - component: {fileID: 1389812159}
   - component: {fileID: 1389812158}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: 1stPlayerText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2902,7 +2902,7 @@ GameObject:
   - component: {fileID: 1410717193}
   - component: {fileID: 1410717195}
   - component: {fileID: 1410717194}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3047,7 +3047,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1530788122}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLineParent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3496,7 +3496,7 @@ GameObject:
   - component: {fileID: 1717210674}
   - component: {fileID: 1717210676}
   - component: {fileID: 1717210675}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: RankBackgroundLine (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
