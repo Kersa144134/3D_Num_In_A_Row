@@ -21,7 +21,7 @@ MonoBehaviour:
     mouseInput: 2
   - gamepadInput: 2
     keyCode: 0
-    mouseInput: 0
+    mouseInput: 3
   - gamepadInput: 3
     keyCode: 0
     mouseInput: 0
@@ -35,7 +35,7 @@ MonoBehaviour:
     keyCode: 0
     mouseInput: 0
   - gamepadInput: 7
-    keyCode: 0
+    keyCode: 305
     mouseInput: 0
   - gamepadInput: 8
     keyCode: 0
@@ -47,7 +47,7 @@ MonoBehaviour:
     keyCode: 27
     mouseInput: 0
   - gamepadInput: 11
-    keyCode: 0
+    keyCode: 127
     mouseInput: 0
   - gamepadInput: 12
     keyCode: 97
@@ -74,7 +74,7 @@ MonoBehaviour:
     keyCode: 0
     mouseInput: 0
   - gamepadInput: 20
-    keyCode: 0
+    keyCode: 276
     mouseInput: 0
   - gamepadInput: 21
     keyCode: 0

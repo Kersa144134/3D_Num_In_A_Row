@@ -158,22 +158,6 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => _isButtonXPressed = false)
                     .AddTo(_disposables);
 
-                // 左トリガー 押す
-                _inputManager.LeftTrigger.OnDown
-                    .Subscribe(_ =>
-                    {
-                        _isLeftTriggerPressed = true;
-
-                        // 再起動コマンド判定
-                        TryStartRestartGameCommand();
-                    })
-                    .AddTo(_disposables);
-
-                // 左トリガー 離す
-                _inputManager.LeftTrigger.OnUp
-                    .Subscribe(_ => _isLeftTriggerPressed = false)
-                    .AddTo(_disposables);
-
                 // 右トリガー 押す
                 _inputManager.RightTrigger.OnDown
                     .Subscribe(_ =>
@@ -188,6 +172,15 @@ namespace GameSystem.Presentation
                 // 右トリガー 離す
                 _inputManager.RightTrigger.OnUp
                     .Subscribe(_ => _isRightTriggerPressed = false)
+                    .AddTo(_disposables);
+
+                // DPad 押す
+                _inputManager.DPad.OnDown
+                    .Subscribe(_ =>
+                    {
+                        // 再起動コマンド判定
+                        TryStartRestartGameCommand();
+                    })
                     .AddTo(_disposables);
 
                 // セレクトボタン 押す

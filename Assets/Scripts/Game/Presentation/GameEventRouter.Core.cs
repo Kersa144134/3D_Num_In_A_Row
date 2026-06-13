@@ -6,11 +6,6 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
@@ -22,7 +17,13 @@ using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using SoundSystem.Presentation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using UISystem.Presentation;
+using UniRx;
+using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -119,6 +120,12 @@ namespace GameSystem.Presentation
         /// <summary>現在アクティブな入力デバイスのキャッシュ</summary>
         private InputDeviceType _cachedActiveDevice = InputDeviceType.Gamepad;
 
+        /// <summary>
+        /// ゲーム再起動コマンド判定処理のキャンセル通知用 CancellationTokenSource
+        /// </summary>
+        private readonly CancellationTokenSource _restartGameCommandCancellationTokenSource
+            = new CancellationTokenSource();
+
         /// <summary>X ボタン が押下中かどうか</summary>
         private bool _isButtonXPressed;
 
@@ -127,9 +134,6 @@ namespace GameSystem.Presentation
 
         /// <summary>右トリガー が押下中かどうか</summary>
         private bool _isRightTriggerPressed;
-
-        /// <summary>DPad 上入力が押下中かどうか</summary>
-        private bool _isDPadUpPressed;
         
         /// <summary>セレクトボタン が押下中かどうか</summary>
         private bool _isSelectButtonPressed;
@@ -302,7 +306,7 @@ namespace GameSystem.Presentation
         // ゲーム
         // --------------------------------------------------
         /// <summary>ゲーム再起動判定時間（秒）</summary>
-        private const int RESTART_GAME_HOLD_SECONDS = 5;
+        private const int RESTART_GAME_HOLD_SECONDS = 3;
 
         // --------------------------------------------------
         // シーン

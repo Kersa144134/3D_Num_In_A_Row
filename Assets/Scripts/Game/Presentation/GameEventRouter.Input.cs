@@ -83,20 +83,32 @@ namespace GameSystem.Presentation
         /// </summary>
         private async UniTask CheckRestartGameCommandAsync()
         {
-            // 判定開始
-            _isCheckingRestartGame = true;
-
-            // 指定秒待機
-            await UniTask.Delay(TimeSpan.FromSeconds(RESTART_GAME_HOLD_SECONDS));
-
-            // 指定秒経過後も指定入力が揃っている場合
-            if (IsRestartGameCommandPressed())
+            try
             {
-                _onRestartGameRequested.OnNext(Unit.Default);
-            }
+                // 判定開始
+                _isCheckingRestartGame = true;
 
-            // 判定終了
-            _isCheckingRestartGame = false;
+                // 指定秒待機
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(RESTART_GAME_HOLD_SECONDS),
+                    delayType: DelayType.UnscaledDeltaTime,
+                    cancellationToken: _restartGameCommandCancellationTokenSource.Token);
+
+                // 指定秒経過後も指定入力が揃っている場合
+                if (IsRestartGameCommandPressed())
+                {
+                    _onRestartGameRequested.OnNext(Unit.Default);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Dispose 時のキャンセルは正常終了
+            }
+            finally
+            {
+                // 判定終了
+                _isCheckingRestartGame = false;
+            }
         }
 
         /// <summary>
@@ -107,23 +119,19 @@ namespace GameSystem.Presentation
             // X ボタン押下状態
             bool isButtonXPressed = _isButtonXPressed;
 
-            // Left Trigger 押下状態
-            bool isLeftTriggerPressed = _isLeftTriggerPressed;
-
             // Right Trigger 押下状態
             bool isRightTriggerPressed = _isRightTriggerPressed;
 
-            // DPad 上入力状態
-            bool isDPadUpPressed = _inputManager.DPad.Angle == Vector2.up;
+            // DPad 左入力状態
+            bool isDPadLeftPressed = _inputManager.DPad.Angle == Vector2.left;
 
             // Select ボタン押下状態
             bool isSelectButtonPressed = _isSelectButtonPressed;
 
             // 全入力が揃っている場合のみ true
             return isButtonXPressed
-                && isLeftTriggerPressed
                 && isRightTriggerPressed
-                && isDPadUpPressed
+                && isDPadLeftPressed
                 && isSelectButtonPressed;
         }
     }
