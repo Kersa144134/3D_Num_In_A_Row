@@ -100,10 +100,7 @@ namespace GameSystem.Presentation
                     _onRestartGameRequested.OnNext(Unit.Default);
                 }
             }
-            catch (OperationCanceledException)
-            {
-                // Dispose 時のキャンセルは正常終了
-            }
+            catch (OperationCanceledException) { }
             finally
             {
                 // 判定終了
@@ -122,17 +119,17 @@ namespace GameSystem.Presentation
             // Right Trigger 押下状態
             bool isRightTriggerPressed = _isRightTriggerPressed;
 
-            // DPad 左入力状態
-            bool isDPadLeftPressed = _inputManager.DPad.Angle == Vector2.left;
-
             // Select ボタン押下状態
             bool isSelectButtonPressed = _isSelectButtonPressed;
+
+            // DPad 左入力状態
+            bool isDPadLeftPressed = _inputManager.DPad.Angle == Vector2.left;
 
             // 全入力が揃っている場合のみ true
             return isButtonXPressed
                 && isRightTriggerPressed
-                && isDPadLeftPressed
-                && isSelectButtonPressed;
+                && isSelectButtonPressed
+                && isDPadLeftPressed;
         }
     }
 }

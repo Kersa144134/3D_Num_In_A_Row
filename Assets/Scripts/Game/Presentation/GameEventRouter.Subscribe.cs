@@ -127,6 +127,12 @@ namespace GameSystem.Presentation
             {
                 _inputManager.BindStreams(_onMappingChanged, _onPointerPositionChanged);
 
+                // 入力デバイス更新
+                _inputManager.ActiveDeviceType
+                    .DistinctUntilChanged()
+                    .Subscribe(type => NotifyActiveControllerChanged(type))
+                    .AddTo(_disposables);
+
                 // スタートボタン 押す
                 _inputManager.StartButton.OnDown
                     .Subscribe(_ =>
@@ -136,19 +142,11 @@ namespace GameSystem.Presentation
                     })
                     .AddTo(_disposables);
 
-                // 入力デバイス更新
-                _inputManager.ActiveDeviceType
-                    .DistinctUntilChanged()
-                    .Subscribe(type => NotifyActiveControllerChanged(type))
-                    .AddTo(_disposables);
-
                 // X ボタン 押す
                 _inputManager.ButtonX.OnDown
                     .Subscribe(_ =>
                     {
                         _isButtonXPressed = true;
-
-                        // 再起動コマンド判定
                         TryStartRestartGameCommand();
                     })
                     .AddTo(_disposables);
@@ -163,8 +161,6 @@ namespace GameSystem.Presentation
                     .Subscribe(_ =>
                     {
                         _isRightTriggerPressed = true;
-
-                        // 再起動コマンド判定
                         TryStartRestartGameCommand();
                     })
                     .AddTo(_disposables);
@@ -174,22 +170,11 @@ namespace GameSystem.Presentation
                     .Subscribe(_ => _isRightTriggerPressed = false)
                     .AddTo(_disposables);
 
-                // DPad 押す
-                _inputManager.DPad.OnDown
-                    .Subscribe(_ =>
-                    {
-                        // 再起動コマンド判定
-                        TryStartRestartGameCommand();
-                    })
-                    .AddTo(_disposables);
-
                 // セレクトボタン 押す
                 _inputManager.SelectButton.OnDown
                     .Subscribe(_ =>
                     {
                         _isSelectButtonPressed = true;
-
-                        // 再起動コマンド判定
                         TryStartRestartGameCommand();
                     })
                     .AddTo(_disposables);
@@ -197,6 +182,11 @@ namespace GameSystem.Presentation
                 // セレクトボタン 離す
                 _inputManager.SelectButton.OnUp
                     .Subscribe(_ => _isSelectButtonPressed = false)
+                    .AddTo(_disposables);
+
+                // DPad 押す
+                _inputManager.DPad.OnDown
+                    .Subscribe(_ => TryStartRestartGameCommand())
                     .AddTo(_disposables);
             }
 

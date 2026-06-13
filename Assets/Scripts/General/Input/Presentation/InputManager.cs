@@ -86,9 +86,6 @@ namespace InputSystem.Presentation
         // プロパティ
         // ======================================================
 
-        /// <summary>現在適用中の入力マッピング配列のインデックス</summary>
-        public int CurrentMappingIndex => _currentMappingIndex;
-
         /// <summary>ボタン A の状態</summary>
         public ButtonState ButtonA => _buttonStates[(int)GamepadInputType.ButtonA];
 

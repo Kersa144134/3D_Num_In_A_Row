@@ -129,9 +129,6 @@ namespace GameSystem.Presentation
         /// <summary>X ボタン が押下中かどうか</summary>
         private bool _isButtonXPressed;
 
-        /// <summary>左トリガー が押下中かどうか</summary>
-        private bool _isLeftTriggerPressed;
-
         /// <summary>右トリガー が押下中かどうか</summary>
         private bool _isRightTriggerPressed;
         
