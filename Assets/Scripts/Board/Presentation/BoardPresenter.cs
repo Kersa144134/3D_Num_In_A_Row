@@ -15,7 +15,6 @@ using BoardSystem.Application;
 using BoardSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
-using PhaseSystem.Domain;
 using SoundSystem.Domain;
 using SoundSystem.Presentation;
 using UpdateSystem.Domain;
@@ -454,11 +453,11 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // 選択列更新
             _view.OnSelectColumnChanged
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Board_ColumnSelect))
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Board_ColumnSelect, 0.5f))
                 .AddTo(_disposables);
             // ピース発光
             _deleteHandler.OnPieceEmissionExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission, 0.25f))
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
                 .AddTo(_disposables);
             // ライン削除
             _deleteHandler.OnLineDeleteExecuted
@@ -520,7 +519,7 @@ namespace BoardSystem.Presentation
             UnbindDropInputStream();
 
             // SE 再生
-            _soundManager?.PlaySE(SeType.Piece_Drop);
+            _soundManager?.PlaySE(SeType.Piece_Drop, 0.75f);
 
             // 駒生成
             PieceData piece = await _view.SpawnPieceAsync(x, y, z, _currentPlayer);

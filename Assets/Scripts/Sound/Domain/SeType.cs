@@ -105,18 +105,15 @@ namespace SoundSystem.Domain
 
         /// <summary>共通 インパクト 大</summary>
         Effect_Impact_Large = 42,
-        
-        /// <summary>共通 上昇</summary>
-        Effect_Rise = 43,
-
-        /// <summary>共通 下降</summary>
-        Effect_Fall = 44,
 
         // --------------------------------------------------
         // エフェクト（タイトル）
         // --------------------------------------------------
         /// <summary>タイトル プレイヤーカットイン</summary>
         Effect_Title_PlayerCutIn = 50,
+
+        /// <summary>タイトル 上昇</summary>
+        Effect_Title_Rise = 51,
 
         // --------------------------------------------------
         // エフェクト（メイン）
@@ -138,5 +135,8 @@ namespace SoundSystem.Domain
 
         /// <summary>エフェクト リザルト 4 位</summary>
         Effect_Result_4th = 73,
+
+        /// <summary>エフェクト リザルト フラッシュ</summary>
+        Effect_Result_Flash = 74,
     }
 }

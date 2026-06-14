@@ -183,7 +183,7 @@ namespace GameSystem.Presentation
             if (_gameOptionManager == null ||
                 _soundManager == null)
             {
-                UnityEngine.Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
+                Debug.LogError("[GameManager] クラスの初期化に失敗しました。");
 
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -364,7 +364,7 @@ namespace GameSystem.Presentation
 
 #else
             // 現在実行中のプロセス情報を取得
-            Process currentProcess = Process.GetCurrentProcess();
+            System.Diagnostics.Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
 
             // 実行ファイルパスを取得
             string executablePath = currentProcess.MainModule?.FileName;
@@ -373,7 +373,7 @@ namespace GameSystem.Presentation
             if (!string.IsNullOrEmpty(executablePath))
             {
                 // 新しいプロセスとして起動
-                Process.Start(executablePath);
+                System.Diagnostics.Process.Start(executablePath);
             }
 
             // 現在のアプリケーションを終了

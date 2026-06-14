@@ -14,6 +14,7 @@ using InputSystem.Domain;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
+using SoundSystem.Domain;
 using System;
 using System.Linq;
 using UniRx;
@@ -570,6 +571,9 @@ namespace GameSystem.Presentation
 
                     // ‘¦w“Ç‰ğœ
                     UnbindEventSkipStream();
+
+                    // SE Ä¶
+                    _soundManager?.PlaySE(SeType.UI_Skip);
                 });
         }
 

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using TMPro;
 using UISystem.Application;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
 
 namespace UISystem.Presentation
@@ -43,6 +44,9 @@ namespace UISystem.Presentation
 
         /// <summary>駒の Renderer 配列</summary>
         private readonly Renderer[] _pieceRendererArray;
+
+        /// <summary>駒のパーティクル配列</summary>
+        private readonly ParticleSystem[] _pieceParticleArray;
 
         /// <summary>駒のマテリアル配列</summary>
         private readonly Material[] _pieceMaterialArray;
@@ -99,7 +103,7 @@ namespace UISystem.Presentation
         /// </summary>
         public ResultUIView(
             in RawImage radialAfterimageRenderer,
-            in Renderer[] pieceRendererArray,
+            in GameObject[] pieceObjectArray,
             in Material[] pieceMaterialArray,
             in Color[] playerColorArray,
             in TextMeshPro firstRankingPlayerIdText,
@@ -107,7 +111,6 @@ namespace UISystem.Presentation
             in TextMeshProUGUI[] rankingScoreTexts,
             in Renderer resultBackgroundRenderer)
         {
-            _pieceRendererArray = pieceRendererArray;
             _pieceMaterialArray = pieceMaterialArray;
             _playerColorArray = playerColorArray;
             _firstRankingPlayerIdText = firstRankingPlayerIdText;
@@ -116,6 +119,18 @@ namespace UISystem.Presentation
             _resultBackgroundRenderer = resultBackgroundRenderer;
 
             _radialAfterimage = new RadialAfterimageEffectController(radialAfterimageRenderer.material);
+
+            _pieceRendererArray = new Renderer[pieceObjectArray.Length];
+            _pieceParticleArray = new ParticleSystem[pieceObjectArray.Length];
+
+            for (int i = 0; i < pieceObjectArray.Length; i++)
+            {
+                Renderer renderer = pieceObjectArray[i].GetComponent<Renderer>();
+                ParticleSystem particle = pieceObjectArray[i].GetComponentInChildren<ParticleSystem>();
+
+                _pieceRendererArray[i] = renderer;
+                _pieceParticleArray[i] = particle;
+            }
 
             // --------------------------------------------------
             // スコア初期化
@@ -205,9 +220,8 @@ namespace UISystem.Presentation
         /// ランキング情報を基にスコア表示と順位表示を更新する
         /// </summary>
         /// <param name="ranking">ランキングデータ</param>
-        public void UpdateRankingInfo(in List<RankingData> ranking)
+        public void UpdateRankingInfo(List<RankingData> ranking)
         {
-            // 必要な参照が存在しない場合は処理しない
             if (_rankingPlayerIdTexts == null ||
                 _rankingScoreTexts == null ||
                 _playerIdFormatters == null ||
@@ -215,6 +229,14 @@ namespace UISystem.Presentation
             {
                 return;
             }
+
+            ranking = new List<RankingData>
+            {
+                new RankingData(1, 500),
+                new RankingData(2, 400),
+                new RankingData(3, 300),
+                new RankingData(4, 200),
+            };
 
             // 表示可能な順位数を取得
             int viewLength = _rankingPlayerIdTexts.Length;
@@ -224,7 +246,7 @@ namespace UISystem.Presentation
                 ? ranking.Count
                 : 0;
 
-            // ランキングデータが存在しない場合は処理しない
+            // ランキングデータが存在しない場合は処理なし
             if (dataLength <= 0)
             {
                 return;
@@ -300,6 +322,18 @@ namespace UISystem.Presentation
 
             // 駒の表示状態を更新
             _pieceRendererArray[index].enabled = isVisible;
+
+            // ParticleSystem の表示状態を更新
+            ParticleSystem particle = _pieceParticleArray[index];
+
+            if (isVisible)
+            {
+                particle?.Play();
+            }
+            else
+            {
+                particle?.Stop();
+            }
         }
 
         /// <summary>

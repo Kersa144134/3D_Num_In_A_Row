@@ -195,6 +195,9 @@ namespace UISystem.Presentation
         /// <summary>現在フェーズ</summary>
         private PhaseType _currentPhase = PhaseType.None;
 
+        /// <summary>ポーズ操作における最後のフェーズ切り替え時刻（秒）</summary>
+        private float _lastPausePhaseChangeTime;
+
         /// <summary>ポインターターゲット検出中フラグ</summary>
         private bool _isPointerTarget = false;
 
@@ -228,7 +231,10 @@ namespace UISystem.Presentation
 
         /// <summary>ラストターン演出開始ターン数</summary>
         private const int LAST_TURN_EFFECT_START_TURN_COUNT = 15;
-        
+
+        /// <summary>ポーズ操作におけるフェーズ切り替えの最小間隔（秒）</summary>
+        private const float PAUSE_PHASE_CHANGE_COOLDOWN = 0.2f;
+
         /// <summary>IsStart パラメータ名</summary>
         private static readonly int IS_START_HASH = Animator.StringToHash("IsStart");
 
@@ -414,9 +420,6 @@ namespace UISystem.Presentation
             // アニメーションイベント通知クラス取得
             _intermittentCanvasAnimationEventNotifier = _intermittentCanvas.GetComponent<AnimationEventNotifier>();
             _outgameCanvasCanvasAnimationEventNotifier = _outgameCanvas.GetComponent<AnimationEventNotifier>();
-
-            // BGM 再生
-            StartBgm();
         }
 
         protected override void OnLateUpdateInternal(in float unscaledDeltaTime)
@@ -443,7 +446,7 @@ namespace UISystem.Presentation
             SetLimitTimeVisible(phase == PhaseType.Play);
 
             // 警告アニメーション速度更新
-            SetWarningAnimationSpeed( phase == PhaseType.Play
+            SetWarningAnimationSpeed(phase == PhaseType.Play
                 ? 1.0f
                 : 0.0f);
 
@@ -489,7 +492,7 @@ namespace UISystem.Presentation
 
                 case PhaseType.Finish:
                     // 終了演出再生
-                    _outgameCanvasAnimator.SetTrigger(IS_FINISH_HASH);
+                    _outgameCanvasAnimator?.SetTrigger(IS_FINISH_HASH);
 
                     break;
             }
@@ -505,10 +508,10 @@ namespace UISystem.Presentation
             switch (phase)
             {
                 case PhaseType.Ready:
-                    _outgameCanvasAnimator.SetTrigger(IS_START_HASH);
+                    _outgameCanvasAnimator?.SetTrigger(IS_START_HASH);
 
-                    // BGM 再生音量更新
-                    _soundManager?.SetBGMVolume(BgmType.Main, 0.15f, 0.5f);
+                    // BGM フェード
+                    _soundManager?.SetBGMVolume(BgmType.Main, 0.2f, 1.0f);
 
                     // 現在の再生位置算出
                     if (!_soundManager.TryGetPlaybackBlockIndex(BgmType.Main, out int currentPlaybackPosition))
@@ -632,7 +635,7 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.DialogNo)
             {
                 // SE 再生
-                _soundManager?.PlaySE(SeType.UI_HideDialog);
+                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
 
                 // ポーズ画面のボタンを操作可能に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), true);
@@ -687,7 +690,7 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.ReturnToTitle)
             {
                 // SE 再生
-                _soundManager?.PlaySE(SeType.UI_ShowDialog);
+                _soundManager?.PlaySE(SeType.UI_ShowDialog, 0.5f);
 
                 // ポーズ画面のボタンを操作不可に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), false);
@@ -798,6 +801,15 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// フェードアウト開始時
+        /// </summary>
+        protected override void OnFadeOutStart()
+        {
+            // BGM 再生
+            StartBgm();
+        }
+
+        /// <summary>
         /// フェードアウト終了時
         /// </summary>
         protected override void OnFadeOutFinish()
@@ -815,7 +827,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Main, 0.05f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Main, 0.1f, 0);
             _soundManager?.PlayBGM(BgmType.Main, 0);
         }
 
@@ -867,8 +879,9 @@ namespace UISystem.Presentation
                 .Subscribe(type => _currentPhase = type)
                 .AddTo(_disposables);
 
+            // プレイヤー切り替えアニメーション
             playerChange
-                .Subscribe(playerIndex => SetChangePlayerState(playerIndex))
+                .Subscribe(playerIndex => _intermittentCanvasAnimator?.SetInteger(IS_PLAYER_ID_HASH, playerIndex))
                 .AddTo(_disposables);
 
             scoreUpdated
@@ -885,21 +898,40 @@ namespace UISystem.Presentation
                     switch (_currentPhase)
                     {
                         case PhaseType.Play:
-                            // ポーズフェーズ遷移リクエスト
-                            _onPhaseChangeRequested.OnNext(PhaseType.Pause);
-
-                            break;
-
-                        case PhaseType.Pause:
-
-                            // ポーズ画面表示中の場合
-                            if (_uiStateController.GetActiveCanvasType() == CanvasType.Pause)
                             {
-                                // プレイフェーズ遷移リクエスト
-                                _onPhaseChangeRequested.OnNext(PhaseType.Play);
+                                float currentTime = Time.time;
+
+                                // 時間経過判定
+                                if (currentTime - _lastPausePhaseChangeTime >= PAUSE_PHASE_CHANGE_COOLDOWN)
+                                {
+                                    // ポーズフェーズ遷移通知
+                                    _onPhaseChangeRequested.OnNext(PhaseType.Pause);
+
+                                    _lastPausePhaseChangeTime = currentTime;
+                                }
+
+                                break;
                             }
 
-                            break;
+                        case PhaseType.Pause:
+                            {
+                                // ポーズ画面が表示中かを確認
+                                if (_uiStateController.GetActiveCanvasType() == CanvasType.Pause)
+                                {
+                                    float currentTime = Time.time;
+
+                                    // 時間経過判定
+                                    if (currentTime - _lastPausePhaseChangeTime >= PAUSE_PHASE_CHANGE_COOLDOWN)
+                                    {
+                                        // プレイフェーズ遷移通知
+                                        _onPhaseChangeRequested.OnNext(PhaseType.Play);
+
+                                        _lastPausePhaseChangeTime = currentTime;
+                                    }
+                                }
+
+                                break;
+                            }
                     }
                 })
                 .AddTo(_disposables);
@@ -994,12 +1026,48 @@ namespace UISystem.Presentation
         {
             base.Subscribe();
 
-            // アニメーション終了通知
+            if (_uiView is MainUIView mainUIView)
+            {
+                mainUIView.Subscribe();
+
+                // コンボ加算演出
+                mainUIView.OnComboVisible
+                    .Subscribe(_ => _comboAnimator?.SetTrigger(ADD_COMBO_HASH))
+                    .AddTo(_disposables);
+
+                // 残り時間警告表示
+                mainUIView.OnWarningVisible
+                    .Subscribe(_ => _limitTimeAnimator?.SetTrigger(IS_WARNING_HASH))
+                    .AddTo(_disposables);
+
+                // スコア加算アニメーション開始
+                mainUIView.OnAddScoreAnimationStarted
+                    .Subscribe(playerIndex => _soundManager?.PlaySE(SeType.Score_Add))
+                    .AddTo(_disposables);
+
+                // スコア加算アニメーション終了
+                mainUIView.OnAddScoreAnimationFinished
+                    .Subscribe(playerIndex => _soundManager?.StopLoopSE(SeType.Score_Add))
+                    .AddTo(_disposables);
+            }
+
+            // UI イベント購読
+            SubscribeUiEvents();
+        }
+
+        /// <summary>
+        /// UI イベント購読
+        /// </summary>
+        protected override void SubscribeUiEvents()
+        {
+            base.SubscribeUiEvents();
+
+            // プレイヤー切り替えアニメーション終了通知
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ => _onChangePlayerAnimationEnd.OnNext(Unit.Default))
-                .AddTo(_disposables);
+                .AddTo(_uiEventDisposables);
 
-            // アニメーション終了通知
+            // アウトゲーム関連アニメーション終了通知
             _outgameCanvasCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
@@ -1015,30 +1083,7 @@ namespace UISystem.Presentation
                         _onFinishAnimationEnd.OnNext(Unit.Default);
                     }
                 })
-                .AddTo(_disposables);
-
-            if (_uiView is MainUIView mainUIView)
-            {
-                mainUIView.Subscribe();
-
-                mainUIView.OnComboVisible
-                    .Subscribe(_ => TriggerComboVisible())
-                    .AddTo(_disposables);
-                mainUIView.OnWarningVisible
-                    .Subscribe(_ => TriggerWarningVisible())
-                    .AddTo(_disposables);
-                mainUIView.OnAnimationStarted
-                    .Subscribe(playerIndex =>
-                    {
-                        _soundManager?.PlaySE(SeType.Score_Add);
-
-                    });
-                mainUIView.OnAnimationFinished
-                    .Subscribe(playerIndex =>
-                    {
-                        _soundManager?.StopLoopSE(SeType.Score_Add);
-                    });
-            }
+                .AddTo(_uiEventDisposables);
         }
 
         /// <summary>
@@ -1094,13 +1139,8 @@ namespace UISystem.Presentation
 
             Animator animator = _addScoreAnimators[playerIndex];
 
-            if (animator == null)
-            {
-                return;
-            }
-
-            // スコア加算演出を機動
-            animator.SetTrigger(ADD_SCORE_HASH);
+            // スコア加算演出
+            animator?.SetTrigger(ADD_SCORE_HASH);
         }
 
         // --------------------------------------------------
@@ -1252,41 +1292,22 @@ namespace UISystem.Presentation
         // アニメーター
         // --------------------------------------------------
         /// <summary>
-        /// ChangePlayer 状態アニメーターの状態を切り替える
-        /// </summary>
-        /// <param name="playerId">プレイヤーインデックス</param>
-        private void SetChangePlayerState(in int playerId)
-        {
-            if (_intermittentCanvasAnimator == null)
-            {
-                return;
-            }
-
-            _intermittentCanvasAnimator.SetInteger(IS_PLAYER_ID_HASH, playerId);
-        }
-
-        /// <summary>
         /// Pause 状態アニメーターの状態を切り替える
         /// </summary>
         /// <param name="isPause">Pause 状態の場合はtrue</param>
         private void SetPauseState(in bool isPause)
         {
-            if (_outgameCanvasAnimator == null)
-            {
-                return;
-            }
-
-            _outgameCanvasAnimator.SetBool(IS_PAUSE_HASH, isPause);
+            _outgameCanvasAnimator?.SetBool(IS_PAUSE_HASH, isPause);
 
             if (_uiStateController is MainUIStateController mainUIStateController)
             {
                 if (isPause)
                 {
-                    // BGM 再生音量更新
-                    _soundManager?.SetBGMVolume(BgmType.Main, 0.05f, 0.5f);
+                    // BGM フェード
+                    _soundManager?.SetBGMVolume(BgmType.Main, 0.1f, 0.2f);
 
                     // SE 再生
-                    _soundManager?.PlaySE(SeType.UI_ShowPause);
+                    _soundManager?.PlaySE(SeType.UI_ShowPause, 0.75f);
 
                     // ポーズキャンバスを表示する
                     mainUIStateController.ShowPauseCanvas();
@@ -1306,11 +1327,11 @@ namespace UISystem.Presentation
                 }
                 else
                 {
-                    // BGM 再生音量更新
-                    _soundManager?.SetBGMVolume(BgmType.Main, 0.15f, 0.5f);
+                    // BGM フェード
+                    _soundManager?.SetBGMVolume(BgmType.Main, 0.2f, 1.0f);
 
                     // SE 再生
-                    _soundManager?.PlaySE(SeType.UI_HidePause);
+                    _soundManager?.PlaySE(SeType.UI_HidePause, 0.75f);
 
                     mainUIStateController.HidePauseCanvas();
                 }
@@ -1323,28 +1344,7 @@ namespace UISystem.Presentation
         /// <param name="isSwitch">true:透視 / false:平行</param>
         private void SetSwitchProjection(in bool isSwitch)
         {
-            if (_effectAnimator == null)
-            {
-                return;
-            }
-
-            _effectAnimator.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
-        }
-
-        /// <summary>
-        /// コンボ表示を起動する
-        /// </summary>
-        private void TriggerComboVisible()
-        {
-            _comboAnimator?.SetTrigger(ADD_COMBO_HASH);
-        }
-
-        /// <summary>
-        /// 警告表示を起動する
-        /// </summary>
-        private void TriggerWarningVisible()
-        {
-            _limitTimeAnimator?.SetTrigger(IS_WARNING_HASH);
+            _effectAnimator?.SetBool(IS_SWITCH_PROJECTION_HASH, isSwitch);
         }
 
         /// <summary>
@@ -1367,7 +1367,7 @@ namespace UISystem.Presentation
         /// <summary>
         /// 次の再生位置取得
         /// </summary>
-        /// <param name="speed">現在の再生位置</param>
+        /// <param name="currentPlaybackPosition">現在の再生位置</param>
         /// <returns>次の再生位置</returns>
         private int GetNextPlaybackPosition(in int currentPlaybackPosition)
         {

@@ -198,6 +198,9 @@ namespace UISystem.Presentation
         /// <summary>スタートキャンバスのアニメーター</summary>
         private Animator _startCanvasAnimator;
 
+        /// <summary>ゲーム開始アニメーションのチェックポイントイベントカウント回数</summary>
+        private int _startGameAnimationCheckPointCount = 0;
+
         // ======================================================
         // 辞書
         // ======================================================
@@ -592,7 +595,7 @@ namespace UISystem.Presentation
                 // --------------------------------------------------
                 case UIActionType.DialogNo:
                     // SE 再生
-                    _soundManager?.PlaySE(SeType.UI_HideDialog);
+                    _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
 
                     // スタート画面のボタンを操作可能に更新
                     SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
@@ -636,7 +639,7 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.TitleStart)
             {
                 // SE 再生
-                _soundManager?.PlaySE(SeType.UI_ShowDialog);
+                _soundManager?.PlaySE(SeType.UI_ShowDialog, 0.5f);
 
                 // スタート画面のボタンを操作不可に更新
                 SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), false);
@@ -921,7 +924,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void StartBgm()
         {
-            _soundManager?.SetBGMVolume(BgmType.Title, 0.15f, 0);
+            _soundManager?.SetBGMVolume(BgmType.Title, 0.2f, 0);
             _soundManager?.PlayBGM(BgmType.Title, 0);
         }
 
@@ -947,7 +950,7 @@ namespace UISystem.Presentation
                     if (_uiEventDisposables != null && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
                     {
                         // SE 再生
-                        _soundManager?.PlaySE(SeType.UI_ShowDialog);
+                        _soundManager?.PlaySE(SeType.UI_ShowDialog, 0.5f);
 
                         // ダイアログキャンバスを表示する
                         _uiStateController.ShowDialogCanvas(DialogType.ExitGame);
@@ -1015,15 +1018,6 @@ namespace UISystem.Presentation
         {
             base.Subscribe();
 
-            // ゲーム開始アニメーション終了通知
-            _startPlayAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ =>
-                {
-                    // シーン遷移実行
-                    _onStartPlayAnimationEnd.OnNext(Unit.Default);
-                })
-                .AddTo(_disposables);
-
             // スタートアニメーション終了通知
             _startCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
@@ -1041,6 +1035,53 @@ namespace UISystem.Presentation
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// UI イベント購読
+        /// </summary>
+        protected override void SubscribeUiEvents()
+        {
+            base.SubscribeUiEvents();
+
+            // ゲーム開始アニメーションチェックポイント通知
+            _startPlayAnimationEventNotifier.OnAnimationCheckPoint
+                .Subscribe(_ =>
+                {
+                    _startGameAnimationCheckPointCount++;
+
+                    if (_startGameAnimationCheckPointCount <= _gameOptionManager.PlayerCount)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Impact_Small);
+
+                        return;
+                    }
+                    if (_startGameAnimationCheckPointCount == _gameOptionManager.PlayerCount + 1)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Title_Rise, 0.75f);
+
+                        return;
+                    }
+                    if (_startGameAnimationCheckPointCount == _gameOptionManager.PlayerCount + 2)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Title_PlayerCutIn, 0.75f);
+
+                        return;
+                    }
+                })
+                .AddTo(_uiEventDisposables);
+
+            // ゲーム開始アニメーション終了通知
+            _startPlayAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    // シーン遷移実行
+                    _onStartPlayAnimationEnd.OnNext(Unit.Default);
+                })
+                .AddTo(_uiEventDisposables);
         }
 
         /// <summary>

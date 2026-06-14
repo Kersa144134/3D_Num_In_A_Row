@@ -6,20 +6,19 @@
 // 概要     : UI エフェクトのインスペクタ設定と制御を担うプレゼンター
 // ======================================================
 
-using Cysharp.Threading.Tasks;
-using PhaseSystem.Domain;
-using SoundSystem.Domain;
-using SoundSystem.Presentation;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UISystem.Application;
-using UISystem.Domain;
-using UISystem.Infrastructure;
-using UniRx;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
+using UniRx;
+using PhaseSystem.Domain;
+using SoundSystem.Domain;
+using SoundSystem.Presentation;
+using UISystem.Application;
+using UISystem.Domain;
+using UISystem.Infrastructure;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -63,31 +62,31 @@ namespace UISystem.Presentation
 
         /// <summary>2 値化エフェクトの有効状態</summary>
         [SerializeField]
-        protected bool _isBinarizationEnabled;
+        private bool _isBinarizationEnabled;
 
         /// <summary>歪み中心座標</summary>
         [SerializeField]
-        protected Vector2 _binarizationDistortionCenter;
+        private Vector2 _binarizationDistortionCenter;
 
         /// <summary>歪み強度</summary>
         [SerializeField]
-        protected float _binarizationDistortionStrength;
+        private float _binarizationDistortionStrength;
 
         /// <summary>ノイズ強度</summary>
         [SerializeField]
-        protected float _binarizationNoise;
+        private float _binarizationNoise;
 
         /// <summary>ポスタライズ閾値</summary>
         [SerializeField]
-        protected float _binarizationThreshold;
+        private float _binarizationThreshold;
 
         /// <summary>明部カラー</summary>
         [SerializeField]
-        protected Color _binarizationLight;
+        private Color _binarizationLight;
 
         /// <summary>暗部カラー</summary>
         [SerializeField]
-        protected Color _binarizationDark;
+        private Color _binarizationDark;
 
         // --------------------------------------------------
         // 演出 <グレースケール>
@@ -103,31 +102,31 @@ namespace UISystem.Presentation
 
         /// <summary>グレースケールの有効状態</summary>
         [SerializeField]
-        protected bool _isGreyScaleEnabled;
+        private bool _isGreyScaleEnabled;
 
         /// <summary>グレースケール強度</summary>
         [SerializeField]
-        protected Vector3 _greyScaleStrength;
+        private Vector3 _greyScaleStrength;
 
         /// <summary>歪み中心</summary>
         [SerializeField]
-        protected Vector2 _greyScaleDistortionCenter;
+        private Vector2 _greyScaleDistortionCenter;
 
         /// <summary>歪み強度</summary>
         [SerializeField]
-        protected float _greyScaleDistortionStrength;
+        private float _greyScaleDistortionStrength;
 
         /// <summary>ノイズ強度</summary>
         [SerializeField]
-        protected float _greyScaleNoise;
+        private float _greyScaleNoise;
 
         /// <summary>明部カラー</summary>
         [SerializeField]
-        protected Color _greyScaleLight;
+        private Color _greyScaleLight;
 
         /// <summary>暗部カラー</summary>
         [SerializeField]
-        protected Color _greyScaleDark;
+        private Color _greyScaleDark;
 
         // --------------------------------------------------
         // 演出 <歪み>
@@ -143,19 +142,19 @@ namespace UISystem.Presentation
 
         /// <summary>歪みの有効状態</summary>
         [SerializeField]
-        protected bool _isDistortionEnabled;
+        private bool _isDistortionEnabled;
 
         /// <summary>歪み中心</summary>
         [SerializeField]
-        protected Vector2 _distortionCenter;
+        private Vector2 _distortionCenter;
 
         /// <summary>歪み強度</summary>
         [SerializeField]
-        protected float _distortionStrength;
+        private float _distortionStrength;
 
         /// <summary>ノイズ強度</summary>
         [SerializeField]
-        protected float _distortionNoise;
+        private float _distortionNoise;
 
         // ======================================================
         // コンポーネント参照
@@ -278,9 +277,6 @@ namespace UISystem.Presentation
         /// <summary>ダイアログイベント通知用 Subject</summary>
         protected readonly Subject<DialogType> _onDialogEvent = new Subject<DialogType>();
 
-        /// <summary>ダイアログイベントストリーム</summary>
-        public IObservable<DialogType> OnDialogEvent => _onDialogEvent;
-
         /// <summary>シーン遷移リクエスト通知用 Subject</summary>
         protected readonly Subject<Unit> _onSceneChangeRequested = new Subject<Unit>();
 
@@ -298,7 +294,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>IsTarget パラメータ名</summary>
-        protected static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
+        private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
 
         /// <summary>通常ボタン選択時の拡大倍率</summary>
         private const float NORMAL_BUTTON_SELECTED_SCALE = 1.05f;
@@ -597,6 +593,16 @@ namespace UISystem.Presentation
         }
 
         /// <summary>
+        /// UI イベント購読解除
+        /// </summary>
+        protected virtual void DisposeUiEvents()
+        {
+            _uiEventDisposables?.Dispose();
+
+            _eventRouter?.Dispose();
+        }
+
+        /// <summary>
         /// ダイアログボタンイベントを登録する
         /// DialogType付きボタンのみ処理する
         /// </summary>
@@ -696,7 +702,7 @@ namespace UISystem.Presentation
                 _onSceneChangeRequested.OnNext(Unit.Default);
 
                 // UI イベント購読解除
-                _eventRouter?.Dispose();
+                DisposeUiEvents();
 
                 // シーン遷移中フラグを有効化
                 _isSceneTransitioning = true;
@@ -710,7 +716,7 @@ namespace UISystem.Presentation
                 _onExitGameRequested.OnNext(Unit.Default);
 
                 // UI イベント購読解除
-                _eventRouter?.Dispose();
+                DisposeUiEvents();
 
                 // フェードイン開始
                 OnFadeInStart();
@@ -737,7 +743,7 @@ namespace UISystem.Presentation
             // ダイアログの場合
             if (activeCanvasType == CanvasType.Dialog)
             {
-                _soundManager?.PlaySE(SeType.UI_HideDialog);
+                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
             }
             else
             {

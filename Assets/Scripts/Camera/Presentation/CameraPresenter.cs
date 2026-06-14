@@ -355,7 +355,7 @@ namespace CameraSystem.Presentation
                 // –¢Ä¶ó‘Ô‚Ìê‡‚Ì‚İ SE ‚ğÄ¶
                 if (!_isRotationSePlayed)
                 {
-                    _soundManager?.PlaySE(SeType.Camera_Rotation);
+                    _soundManager?.PlaySE(SeType.Camera_Rotation, 0.75f);
 
                     _isRotationSePlayed = true;
                 }
@@ -373,6 +373,7 @@ namespace CameraSystem.Presentation
                 if (_isZoomSePlayed)
                 {
                     _soundManager?.StopLoopSE(SeType.Camera_Zoom);
+
                     _isZoomSePlayed = false;
                 }
             }
@@ -381,7 +382,8 @@ namespace CameraSystem.Presentation
                 // –¢Ä¶ó‘Ô‚Ìê‡‚Ì‚İ SE ‚ğÄ¶
                 if (!_isZoomSePlayed)
                 {
-                    _soundManager?.PlaySE(SeType.Camera_Zoom);
+                    _soundManager?.PlaySE(SeType.Camera_Zoom, 0.75f);
+
                     _isZoomSePlayed = true;
                 }
             }
@@ -435,6 +437,22 @@ namespace CameraSystem.Presentation
                         _rotationUseCase.ResetVelocity();
                         _distanceUseCase.ResetVelocity();
 
+                        // --------------------------------------------------
+                        // SE ’â~
+                        // --------------------------------------------------
+                        if (_isRotationSePlayed)
+                        {
+                            _soundManager?.StopLoopSE(SeType.Camera_Rotation);
+
+                            _isRotationSePlayed = false;
+                        }
+                        if (_isZoomSePlayed)
+                        {
+                            _soundManager?.StopLoopSE(SeType.Camera_Zoom);
+
+                            _isZoomSePlayed = false;
+                        }
+
                         return;
                     }
 
@@ -460,7 +478,7 @@ namespace CameraSystem.Presentation
                 .Subscribe(isPerspective =>
                 {
                     // SE Ä¶
-                    _soundManager?.PlaySE(SeType.Camera_SwitchProjection);
+                    _soundManager?.PlaySE(SeType.Camera_SwitchProjection, 0.75f);
 
                     // --------------------------------------------------
                     // •½s“Š‰eØ‚è‘Ö‚¦

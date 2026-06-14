@@ -163,12 +163,12 @@ namespace UISystem.Presentation
         /// <summary>警告表示ストリーム</summary>
         public IObservable<Unit> OnWarningVisible => _onWarningVisible;
 
-        /// <summary>アニメーション開始通知ストリーム</summary>
-        public IObservable<int> OnAnimationStarted => Observable.Merge(
+        /// <summary>スコア加算アニメーション開始通知ストリーム</summary>
+        public IObservable<int> OnAddScoreAnimationStarted => Observable.Merge(
             _scoreAnimationControllers.Select((controller, index) => controller.OnAnimationStarted.Select(_ => index)));
 
-        /// <summary>アニメーション終了通知ストリーム</summary>
-        public IObservable<int> OnAnimationFinished => Observable.Merge(
+        /// <summary>スコア加算アニメーション終了通知ストリーム</summary>
+        public IObservable<int> OnAddScoreAnimationFinished => Observable.Merge(
             _scoreAnimationControllers.Select((controller, index) => controller.OnAnimationFinished.Select(_ => index)));
         
         // ======================================================

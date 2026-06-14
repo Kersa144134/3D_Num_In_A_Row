@@ -37,19 +37,19 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>ポインター</summary>
-        protected GameObject _pointer;
+        private GameObject _pointer;
 
         /// <summary>ポインター RectTransform</summary>
-        protected RectTransform _pointerRect;
+        private RectTransform _pointerRect;
 
         /// <summary>ポインター Image 配列</summary>
-        protected Image[] _pointerImages;
+        private Image[] _pointerImages;
 
         /// <summary>Canvas RectTransform</summary>
-        protected RectTransform _canvasRect;
+        private RectTransform _canvasRect;
 
         /// <summary>通常フォーカス時カラー</summary>
-        protected Color _normalFocusOnColor;
+        private Color _normalFocusOnColor;
 
         /// <summary>通常非フォーカス時カラー</summary>
         protected Color _normalFocusOffColor;
@@ -118,24 +118,24 @@ namespace UISystem.Presentation
         /// 全画面エフェクトを更新する
         /// </summary>
         public void UpdateFullScreenEffect(
-            bool binEnabled,
-            Vector2 binCenter,
-            float binDistortion,
-            float binNoise,
-            float binThreshold,
-            Color binLight,
-            Color binDark,
-            bool greyEnabled,
-            Vector3 greyStrength,
-            Vector2 greyCenter,
-            float greyDistortion,
-            float greyNoise,
-            Color greyLight,
-            Color greyDark,
-            bool disEnabled,
-            Vector2 disCenter,
-            float disStrength,
-            float disNoise)
+            in bool binEnabled,
+            in Vector2 binCenter,
+            in float binDistortion,
+            in float binNoise,
+            in float binThreshold,
+            in Color binLight,
+            in Color binDark,
+            in bool greyEnabled,
+            in Vector3 greyStrength,
+            in Vector2 greyCenter,
+            in float greyDistortion,
+            in float greyNoise,
+            in Color greyLight,
+            in Color greyDark,
+            in bool disEnabled,
+            in Vector2 disCenter,
+            in float disStrength,
+            in float disNoise)
         {
             // 2 値化エフェクトの状態とパラメータを反映する
             _binarization?.Update(
