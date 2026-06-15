@@ -16,164 +16,196 @@ MonoBehaviour:
   m_GUID: fddec1043f60bd040bb4e0c885fb59a6
   m_SerializeEntries:
   - m_GUID: 0d150ba2de67b9a4f83146c727c2ff31
-    m_Address: SE/Combo
+    m_Address: Combo
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 116e2fba5021e3b4288b4ea1a164980d
-    m_Address: SE/Score_Add
+    m_Address: Score_Add
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 11e4b9124da36aa409644b29da482a5d
-    m_Address: SE/UI_Click
+    m_Address: UI_Click
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1459fc46244c0e14a98c847682d07dd4
-    m_Address: SE/Effect_Title_Fall
+    m_Address: Effect_Title_Fall
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 19b044f6e66cedd4194c94f15f3f1e96
-    m_Address: SE/Effect_Impact_Medium
+    m_Address: Effect_Impact_Medium
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1ee900ecd30580c48bedf30d268fa8fa
-    m_Address: SE/UI_Decide
+    m_Address: UI_Decide
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 28228fab1a2af7e43a4c7e4153494ae9
-    m_Address: SE/Effect_Result_1st
+    m_Address: Effect_Result_1st
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 28ea5d23ae750f2409730f4d1739faa7
-    m_Address: SE/Camera_Zoom
+    m_Address: Camera_Zoom
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2e460de2271cbcf42b0d3be389c8ead9
-    m_Address: SE/Effect_Result_Rise
+    m_Address: Effect_Result_Rise
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2f1feadabba42b749be6761602f48510
-    m_Address: SE/UI_Skip
+    m_Address: UI_Skip
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 3ddd51b74baf7de428689fc71e94f064
-    m_Address: SE/Effect_Main_ChangePlayer
+    m_Address: Effect_Main_ChangePlayer
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4809e45f97db8f846b7486e3b9ac3b81
-    m_Address: SE/Camera_Rotation
+    m_Address: Camera_Rotation
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 597c131fb18033d4c841cfec9a04ebe4
-    m_Address: SE/Effect_Result_4th
+    m_Address: Effect_Result_4th
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 5a84d541cbef99246a0816f40bb33f4d
-    m_Address: SE/Piece_Drop
+    m_Address: Piece_Drop
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 608b31a4f0bfcac469998074f116d022
-    m_Address: SE/Piece_Emission
+    m_Address: Piece_Emission
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 67efd990209268747bb0c84607cd3395
-    m_Address: SE/Effect_Title_Rise
+    m_Address: Effect_Title_Rise
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7249b248fe570e744bf5c538da1006fd
-    m_Address: SE/UI_ShowDialog
+    m_Address: UI_ShowDialog
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 75b4d5cec5a87ba4c9a71ce32e1b5b53
-    m_Address: SE/UI_HidePause
+    m_Address: UI_HidePause
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7e7777b9a1155ed4d94e099f1f714b4f
-    m_Address: SE/Effect_Title_PlayerCutIn
+    m_Address: Effect_Title_PlayerCutIn
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8b0ec75af4609fc4898fda6bb20fbfe1
-    m_Address: SE/Effect_Result_2nd
+    m_Address: Effect_Result_2nd
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9a014f34b3a342448b55a2c5f8ac5c45
-    m_Address: SE/Effect_Result_3rd
+    m_Address: Effect_Result_3rd
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: aa3da62bd4ea82a489f0592154fbc3e7
-    m_Address: SE/UI_Cancel
+    m_Address: UI_Cancel
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: acde8d160415f494ab8129b50dfbb772
-    m_Address: SE/UI_Focus
+    m_Address: UI_Focus
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ade2c2c2f581dac458ef964e5425bedb
-    m_Address: SE/UI_HideDialog
+    m_Address: UI_HideDialog
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: afc239cb4a1a48b4196f401dafe3bd55
-    m_Address: SE/Camera_SwitchProjection
+    m_Address: Camera_SwitchProjection
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c40c23fb9f13a244b9bf111bfecb0362
-    m_Address: SE/Effect_Impact_Small
+    m_Address: Effect_Impact_Small
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c66ffe2f9bb9b894f8319bbe370cefe6
-    m_Address: SE/UI_ShowPause
+    m_Address: UI_ShowPause
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ce5bb3d637a96354abbc968408ac4a76
-    m_Address: SE/Piece_Delete
+    m_Address: Piece_Delete
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d2d4e9c1abd24474ea09a219466675e8
-    m_Address: SE/Score_Subtract
+    m_Address: Score_Subtract
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d4823bcd8aec7b2468e13bf45d2ddaea
-    m_Address: SE/Effect_Impact_Large
+    m_Address: Effect_Impact_Large
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e54beff3874151849a6ee725ca7d5914
-    m_Address: SE/Board_Rotate
+    m_Address: Board_Rotate
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: fcc378a4d1ba90d4faff07593a2e4357
-    m_Address: SE/Board_ColumnSelect
+    m_Address: Board_ColumnSelect
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - SE
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 101f74b5af7a28e4c93f8068a5c606e1, type: 2}

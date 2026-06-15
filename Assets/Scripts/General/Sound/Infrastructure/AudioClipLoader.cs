@@ -2,7 +2,7 @@
 // AudioClipLoader.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-06-08
-// 更新日時 : 2026-06-09
+// 更新日時 : 2026-06-15
 // 概要     : Addressables ベース AudioClip ローダー
 // ======================================================
 
@@ -11,7 +11,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using UnityEngine.ResourceManagement.ResourceLocations;
 
 namespace SoundSystem.Infrastructure
 {
@@ -21,82 +20,98 @@ namespace SoundSystem.Infrastructure
     public sealed class AudioClipLoader
     {
         // ======================================================
+        // 辞書
+        // ======================================================
+
+        /// <summary>
+        /// ラベルごとのロードハンドル管理テーブル
+        /// </summary>
+        private readonly Dictionary<AudioLabelType, AsyncOperationHandle<IList<AudioClip>>> _handleMap;
+
+        // ======================================================
+        // コンストラクタ
+        // ======================================================
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        public AudioClipLoader()
+        {
+            _handleMap = new Dictionary<AudioLabelType, AsyncOperationHandle<IList<AudioClip>>>();
+        }
+
+        // ======================================================
         // パブリックメソッド
         // ======================================================
 
         // --------------------------------------------------
-        // BGM
+        // ロード
         // --------------------------------------------------
         /// <summary>
-        /// BGM AudioClip を非同期ロード
+        /// 指定ラベルの AudioClip を一括ロード
         /// </summary>
-        public UniTask<AudioClip> LoadBgmAsync(string key)
+        public async UniTask<IList<AudioClip>> LoadByLabelAsync(AudioLabelType labelType)
         {
-            return LoadInternalAsync(key);
-        }
+            // Addressables ロード用のラベル文字列へ変換
+            string label = labelType.ToString();
 
-        // --------------------------------------------------
-        // SE
-        // --------------------------------------------------
-        /// <summary>
-        /// SE AudioClip を非同期ロード
-        /// </summary>
-        public UniTask<AudioClip> LoadSeAsync(string key)
-        {
-            return LoadInternalAsync(key);
-        }
-
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 共通ロード処理
-        /// </summary>
-        private async UniTask<AudioClip> LoadInternalAsync(string key)
-        {
-            // --------------------------------------------------
-            // 入力チェック
-            // --------------------------------------------------
-            if (string.IsNullOrEmpty(key))
+            // 既にロード済みならキャッシュを返却
+            if (_handleMap.TryGetValue(labelType, out AsyncOperationHandle<IList<AudioClip>> cachedHandle))
             {
-                Debug.LogWarning("[AudioClipLoader] keyが無効");
-                return null;
+                return cachedHandle.Result;
             }
 
-            // --------------------------------------------------
-            // 存在チェック
-            // --------------------------------------------------
-            AsyncOperationHandle<IList<IResourceLocation>> locationHandle =
-                Addressables.LoadResourceLocationsAsync(key);
+            // Addressables からロード開始
+            AsyncOperationHandle<IList<AudioClip>> handle = Addressables.LoadAssetsAsync<AudioClip>(label, null);
 
-            await locationHandle;
-
-            if (locationHandle.Result == null || locationHandle.Result.Count == 0)
-            {
-                Debug.LogWarning($"[AudioClipLoader] 存在しないキー: {key}");
-
-                return null;
-            }
-
-            // --------------------------------------------------
-            // ロード処理
-            // --------------------------------------------------
-            AsyncOperationHandle<AudioClip> handle = Addressables.LoadAssetAsync<AudioClip>(key);
-
+            // ロード完了待機
             await handle;
 
-            // --------------------------------------------------
-            // 成功判定
-            // --------------------------------------------------
             if (handle.Status != AsyncOperationStatus.Succeeded)
             {
-                Debug.LogWarning($"[AudioClipLoader] ロード失敗: {key}");
+                Debug.LogWarning($"[AudioClipLoader] ロード失敗 : {label}");
 
                 return null;
             }
 
+            _handleMap[labelType] = handle;
+
             return handle.Result;
+        }
+        
+        // --------------------------------------------------
+        // 解放
+        // --------------------------------------------------
+        /// <summary>
+        /// Addressables でロードした指定ラベルの AudioClip を解放
+        /// </summary>
+        public void Release(in AudioLabelType labelType)
+        {
+            // ハンドル取得失敗の場合処理なし
+            if (!_handleMap.TryGetValue(labelType, out AsyncOperationHandle<IList<AudioClip>> handle))
+            {
+                return;
+            }
+
+            // Addressables 解放
+            Addressables.Release(handle);
+
+            // テーブルから削除
+            _handleMap.Remove(labelType);
+        }
+
+        /// <summary>
+        /// Addressables でロードした全ラベルの AudioClip を解放
+        /// </summary>
+        public void ReleaseAll()
+        {
+            foreach (AsyncOperationHandle<IList<AudioClip>> handle in _handleMap.Values)
+            {
+                Addressables.Release(handle);
+            }
+
+            // テーブルリセット
+            _handleMap.Clear();
         }
     }
 }

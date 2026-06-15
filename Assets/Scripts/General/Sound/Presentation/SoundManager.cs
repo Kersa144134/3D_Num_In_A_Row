@@ -94,11 +94,15 @@ namespace SoundSystem.Presentation
         /// <summary>BGM に紐付くローパスフィルター配列</summary>
         private AudioLowPassFilter[] _lowPassFilters;
 
+        /// <summary>予約された再生位置イベント</summary>
+        private AudioPlaybackEvent _pendingPlaybackEvent;
+
         /// <summary>再生位置更新予約フラグ</summary>
         private bool _isPlaybackSeekRequested;
 
-        /// <summary>予約された再生位置イベント</summary>
-        private AudioPlaybackEvent _pendingPlaybackEvent;
+        // ======================================================
+        // 辞書
+        // ======================================================
 
         /// <summary>SE の最終再生時刻管理辞書</summary>
         private readonly Dictionary<SeType, float> _lastSePlayTimes = new Dictionary<SeType, float>();
@@ -206,6 +210,9 @@ namespace SoundSystem.Presentation
         {
             // イベント購読解除
             Dispose();
+
+            // AudioClip 解放
+            _audioClipRepository.ReleaseAll();
         }
 
         // ======================================================
@@ -276,9 +283,12 @@ namespace SoundSystem.Presentation
 
                 return;
             }
-            
+
             // AudioClip 取得
-            if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
+            if (!_audioClipRepository.TryGetClip(
+                AudioLabelType.BGM,
+                type.ToString(),
+                out AudioClip clip))
             {
                 return;
             }
@@ -335,23 +345,26 @@ namespace SoundSystem.Presentation
         /// <param name="type">BGM タイプ</param>
         /// <param name="blockIndex">再生ブロック番号</param>
         /// <returns>再生位置設定に成功した場合は true</returns>
-        public bool SetPlaybackPosition(in BgmType type, in int blockIndex = 0)
+        public void SetPlaybackPosition(in BgmType type, in int blockIndex = 0)
         {
             // BGM インデックス取得
             if (!_audioSetFinder.TryFindBgmIndex(type, out int bgmIndex))
             {
-                return false;
+                return;
             }
 
             BgmSet bgm = _bgmSets[bgmIndex];
 
             // AudioClip 取得
-            if (!_audioClipRepository.TryGetBgmClip(type, out AudioClip clip))
+            if (!_audioClipRepository.TryGetClip(
+                AudioLabelType.BGM,
+                type.ToString(),
+                out AudioClip clip))
             {
-                return false;
+                return;
             }
 
-            return _audioPlaybackUseCase.SetPlaybackPosition(
+            _audioPlaybackUseCase.SetPlaybackPosition(
                 bgmIndex,
                 bgm,
                 blockIndex);
@@ -482,7 +495,10 @@ namespace SoundSystem.Presentation
             SeSet se = _seSets[index];
 
             // AudioClip 取得
-            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
+            if (!_audioClipRepository.TryGetClip(
+                AudioLabelType.SE,
+                type.ToString(),
+                out AudioClip clip))
             {
                 return;
             }
@@ -520,7 +536,10 @@ namespace SoundSystem.Presentation
             SeSet se = _seSets[index];
 
             // AudioClip 取得
-            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
+            if (!_audioClipRepository.TryGetClip(
+                AudioLabelType.SE,
+                type.ToString(),
+                out AudioClip clip))
             {
                 return;
             }
@@ -556,7 +575,10 @@ namespace SoundSystem.Presentation
             SeSet se = _seSets[index];
 
             // AudioClip 取得
-            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
+            if (!_audioClipRepository.TryGetClip(
+                AudioLabelType.SE,
+                type.ToString(),
+                out AudioClip clip))
             {
                 return;
             }

@@ -2,15 +2,13 @@
 // AudioClipRepository.cs
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-06-08
-// 更新日時 : 2026-06-09
+// 更新日時 : 2026-06-15
 // 概要     : AudioClip 管理クラス
 // ======================================================
 
-using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using SoundSystem.Domain;
 
 namespace SoundSystem.Infrastructure
 {
@@ -20,33 +18,27 @@ namespace SoundSystem.Infrastructure
     public sealed class AudioClipRepository
     {
         // ======================================================
-        // 定数
-        // ======================================================
-
-        /// <summary>BGM Addressables ルートキー</summary>
-        private const string BGM_ROOT_KEY = "BGM/";
-
-        /// <summary>SE Addressables ルートキー</summary>
-        private const string SE_ROOT_KEY = "SE/";
-
-        // ======================================================
         // フィールド
         // ======================================================
 
-        /// <summary>AudioClip ローダー</summary>
-        private readonly AudioClipLoader _audioClipLoader;
+        /// <summary>
+        /// AudioClip ローダー
+        /// </summary>
+        private readonly AudioClipLoader _audioClipLoader = new AudioClipLoader();
 
-        /// <summary>ロード済み BGM の AudioClip を保持するテーブル</summary>
-        private readonly Dictionary<BgmType, AudioClip> _bgmClipMap;
+        /// <summary>
+        /// AudioClip マッパー
+        /// </summary>
+        private readonly AudioClipMapper _audioClipMapper = new AudioClipMapper();
 
-        /// <summary>ロード済み SE の AudioClip を保持するテーブル</summary>
-        private readonly Dictionary<SeType, AudioClip> _seClipMap;
+        // ======================================================
+        // 辞書
+        // ======================================================
 
-        /// <summary>BgmType → Addressables キー文字列の変換結果を保持するテーブル</summary>
-        private readonly Dictionary<BgmType, string> _bgmKeyMap;
-
-        /// <summary>SeType → Addressables キー文字列の変換結果を保持するテーブル</summary>
-        private readonly Dictionary<SeType, string> _seKeyMap;
+        /// <summary>
+        /// ラベルごとの AudioClip キャッシュテーブル
+        /// </summary>
+        private readonly Dictionary<AudioLabelType, Dictionary<string, AudioClip>> _audioClipMap;
 
         // ======================================================
         // コンストラクタ
@@ -57,15 +49,7 @@ namespace SoundSystem.Infrastructure
         /// </summary>
         public AudioClipRepository()
         {
-            _audioClipLoader = new AudioClipLoader();
-
-            _bgmClipMap = new Dictionary<BgmType, AudioClip>();
-            _seClipMap = new Dictionary<SeType, AudioClip>();
-
-            _bgmKeyMap = new Dictionary<BgmType, string>();
-            _seKeyMap = new Dictionary<SeType, string>();
-
-            InitializeKeyCache();
+            _audioClipMap = new Dictionary<AudioLabelType, Dictionary<string, AudioClip>>();
         }
 
         // ======================================================
@@ -80,14 +64,7 @@ namespace SoundSystem.Infrastructure
         /// </summary>
         public async UniTask LoadBgmAsync()
         {
-            List<UniTask> tasks = new List<UniTask>(_bgmKeyMap.Count);
-
-            foreach (KeyValuePair<BgmType, string> pair in _bgmKeyMap)
-            {
-                tasks.Add(LoadBgmClipAsync(pair.Key, pair.Value));
-            }
-
-            await UniTask.WhenAll(tasks);
+            await LoadByLabelAsync(AudioLabelType.BGM);
         }
 
         /// <summary>
@@ -95,33 +72,48 @@ namespace SoundSystem.Infrastructure
         /// </summary>
         public async UniTask LoadSeAsync()
         {
-            List<UniTask> tasks = new List<UniTask>(_seKeyMap.Count);
-
-            foreach (KeyValuePair<SeType, string> pair in _seKeyMap)
-            {
-                tasks.Add(LoadSeClipAsync(pair.Key, pair.Value));
-            }
-
-            await UniTask.WhenAll(tasks);
+            await LoadByLabelAsync(AudioLabelType.SE);
         }
 
         // --------------------------------------------------
         // 取得
         // --------------------------------------------------
         /// <summary>
-        /// BGM 取得
+        /// AudioClip 取得
         /// </summary>
-        public bool TryGetBgmClip(BgmType type, out AudioClip clip)
+        public bool TryGetClip(
+            in AudioLabelType labelType,
+            in string clipName,
+            out AudioClip clip)
         {
-            return _bgmClipMap.TryGetValue(type, out clip);
+            clip = null;
+
+            // ラベルが存在しない場合は失敗
+            if (!_audioClipMap.TryGetValue(labelType, out Dictionary<string, AudioClip> map))
+            {
+                return false;
+            }
+
+            return map.TryGetValue(clipName, out clip);
+        }
+
+        // --------------------------------------------------
+        // 解放
+        // --------------------------------------------------
+        /// <summary>
+        /// Addressables でロードした指定ラベルの AudioClip を解放
+        /// </summary>
+        public void Release(in AudioLabelType labelType)
+        {
+            _audioClipLoader.Release(labelType);
         }
 
         /// <summary>
-        /// SE 取得
+        /// Addressables でロードした全ラベルの AudioClip を解放
         /// </summary>
-        public bool TryGetSeClip(SeType type, out AudioClip clip)
+        public void ReleaseAll()
         {
-            return _seClipMap.TryGetValue(type, out clip);
+            _audioClipLoader.ReleaseAll();
         }
 
         // ======================================================
@@ -129,65 +121,17 @@ namespace SoundSystem.Infrastructure
         // ======================================================
 
         /// <summary>
-        /// Enum → Addressables キー変換キャッシュ生成
+        /// ラベル単位で AudioClip を辞書へ登録する
         /// </summary>
-        private void InitializeKeyCache()
+        private async UniTask LoadByLabelAsync(AudioLabelType labelType)
         {
-            // --------------------------------------------------
-            // BGMキー生成
-            // --------------------------------------------------
-            foreach (BgmType type in Enum.GetValues(typeof(BgmType)))
-            {
-                if (type == BgmType.None)
-                {
-                    continue;
-                }
+            // ラベルに対応する AudioClip 一覧を取得
+            IList<AudioClip> clips = await _audioClipLoader.LoadByLabelAsync(labelType);
 
-                _bgmKeyMap[type] = BGM_ROOT_KEY + type;
-            }
+            // 取得結果を辞書へ変換
+            Dictionary<string, AudioClip> map = _audioClipMapper.ToDictionary(clips);
 
-            // --------------------------------------------------
-            // SEキー生成
-            // --------------------------------------------------
-            foreach (SeType type in Enum.GetValues(typeof(SeType)))
-            {
-                if (type == SeType.None)
-                {
-                    continue;
-                }
-
-                _seKeyMap[type] = SE_ROOT_KEY + type;
-            }
-        }
-
-        /// <summary>
-        /// BGM 単体ロード
-        /// </summary>
-        private async UniTask LoadBgmClipAsync(BgmType type, string key)
-        {
-            AudioClip clip = await _audioClipLoader.LoadBgmAsync(key);
-
-            if (clip == null)
-            {
-                return;
-            }
-
-            _bgmClipMap[type] = clip;
-        }
-
-        /// <summary>
-        /// SE 単体ロード
-        /// </summary>
-        private async UniTask LoadSeClipAsync(SeType type, string key)
-        {
-            AudioClip clip = await _audioClipLoader.LoadSeAsync(key);
-
-            if (clip == null)
-            {
-                return;
-            }
-
-            _seClipMap[type] = clip;
+            _audioClipMap[labelType] = map;
         }
     }
 }

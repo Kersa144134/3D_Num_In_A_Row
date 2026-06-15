@@ -200,15 +200,15 @@ namespace UISystem.Presentation
         /// <summary>フェードアウト完了フラグ</summary>
         protected bool _onFadeOutEnd = false;
 
-        /// <summary>フォーカス中ボタン RectTransform</summary>
-        private RectTransform _focusButtonRectTransform;
-
         /// <summary>フォーカス中ボタンのルート Canvas</summary>
         private Canvas _focusCanvas;
 
         /// <summary>フォーカス中ボタンのルート Canvas の RectTransform</summary>
         private RectTransform _focusCanvasRectTransform;
-        
+
+        /// <summary>フォーカス中ボタン RectTransform</summary>
+        private RectTransform _focusButtonRectTransform;
+
         /// <summary>エフェクト用アニメーター</summary>
         protected Animator _effectAnimator;
 
@@ -366,8 +366,8 @@ namespace UISystem.Presentation
 
             // ゲームパッド入力かつフォーカス中ボタンが存在する場合
             if (_isGamePadInput &&
-                _focusButtonRectTransform != null &&
-                _focusCanvasRectTransform != null)
+                _focusCanvasRectTransform != null &&
+                _focusButtonRectTransform != null)
             {
                 // Canvas ローカル座標へ変換
                 Vector2 localPosition = _focusCanvasRectTransform.InverseTransformPoint(_focusButtonRectTransform.position);
@@ -864,9 +864,9 @@ namespace UISystem.Presentation
             UpdatePointerTargetAnimation(false);
 
             // RectTransform キャッシュを破棄
-            _focusButtonRectTransform = null;
             _focusCanvas = null;
             _focusCanvasRectTransform = null;
+            _focusButtonRectTransform = null;
         }
 
         /// <summary>

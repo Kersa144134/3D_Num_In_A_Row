@@ -139,14 +139,6 @@ namespace GameSystem.Presentation
         private bool _isFadeCompleted = false;
 
         // ======================================================
-        // 辞書
-        // ======================================================
-
-        /// <summary>ボードごとの位置をキャッシュする辞書</summary>
-        private readonly Dictionary<BoardPresenter, Vector3> _boardPosition =
-            new Dictionary<BoardPresenter, Vector3>();
-
-        // ======================================================
         // UniRx 変数
         // ======================================================
 
