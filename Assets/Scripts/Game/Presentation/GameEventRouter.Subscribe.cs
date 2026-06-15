@@ -417,16 +417,14 @@ namespace GameSystem.Presentation
                     boardPresenter.OnLineDelete
                         .Subscribe(_ =>
                         {
-                            if (!_hasPendingScoreEvent)
+                            while (_pendingUpdateScoreEvents.Count > 0)
                             {
-                                return;
+                                // 保留中のスコア更新イベント取得
+                                ScoreEvent scoreEvent = _pendingUpdateScoreEvents.Dequeue();
+
+                                // スコア更新通知
+                                _onScoreUpdated.OnNext(scoreEvent);
                             }
-
-                            // スコア更新通知
-                            _onScoreUpdated.OnNext(_pendingUpdateScoreEvent);
-
-                            // リセット
-                            _hasPendingScoreEvent = false;
                         })
                         .AddTo(_disposables);
                     boardPresenter.OnLinePositionNotified
@@ -435,16 +433,14 @@ namespace GameSystem.Presentation
                     boardPresenter.OnLineEmissionExecuted
                         .Subscribe(_ =>
                         {
-                            if (_pendingAddScoreEvents.Count == 0)
+                            while (_pendingAddScoreEvents.Count > 0)
                             {
-                                return;
+                                // 保留中の加算スコアイベント取得
+                                ScoreEvent scoreEvent = _pendingAddScoreEvents.Dequeue();
+
+                                // スコア加算通知
+                                _onScoreAdded.OnNext(scoreEvent);
                             }
-
-                            // 保留中の加算スコアイベント取得
-                            ScoreEvent scoreEvent = _pendingAddScoreEvents.Dequeue();
-
-                            // スコア加算通知
-                            _onScoreAdded.OnNext(scoreEvent);
                         })
                         .AddTo(_disposables);
                     boardPresenter.IsColumnSelectVisible
@@ -653,10 +649,9 @@ namespace GameSystem.Presentation
                     .Skip(1)
                     .Subscribe(score =>
                     {
-                        // 最新スコアを保留イベントとして保持する
-                        _pendingUpdateScoreEvent = new ScoreEvent(currentPlayerId, score);
-
-                        _hasPendingScoreEvent = true;
+                        // 最新スコアを保留イベントとして追加
+                        _pendingUpdateScoreEvents.Enqueue(
+                            new ScoreEvent(currentPlayerId, score));
                     })
                     .AddTo(_disposables);
             }

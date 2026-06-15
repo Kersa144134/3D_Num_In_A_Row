@@ -102,11 +102,8 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------
-        /// <summary>スコア更新の保留フラグ</summary>
-        private bool _hasPendingScoreEvent;
-
         /// <summary>保留中の更新スコアイベント</summary>
-        private ScoreEvent _pendingUpdateScoreEvent;
+        private readonly Queue<ScoreEvent> _pendingUpdateScoreEvents = new Queue<ScoreEvent>();
 
         /// <summary>保留中の加算スコアイベントリスト</summary>
         private readonly Queue<ScoreEvent> _pendingAddScoreEvents = new Queue<ScoreEvent>();
