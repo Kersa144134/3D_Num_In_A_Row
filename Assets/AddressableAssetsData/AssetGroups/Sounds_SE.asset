@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Sounds_SE
   m_GUID: fddec1043f60bd040bb4e0c885fb59a6
   m_SerializeEntries:
+  - m_GUID: 0d150ba2de67b9a4f83146c727c2ff31
+    m_Address: SE/Combo
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 116e2fba5021e3b4288b4ea1a164980d
     m_Address: SE/Score_Add
     m_ReadOnly: 0
@@ -100,11 +105,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 7cc0bf7501dde9849a232d58ea72a551
-    m_Address: SE/Combo_3
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7e7777b9a1155ed4d94e099f1f714b4f
     m_Address: SE/Effect_Title_PlayerCutIn
     m_ReadOnly: 0
@@ -117,11 +117,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9a014f34b3a342448b55a2c5f8ac5c45
     m_Address: SE/Effect_Result_3rd
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a13ff88ba1d54934cbaeafb5297bfd78
-    m_Address: SE/Combo_1
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -142,11 +137,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: afc239cb4a1a48b4196f401dafe3bd55
     m_Address: SE/Camera_SwitchProjection
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b9e0633ec1ac1824e8cc254dc890c793
-    m_Address: SE/Combo_2
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

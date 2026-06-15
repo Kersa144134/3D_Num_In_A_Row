@@ -500,6 +500,47 @@ namespace SoundSystem.Presentation
         }
 
         /// <summary>
+        /// 指定した SE をピッチ付きで再生する
+        /// </summary>
+        /// <param name="type">SE タイプ</param>
+        /// <param name="pitch">再生ピッチ</param>
+        /// <param name="volume">再生音量</param>
+        public void PlayPitchSE(
+            in SeType type,
+            in float pitch,
+            in float volume = 1.0f)
+        {
+            // SE インデックス取得
+            if (!_audioSetFinder.TryFindSeIndex(type, out int index))
+            {
+                return;
+            }
+
+            // SE 設定取得
+            SeSet se = _seSets[index];
+
+            // AudioClip 取得
+            if (!_audioClipRepository.TryGetSeClip(type, out AudioClip clip))
+            {
+                return;
+            }
+
+            // ピッチ設定
+            se.Source.pitch = pitch;
+
+            // ループ SE 再生
+            if (se.IsLoop)
+            {
+                PlayLoopSE(se.Source, clip, volume);
+
+                return;
+            }
+
+            // 通常 SE 再生
+            PlayOneShotSE(type, se.Source, clip, volume);
+        }
+
+        /// <summary>
         /// 距離減衰付き SE 再生
         /// </summary>
         /// <param name="type">SE タイプ</param>

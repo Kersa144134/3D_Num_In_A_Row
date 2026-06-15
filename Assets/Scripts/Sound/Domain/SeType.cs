@@ -19,20 +19,14 @@ namespace SoundSystem.Domain
         // --------------------------------------------------
         // スコア
         // --------------------------------------------------
-        /// <summary>コンボ × 1</summary>
-        Combo_1 = 1,
-
-        /// <summary>コンボ × 2</summary>
-        Combo_2 = 2,
-
-        /// <summary>コンボ × 3</summary>
-        Combo_3 = 3,
+        /// <summary>コンボ</summary>
+        Combo = 1,
 
         /// <summary>スコア 加算</summary>
-        Score_Add = 6,
+        Score_Add = 2,
 
         /// <summary>スコア 減算</summary>
-        Score_Subtract = 7,
+        Score_Subtract = 3,
 
         // --------------------------------------------------
         // UI

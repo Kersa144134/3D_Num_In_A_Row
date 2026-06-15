@@ -457,11 +457,11 @@ namespace BoardSystem.Presentation
                 .AddTo(_disposables);
             // ピース発光
             _deleteHandler.OnPieceEmissionExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission))
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Emission, 0.75f))
                 .AddTo(_disposables);
             // ライン削除
             _deleteHandler.OnLineDeleteExecuted
-                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete))
+                .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete, 0.75f))
                 .AddTo(_disposables);
         }
 

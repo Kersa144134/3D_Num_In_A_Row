@@ -347,6 +347,18 @@ namespace GameSystem.Presentation
         /// <summary>入力バインド切替時の遅延時間（秒）</summary>
         private const float INPUT_BIND_DELAY_SECONDS = 0.5f;
 
+        // --------------------------------------------------
+        // サウンド
+        // --------------------------------------------------
+        /// <summary>コンボSEの基準ピッチ</summary>
+        private const float COMBO_SE_BASE_PITCH = 1.0f;
+        
+        /// <summary>コンボ SE のピッチ上昇量</summary>
+        private const float COMBO_SE_PITCH_STEP = 0.2f;
+
+        /// <summary>コンボ SE の最大ピッチ</summary>
+        private const float COMBO_SE_MAX_PITCH = 2.0f;
+
         // ======================================================
         // コンストラクタ
         // ======================================================

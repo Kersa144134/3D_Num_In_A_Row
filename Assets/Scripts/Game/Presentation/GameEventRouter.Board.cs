@@ -8,6 +8,7 @@
 // ======================================================
 
 using System.Collections.Generic;
+using UnityEngine;
 using BoardSystem.Domain;
 using ScoreSystem.Domain;
 using SoundSystem.Domain;
@@ -37,15 +38,12 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // SE 再生
             // --------------------------------------------------
-            SeType comboSE = _scoreManager.CumulativeCount.Value
-                switch
-                {
-                    1 => SeType.Combo_1,
-                    2 => SeType.Combo_2,
-                    _ => SeType.Combo_3
-                };
-
-            _soundManager?.PlaySE(comboSE);
+            // SE ピッチ算出
+            float comboPitch = Mathf.Min(
+                COMBO_SE_BASE_PITCH + (_scoreManager.CumulativeCount.Value - 1) * COMBO_SE_PITCH_STEP,
+                COMBO_SE_MAX_PITCH); 
+            
+            _soundManager?.PlayPitchSE(SeType.Combo, comboPitch, 0.5f);
 
             // --------------------------------------------------
             // 各イベントを個別に処理
