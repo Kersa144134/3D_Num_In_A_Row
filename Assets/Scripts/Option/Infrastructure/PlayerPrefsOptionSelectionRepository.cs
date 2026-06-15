@@ -6,9 +6,8 @@
 // 概要     : PlayerPrefs による選択インデックス保存
 // ======================================================
 
-using OptionSystem.Domain;
-using System.Collections.Generic;
 using UnityEngine;
+using OptionSystem.Domain;
 
 namespace OptionSystem.Infrastructure
 {

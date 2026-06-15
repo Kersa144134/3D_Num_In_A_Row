@@ -551,7 +551,7 @@ namespace BoardSystem.Presentation
             UnbindRotateInputStream();
 
             // SE 再生
-            _soundManager?.PlaySE(SeType.Board_Rotate);
+            _soundManager?.PlaySE(SeType.Board_Rotate, 0.75f);
 
             // --------------------------------------------------
             // 回転ユースケース実行
