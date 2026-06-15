@@ -1050,14 +1050,6 @@ namespace UISystem.Presentation
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);
                 })
                 .AddTo(_disposables);
-        }
-
-        /// <summary>
-        /// UI イベント購読
-        /// </summary>
-        protected override void SubscribeUiEvents()
-        {
-            base.SubscribeUiEvents();
 
             // ゲーム開始アニメーションチェックポイント通知
             _startPlayAnimationEventNotifier.OnAnimationCheckPoint
@@ -1103,7 +1095,15 @@ namespace UISystem.Presentation
                         return;
                     }
                 })
-                .AddTo(_uiEventDisposables);
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// UI イベント購読
+        /// </summary>
+        protected override void SubscribeUiEvents()
+        {
+            base.SubscribeUiEvents();
 
             // ゲーム開始アニメーション終了通知
             _startPlayAnimationEventNotifier.OnAnimationEnd
