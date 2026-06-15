@@ -513,10 +513,6 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutStart()
         {
-            // リザルト順位表示アニメーション開始
-            _resultRankAnimator?.SetTrigger(IS_START_HASH);
-            _resultCanvasAnimator?.SetTrigger(IS_START_HASH);
-
             // BGM 再生
             StartBgm();
         }
@@ -526,6 +522,10 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutFinish()
         {
+            // リザルト順位表示アニメーション開始
+            _resultRankAnimator?.SetTrigger(IS_START_HASH);
+            _resultCanvasAnimator?.SetTrigger(IS_START_HASH);
+
             // BGM フェード
             _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 5);
         }
@@ -595,8 +595,11 @@ namespace UISystem.Presentation
                     _resultRankAnimator?.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator?.SetTrigger(IS_END_HASH);
 
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Effect_Result_1st);
+
                     // BGM 音量更新
-                    _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 0.5f);
+                    _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 0.25f);
 
                     // BGM 再生位置更新
                     SetPlaybackPosition(1);
@@ -618,32 +621,12 @@ namespace UISystem.Presentation
         {
             base.Subscribe();
 
-            // アニメーション終了通知
-            _resultCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ =>
-                {
-                    // UI イベント購読
-                    SubscribeUiEvents();
-
-                    // ポインター表示
-                    SetPointerVisible(true);
-                })
-                .AddTo(_disposables);
-        }
-
-        /// <summary>
-        /// イベント購読
-        /// </summary>
-        protected override void SubscribeUiEvents()
-        {
-            base.SubscribeUiEvents();
-
-            // アニメーションチェックポイント通知
+            // 順位アニメーションチェックポイント通知
             _resultRankAnimationEventNotifier.OnAnimationCheckPoint
                 .Subscribe(_ =>
                 {
                     _rankAnimationCheckPointCount++;
-
+                    
                     if (_rankAnimationCheckPointCount == 1)
                     {
                         // SE 再生
@@ -668,9 +651,9 @@ namespace UISystem.Presentation
                         _soundManager?.PlaySE(SeType.Effect_Result_Flash);
                     }
                 })
-                .AddTo(_uiEventDisposables);
+                .AddTo(_disposables);
 
-            // アニメーション終了通知
+            // 順位アニメーション終了通知
             _resultRankAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
@@ -681,7 +664,12 @@ namespace UISystem.Presentation
                     _resultRankAnimator?.SetTrigger(IS_END_HASH);
                     _resultCanvasAnimator?.SetTrigger(IS_END_HASH);
 
-                    if (_rankAnimationEndCount >= 2)
+                    if (_rankAnimationEndCount == 1)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_1st);
+                    }
+                    if (_rankAnimationEndCount == 2)
                     {
                         // アニメーション終了通知
                         _onStarttResultAnimationEnd.OnNext(Unit.Default);
@@ -689,11 +677,20 @@ namespace UISystem.Presentation
                         // BGM フェード
                         _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 1);
                     }
-
-                    // SE 再生
-                    _soundManager?.PlaySE(SeType.Effect_Result_1st);
                 })
-                .AddTo(_uiEventDisposables);
+                .AddTo(_disposables);
+            
+            // キャンバスアニメーション終了通知
+            _resultCanvasAnimationEventNotifier.OnAnimationEnd
+                .Subscribe(_ =>
+                {
+                    // UI イベント購読
+                    SubscribeUiEvents();
+
+                    // ポインター表示
+                    SetPointerVisible(true);
+                })
+                .AddTo(_disposables);
         }
 
         /// <summary>
