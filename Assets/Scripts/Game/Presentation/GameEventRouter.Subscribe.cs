@@ -511,6 +511,8 @@ namespace GameSystem.Presentation
                     // フェードイン時間を通知
                     _fadeInTrigger.OnNext(seconds);
 
+                    UnbindEventSkipStream();
+
                     // BGM フェードイン
                     _soundManager.SetBGMVolume(0);
                 })
@@ -569,11 +571,8 @@ namespace GameSystem.Presentation
                     // スキップ入力時に指定イベントを発火
                     subject.OnNext(eventValue);
 
-                    // 即時購読解除
-                    UnbindEventSkipStream();
-
                     // SE 再生
-                    _soundManager?.PlaySE(SeType.UI_Skip);
+                    _soundManager?.PlaySE(SeType.UI_Skip, 0.75f);
                 });
         }
 

@@ -115,6 +115,9 @@ namespace SoundSystem.Domain
         /// <summary>タイトル 上昇</summary>
         Effect_Title_Rise = 51,
 
+        /// <summary>タイトル 下降</summary>
+        Effect_Title_Fall = 52,
+
         // --------------------------------------------------
         // エフェクト（メイン）
         // --------------------------------------------------
@@ -136,7 +139,7 @@ namespace SoundSystem.Domain
         /// <summary>エフェクト リザルト 4 位</summary>
         Effect_Result_4th = 73,
 
-        /// <summary>エフェクト リザルト フラッシュ</summary>
-        Effect_Result_Flash = 74,
+        /// <summary>エフェクト リザルト 上昇</summary>
+        Effect_Result_Rise = 74,
     }
 }

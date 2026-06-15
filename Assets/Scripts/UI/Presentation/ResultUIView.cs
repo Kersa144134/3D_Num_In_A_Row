@@ -220,7 +220,7 @@ namespace UISystem.Presentation
         /// ランキング情報を基にスコア表示と順位表示を更新する
         /// </summary>
         /// <param name="ranking">ランキングデータ</param>
-        public void UpdateRankingInfo(List<RankingData> ranking)
+        public void UpdateRankingInfo(in List<RankingData> ranking)
         {
             if (_rankingPlayerIdTexts == null ||
                 _rankingScoreTexts == null ||
@@ -229,14 +229,6 @@ namespace UISystem.Presentation
             {
                 return;
             }
-
-            ranking = new List<RankingData>
-            {
-                new RankingData(1, 500),
-                new RankingData(2, 400),
-                new RankingData(3, 300),
-                new RankingData(4, 200),
-            };
 
             // 表示可能な順位数を取得
             int viewLength = _rankingPlayerIdTexts.Length;

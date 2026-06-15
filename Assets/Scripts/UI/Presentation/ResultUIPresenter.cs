@@ -6,20 +6,21 @@
 // 概要     : リザルトシーンで使用される UI 演出を管理するプレゼンター
 // ======================================================
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using UniRx;
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
+using OptionSystem.Presentation;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using SoundSystem.Domain;
+using System;
+using System.Collections.Generic;
+using TMPro;
 using UISystem.Application;
 using UISystem.Domain;
 using UISystem.Infrastructure;
+using UniRx;
+using UnityEngine;
+using UnityEngine.UI;
 using UpdateSystem.Domain;
 
 namespace UISystem.Presentation
@@ -172,6 +173,9 @@ namespace UISystem.Presentation
         // --------------------------------------------------
         // システム
         // --------------------------------------------------
+        /// <summary>GameOptionManager キャッシュ</summary>
+        private GameOptionManager _gameOptionManager;
+
         /// <summary>InputManager キャッシュ</summary>
         private InputManager _inputManager;
 
@@ -229,10 +233,12 @@ namespace UISystem.Presentation
             base.OnEnterInternal();
 
             // インスタンスからコンポーネント取得
+            _gameOptionManager = GameOptionManager.Instance;
             _inputManager = InputManager.Instance;
             _scoreManager = ScoreManager.Instance;
 
-            if (_inputManager == null ||
+            if (_gameOptionManager == null||
+                _inputManager == null ||
                 _scoreManager == null ||
                 _resultCanvas == null ||
                 _resultNormalButtons == null ||
@@ -528,6 +534,9 @@ namespace UISystem.Presentation
 
             // BGM フェード
             _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 5);
+
+            // SE 再生
+            _soundManager?.PlaySE(SeType.Effect_Title_Fall);
         }
 
         // ======================================================
@@ -587,16 +596,13 @@ namespace UISystem.Presentation
             resultStartAnimationSkiped
                 .Subscribe(_ =>
                 {
-                    // アニメーション終了カウントを +1 する
-                    _rankAnimationEndCount++;
+                    // フェードアウト未完了の場合処理なし
+                    if (!_onFadeOutEnd)
+                    {
+                        return;
+                    }
 
-                    // 順位アニメーション終了
-                    _effectAnimator?.SetTrigger(IS_END_HASH);
-                    _resultRankAnimator?.SetTrigger(IS_END_HASH);
-                    _resultCanvasAnimator?.SetTrigger(IS_END_HASH);
-
-                    // SE 再生
-                    _soundManager?.PlaySE(SeType.Effect_Result_1st);
+                    OnRankAnimationFinish();
 
                     // BGM 音量更新
                     _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 0.25f);
@@ -623,61 +629,12 @@ namespace UISystem.Presentation
 
             // 順位アニメーションチェックポイント通知
             _resultRankAnimationEventNotifier.OnAnimationCheckPoint
-                .Subscribe(_ =>
-                {
-                    _rankAnimationCheckPointCount++;
-                    
-                    if (_rankAnimationCheckPointCount == 1)
-                    {
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.Effect_Result_4th);
-                    }
-                    if (_rankAnimationCheckPointCount == 2)
-                    {
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.Effect_Result_3rd);
-                    }
-                    if (_rankAnimationCheckPointCount == 3)
-                    {
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.Effect_Result_2nd);
-                    }
-                    if (_rankAnimationCheckPointCount == 4)
-                    {
-                        // フラッシュアニメーション起動
-                        _resultCanvasAnimator?.SetTrigger(IS_FLASH_HASH);
-
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.Effect_Result_Flash);
-                    }
-                })
+                .Subscribe(_ => OnRankAnimationCheckPoint())
                 .AddTo(_disposables);
 
             // 順位アニメーション終了通知
             _resultRankAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ =>
-                {
-                    _rankAnimationEndCount++;
-
-                    // 順位アニメーション終了
-                    _effectAnimator?.SetTrigger(IS_END_HASH);
-                    _resultRankAnimator?.SetTrigger(IS_END_HASH);
-                    _resultCanvasAnimator?.SetTrigger(IS_END_HASH);
-
-                    if (_rankAnimationEndCount == 1)
-                    {
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.Effect_Result_1st);
-                    }
-                    if (_rankAnimationEndCount == 2)
-                    {
-                        // アニメーション終了通知
-                        _onStarttResultAnimationEnd.OnNext(Unit.Default);
-
-                        // BGM フェード
-                        _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 1);
-                    }
-                })
+                .Subscribe(_ => OnRankAnimationFinish())
                 .AddTo(_disposables);
             
             // キャンバスアニメーション終了通知
@@ -720,6 +677,90 @@ namespace UISystem.Presentation
                 _uiView.SetNormalFocus(normalButton.Button, isFocus);
 
                 return;
+            }
+        }
+
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
+        /// <summary>
+        /// 順位アニメーションのチェックポイント通過時の処理
+        /// </summary>
+        private void OnRankAnimationCheckPoint()
+        {
+            _rankAnimationCheckPointCount++;
+
+            switch (_rankAnimationCheckPointCount)
+            {
+                case 1:
+                    // SE 停止
+                    _soundManager?.StopLoopSE(SeType.Effect_Title_Fall);
+
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Effect_Result_Rise, 0.75f);
+                    break;
+
+                case 2:
+                    if (_gameOptionManager.PlayerCount >= 4)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_4th, 0.6f);
+                    }
+                        
+                    break;
+
+                case 3:
+                    if (_gameOptionManager.PlayerCount >= 3)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_3rd, 0.8f);
+                    }
+
+                    break;
+
+                case 4:
+                    if (_gameOptionManager.PlayerCount >= 2)
+                    {
+                        // SE 再生
+                        _soundManager?.PlaySE(SeType.Effect_Result_2nd);
+                    }
+
+                    break;
+
+                case 5:
+                    // フラッシュアニメーション起動
+                    _resultCanvasAnimator?.SetTrigger(IS_FLASH_HASH);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 順位アニメーション終了時の処理
+        /// </summary>
+        private void OnRankAnimationFinish()
+        {
+            _rankAnimationEndCount++;
+
+            // 順位アニメーション終了
+            _effectAnimator?.SetTrigger(IS_END_HASH);
+            _resultRankAnimator?.SetTrigger(IS_END_HASH);
+            _resultCanvasAnimator?.SetTrigger(IS_END_HASH);
+
+            // SE 停止
+            _soundManager?.StopLoopSE(SeType.Effect_Result_Rise);
+            _soundManager?.StopLoopSE(SeType.Effect_Title_Fall);
+
+            switch (_rankAnimationEndCount)
+            {
+                case 1:
+                    // SE 再生
+                    _soundManager?.PlaySE(SeType.Effect_Result_1st);
+                    break;
+
+                case 2:
+                    // アニメーション終了通知
+                    _onStarttResultAnimationEnd.OnNext(Unit.Default);
+                    break;
             }
         }
     }

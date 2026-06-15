@@ -25,6 +25,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1459fc46244c0e14a98c847682d07dd4
+    m_Address: SE/Effect_Title_Fall
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 19b044f6e66cedd4194c94f15f3f1e96
+    m_Address: SE/Effect_Impact_Medium
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1ee900ecd30580c48bedf30d268fa8fa
     m_Address: SE/UI_Decide
     m_ReadOnly: 0
@@ -40,6 +50,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2e460de2271cbcf42b0d3be389c8ead9
+    m_Address: SE/Effect_Result_Rise
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2f1feadabba42b749be6761602f48510
     m_Address: SE/UI_Skip
     m_ReadOnly: 0
@@ -52,6 +67,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4809e45f97db8f846b7486e3b9ac3b81
     m_Address: SE/Camera_Rotation
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 597c131fb18033d4c841cfec9a04ebe4
+    m_Address: SE/Effect_Result_4th
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -87,6 +107,16 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7e7777b9a1155ed4d94e099f1f714b4f
     m_Address: SE/Effect_Title_PlayerCutIn
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8b0ec75af4609fc4898fda6bb20fbfe1
+    m_Address: SE/Effect_Result_2nd
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9a014f34b3a342448b55a2c5f8ac5c45
+    m_Address: SE/Effect_Result_3rd
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -137,6 +167,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d2d4e9c1abd24474ea09a219466675e8
     m_Address: SE/Score_Subtract
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d4823bcd8aec7b2468e13bf45d2ddaea
+    m_Address: SE/Effect_Impact_Large
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

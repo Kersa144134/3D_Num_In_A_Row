@@ -198,6 +198,9 @@ namespace UISystem.Presentation
         /// <summary>スタートキャンバスのアニメーター</summary>
         private Animator _startCanvasAnimator;
 
+        /// <summary>タイトル表示開始アニメーションのチェックポイントイベントカウント回数</summary>
+        private int _startTitleAnimationCheckPointCount = 0;
+
         /// <summary>ゲーム開始アニメーションのチェックポイントイベントカウント回数</summary>
         private int _startGameAnimationCheckPointCount = 0;
 
@@ -907,6 +910,15 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
+        /// フェードイン終了時
+        /// </summary>
+        protected override void OnFadeInFinish()
+        {
+            // SE 停止
+            _soundManager?.StopLoopSE(SeType.Effect_Title_Rise);
+        }
+
+        /// <summary>
         /// フェードアウト開始時
         /// </summary>
         protected override void OnFadeOutStart()
@@ -989,17 +1001,16 @@ namespace UISystem.Presentation
             titleStartAnimationSkiped
                 .Subscribe(_ =>
                 {
+                    // フェードアウト未完了の場合処理なし
+                    if (!_onFadeOutEnd)
+                    {
+                        return;
+                    }
+
                     // タイトルスタートスキップアニメーション起動
                     _startCanvasAnimator?.SetTrigger(IS_SKIP_HASH);
 
-                    // UI イベント購読
-                    SubscribeUiEvents();
-                    
-                    // ポインター表示
-                    SetPointerVisible(true);
-
-                    // BGM 再生
-                    StartBgm();
+                    OnStartTitleAnimationFinish();
                 })
                 .AddTo(_disposables);
         }
@@ -1018,18 +1029,37 @@ namespace UISystem.Presentation
         {
             base.Subscribe();
 
-            // スタートアニメーション終了通知
+            // タイトル表示開始アニメーションチェックポイント通知
+            _startCanvasAnimationEventNotifier.OnAnimationCheckPoint
+                .Subscribe(_ =>
+                {
+                    _startTitleAnimationCheckPointCount++;
+
+                    switch (_startTitleAnimationCheckPointCount)
+                    {
+                        case 1:
+                            // SE 再生
+                            _soundManager?.PlaySE(SeType.Effect_Title_Fall);
+                            break;
+
+                        case 2:
+                            // SE 再生
+                            _soundManager?.PlaySE(SeType.Effect_Impact_Medium, 0.5f);
+                            break;
+
+                        case 3:
+                            // SE 再生
+                            _soundManager?.PlaySE(SeType.Effect_Impact_Medium, 0.5f);
+                            break;
+                    }
+                })
+                .AddTo(_disposables);
+
+            // タイトル表示開始アニメーション終了通知
             _startCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ =>
                 {
-                    // UI イベント購読
-                    SubscribeUiEvents();
-
-                    // ポインター表示
-                    SetPointerVisible(true);
-
-                    // BGM 再生
-                    StartBgm();
+                    OnStartTitleAnimationFinish();
 
                     // アニメーション終了通知
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);
@@ -1050,24 +1080,40 @@ namespace UISystem.Presentation
                 {
                     _startGameAnimationCheckPointCount++;
 
-                    if (_startGameAnimationCheckPointCount <= _gameOptionManager.PlayerCount)
+                    // プレイヤー表示タイミングのチェックポイント回数
+                    int playerDisplayCheckPointCount = _gameOptionManager.PlayerCount;
+                    // VS 表示タイミングのチェックポイント回数
+                    int vsDisplayCheckPointCount = playerDisplayCheckPointCount + 1;
+                    // 画面エフェクト更新タイミングのチェックポイント回数
+                    int screenEffectUpdateCheckPointCount = playerDisplayCheckPointCount + 2;
+                    // 上昇 SE 停止タイミングのチェックポイント回数
+                    int stopRiseSeCheckPointCount = playerDisplayCheckPointCount + 3;
+
+                    if (_startGameAnimationCheckPointCount <= playerDisplayCheckPointCount)
                     {
                         // SE 再生
                         _soundManager?.PlaySE(SeType.Effect_Impact_Small);
 
                         return;
                     }
-                    if (_startGameAnimationCheckPointCount == _gameOptionManager.PlayerCount + 1)
+                    if (_startGameAnimationCheckPointCount == vsDisplayCheckPointCount)
                     {
                         // SE 再生
                         _soundManager?.PlaySE(SeType.Effect_Title_Rise, 0.75f);
 
                         return;
                     }
-                    if (_startGameAnimationCheckPointCount == _gameOptionManager.PlayerCount + 2)
+                    if (_startGameAnimationCheckPointCount == screenEffectUpdateCheckPointCount)
                     {
                         // SE 再生
                         _soundManager?.PlaySE(SeType.Effect_Title_PlayerCutIn, 0.75f);
+
+                        return;
+                    }
+                    if (_startGameAnimationCheckPointCount == stopRiseSeCheckPointCount)
+                    {
+                        // SE 停止
+                        _soundManager?.StopLoopSE(SeType.Effect_Title_Rise);
 
                         return;
                     }
@@ -1202,6 +1248,30 @@ namespace UISystem.Presentation
                 // インデックス 1 以降のボタンオブジェクト非表示
                 connectCountBinder.Events[i].gameObject.SetActive(!isThreeSize);
             }
+        }
+
+        // --------------------------------------------------
+        // アニメーション
+        // --------------------------------------------------
+        /// <summary>
+        /// タイトル表示開始アニメーション終了時の処理
+        /// </summary>
+        private void OnStartTitleAnimationFinish()
+        {
+            // UI イベント購読
+            SubscribeUiEvents();
+
+            // ポインター表示
+            SetPointerVisible(true);
+
+            // BGM 再生
+            StartBgm();
+
+            // SE 再生
+            _soundManager?.PlaySE(SeType.Effect_Impact_Large);
+
+            // SE 停止
+            _soundManager?.StopLoopSE(SeType.Effect_Title_Fall);
         }
 
         // ======================================================

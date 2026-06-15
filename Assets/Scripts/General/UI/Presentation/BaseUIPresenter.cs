@@ -197,8 +197,8 @@ namespace UISystem.Presentation
         /// <summary>ポインターロックフラグ</summary>
         protected bool _isPointerLock = false;
 
-        /// <summary>シーン遷移中かどうかを示すフラグ</summary>
-        protected bool _isSceneTransitioning = true;
+        /// <summary>フェードアウト完了フラグ</summary>
+        protected bool _onFadeOutEnd = false;
 
         /// <summary>フォーカス中ボタン RectTransform</summary>
         private RectTransform _focusButtonRectTransform;
@@ -454,7 +454,10 @@ namespace UISystem.Presentation
         protected virtual void OnFadeOutStart() { }
 
         /// <summary>フェードアウト終了時</summary>
-        protected virtual void OnFadeOutFinish() { }
+        protected virtual void OnFadeOutFinish()
+        {
+            _onFadeOutEnd = true;
+        }
 
         // ======================================================
         // サウンド継承イベント
@@ -588,6 +591,7 @@ namespace UISystem.Presentation
         {
             _disposables?.Dispose();
             _uiEventDisposables?.Dispose();
+            _uiEventDisposables = null;
 
             _eventRouter?.Dispose();
         }
@@ -598,6 +602,7 @@ namespace UISystem.Presentation
         protected virtual void DisposeUiEvents()
         {
             _uiEventDisposables?.Dispose();
+            _uiEventDisposables = null;
 
             _eventRouter?.Dispose();
         }
@@ -704,9 +709,6 @@ namespace UISystem.Presentation
                 // UI イベント購読解除
                 DisposeUiEvents();
 
-                // シーン遷移中フラグを有効化
-                _isSceneTransitioning = true;
-
                 return;
             }
 
@@ -740,14 +742,10 @@ namespace UISystem.Presentation
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
             // SE 再生
-            // ダイアログの場合
-            if (activeCanvasType == CanvasType.Dialog)
+            // ダイアログではない場合
+            if (activeCanvasType != CanvasType.Dialog)
             {
                 _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-            }
-            else
-            {
-                _soundManager?.PlaySE(SeType.UI_Click);
             }
 
             // ダイアログ以外は処理なし
