@@ -467,6 +467,12 @@ namespace UISystem.Presentation
         protected override void OnExitInternal()
         {
             base.OnExitInternal();
+
+            // BGM 停止
+            StopBgm();
+
+            // SE 停止
+            _soundManager?.StopLoopSE(SeType.Effect_Title_Rise);
         }
 
         // ======================================================
@@ -910,15 +916,6 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// フェードイン終了時
-        /// </summary>
-        protected override void OnFadeInFinish()
-        {
-            // SE 停止
-            _soundManager?.StopLoopSE(SeType.Effect_Title_Rise);
-        }
-
-        /// <summary>
         /// フェードアウト開始時
         /// </summary>
         protected override void OnFadeOutStart()
@@ -932,12 +929,20 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// BGM 開始時
+        /// BGM 再生開始時
         /// </summary>
         protected override void StartBgm()
         {
             _soundManager?.SetBGMVolume(BgmType.Title, 0.2f, 0);
             _soundManager?.PlayBGM(BgmType.Title, 0);
+        }
+
+        /// <summary>
+        /// BGM 再生停止時
+        /// </summary>
+        protected override void StopBgm()
+        {
+            _soundManager?.StopBGM(BgmType.Title);
         }
 
         // ======================================================
@@ -1268,7 +1273,7 @@ namespace UISystem.Presentation
             StartBgm();
 
             // SE 再生
-            _soundManager?.PlaySE(SeType.Effect_Impact_Large);
+            _soundManager?.PlaySE(SeType.Effect_Impact_Large, 0.75f);
 
             // SE 停止
             _soundManager?.StopLoopSE(SeType.Effect_Title_Fall);

@@ -382,6 +382,9 @@ namespace UISystem.Presentation
         protected override void OnExitInternal()
         {
             base.OnExitInternal();
+
+            // BGM 停止
+            StopBgm();
         }
 
         // ======================================================
@@ -544,12 +547,20 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// BGM 開始時
+        /// BGM 再生開始時
         /// </summary>
         protected override void StartBgm()
         {
             _soundManager?.SetBGMVolume(BgmType.Result, 0.1f, 0);
             _soundManager?.PlayBGM(BgmType.Result, 0);
+        }
+
+        /// <summary>
+        /// BGM 再生停止時
+        /// </summary>
+        protected override void StopBgm()
+        {
+            _soundManager?.StopBGM(BgmType.Result);
         }
 
         /// <summary>

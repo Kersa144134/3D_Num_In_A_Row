@@ -463,8 +463,11 @@ namespace UISystem.Presentation
         // サウンド継承イベント
         // ======================================================
 
-        /// <summary>BGM 開始時</summary>
+        /// <summary>BGM 再生開始時</summary>
         protected virtual void StartBgm() { }
+
+        /// <summary>BGM 再生停止時</summary>
+        protected virtual void StopBgm() { }
 
         /// <summary>BGM 再生位置更新時</summary>
         /// <param name="block">対象再生ブロック</param>

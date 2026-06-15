@@ -122,7 +122,7 @@ namespace GameSystem.Presentation
         private const float SCREEN_FADE_DURATION_SECONDS = 0.5f;
 
         /// <summary>画面フェードの最低待機時間</summary>
-        private const float SCREEN_FADE_HOLD_TIME_SECONDS = 0.25f;
+        private const float SCREEN_FADE_HOLD_TIME_SECONDS = 0.5f;
 
         // ======================================================
         // UniRx 変数
