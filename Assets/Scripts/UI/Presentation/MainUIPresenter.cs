@@ -552,6 +552,34 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
+        // 入力継承イベント
+        // ======================================================
+
+        /// <summary>キャンセル入力時</summary>
+        protected override void OnCancelInput()
+        {
+            // UI イベント未購読の場合処理なし
+            if (_uiEventDisposables == null)
+            {
+                return;
+            }
+
+            switch (_uiStateController.GetActiveCanvasType())
+            {
+                case CanvasType.Dialog:
+                    OnDialogCanvasCancelInput();
+                    break;
+
+                case CanvasType.Pause:
+                    OnPauseCanvasCancelInput();
+                    break;
+
+                default:
+                    return;
+            }
+        }
+
+        // ======================================================
         // ボタン派生イベント
         // ======================================================
 
@@ -637,29 +665,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.DialogNo)
             {
-                // SE 再生
-                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-
-                // ポーズ画面のボタンを操作可能に更新
-                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), true);
-                SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToTitle), true);
-
-                // ダイアログキャンバスを非表示にする
-                _uiStateController.HideDialogCanvas();
-
-                // 次のキャンバス状態を取得する
-                CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                // 最後に選択されていたボタンを取得する
-                BaseButtonEvent selectedButtonEvent =
-                    _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
-
-                // 入力状態に応じて初期選択を適用する
-                SetSelectionState(nextCanvasType, selectedButtonEvent);
-
-                // ダイアログ非表示を通知する
-                _onDialogVisibleChanged.OnNext(false);
-
+                OnDialogCanvasCancelInput();
                 return;
             }
         }
@@ -681,9 +687,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.ReturnToMain)
             {
-                // Play フェーズに戻るリクエスト通知
-                _onPhaseChangeRequested.OnNext(PhaseType.Play);
-
+                OnPauseCanvasCancelInput();
                 return;
             }
 
@@ -1105,6 +1109,47 @@ namespace UISystem.Presentation
             base.Dispose();
 
             _disposables?.Dispose();
+        }
+
+        // --------------------------------------------------
+        // キャンバス
+        // --------------------------------------------------
+        /// <summary>
+        /// ダイアログキャンバス表示中のキャンセル入力処理
+        /// </summary>
+        private void OnDialogCanvasCancelInput()
+        {
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
+
+            // ポーズ画面のボタンを操作可能に更新
+            SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToMain), true);
+            SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.ReturnToTitle), true);
+
+            // ダイアログキャンバスを非表示にする
+            _uiStateController.HideDialogCanvas();
+
+            // 次のキャンバス状態を取得する
+            CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // 最後に選択されていたボタンを取得する
+            BaseButtonEvent selectedButtonEvent =
+                _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+            // 入力状態に応じて初期選択を適用する
+            SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+            // ダイアログ非表示を通知する
+            _onDialogVisibleChanged.OnNext(false);
+        }
+
+        /// <summary>
+        /// ポーズキャンバス表示中のキャンセル入力処理
+        /// </summary>
+        private void OnPauseCanvasCancelInput()
+        {
+            // Play フェーズに戻るリクエスト通知
+            _onPhaseChangeRequested.OnNext(PhaseType.Play);
         }
 
         // --------------------------------------------------

@@ -134,12 +134,20 @@ namespace GameSystem.Presentation
                     .Subscribe(type => NotifyActiveControllerChanged(type))
                     .AddTo(_disposables);
 
-                // スタートボタン 押す
-                _inputManager.StartButton.OnDown
+                // スタートボタン 離す
+                _inputManager.StartButton.OnUp
                     .Subscribe(_ =>
                     {
                         _onExitGameInput.OnNext(Unit.Default);
                         _onPauseInput.OnNext(Unit.Default);
+                    })
+                    .AddTo(_disposables);
+
+                // B ボタン 離す
+                _inputManager.ButtonB.OnUp
+                    .Subscribe(_ =>
+                    {
+                        _onCancelInput.OnNext(Unit.Default);
                     })
                     .AddTo(_disposables);
 
@@ -220,7 +228,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
+                _titleUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted, _onCancelInput);
 
                 _titleUIPresenter.OnPhaseChangeRequested
                     .Subscribe(phase => NotifyPhaseChangeRequested(phase))
@@ -293,7 +301,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
+                _mainUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted, _onCancelInput);
 
                 _mainUIPresenter.OnPhaseChangeRequested
                     .Subscribe(phase => NotifyPhaseChangeRequested(phase))
@@ -336,7 +344,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 // 共通
                 // --------------------------------------------------
-                _resultUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted);
+                _resultUIPresenter.BindBaseStreams(_fadeInTrigger, _fadeOutTrigger, _onFadeCompleted, _onCancelInput);
 
                 _resultUIPresenter.OnPhaseChangeRequested
                     .Subscribe(phase => NotifyPhaseChangeRequested(phase))

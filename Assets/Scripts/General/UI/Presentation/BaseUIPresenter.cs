@@ -413,6 +413,13 @@ namespace UISystem.Presentation
         protected virtual void OnExitInternal() { }
 
         // ======================================================
+        // 入力抽象イベント
+        // ======================================================
+
+        /// <summary>キャンセル入力時</summary>
+        protected abstract void OnCancelInput();
+
+        // ======================================================
         // ボタン継承イベント
         // ======================================================
 
@@ -486,7 +493,8 @@ namespace UISystem.Presentation
         public void BindBaseStreams(
             in IObservable<float> fadeInSeconds,
             in IObservable<float> fadeOutSeconds,
-            in IObservable<Unit> fadeCompleted)
+            in IObservable<Unit> fadeCompleted,
+            in IObservable<Unit> cancelInput)
         {
             fadeInSeconds
                 .Subscribe(time => FadeInAsync(time).Forget())
@@ -499,6 +507,10 @@ namespace UISystem.Presentation
             fadeCompleted
                 .Take(1)
                 .Subscribe(_ => Subscribe())
+                .AddTo(_disposables);
+
+            cancelInput
+                .Subscribe(_ => OnCancelInput())
                 .AddTo(_disposables);
         }
         

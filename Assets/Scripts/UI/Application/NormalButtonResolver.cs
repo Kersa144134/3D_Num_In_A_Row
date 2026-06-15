@@ -91,11 +91,17 @@ namespace UISystem.Application
         }
 
         // ======================================================
-        // 通常ボタン解決
+        // パブリックメソッド
         // ======================================================
 
+        /// <summary>
+        /// 通常ボタンイベントを取得
+        /// </summary>
+        /// <param name="type">UIアクション種別</param>
+        /// <returns>対応するボタンイベント</returns>
         public NormalButtonEvent GetNormalButton(in UIActionType type)
         {
+            // 指定された UI アクション種別に対応するボタンイベントを取得
             if (_normalForwardTable.TryGetValue(type, out NormalButtonEvent buttonEvent))
             {
                 return buttonEvent;
@@ -104,18 +110,34 @@ namespace UISystem.Application
             return null;
         }
 
-        public bool TryGetNormalType(in NormalButtonEvent buttonEvent, out UIActionType type)
+        /// <summary>
+        /// 通常ボタンイベントから UI アクション種別を取得
+        /// </summary>
+        /// <param name="buttonEvent">ボタンイベント</param>
+        /// <param name="type">取得した UI アクション種別</param>
+        /// <returns>取得成功時 true</returns>
+        public bool TryGetNormalType(
+            in NormalButtonEvent buttonEvent,
+            out UIActionType type)
         {
+            // ボタンイベントに対応する UI アクション種別を取得
             return _normalReverseTable.TryGetValue(buttonEvent, out type);
         }
 
-        // ======================================================
-        // ダイアログボタン解決
-        // ======================================================
-
-        public NormalButtonEvent GetDialogButton(in UIActionType type, in DialogType dialogType)
+        /// <summary>
+        /// ダイアログ用ボタンイベントを取得
+        /// </summary>
+        /// <param name="type">UIアクション種別</param>
+        /// <param name="dialogType">ダイアログ種別</param>
+        /// <returns>対応するボタンイベント</returns>
+        public NormalButtonEvent GetDialogButton(
+            in UIActionType type,
+            in DialogType dialogType)
         {
-            if (_dialogForwardTable.TryGetValue((type, dialogType), out NormalButtonEvent buttonEvent))
+            // UI アクション種別とダイアログ種別の組み合わせからボタンイベントを取得
+            if (_dialogForwardTable.TryGetValue(
+                (type, dialogType),
+                out NormalButtonEvent buttonEvent))
             {
                 return buttonEvent;
             }
@@ -123,17 +145,30 @@ namespace UISystem.Application
             return null;
         }
 
-        public bool TryGetDialogType(in NormalButtonEvent buttonEvent, out UIActionType type, out DialogType dialogType)
+        /// <summary>
+        /// ダイアログ用ボタンイベントから種別情報を取得
+        /// </summary>
+        /// <param name="buttonEvent">ボタンイベント</param>
+        /// <param name="type">取得した UI アクション種別</param>
+        /// <param name="dialogType">取得したダイアログ種別</param>
+        /// <returns>取得成功時 true</returns>
+        public bool TryGetDialogType(
+            in NormalButtonEvent buttonEvent,
+            out UIActionType type,
+            out DialogType dialogType)
         {
+            // ボタンイベントに対応する種別情報を取得
             if (_dialogReverseTable.TryGetValue(buttonEvent, out var key))
             {
                 type = key.Item1;
                 dialogType = key.Item2;
+
                 return true;
             }
 
             type = default;
             dialogType = default;
+
             return false;
         }
     }

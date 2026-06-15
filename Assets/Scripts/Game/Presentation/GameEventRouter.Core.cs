@@ -243,7 +243,10 @@ namespace GameSystem.Presentation
 
         /// <summary>ゲーム終了入力用 Subject</summary>
         private readonly Subject<Unit> _onExitGameInput = new Subject<Unit>();
-        
+
+        /// <summary>キャンセル入力用 Subject</summary>
+        private readonly Subject<Unit> _onCancelInput = new Subject<Unit>();
+
         /// <summary>スキップ入力用 Subject</summary>
         private readonly Subject<Unit> _onSkipInput = new Subject<Unit>();
 

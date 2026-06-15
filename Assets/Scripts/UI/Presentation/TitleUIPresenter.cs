@@ -476,6 +476,38 @@ namespace UISystem.Presentation
         }
 
         // ======================================================
+        // 入力継承イベント
+        // ======================================================
+
+        /// <summary>キャンセル入力時</summary>
+        protected override void OnCancelInput()
+        {
+            // UI イベント未購読の場合処理なし
+            if (_uiEventDisposables == null)
+            {
+                return;
+            }
+
+            switch (_uiStateController.GetActiveCanvasType())
+            {
+                case CanvasType.Dialog:
+                    OnDialogCanvasCancelInput();
+                    break;
+
+                case CanvasType.Start:
+                    OnStartCanvasCancelInput();
+                    break;
+
+                case CanvasType.Option:
+                    OnOptionCanvasCancelInput();
+                    break;
+
+                default:
+                    return;
+            }
+        }
+
+        // ======================================================
         // ボタン派生イベント
         // ======================================================
 
@@ -603,29 +635,7 @@ namespace UISystem.Presentation
                 // ダイアログ：NO
                 // --------------------------------------------------
                 case UIActionType.DialogNo:
-                    // SE 再生
-                    _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-
-                    // スタート画面のボタンを操作可能に更新
-                    SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
-                    SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
-
-                    // ダイアログキャンバスを非表示にする
-                    _uiStateController.HideDialogCanvas();
-
-                    // 次のキャンバス状態を取得する
-                    CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択されていたボタンを取得する
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
-
-                    // 入力状態に応じて初期選択を適用する
-                    SetSelectionState(nextCanvasType, selectedButtonEvent);
-
-                    // ダイアログ非表示を通知する
-                    _onDialogVisibleChanged.OnNext(false);
-
+                    OnDialogCanvasCancelInput();
                     break;
             }
         }
@@ -739,24 +749,7 @@ namespace UISystem.Presentation
             // --------------------------------------------------
             if (actionType == UIActionType.OptionCancel)
             {
-                // SE 再生
-                _soundManager?.PlaySE(SeType.UI_Cancel);
-
-                if (_uiStateController is TitleUIStateController titleUIStateController)
-                {
-                    // スタートキャンバスを表示する
-                    titleUIStateController.ShowStartCanvas();
-                }
-
-                // 次のキャンバス状態を取得する
-                CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                // 初期フォーカスをオプションボタンに設定する
-                SetSelectionState(nextCanvasType, _uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption));
-
-                // ボードアニメーションをリセットする
-                _boardAnimator?.SetInteger(BOARD_SIZE_HASH, BOARD_ANIMATION_DISABLED);
-
+                OnOptionCanvasCancelInput();
                 return;
             }
 
@@ -966,20 +959,7 @@ namespace UISystem.Presentation
                     // UI イベント購読後かつスタートキャンバスの場合
                     if (_uiEventDisposables != null && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
                     {
-                        // SE 再生
-                        _soundManager?.PlaySE(SeType.UI_ShowDialog, 0.5f);
-
-                        // ダイアログキャンバスを表示する
-                        _uiStateController.ShowDialogCanvas(DialogType.ExitGame);
-
-                        // 次のキャンバス状態を取得する
-                        CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
-
-                        // 入力状態に応じて初期選択を適用する
-                        SetSelectionState(nextCanvasType);
-
-                        // ダイアログ表示を通知する
-                        _onDialogVisibleChanged.OnNext(true);
+                        OnStartCanvasCancelInput();
                     }
                 })
                 .AddTo(_disposables); 
@@ -1146,8 +1126,82 @@ namespace UISystem.Presentation
         }
 
         // --------------------------------------------------
-        // ダイアログ
+        // キャンバス
         // --------------------------------------------------
+        /// <summary>
+        /// ダイアログキャンバス表示中のキャンセル入力処理
+        /// </summary>
+        private void OnDialogCanvasCancelInput()
+        {
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
+
+            // ダイアログキャンバスを非表示にする
+            _uiStateController.HideDialogCanvas();
+
+            // 次のキャンバス状態を取得する
+            CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // 最後に選択されていたボタンを取得する
+            BaseButtonEvent selectedButtonEvent =
+                _uiStateController.GetLastSelectedButtonEvent(nextCanvasType);
+
+            // 入力状態に応じて初期選択を適用する
+            SetSelectionState(nextCanvasType, selectedButtonEvent);
+
+            // ダイアログ非表示を通知する
+            _onDialogVisibleChanged.OnNext(false);
+        }
+
+        /// <summary>
+        /// スタートキャンバス表示中のキャンセル入力処理
+        /// </summary>
+        private void OnStartCanvasCancelInput()
+        {
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_ShowDialog, 0.5f);
+
+            // ダイアログキャンバスを表示する
+            _uiStateController.ShowDialogCanvas(DialogType.ExitGame);
+
+            // 次のキャンバス状態を取得する
+            CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // 入力状態に応じて初期選択を適用する
+            SetSelectionState(nextCanvasType);
+
+            // ダイアログ表示を通知する
+            _onDialogVisibleChanged.OnNext(true);
+        }
+
+        /// <summary>
+        /// オプションキャンバス表示中のキャンセル入力処理
+        /// </summary>
+        private void OnOptionCanvasCancelInput()
+        {
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_Cancel);
+
+            if (_uiStateController is TitleUIStateController titleUIStateController)
+            {
+                // スタートキャンバスを表示する
+                titleUIStateController.ShowStartCanvas();
+            }
+
+            // 次のキャンバス状態を取得する
+            CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // 初期フォーカスをオプションボタンに設定する
+            SetSelectionState(
+                nextCanvasType,
+                _uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption));
+
+            // ボードアニメーションをリセットする
+            _boardAnimator?.SetInteger(
+                BOARD_SIZE_HASH,
+                BOARD_ANIMATION_DISABLED);
+        }
+
         /// <summary>
         /// ダイアログオプション表示テキスト更新
         /// </summary>
