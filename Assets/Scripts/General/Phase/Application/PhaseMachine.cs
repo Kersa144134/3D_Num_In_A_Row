@@ -148,16 +148,16 @@ namespace PhaseSystem.Application
             _currentState.OnLateUpdateState(unscaledDeltaTime);
 
             // 遷移判定
-            PhaseType nextPhase = _transitionRule.ResolveTimeTransition(_currentState);
+            PhaseType nextPhaseType = _transitionRule.ResolveTimeTransition(_currentState);
 
             // 現在フェーズと同一ならフェーズ遷移なし
-            if (nextPhase == _currentPhaseType.Value)
+            if (nextPhaseType == _currentPhaseType.Value)
             {
                 return;
             }
 
             // フェーズ遷移
-            ChangePhase(nextPhase);
+            ChangePhase(nextPhaseType);
         }
 
         /// <summary>
@@ -172,6 +172,13 @@ namespace PhaseSystem.Application
                     _currentPhaseType.Value,
                     nextPhaseType);
 
+            // 現在フェーズと同一ならフェーズ遷移なし
+            if (resolvedPhaseType == _currentPhaseType.Value)
+            {
+                return;
+            }
+            
+            // フェーズ遷移
             ChangePhase(resolvedPhaseType);
         }
 
@@ -216,9 +223,9 @@ namespace PhaseSystem.Application
         }
 
         /// <summary>
-        /// 現在のフェーズ定義に基づき、実行対象となるUpdatable配列を解決する
+        /// 現在のフェーズ定義に基づき、実行対象となる Updatable 配列を解決する
         /// </summary>
-        /// <returns>実行対象となるUpdatable配列</returns>
+        /// <returns>実行対象となる Updatable 配列</returns>
         private IUpdatable[] ResolvePhaseUpdatables()
         {
             if (!(_currentState is IPhaseUpdatableDefinition definition))
