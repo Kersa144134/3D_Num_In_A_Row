@@ -11,7 +11,7 @@ using UpdateSystem.Domain;
 namespace PhaseSystem.Domain
 {
     /// <summary>
-    /// フェーズごとの Updatabl e実行対象を識別子で定義する
+    /// フェーズごとの Updatable 実行対象を識別子で定義する
     /// </summary>
     public interface IPhaseUpdatableDefinition
     {
