@@ -49,7 +49,7 @@ namespace BoardSystem.Application
         {
             // 全移動情報
             List<(BoardIndex from, BoardIndex to)> allMoves =
-                new List<(BoardIndex, BoardIndex)>();
+                new List<(BoardIndex from, BoardIndex to)>();
 
             // --------------------------------------------------
             // 移動計算
@@ -57,11 +57,15 @@ namespace BoardSystem.Application
             for (int i = 0; i < columns.Count; i++)
             {
                 // 列取得
-                (int x, int z) column = columns[i];
+                (int x, int z) column =
+                    columns[i];
 
                 // 移動計算取得
                 IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                    _model.CalculateReposition(column.x, column.z);
+                    _model.CalculateReposition(
+                        column.x,
+                        column.z
+                    );
 
                 // 結果統合
                 allMoves.AddRange(moves);
@@ -75,17 +79,8 @@ namespace BoardSystem.Application
                 );
             }
 
-            // --------------------------------------------------
-            // モデル更新
-            // --------------------------------------------------
-            for (int i = 0; i < columns.Count; i++)
-            {
-                // 列取得
-                (int x, int z) column = columns[i];
-
-                // モデル更新
-                _model.ApplyReposition(column.x, column.z);
-            }
+            // 再配置適用
+            _model.ApplyReposition(allMoves);
 
             // 結果返却
             return UniTask.FromResult(

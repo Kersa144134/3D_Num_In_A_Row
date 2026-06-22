@@ -28,30 +28,37 @@ namespace BoardSystem.Domain
         // ======================================================
 
         /// <summary>
-        /// 盤面を 90 度回転させ、移動情報を返却する
+        /// 盤面を 90 度回転した結果を取得する
         /// </summary>
-        /// <param name="state">対象盤面状態</param>
+        /// <param name="board">参照対象の盤面</param>
         /// <param name="axis">回転軸</param>
-        /// <param name="direction">回転方向（+/-）</param>
-        /// <returns>移動情報リスト（from → to）</returns>
-        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Rotate90(
-            BoardState state,
+        /// <param name="direction">回転方向</param>
+        /// <param name="moves">回転による移動情報</param>
+        /// <returns>回転後の盤面データ</returns>
+        public int[,,] Rotate90(
+            in IBoardReader board,
             in RotationAxis axis,
-            in RotationDirection direction)
+            in RotationDirection direction,
+            out IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
         {
-            if (state == null)
+            if (board == null)
             {
-                return new List<(BoardIndex, BoardIndex)>();
+                moves = new List<(BoardIndex, BoardIndex)>();
+
+                return new int[0, 0, 0];
             }
 
-            // 盤面サイズ
-            int size = state.GetSize();
+            // 盤面サイズ取得
+            int size = board.GetSize();
 
-            // 回転後の盤面データ
-            int[,,] newBoard = new int[size, size, size];
+            // 回転後盤面生成
+            int[,,] rotatedBoard = new int[size, size, size];
 
-            // 移動情報リスト
-            List<(BoardIndex from, BoardIndex to)> moves = new List<(BoardIndex, BoardIndex)>(size * size * size);
+            // 移動情報生成
+            List<(BoardIndex from, BoardIndex to)> rotateMoves =
+                new List<(BoardIndex from, BoardIndex to)>(
+                    size * size * size
+                );
 
             for (int x = 0; x < size; x++)
             {
@@ -59,14 +66,19 @@ namespace BoardSystem.Domain
                 {
                     for (int z = 0; z < size; z++)
                     {
+                        // 元座標生成
                         BoardIndex fromIndex = new BoardIndex(x, y, z);
-                        int value = state.Get(fromIndex);
 
+                        // セル値取得
+                        int value = board.Get(fromIndex);
+
+                        // 空マスはスキップ
                         if (value == EMPTY)
                         {
                             continue;
                         }
 
+                        // 回転後座標初期化
                         int newX = x;
                         int newY = y;
                         int newZ = z;
@@ -76,13 +88,11 @@ namespace BoardSystem.Domain
                         {
                             if (direction == RotationDirection.Positive)
                             {
-                                newX = x;
                                 newY = z;
                                 newZ = size - 1 - y;
                             }
                             else
                             {
-                                newX = x;
                                 newY = size - 1 - z;
                                 newZ = y;
                             }
@@ -94,52 +104,31 @@ namespace BoardSystem.Domain
                             {
                                 newX = y;
                                 newY = size - 1 - x;
-                                newZ = z;
                             }
                             else
                             {
                                 newX = size - 1 - y;
                                 newY = x;
-                                newZ = z;
                             }
                         }
 
+                        // 移動先生成
                         BoardIndex toIndex = new BoardIndex(newX, newY, newZ);
-                        newBoard[newX, newY, newZ] = value;
-                        moves.Add((fromIndex, toIndex));
+
+                        // 回転後盤面へ反映
+                        rotatedBoard[newX, newY, newZ] = value;
+
+                        // 移動情報記録
+                        rotateMoves.Add((fromIndex, toIndex));
                     }
                 }
             }
 
-            ApplyRotatedBoard(state, newBoard, size);
-            return moves;
-        }
+            // 移動情報返却
+            moves = rotateMoves;
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 回転後の盤面データを反映する
-        /// </summary>
-        /// <param name="state">対象盤面状態</param>
-        /// <param name="newBoard">回転後の盤面データ</param>
-        /// <param name="size">盤面サイズ</param>
-        private void ApplyRotatedBoard(
-            BoardState state,
-            in int[,,] newBoard,
-            in int size)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                for (int y = 0; y < size; y++)
-                {
-                    for (int z = 0; z < size; z++)
-                    {
-                        state.Set(new BoardIndex(x, y, z), newBoard[x, y, z]);
-                    }
-                }
-            }
+            // 回転後盤面返却
+            return rotatedBoard;
         }
     }
 }

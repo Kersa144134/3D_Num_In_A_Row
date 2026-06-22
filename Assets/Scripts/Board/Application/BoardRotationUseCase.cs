@@ -53,13 +53,16 @@ namespace BoardSystem.Application
         /// <summary>
         /// 回転処理を実行
         /// </summary>
-        public UniTask<RotationResult> HandleRotateAsync(
+        public UniTask<BoardRotationResult> HandleRotateAsync(
             RotationAxis axis,
             RotationDirection direction)
         {
             // モデルから回転移動情報を取得
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
-                _model.Rotate90(axis, direction);
+            IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves =
+                _model.Rotate90(
+                    axis,
+                    direction
+                );
 
             // 全列リスト生成
             List<(int x, int z)> columns = new List<(int, int)>();
@@ -76,31 +79,35 @@ namespace BoardSystem.Application
 
             // 再配置移動情報
             List<(BoardIndex from, BoardIndex to)> repositionMoves =
-                new List<(BoardIndex, BoardIndex)>();
+                new List<(BoardIndex from, BoardIndex to)>();
 
             // 各列ごとに再配置計算
             for (int i = 0; i < columns.Count; i++)
             {
-                (int x, int z) col = columns[i];
+                // 列取得
+                (int x, int z) column = columns[i];
 
                 // 再配置移動取得
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> movesResult =
-                    _model.CalculateReposition(col.x, col.z);
+                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                    _model.CalculateReposition(
+                        column.x,
+                        column.z
+                    );
 
-                // 結果を追加
-                repositionMoves.AddRange(movesResult);
+                // 結果を統合
+                repositionMoves.AddRange(moves);
             }
 
-            // モデルに再配置適用
-            for (int i = 0; i < columns.Count; i++)
-            {
-                (int x, int z) col = columns[i];
-
-                _model.ApplyReposition(col.x, col.z);
-            }
+            // 再配置適用
+            _model.ApplyReposition(repositionMoves);
 
             // 結果返却
-            return UniTask.FromResult(new RotationResult(moves, repositionMoves));
+            return UniTask.FromResult(
+                new BoardRotationResult(
+                    rotateMoves,
+                    repositionMoves
+                )
+            );
         }
     }
 }

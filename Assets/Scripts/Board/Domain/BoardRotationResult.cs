@@ -13,7 +13,7 @@ namespace BoardSystem.Domain
     /// <summary>
     /// 回転処理結果
     /// </summary>
-    public readonly struct RotationResult
+    public readonly struct BoardRotationResult
     {
         // ======================================================
         // プロパティ
@@ -38,7 +38,7 @@ namespace BoardSystem.Domain
         /// </summary>
         /// <param name="rotateMoves">回転移動</param>
         /// <param name="repositionMoves">再配置移動</param>
-        public RotationResult(
+        public BoardRotationResult(
             IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves,
             IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves)
         {

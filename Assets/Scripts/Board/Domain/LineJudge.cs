@@ -76,7 +76,9 @@ namespace BoardSystem.Domain
         /// 盤面全体のライン判定を行い、成立時にイベントを発火する
         /// 1つでもラインが成立していれば true を返す
         /// </summary>
-        public bool CheckAll(in BoardState board)
+        /// <param name="board">盤面データ</param>
+        /// <returns>ラインが1つ以上成立している場合は true</returns>
+        public bool CheckAll(in IBoardReader board)
         {
             // ライン成立フラグ
             bool isAnyLineComplete = false;
@@ -137,7 +139,7 @@ namespace BoardSystem.Domain
         /// 指定ライン内の連続セル座標を取得
         /// </summary>
         private List<(IReadOnlyList<BoardIndex> Cells, int Player)> CalculateLinePositions(
-            in BoardState board,
+            in IBoardReader board,
             in int[][] line)
         {
             // 結果格納用リスト

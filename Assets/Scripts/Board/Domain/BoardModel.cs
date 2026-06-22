@@ -40,6 +40,13 @@ namespace BoardSystem.Domain
         public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _lineJudge.OnLineComplete;
 
         // ======================================================
+        // 定数
+        // ======================================================
+
+        /// <summary>空マスを示す値</summary>
+        private const int EMPTY = 0;
+
+        // ======================================================
         // コンストラクタ
         // ======================================================
 
@@ -81,6 +88,12 @@ namespace BoardSystem.Domain
         /// </summary>
         public void ApplyPlace(in BoardIndex index, in int player)
         {
+            // 既に駒が存在する場合は処理なし
+            if (_boardState.Get(index) != EMPTY)
+            {
+                return;
+            }
+
             _piecePlacement.ApplyPlace(
                 _boardState,
                 index,
@@ -105,12 +118,13 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 再配置適用処理
         /// </summary>
-        public void ApplyReposition(in int columnX, in int columnZ)
+        /// <param name="repositionMoves">再配置情報</param>
+        public void ApplyReposition(in IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves)
         {
             _piecePlacement.ApplyReposition(
                 _boardState,
-                columnX,
-                columnZ
+                _boardState,
+                repositionMoves
             );
         }
 
@@ -127,7 +141,7 @@ namespace BoardSystem.Domain
         /// </summary>
         public void ClearCell(in BoardIndex index)
         {
-            _boardState.ClearCell(index);
+            _boardState.Clear(index);
         }
 
         /// <summary>
@@ -140,15 +154,20 @@ namespace BoardSystem.Domain
             in RotationAxis axis,
             in RotationDirection direction)
         {
-            // 盤面回転処理を実行し、移動情報を取得
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+            // 回転後の盤面データを取得
+            int[,,] rotatedBoard =
                 _boardRotate.Rotate90(
                     _boardState,
                     axis,
-                    direction
+                    direction,
+                    out IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves
                 );
 
-            return moves;
+            // 回転結果を反映
+            _boardState.ApplyBoard(rotatedBoard);
+
+            // 回転移動情報を返却
+            return rotateMoves;
         }
 
         /// <summary>

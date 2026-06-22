@@ -11,7 +11,7 @@ namespace BoardSystem.Domain
     /// <summary>
     /// 任意サイズ3D盤面状態保持クラス
     /// </summary>
-    public sealed class BoardState
+    public sealed class BoardState : IBoardReader, IBoardWriter
     {
         // ======================================================
         // 構造体
@@ -75,56 +75,10 @@ namespace BoardSystem.Domain
         public BoardState(in int boardSize)
         {
             _boardSize = boardSize;
+
+            // 盤面情報生成
             _board = new int[_boardSize, _boardSize, _boardSize];
 
-            // 上面列情報生成
-            _columns = new Column[_boardSize, _boardSize];
-            InitializeColumns();
-
-            Initialize();
-        }
-
-        // ======================================================
-        // セッター
-        // ======================================================
-
-        /// <summary>
-        /// 指定座標の値設定
-        /// </summary>
-        public void Set(in BoardIndex index, in int value)
-        {
-            _board[index.X, index.Y, index.Z] = value;
-        }
-
-        // ======================================================
-        // ゲッター
-        // ======================================================
-
-        /// <summary>
-        /// 盤面サイズ取得
-        /// </summary>
-        public int GetSize()
-        {
-            return _boardSize;
-        }
-
-        /// <summary>
-        /// 指定座標の値取得
-        /// </summary>
-        public int Get(in BoardIndex index)
-        {
-            return _board[index.X, index.Y, index.Z];
-        }
-
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 盤面の初期化
-        /// </summary>
-        public void Initialize()
-        {
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int y = 0; y < _boardSize; y++)
@@ -135,30 +89,73 @@ namespace BoardSystem.Domain
                     }
                 }
             }
-        }
 
-        /// <summary>
-        /// 指定座標のマスをクリア
-        /// </summary>
-        public void ClearCell(in BoardIndex index)
-        {
-            _board[index.X, index.Y, index.Z] = EMPTY;
-        }
+            // 上面列情報生成
+            _columns = new Column[_boardSize, _boardSize];
 
-        // ======================================================
-        // プライベートメソッド
-        // ======================================================
-
-        /// <summary>
-        /// 上面列情報の初期化
-        /// </summary>
-        private void InitializeColumns()
-        {
             for (int x = 0; x < _boardSize; x++)
             {
                 for (int z = 0; z < _boardSize; z++)
                 {
                     _columns[x, z] = new Column(x, z);
+                }
+            }
+        }
+
+        // ======================================================
+        // IBoardReader 実装
+        // ======================================================
+
+        /// <summary>
+        /// 指定座標の値取得
+        /// </summary>
+        public int Get(in BoardIndex index)
+        {
+            return _board[index.X, index.Y, index.Z];
+        }
+
+        /// <summary>
+        /// 盤面サイズ取得
+        /// </summary>
+        public int GetSize()
+        {
+            return _boardSize;
+        }
+
+        // ======================================================
+        // IBoardWriter 実装
+        // ======================================================
+
+        /// <summary>
+        /// 指定座標の値設定
+        /// </summary>
+        public void Set(in BoardIndex index, in int value)
+        {
+            _board[index.X, index.Y, index.Z] = value;
+        }
+
+        /// <summary>
+        /// 指定座標のマスをクリア
+        /// </summary>
+        public void Clear(in BoardIndex index)
+        {
+            _board[index.X, index.Y, index.Z] = EMPTY;
+        }
+
+        /// <summary>
+        /// 盤面データを一括反映
+        /// </summary>
+        /// <param name="boardData">反映する盤面データ</param>
+        public void ApplyBoard(in int[,,] boardData)
+        {
+            for (int x = 0; x < _boardSize; x++)
+            {
+                for (int y = 0; y < _boardSize; y++)
+                {
+                    for (int z = 0; z < _boardSize; z++)
+                    {
+                        _board[x, y, z] = boardData[x, y, z];
+                    }
                 }
             }
         }

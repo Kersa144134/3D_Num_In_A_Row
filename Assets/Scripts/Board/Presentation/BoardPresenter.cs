@@ -556,7 +556,7 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             // 回転ユースケース実行
             // --------------------------------------------------
-            RotationResult result = await _rotationUseCase.HandleRotateAsync(axis, direction);
+            BoardRotationResult result = await _rotationUseCase.HandleRotateAsync(axis, direction);
 
             // ビュー辞書更新
             ApplyViewMoves(result.RotateMoves);
