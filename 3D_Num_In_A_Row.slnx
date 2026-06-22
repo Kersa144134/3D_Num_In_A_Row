@@ -10,6 +10,7 @@
   <Project Path="GeneralSoundApplication.csproj" />
   <Project Path="UniRx.Examples.csproj" />
   <Project Path="GamePresentation.csproj" />
+  <Project Path="BoardDomain.csproj" />
   <Project Path="UIInfrastructure.csproj" />
   <Project Path="BoardApplication.csproj" />
   <Project Path="GeneralUpdateApplication.csproj" />
@@ -17,7 +18,6 @@
   <Project Path="GeneralPhaseDomain.csproj" />
   <Project Path="OptionInfrastructure.csproj" />
   <Project Path="InputInfrastructure.csproj" />
-  <Project Path="BoardDomain.csproj" />
   <Project Path="CameraDomain.csproj" />
   <Project Path="InputPresentation.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />

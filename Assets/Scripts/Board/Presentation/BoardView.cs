@@ -383,7 +383,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 複数駒を同時に落下させる
         /// </summary>
-        public async UniTask MovePiecesAsync(IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        public async UniTask MovePiecesAsync(IReadOnlyList<BoardMoveResult> moves)
         {
             // 移動計画リストを生成
             List<MovePlanData> plans = CreateMovePlans(moves);
@@ -536,7 +536,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// 駒の移動計画を生成
         /// </summary>
-        private List<MovePlanData> CreateMovePlans(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        private List<MovePlanData> CreateMovePlans(in IReadOnlyList<BoardMoveResult> moves)
         {
             // スナップショットを作成
             Dictionary<BoardIndex, PieceData> snapshot =
@@ -547,16 +547,16 @@ namespace BoardSystem.Presentation
 
             for (int i = 0; i < moves.Count; i++)
             {
-                (BoardIndex from, BoardIndex to) move = moves[i];
+                BoardMoveResult move = moves[i];
 
                 PieceData piece;
 
                 // スナップショットから駒取得
-                if (!snapshot.TryGetValue(move.from, out piece))
+                if (!snapshot.TryGetValue(move.From, out piece))
                 {
                     Debug.LogWarning(
                         $"CreateMovePlans: スナップショットに駒が存在しません" +
-                        $"{move.from.X}, {move.from.Y}, {move.from.Z}"
+                        $"{move.From.X}, {move.From.Y}, {move.From.Z}"
                     );
                     continue;
                 }
@@ -571,9 +571,9 @@ namespace BoardSystem.Presentation
 
                 // 移動先インデックスからワールド座標を算出
                 ColumnToWorld(
-                    move.to.X,
-                    move.to.Y,
-                    move.to.Z,
+                    move.To.X,
+                    move.To.Y,
+                    move.To.Z,
                     out targetX,
                     out targetY,
                     out targetZ
@@ -589,7 +589,7 @@ namespace BoardSystem.Presentation
                         piece,
                         startPosition,
                         endPosition,
-                        move.to
+                        move.To
                     )
                 );
             }

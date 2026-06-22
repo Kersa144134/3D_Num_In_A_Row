@@ -103,17 +103,12 @@ namespace BoardSystem.Domain
                 foreach ((IReadOnlyList<BoardIndex> Cells, int Player) lineInfo in consecutiveLines)
                 {
                     allConsecutiveLines.Add(
-                        new LineCompleteEvent(
-                            lineInfo.Player,
-                            lineInfo.Cells
-                        )
+                        new LineCompleteEvent(lineInfo.Player, lineInfo.Cells)
                     );
                 }
             }
 
-            // --------------------------------------------------
             // ƒCƒxƒ“ƒg”­‰Î
-            // --------------------------------------------------
             if (allConsecutiveLines.Count > 0)
             {
                 _onLineComplete.OnNext(allConsecutiveLines);

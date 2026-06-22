@@ -650,7 +650,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ビューの駒辞書を移動情報に基づいて更新
         /// </summary>
-        private void ApplyViewMoves(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        private void ApplyViewMoves(in IReadOnlyList<BoardMoveResult> moves)
         {
             _viewPieceMapUpdater.UpdatePieceMap(moves);
         }

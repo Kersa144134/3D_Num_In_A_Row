@@ -39,11 +39,11 @@ namespace BoardSystem.Domain
             in IBoardReader board,
             in RotationAxis axis,
             in RotationDirection direction,
-            out IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+            out IReadOnlyList<BoardMoveResult> moves)
         {
             if (board == null)
             {
-                moves = new List<(BoardIndex, BoardIndex)>();
+                moves = new List<BoardMoveResult>();
 
                 return new int[0, 0, 0];
             }
@@ -55,8 +55,8 @@ namespace BoardSystem.Domain
             int[,,] rotatedBoard = new int[size, size, size];
 
             // ˆÚ“®î•ñ¶¬
-            List<(BoardIndex from, BoardIndex to)> rotateMoves =
-                new List<(BoardIndex from, BoardIndex to)>(
+            List<BoardMoveResult> rotateMoves =
+                new List<BoardMoveResult>(
                     size * size * size
                 );
 
@@ -119,7 +119,7 @@ namespace BoardSystem.Domain
                         rotatedBoard[newX, newY, newZ] = value;
 
                         // ˆÚ“®î•ñ‹L˜^
-                        rotateMoves.Add((fromIndex, toIndex));
+                        rotateMoves.Add(new BoardMoveResult(fromIndex, toIndex));
                     }
                 }
             }

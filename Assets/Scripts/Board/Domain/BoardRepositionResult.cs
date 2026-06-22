@@ -22,7 +22,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 移動情報
         /// </summary>
-        public readonly IReadOnlyList<(BoardIndex from, BoardIndex to)> Moves;
+        public readonly IReadOnlyList<BoardMoveResult> Moves;
 
         // ======================================================
         // コンストラクタ
@@ -31,8 +31,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardRepositionResult(
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        public BoardRepositionResult(in IReadOnlyList<BoardMoveResult> moves)
         {
             Moves = moves;
         }

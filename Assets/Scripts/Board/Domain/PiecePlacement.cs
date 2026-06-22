@@ -97,14 +97,14 @@ namespace BoardSystem.Domain
         /// <param name="columnX">列 X インデックス</param>
         /// <param name="columnZ">列 Z インデックス</param>
         /// <returns>移動情報リスト</returns>
-        public IReadOnlyList<(BoardIndex from, BoardIndex to)> CalculateReposition(
+        public IReadOnlyList<BoardMoveResult> CalculateReposition(
             in IBoardReader board,
             in int columnX,
             in int columnZ)
         {
             // 再配置情報
-            List<(BoardIndex from, BoardIndex to)> repositionMoves =
-                new List<(BoardIndex from, BoardIndex to)>();
+            List<BoardMoveResult> repositionMoves =
+                new List<BoardMoveResult>();
             
             // 盤面サイズ取得
             int boardSize = board.GetSize();
@@ -137,7 +137,7 @@ namespace BoardSystem.Domain
                 BoardIndex toIndex = new BoardIndex(columnX, writeY, columnZ);
 
                 // 移動情報記録
-                repositionMoves.Add((fromIndex, toIndex));
+                repositionMoves.Add(new BoardMoveResult(fromIndex, toIndex));
 
                 // 書き込みポインタ更新
                 writeY++;
@@ -147,42 +147,69 @@ namespace BoardSystem.Domain
         }
 
         /// <summary>
-        /// 再配置情報を盤面へ適用する
+        /// 移動元の値一覧を取得
         /// </summary>
         /// <param name="boardReader">参照対象の盤面</param>
-        /// <param name="boardWriter">更新対象の盤面</param>
-        /// <param name="repositionMoves">再配置情報</param>
-        public void ApplyReposition(
+        /// <param name="moves">移動情報一覧</param>
+        /// <returns>移動元座標と値の対応表</returns>
+        public Dictionary<BoardIndex, int> CreateMoveValueMap(
             in IBoardReader boardReader,
-            in IBoardWriter boardWriter,
-            in IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves)
+            in IReadOnlyList<BoardMoveResult> moves)
         {
-            if (repositionMoves == null || repositionMoves.Count == 0)
-            {
-                return;
-            }
+            // 移動元座標と値の対応表
+            Dictionary<BoardIndex, int> moveValues =
+                new Dictionary<BoardIndex, int>();
 
-            // --------------------------------------------------
-            // 移動適用
-            // --------------------------------------------------
-            for (int i = 0; i < repositionMoves.Count; i++)
+            // 全移動情報を走査
+            for (int i = 0; i < moves.Count; i++)
             {
-                (BoardIndex from, BoardIndex to) move = repositionMoves[i];
+                // 移動情報取得
+                BoardMoveResult move = moves[i];
 
                 // 移動元の値取得
-                int value = boardReader.Get(move.from);
+                int value = boardReader.Get(move.From);
 
-                // 空セルはスキップ
+                // 空セルは移動対象外
                 if (value == EMPTY)
                 {
                     continue;
                 }
 
-                // 移動先に書き込み
-                boardWriter.Set(move.to, value);
+                // 移動元座標と値を登録
+                moveValues.Add(move.From, value);
+            }
 
-                // 移動元をクリア
-                boardWriter.Set(move.from, EMPTY);
+            return moveValues;
+        }
+
+        /// <summary>
+        /// 再配置情報を盤面へ適用する
+        /// </summary>
+        /// <param name="boardWriter">更新対象の盤面</param>
+        /// <param name="moves">移動情報一覧</param>
+        /// <param name="moveValues">移動元座標と値の対応表</param>
+        public void ApplyMoves(
+            in IBoardWriter boardWriter,
+            in IReadOnlyList<BoardMoveResult> moves,
+            in IReadOnlyDictionary<BoardIndex, int> moveValues)
+        {
+            // 全移動情報を走査
+            for (int i = 0; i < moves.Count; i++)
+            {
+                // 移動情報取得
+                BoardMoveResult move = moves[i];
+
+                // 移動元の値を取得
+                if (!moveValues.TryGetValue(move.From, out int value))
+                {
+                    continue;
+                }
+
+                // 移動先へ値を書き込む
+                boardWriter.Set(move.To, value);
+
+                // 移動元セルを空にする
+                boardWriter.Clear(move.From);
             }
         }
     }

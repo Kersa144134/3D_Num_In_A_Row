@@ -58,7 +58,7 @@ namespace BoardSystem.Application
             RotationDirection direction)
         {
             // モデルから回転移動情報を取得
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves =
+            IReadOnlyList<BoardMoveResult> rotateMoves =
                 _model.Rotate90(
                     axis,
                     direction
@@ -78,8 +78,8 @@ namespace BoardSystem.Application
             }
 
             // 再配置移動情報
-            List<(BoardIndex from, BoardIndex to)> repositionMoves =
-                new List<(BoardIndex from, BoardIndex to)>();
+            List<BoardMoveResult> repositionMoves =
+                new List<BoardMoveResult>();
 
             // 各列ごとに再配置計算
             for (int i = 0; i < columns.Count; i++)
@@ -88,7 +88,7 @@ namespace BoardSystem.Application
                 (int x, int z) column = columns[i];
 
                 // 再配置移動取得
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                IReadOnlyList<BoardMoveResult> moves =
                     _model.CalculateReposition(
                         column.x,
                         column.z
@@ -103,10 +103,7 @@ namespace BoardSystem.Application
 
             // 結果返却
             return UniTask.FromResult(
-                new BoardRotationResult(
-                    rotateMoves,
-                    repositionMoves
-                )
+                new BoardRotationResult(rotateMoves, repositionMoves)
             );
         }
     }

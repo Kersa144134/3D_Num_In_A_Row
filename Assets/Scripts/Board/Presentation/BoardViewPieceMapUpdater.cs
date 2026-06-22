@@ -42,7 +42,7 @@ namespace BoardSystem.Presentation
         /// <summary>
         /// ビューの駒辞書を移動情報に基づいて更新
         /// </summary>
-        public void UpdatePieceMap(in IReadOnlyList<(BoardIndex from, BoardIndex to)> moves)
+        public void UpdatePieceMap(in IReadOnlyList<BoardMoveResult> moves)
         {
             // --------------------------------------------------
             // 重複排除処理
@@ -53,28 +53,28 @@ namespace BoardSystem.Presentation
             HashSet<BoardIndex> uniqueToSet =
                 new HashSet<BoardIndex>();
 
-            List<(BoardIndex from, BoardIndex to)> filteredMoves =
-                new List<(BoardIndex, BoardIndex)>();
+            List<BoardMoveResult> filteredMoves =
+                new List<BoardMoveResult>();
 
             for (int i = 0; i < moves.Count; i++)
             {
                 // 現在の移動情報
-                (BoardIndex from, BoardIndex to) move = moves[i];
+                BoardMoveResult move = moves[i];
 
                 // from 重複排除
-                if (uniqueFromSet.Contains(move.from))
+                if (uniqueFromSet.Contains(move.From))
                 {
                     continue;
                 }
 
                 // to 重複排除
-                if (uniqueToSet.Contains(move.to))
+                if (uniqueToSet.Contains(move.To))
                 {
                     continue;
                 }
 
-                uniqueFromSet.Add(move.from);
-                uniqueToSet.Add(move.to);
+                uniqueFromSet.Add(move.From);
+                uniqueToSet.Add(move.To);
 
                 filteredMoves.Add(move);
             }
@@ -87,13 +87,13 @@ namespace BoardSystem.Presentation
 
             for (int i = 0; i < filteredMoves.Count; i++)
             {
-                (BoardIndex from, BoardIndex to) move = filteredMoves[i];
+                BoardMoveResult move = filteredMoves[i];
 
                 PieceData piece;
 
-                if (_view.TryGetPiece(move.from, out piece))
+                if (_view.TryGetPiece(move.From, out piece))
                 {
-                    snapshot[move.from] = piece;
+                    snapshot[move.From] = piece;
                 }
             }
 
@@ -110,13 +110,13 @@ namespace BoardSystem.Presentation
             // --------------------------------------------------
             for (int i = 0; i < filteredMoves.Count; i++)
             {
-                (BoardIndex from, BoardIndex to) move = filteredMoves[i];
+                BoardMoveResult move = filteredMoves[i];
 
                 PieceData piece;
 
-                if (snapshot.TryGetValue(move.from, out piece))
+                if (snapshot.TryGetValue(move.From, out piece))
                 {
-                    _view.SetPiece(move.to, piece);
+                    _view.SetPiece(move.To, piece);
                 }
             }
         }

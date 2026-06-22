@@ -104,7 +104,7 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 指定列の再配置計算処理
         /// </summary>
-        public IReadOnlyList<(BoardIndex from, BoardIndex to)> CalculateReposition(
+        public IReadOnlyList<BoardMoveResult> CalculateReposition(
             in int columnX,
             in int columnZ)
         {
@@ -119,12 +119,21 @@ namespace BoardSystem.Domain
         /// 再配置適用処理
         /// </summary>
         /// <param name="repositionMoves">再配置情報</param>
-        public void ApplyReposition(in IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves)
+        public void ApplyReposition(
+            in IReadOnlyList<BoardMoveResult> repositionMoves)
         {
-            _piecePlacement.ApplyReposition(
+            // 移動元の値一覧を生成
+            IReadOnlyDictionary<BoardIndex, int> moveValueMap =
+                _piecePlacement.CreateMoveValueMap(
+                    _boardState,
+                    repositionMoves
+                );
+
+            // 盤面へ反映
+            _piecePlacement.ApplyMoves(
                 _boardState,
-                _boardState,
-                repositionMoves
+                repositionMoves,
+                moveValueMap
             );
         }
 
@@ -150,7 +159,7 @@ namespace BoardSystem.Domain
         /// <param name="axis">回転軸</param>
         /// <param name="direction">回転方向</param>
         /// <returns>移動情報（from → to）</returns>
-        public IReadOnlyList<(BoardIndex from, BoardIndex to)> Rotate90(
+        public IReadOnlyList<BoardMoveResult> Rotate90(
             in RotationAxis axis,
             in RotationDirection direction)
         {
@@ -160,7 +169,7 @@ namespace BoardSystem.Domain
                     _boardState,
                     axis,
                     direction,
-                    out IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves
+                    out IReadOnlyList<BoardMoveResult> rotateMoves
                 );
 
             // 回転結果を反映

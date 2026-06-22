@@ -31,14 +31,13 @@ namespace BoardSystem.Application
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public BoardRepositionUseCase(BoardModel model)
+        public BoardRepositionUseCase(in BoardModel model)
         {
-            // モデル参照保持
             _model = model;
         }
 
         // ======================================================
-        // メソッド
+        // パブリックメソッド
         // ======================================================
 
         /// <summary>
@@ -47,9 +46,9 @@ namespace BoardSystem.Application
         public UniTask<BoardRepositionResult> HandleRepositionAsync(
             IReadOnlyList<(int x, int z)> columns)
         {
-            // 全移動情報
-            List<(BoardIndex from, BoardIndex to)> allMoves =
-                new List<(BoardIndex from, BoardIndex to)>();
+            // 全再配置情報
+            List<BoardMoveResult> repositionMoves =
+                new List<BoardMoveResult>();
 
             // --------------------------------------------------
             // 移動計算
@@ -61,30 +60,30 @@ namespace BoardSystem.Application
                     columns[i];
 
                 // 移動計算取得
-                IReadOnlyList<(BoardIndex from, BoardIndex to)> moves =
+                IReadOnlyList<BoardMoveResult> moves =
                     _model.CalculateReposition(
                         column.x,
                         column.z
                     );
 
                 // 結果統合
-                allMoves.AddRange(moves);
+                repositionMoves.AddRange(moves);
             }
 
             // 移動なし
-            if (allMoves.Count == 0)
+            if (repositionMoves.Count == 0)
             {
                 return UniTask.FromResult(
-                    new BoardRepositionResult(allMoves)
+                    new BoardRepositionResult(new List<BoardMoveResult>())
                 );
             }
 
             // 再配置適用
-            _model.ApplyReposition(allMoves);
+            _model.ApplyReposition(repositionMoves);
 
             // 結果返却
             return UniTask.FromResult(
-                new BoardRepositionResult(allMoves)
+                new BoardRepositionResult(repositionMoves)
             );
         }
     }

@@ -22,12 +22,12 @@ namespace BoardSystem.Domain
         /// <summary>
         /// 回転による移動情報
         /// </summary>
-        public readonly IReadOnlyList<(BoardIndex from, BoardIndex to)> RotateMoves;
+        public readonly IReadOnlyList<BoardMoveResult> RotateMoves;
 
         /// <summary>
         /// 再配置による移動情報
         /// </summary>
-        public readonly IReadOnlyList<(BoardIndex from, BoardIndex to)> RepositionMoves;
+        public readonly IReadOnlyList<BoardMoveResult> RepositionMoves;
 
         // ======================================================
         // コンストラクタ
@@ -39,8 +39,8 @@ namespace BoardSystem.Domain
         /// <param name="rotateMoves">回転移動</param>
         /// <param name="repositionMoves">再配置移動</param>
         public BoardRotationResult(
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> rotateMoves,
-            IReadOnlyList<(BoardIndex from, BoardIndex to)> repositionMoves)
+            IReadOnlyList<BoardMoveResult> rotateMoves,
+            IReadOnlyList<BoardMoveResult> repositionMoves)
         {
             RotateMoves = rotateMoves;
             RepositionMoves = repositionMoves;
