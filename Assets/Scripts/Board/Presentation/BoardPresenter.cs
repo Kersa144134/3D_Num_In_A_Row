@@ -156,7 +156,7 @@ namespace BoardSystem.Presentation
         private IDisposable _rotateInputSubscription;
 
         /// <summary>プレイヤー ID 通知ストリーム</summary>
-        private IObservable<int> _playerStream;
+        private IReadOnlyReactiveProperty<int> _playerStream;
 
         // --------------------------------------------------
         // イベント
@@ -386,7 +386,7 @@ namespace BoardSystem.Presentation
         /// イベントストリームを受け取る
         /// </summary>
         /// <param name="player">プレイヤー ID 通知ストリーム</param>
-        public void SetStreams(in IObservable<int> player)
+        public void SetStreams(in IReadOnlyReactiveProperty<int> player)
         {
             _playerStream = player;
         }

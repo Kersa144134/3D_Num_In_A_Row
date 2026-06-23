@@ -27,7 +27,6 @@ namespace PhaseSystem.Domain
         {
             return new UpdatableType[]
             {
-                UpdatableType.BoardPresenter,
                 UpdatableType.CameraPresenter,
                 UpdatableType.MainUIPresenter
             };
@@ -45,7 +44,6 @@ namespace PhaseSystem.Domain
         {
             return new UpdatableType[]
             {
-                UpdatableType.BoardPresenter,
                 UpdatableType.CameraPresenter,
                 UpdatableType.MainUIPresenter
             };

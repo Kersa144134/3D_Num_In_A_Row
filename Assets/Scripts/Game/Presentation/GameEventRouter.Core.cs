@@ -171,8 +171,8 @@ namespace GameSystem.Presentation
         /// <summary>フェーズ変更ストリーム</summary>
         public IObservable<PhaseChangeEvent> OnPhaseChangeRequested => _onPhaseChangeRequested;
 
-        /// <summary>プレイヤー変更用 Subject</summary>
-        private readonly Subject<int> _onPlayerChanged = new Subject<int>();
+        /// <summary>プレイヤー変更用 ReactiveProperty</summary>
+        private readonly ReactiveProperty<int> _onPlayerChanged = new ReactiveProperty<int>();
 
         // --------------------------------------------------
         // システム
@@ -204,10 +204,10 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // 入力
         // --------------------------------------------------
-        /// <summary>入力マッピング変更用 Subject</summary>
+        /// <summary>入力マッピング変更用 ReactiveProperty</summary>
         private readonly ReactiveProperty<int> _onMappingChanged = new ReactiveProperty<int>();
 
-        /// <summary>ゲームパッド検知用 Subject</summary>
+        /// <summary>ゲームパッド検知用 ReactiveProperty</summary>
         private readonly ReactiveProperty<bool> _onGamepadUsed = new ReactiveProperty<bool>();
 
         /// <summary>ポインター座標変更用 Subject</summary>
@@ -225,7 +225,7 @@ namespace GameSystem.Presentation
         /// <summary>ポーズ入力用 Subject</summary>
         private readonly Subject<Unit> _onPauseInput = new Subject<Unit>();
 
-        /// <summary>現在ボード入力種別ストリーム</summary>
+        /// <summary>現在ボード入力種別公開用 ReactiveProperty</summary>
         private readonly ReactiveProperty<BoardInputType> _currentBoardInputType
             = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
 

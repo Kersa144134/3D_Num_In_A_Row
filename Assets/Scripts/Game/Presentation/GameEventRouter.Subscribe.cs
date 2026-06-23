@@ -80,7 +80,7 @@ namespace GameSystem.Presentation
             _phaseMachine.CurrentPlayerIndex
                 .DistinctUntilChanged()
                 .Skip(1)
-                .Subscribe(player => _onPlayerChanged.OnNext(player))
+                .Subscribe(player => _onPlayerChanged.Value = player)
                 .AddTo(_disposables);
             _phaseMachine.PlayEnterCount
                 .DistinctUntilChanged()

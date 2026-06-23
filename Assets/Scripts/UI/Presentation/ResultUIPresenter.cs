@@ -223,7 +223,7 @@ namespace UISystem.Presentation
         private CompositeDisposable _disposables;
 
         /// <summary>ゲームパッド使用状態通知ストリーム</summary>
-        private IObservable<bool> _gamepadUsedStream;
+        private IReadOnlyReactiveProperty<bool> _gamepadUsedStream;
 
         /// <summary>リザルトスタートアニメーションスキップ通知ストリーム</summary>
         private IObservable<Unit> _resultStartAnimationSkippedStream;
@@ -664,7 +664,7 @@ namespace UISystem.Presentation
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
         /// <param name="resultStartAnimationSkipped">リザルトスタートアニメーションのスキップを通知するストリーム</param>
         public void SetStreams(
-            in IObservable<bool> gamepadUsed,
+            in IReadOnlyReactiveProperty<bool> gamepadUsed,
             in IObservable<Unit> resultStartAnimationSkipped)
         {
             _gamepadUsedStream = gamepadUsed;

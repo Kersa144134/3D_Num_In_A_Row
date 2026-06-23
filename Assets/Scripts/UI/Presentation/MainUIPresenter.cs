@@ -289,7 +289,7 @@ namespace UISystem.Presentation
         private IObservable<int> _comboAddedStream;
 
         /// <summary>ゲームパッド使用状態ストリーム</summary>
-        private IObservable<bool> _gamepadUsedStream;
+        private IReadOnlyReactiveProperty<bool> _gamepadUsedStream;
 
         /// <summary>ポインターロック状態ストリーム</summary>
         private IObservable<bool> _pointerLockStream;
@@ -631,6 +631,7 @@ namespace UISystem.Presentation
                 .AddTo(_disposables);
 
             _gamepadUsedStream
+                .DistinctUntilChanged()
                 .Subscribe(isUsed =>
                 {
                     // 現在の入力デバイス状態を保持
@@ -1078,7 +1079,7 @@ namespace UISystem.Presentation
             in IObservable<ScoreEvent> scoreUpdated,
             in IObservable<ScoreEvent> scoreAdded,
             in IObservable<int> comboAdded,
-            in IObservable<bool> gamepadUsed,
+            in IReadOnlyReactiveProperty<bool> gamepadUsed,
             in IObservable<bool> pointerLock,
             in IObservable<Unit> pauseInput,
             in IReadOnlyReactiveProperty<BoardInputType> boardInputType,
