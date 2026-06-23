@@ -8,6 +8,7 @@
 // ======================================================
 
 using UniRx;
+using BoardSystem.Domain;
 using PhaseSystem.Domain;
 using SoundSystem.Domain;
 
@@ -61,7 +62,7 @@ namespace GameSystem.Presentation
                 // --------------------------------------------------
                 case PhaseType.Ready:
                     // スコア計算クラス初期化
-                    _scoreManager.Initialize(_gameOptionManager.PlayerCount);
+                    _scoreManager?.Initialize(_gameOptionManager.PlayerCount);
 
                     // スコア更新購読
                     BindScoreUpdateStream();
@@ -126,7 +127,7 @@ namespace GameSystem.Presentation
                     _soundManager?.PlaySE(SeType.Effect_Main_ChangePlayer);
 
                     // スコア累積カウントリセット
-                    _scoreManager.ResetAllCumulativeCount();
+                    _scoreManager?.ResetAllCumulativeCount();
 
                     // 入力マッピングをインゲーム用に変更
                     NotifyMappingChanged(0);

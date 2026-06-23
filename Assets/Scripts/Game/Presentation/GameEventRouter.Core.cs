@@ -6,6 +6,12 @@
 // 概要     : シーン内イベントの仲介を行うクラス
 // ======================================================
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
 using CameraSystem.Presentation;
@@ -17,13 +23,7 @@ using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using SoundSystem.Presentation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using UISystem.Presentation;
-using UniRx;
-using UnityEngine;
 using UpdateSystem.Domain;
 
 namespace GameSystem.Presentation
@@ -33,22 +33,6 @@ namespace GameSystem.Presentation
     /// </summary>
     public sealed partial class GameEventRouter
     {
-        // ======================================================
-        // 列挙型
-        // ======================================================
-
-        /// <summary>
-        /// ボード操作入力種別
-        /// </summary>
-        private enum BoardInputType
-        {
-            /// <summary>駒落下入力</summary>
-            Drop = 0,
-
-            /// <summary>ボード回転入力</summary>
-            Rotate = 1
-        }
-        
         // ======================================================
         // コンポーネント参照
         // ======================================================
@@ -397,7 +381,7 @@ namespace GameSystem.Presentation
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #else
-    UnityEngine.Application.Quit();
+                UnityEngine.Application.Quit();
 #endif
 
                 return;

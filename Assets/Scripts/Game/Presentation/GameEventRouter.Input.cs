@@ -123,7 +123,7 @@ namespace GameSystem.Presentation
             bool isSelectButtonPressed = _isSelectButtonPressed;
 
             // DPad ¶“ü—Íó‘Ô
-            bool isDPadLeftPressed = _inputManager.DPad.Angle == Vector2.left;
+            bool isDPadLeftPressed = _inputManager?.DPad.Angle == Vector2.left;
 
             // ‘S“ü—Í‚ª‘µ‚Á‚Ä‚¢‚éê‡‚Ì‚İ true
             return isButtonXPressed

@@ -33,21 +33,37 @@ namespace GameSystem.Presentation
             _pendingAddScoreEvents.Clear();
 
             // スコア累積カウント加算
-            _scoreManager.AddAllCumulativeCount();
+            _scoreManager?.AddAllCumulativeCount();
 
             // --------------------------------------------------
             // SE 再生
             // --------------------------------------------------
-            // SE ピッチ算出
+            // SE ピッチ算出用コンボ数
+            int comboCount = 0;
+
+            if (_scoreManager != null)
+            {
+                comboCount = _scoreManager.CumulativeCount.Value;
+            }
+
+            // コンボ補正
+            int adjustedCombo = Mathf.Max(comboCount - 1, 0);
+
+            // ピッチ計算
             float comboPitch = Mathf.Min(
-                COMBO_SE_BASE_PITCH + (_scoreManager.CumulativeCount.Value - 1) * COMBO_SE_PITCH_STEP,
-                COMBO_SE_MAX_PITCH); 
-            
+                COMBO_SE_BASE_PITCH + adjustedCombo * COMBO_SE_PITCH_STEP,
+                COMBO_SE_MAX_PITCH);
+
             _soundManager?.PlayPitchSE(SeType.Combo, comboPitch, 0.5f);
 
             // --------------------------------------------------
             // 各イベントを個別に処理
             // --------------------------------------------------
+            if (_scoreManager == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < events.Count; i++)
             {
                 // 現在処理中のライン成立イベント

@@ -7,18 +7,18 @@
 //            購読関連処理をまとめたファイル
 // ======================================================
 
+using System;
+using System.Linq;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
-using Cysharp.Threading.Tasks;
 using InputSystem.Domain;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using SoundSystem.Domain;
-using System;
-using System.Linq;
-using UniRx;
-using UnityEngine;
 
 namespace GameSystem.Presentation
 {
@@ -44,14 +44,6 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ルーター
             // --------------------------------------------------
-            // ボタン A 離す
-            _inputManager.ButtonA.OnUp
-                .Subscribe(_ =>
-                {
-                    // スキップイベント発火
-                    _onSkipInput.OnNext(Unit.Default);
-                })
-                .AddTo(_disposables);
             _onFadeCompleted
                 .Subscribe(_ =>
                 {
@@ -143,12 +135,14 @@ namespace GameSystem.Presentation
                     })
                     .AddTo(_disposables);
 
+                // ボタン A 離す
+                _inputManager.ButtonA.OnUp
+                    .Subscribe(_ => _onSkipInput.OnNext(Unit.Default))
+                    .AddTo(_disposables);
+                
                 // B ボタン 離す
                 _inputManager.ButtonB.OnUp
-                    .Subscribe(_ =>
-                    {
-                        _onCancelInput.OnNext(Unit.Default);
-                    })
+                    .Subscribe(_ => _onCancelInput.OnNext(Unit.Default))
                     .AddTo(_disposables);
 
                 // X ボタン 押す
@@ -466,7 +460,7 @@ namespace GameSystem.Presentation
         public void Dispose()
         {
             // 購読解除
-            _disposables.Dispose();
+            _disposables?.Dispose();
 
             UnbindSceneLoadProgressStream();
             UnbindEventSkipStream();
@@ -518,7 +512,7 @@ namespace GameSystem.Presentation
                     UnbindEventSkipStream();
 
                     // BGM フェードイン
-                    _soundManager.SetBGMVolume(0);
+                    _soundManager?.SetBGMVolume(0);
                 })
                 .AddTo(_disposables);
         }
@@ -594,8 +588,14 @@ namespace GameSystem.Presentation
         /// </summary>
         private void BindGameSpeedChangeStream()
         {
+            // 入力管理クラスが null の場合処理なし
+            if (_inputManager == null)
+            {
+                return;
+            }
+            
             // 多重購読防止
-            _gameSpeedChangeDisposables?.Dispose();
+                _gameSpeedChangeDisposables?.Dispose();
 
             // CompositeDisposable 生成
             _gameSpeedChangeDisposables = new CompositeDisposable();
@@ -624,6 +624,12 @@ namespace GameSystem.Presentation
         /// </summary>
         private void UnbindGameSpeedChangeStream()
         {
+            // 入力管理クラスが null の場合処理なし
+            if (_inputManager == null)
+            {
+                return;
+            }
+
             // 通常速度へリセット
             _onGameSpeedChangeRequested.OnNext(1.0f);
 
@@ -640,6 +646,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private void BindScoreUpdateStream()
         {
+            // スコア管理クラスが null の場合処理なし
             if (_scoreManager == null)
             {
                 return;
@@ -673,6 +680,12 @@ namespace GameSystem.Presentation
         /// </summary>
         private void BindDropInputCommands()
         {
+            // 入力管理クラスが null の場合処理なし
+            if (_inputManager == null)
+            {
+                return;
+            }
+
             // 入力購読解除
             UnbindInputCommands();
 
@@ -733,6 +746,12 @@ namespace GameSystem.Presentation
         /// </summary>
         private void BindRotateInputCommands()
         {
+            // 入力管理クラスが null の場合処理なし
+            if (_inputManager == null)
+            {
+                return;
+            }
+
             // 入力購読解除
             UnbindInputCommands();
 
@@ -844,6 +863,12 @@ namespace GameSystem.Presentation
         /// </summary>
         private void UnbindInputCommands()
         {
+            // 入力管理クラスが null の場合処理なし
+            if (_inputManager == null)
+            {
+                return;
+            }
+
             _inputDisposables?.Dispose();
             _inputDisposables = null;
 

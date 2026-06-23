@@ -28,27 +28,27 @@ namespace GameSystem.Presentation
             switch (data.Type)
             {
                 case OptionType.PlayerCount:
-                    _gameOptionManager.SetPlayerCount(data.IntValue);
+                    _gameOptionManager?.SetPlayerCount(data.IntValue);
                     break;
 
                 case OptionType.LimitTime:
-                    _gameOptionManager.SetLimitTime(data.FloatValue);
+                    _gameOptionManager?.SetLimitTime(data.FloatValue);
                     break;
 
                 case OptionType.BoardSize:
-                    _gameOptionManager.SetBoardSize(data.BoardSizeType);
+                    _gameOptionManager?.SetBoardSize(data.BoardSizeType);
                     break;
 
                 case OptionType.ConnectCount:
-                    _gameOptionManager.SetConnectCount(data.IntValue);
+                    _gameOptionManager?.SetConnectCount(data.IntValue);
                     break;
 
                 case OptionType.CameraSpeed:
-                    _gameOptionManager.SetCameraSpeed(data.FloatValue);
+                    _gameOptionManager?.SetCameraSpeed(data.FloatValue);
                     break;
 
                 case OptionType.PointerSpeed:
-                    _gameOptionManager.SetPointerSpeed(data.FloatValue);
+                    _gameOptionManager?.SetPointerSpeed(data.FloatValue);
                     break;
             }
         }
