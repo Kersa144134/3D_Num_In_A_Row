@@ -24,7 +24,7 @@ namespace CameraSystem.Presentation
     /// カメラ制御用プレゼンター
     /// </summary>
     [UpdatableBind(UpdatableType.CameraPresenter)]
-    public sealed class CameraPresenter : MonoBehaviour, IUpdatable
+    public sealed class CameraPresenter : MonoBehaviour, IUpdatable, IStreamBindable
     {
         // ======================================================
         // インスペクタ設定
@@ -86,7 +86,11 @@ namespace CameraSystem.Presentation
         /// <summary>角度計算ユーティリティ</summary>
         private readonly CameraAngleUtility _angleUtility = new CameraAngleUtility();
 
-        /// <summary>投影補間サービス</summary>
+        /// <summary>目標位置、角度計算クラス</summary>
+        private readonly CameraTargetCalculator _targetCalculator
+            = new CameraTargetCalculator();
+
+        /// <summary>投影ユースケース</summary>
         private CameraProjectionUseCase _projectionUseCase;
 
         /// <summary>位置ユースケース</summary>
@@ -141,9 +145,6 @@ namespace CameraSystem.Presentation
         /// <summary>ロック前の Y 回転キャッシュ</summary>
         private float _cachedRotationY;
 
-        /// <summary>Z 距離キャッシュ</summary>
-        private float _cachedDistanceZ;
-
         /// <summary>カメラ目標位置</summary>
         private Vector3 _targetPosition = Vector3.zero;
 
@@ -175,12 +176,6 @@ namespace CameraSystem.Presentation
         /// <summary>真上俯瞰角のカメラ回転</summary>
         private const float CAMERA_ROTATION_TOP_VIEW_X = 90.0f;
 
-        /// <summary>Y 軸方向ライン判定用の二乗距離閾値</summary>
-        private const float VERTICAL_LINE_SQR_MAGNITUDE_THRESHOLD = 0.0001f;
-
-        /// <summary>ライン中心が原点とみなされる二乗距離閾値</summary>
-        private const float CENTER_POSITION_SQR_MAGNITUDE_THRESHOLD = 0.001f;
-
         // --------------------------------------------------
         // 距離
         // --------------------------------------------------
@@ -203,11 +198,26 @@ namespace CameraSystem.Presentation
         private const float SE_VELOCITY_THRESHOLD = 0.001f;
         
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
+
+        /// <summary>カメラ位置リセット通知ストリーム</summary>
+        private IObservable<Unit> _positionResetStream;
+
+        /// <summary>入力ロック状態通知ストリーム</summary>
+        private IObservable<bool> _inputLockStream;
+
+        /// <summary>ゲームパッド使用状態通知ストリーム</summary>
+        private IObservable<bool> _gamepadUsedStream;
+
+        /// <summary>ボード回転準備状態通知ストリーム</summary>
+        private IObservable<bool> _rotationPreparationStream;
+
+        /// <summary>ライン位置通知ストリーム</summary>
+        private IObservable<LinePositionInfo> _linePositionStream;
 
         // ======================================================
         // IUpdatable イベント
@@ -392,29 +402,22 @@ namespace CameraSystem.Presentation
         public void OnExit()
         {
             // イベント購読解除
-            _disposables?.Dispose();
+            UnbindStreams();
         }
 
         // ======================================================
-        // パブリックメソッド
+        // IStreamBindable イベント
         // ======================================================
 
         /// <summary>
-        /// イベントストリームをまとめて購読する
+        /// イベントストリームを受け取る
         /// </summary>
-        /// <param name="positionReset">カメラ位置リセット通知ストリーム</param>
-        /// <param name="inputLock">入力ロック状態通知ストリーム</param>
-        /// <param name="gamepadUsed">ゲームパッド使用状態通知ストリーム</param>
-        /// <param name="rotationPreparation">ボード回転準備状態通知ストリーム</param>
-        /// <param name="linePositionNotified">ライン位置通知ストリーム</param>
-        public void BindStreams(
-            in IObservable<Unit> positionReset,
-            in IObservable<bool> inputLock,
-            in IObservable<bool> gamepadUsed,
-            in IObservable<bool> rotationPreparation,
-            in IObservable<LinePositionInfo> linePositionNotified)
+        public void BindStreams()
         {
-            positionReset
+            _disposables?.Dispose();
+            _disposables = new CompositeDisposable();
+
+            _positionResetStream
                 .Subscribe(isLock =>
                 {
                     _targetPosition = Vector3.zero;
@@ -422,7 +425,7 @@ namespace CameraSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            inputLock
+            _inputLockStream
                 .Subscribe(isLock =>
                 {
                     _isInputLock = isLock;
@@ -466,7 +469,7 @@ namespace CameraSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            gamepadUsed
+            _gamepadUsedStream
                 .Subscribe(isUsed =>
                 {
                     // ゲームパッド使用状態を更新
@@ -474,7 +477,7 @@ namespace CameraSystem.Presentation
                 })
                 .AddTo(_disposables);
 
-            rotationPreparation
+            _rotationPreparationStream
                 .Subscribe(isPerspective =>
                 {
                     // SE 再生
@@ -485,16 +488,16 @@ namespace CameraSystem.Presentation
                     // --------------------------------------------------
                     if (!isPerspective)
                     {
-                        // 初期値を設定
-                        _cameraModel.ApplyDistanceZ(_maxDistanceZ);
-
                         // キャッシュを復元
                         _cameraModel.ApplyRotationX(_cachedRotationX);
                         _cameraModel.ApplyRotationY(_cachedRotationY);
 
+                        // 初期値を設定
+                        _cameraModel.ApplyDistanceZ(_maxDistanceZ);
+
                         // ビュー反映
-                        _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
                         _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+                        _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
 
                         // カメラ投影設定を更新
                         _projectionUseCase.ApplyProjection(_camera, isPerspective);
@@ -513,87 +516,67 @@ namespace CameraSystem.Presentation
                     _cachedRotationY = _cameraModel.RotationY;
 
                     // 真上視点用の距離、回転へ変更
-                    _cameraModel.ApplyDistanceZ(_maxDistanceZ);
                     _cameraModel.ApplyRotationX(CAMERA_ROTATION_TOP_VIEW_X);
                     _cameraModel.ApplyRotationY(0f);
+                    _cameraModel.ApplyDistanceZ(_maxDistanceZ);
 
                     // ビュー反映
-                    _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
                     _cameraView.ApplyRotation(_cameraModel.RotationX, _cameraModel.RotationY);
+                    _cameraView.ApplyDistanceZ(_camera, _cameraModel.DistanceZ, _cameraModel.OrthographicSize);
 
                     // カメラ投影設定を更新
                     _projectionUseCase.ApplyProjection(_camera, isPerspective);
                 })
                 .AddTo(_disposables);
 
-            linePositionNotified
+            _linePositionStream
                 .Subscribe(linePosition =>
                 {
-                    // --------------------------------------------------
                     // 目標位置更新
-                    // --------------------------------------------------
-                    // ライン端点取得
-                    Vector3 startPosition = linePosition.StartPosition;
-                    Vector3 endPosition = linePosition.EndPosition;
+                    _targetCalculator.Calculate(
+                        linePosition.StartPosition,
+                        linePosition.EndPosition,
+                        out _targetPosition,
+                        out _targetAngle);
 
-                    // ライン中心座標算出
-                    Vector3 centerPosition = (startPosition + endPosition) * 0.5f;
-
-                    // 目標位置更新
-                    _targetPosition = centerPosition;
-
-                    // --------------------------------------------------
-                    // 目標方向更新
-                    // --------------------------------------------------
-                    // ライン方向ベクトル算出
-                    Vector3 lineDirection = (endPosition - startPosition).normalized;
-
-                    // XZ平面上の方向成分算出
-                    Vector2 lineDirectionXZ = new Vector2(
-                        lineDirection.x,
-                        lineDirection.z);
-
-                    // ラインが Y 軸方向の場合
-                    if (lineDirectionXZ.sqrMagnitude < VERTICAL_LINE_SQR_MAGNITUDE_THRESHOLD)
-                    {
-                        // ライン中心が原点と重なる場合
-                        if (centerPosition.sqrMagnitude < CENTER_POSITION_SQR_MAGNITUDE_THRESHOLD)
-                        {
-                            // デフォルト方向として前方方向を採用
-                            _targetAngle = Vector3.forward;
-                        }
-                        else
-                        {
-                            // 原点からライン中心への方向を採用
-                            _targetAngle = centerPosition.normalized;
-                        }
-                    }
-                    else
-                    {
-                        // ラインに垂直な方向ベクトル算出
-                        Vector3 perpendicularDirection = Vector3.Cross(
-                            lineDirection,
-                            Vector3.up).normalized;
-
-                        // ライン中心 → 原点方向ベクトル算出
-                        Vector3 centerToOriginDirection = (Vector3.zero - centerPosition).normalized;
-
-                        // 原点側を向いている場合は反転
-                        if (Vector3.Dot(perpendicularDirection, centerToOriginDirection) > 0.0f)
-                        {
-                            perpendicularDirection = -perpendicularDirection;
-                        }
-
-                        // 目標方向更新
-                        _targetAngle = perpendicularDirection;
-                    }
-
-                    // --------------------------------------------------
                     // 目標距離更新
-                    // --------------------------------------------------
                     _targetDistance = LINE_COMPLETE_CAMERA_Z_DISTANCE;
                 })
                 .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void UnbindStreams()
+        {
+            _disposables?.Dispose();
+        }
+        
+        // ======================================================
+        // パブリックメソッド
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        /// <param name="positionReset">カメラ位置リセット通知ストリーム</param>
+        /// <param name="inputLock">入力ロック状態通知ストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態通知ストリーム</param>
+        /// <param name="rotationPreparation">ボード回転準備状態通知ストリーム</param>
+        /// <param name="linePosition">ライン位置通知ストリーム</param>
+        public void SetStreams(
+            in IObservable<Unit> positionReset,
+            in IObservable<bool> inputLock,
+            in IObservable<bool> gamepadUsed,
+            in IObservable<bool> rotationPreparation,
+            in IObservable<LinePositionInfo> linePosition)
+        {
+            _positionResetStream = positionReset;
+            _inputLockStream = inputLock;
+            _gamepadUsedStream = gamepadUsed;
+            _rotationPreparationStream = rotationPreparation;
+            _linePositionStream = linePosition;
         }
 
         // ======================================================

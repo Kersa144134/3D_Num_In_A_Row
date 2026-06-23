@@ -29,7 +29,7 @@ namespace UISystem.Presentation
     /// タイトルシーンにおける UI 演出を管理するプレゼンター
     /// </summary>
     [UpdatableBind(UpdatableType.TitleUIPresenter)]
-    public sealed class TitleUIPresenter : BaseUIPresenter, IUpdatable
+    public sealed class TitleUIPresenter : BaseUIPresenter, IUpdatable, IStreamBindable
     {
         // ======================================================
         // インスペクタ設定
@@ -246,12 +246,27 @@ namespace UISystem.Presentation
         private const int BOARD_ANIMATION_DISABLED = -1;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
+        // --------------------------------------------------
+        // 購読管理
+        // --------------------------------------------------
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
 
+        /// <summary>ゲームパッド使用状態通知ストリーム</summary>
+        private IObservable<bool> _gamepadUsedStream;
+
+        /// <summary>ゲーム終了入力ストリーム</summary>
+        private IObservable<Unit> _exitGameInputStream;
+
+        /// <summary>タイトルスタートアニメーションスキップ通知ストリーム</summary>
+        private IObservable<Unit> _titleStartAnimationSkippedStream;
+
+        // --------------------------------------------------
+        // イベント
+        // --------------------------------------------------
         /// <summary>タイトルスタートアニメーション終了通知用 Subject</summary>
         private readonly Subject<Unit> _onStartTitleAnimationEnd = new Subject<Unit>();
 
@@ -468,11 +483,81 @@ namespace UISystem.Presentation
         {
             base.OnExitInternal();
 
+            // イベント購読解除
+            UnbindStreams();
+            
             // BGM 停止
             StopBgm();
 
             // SE 停止
             _soundManager?.StopLoopSE(SeType.Effect_Title_Rise);
+        }
+
+        // ======================================================
+        // IStreamBindable イベント
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        public void BindStreams()
+        {
+            _disposables?.Dispose();
+            _disposables = new CompositeDisposable();
+
+            _gamepadUsedStream
+                .DistinctUntilChanged()
+                .Subscribe(isUsed =>
+                {
+                    // 現在の入力デバイス状態を保持
+                    _isGamePadInput = isUsed;
+
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+                })
+                .AddTo(_disposables);
+
+            _exitGameInputStream
+                .Subscribe(_ =>
+                {
+                    // UI イベント購読後かつスタートキャンバスの場合
+                    if (_uiEventDisposables != null && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
+                    {
+                        OnStartCanvasCancelInput();
+                    }
+                })
+                .AddTo(_disposables);
+
+            _titleStartAnimationSkippedStream
+                .Subscribe(_ =>
+                {
+                    // フェードアウト未完了の場合処理なし
+                    if (!_onFadeOutEnd)
+                    {
+                        return;
+                    }
+
+                    // タイトルスタートスキップアニメーション起動
+                    _startCanvasAnimator?.SetTrigger(IS_SKIP_HASH);
+
+                    OnStartTitleAnimationFinish();
+                })
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void UnbindStreams()
+        {
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -945,59 +1030,17 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベントストリームをまとめて購読する
         /// </summary>
-        /// <param name="exitGameInput">ゲーム終了入力を通知するストリーム</param>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
-        /// <param name="titleStartAnimationSkiped">タイトルスタートアニメーションのスキップを通知するストリーム</param>
-        public void BindStreams(
-            in IObservable<Unit> exitGameInput,
+        /// <param name="exitGameInput">ゲーム終了入力を通知するストリーム</param>
+        /// <param name="titleStartAnimationSkipped">タイトルスタートアニメーションのスキップを通知するストリーム</param>
+        public void SetStreams(
             in IObservable<bool> gamepadUsed,
-            in IObservable<Unit> titleStartAnimationSkiped)
+            in IObservable<Unit> exitGameInput,
+            in IObservable<Unit> titleStartAnimationSkipped)
         {
-            exitGameInput
-                .Subscribe(_ =>
-                {
-                    // UI イベント購読後かつスタートキャンバスの場合
-                    if (_uiEventDisposables != null && _uiStateController.GetActiveCanvasType() == CanvasType.Start)
-                    {
-                        OnStartCanvasCancelInput();
-                    }
-                })
-                .AddTo(_disposables); 
-            
-            gamepadUsed
-                .DistinctUntilChanged()
-                .Subscribe(isUsed =>
-                {
-                    // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isUsed;
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
-                    // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType, selectedButtonEvent);
-                })
-                .AddTo(_disposables);
-
-            titleStartAnimationSkiped
-                .Subscribe(_ =>
-                {
-                    // フェードアウト未完了の場合処理なし
-                    if (!_onFadeOutEnd)
-                    {
-                        return;
-                    }
-
-                    // タイトルスタートスキップアニメーション起動
-                    _startCanvasAnimator?.SetTrigger(IS_SKIP_HASH);
-
-                    OnStartTitleAnimationFinish();
-                })
-                .AddTo(_disposables);
+            _gamepadUsedStream = gamepadUsed;
+            _exitGameInputStream = exitGameInput;
+            _titleStartAnimationSkippedStream = titleStartAnimationSkipped;
         }
 
         // ======================================================

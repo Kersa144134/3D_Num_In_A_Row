@@ -32,7 +32,7 @@ namespace SoundSystem.Application
         private CancellationTokenSource _lowPassCancellationTokenSource;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>一時停止リクエスト通知用 Subject</summary>

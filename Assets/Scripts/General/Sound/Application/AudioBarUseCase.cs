@@ -26,7 +26,7 @@ namespace SoundSystem.Application
         private readonly int[] _currentBarIndex;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>小節更新通知用 Subject</summary>

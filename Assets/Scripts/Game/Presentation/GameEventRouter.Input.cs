@@ -36,8 +36,6 @@ namespace GameSystem.Presentation
             }
 
             _currentMappingIndex = mappingIndex;
-
-            _onMappingChanged.OnNext(mappingIndex);
         }
 
         /// <summary>
@@ -50,11 +48,11 @@ namespace GameSystem.Presentation
 
             if (device == InputDeviceType.Gamepad)
             {
-                _onGamepadUsed.OnNext(true);
+                _onGamepadUsed.Value = true;
             }
             else
             {
-                _onGamepadUsed.OnNext(false);
+                _onGamepadUsed.Value = false;
             }
         }
 

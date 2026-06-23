@@ -13,16 +13,26 @@ namespace PhaseSystem.Domain
     /// <summary>
     /// フェーズ共通基底クラス
     /// </summary>
-    public abstract class PhaseStateBase : IPhaseState, IPhaseUpdatableDefinition
+    public abstract class PhaseStateBase : IPhaseState, IPhaseStreamDefinition, IPhaseUpdatableDefinition
     {
+        // ======================================================
+        // IPhaseStreamDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// フェーズごとに購読開始される Updatable 種別
+        /// </summary>
+        /// <returns>Updatable 種別配列</returns>
+        public abstract UpdatableType[] GetStreamTypes();
+
         // ======================================================
         // IPhaseUpdatableDefinition 実装
         // ======================================================
 
         /// <summary>
-        /// このフェーズで更新対象となるUpdatable種別を返す
+        /// フェーズごとに有効化される Updatable 種別
         /// </summary>
-        /// <returns>Updatable種別配列</returns>
+        /// <returns>Updatable 種別配列</returns>
         public abstract UpdatableType[] GetUpdatableTypes();
 
         // ======================================================

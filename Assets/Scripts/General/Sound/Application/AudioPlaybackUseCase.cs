@@ -26,7 +26,7 @@ namespace SoundSystem.Application
         private readonly int[] _currentBlockIndex;
 
         // ======================================================
-        // UniRx ïœêî
+        // UniRx ä÷òA
         // ======================================================
 
         /// <summary>

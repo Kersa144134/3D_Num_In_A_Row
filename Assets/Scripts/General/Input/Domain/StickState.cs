@@ -36,7 +36,7 @@ namespace InputSystem.Domain
         public Vector2 Angle => _angle;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>押すイベント Subject</summary>

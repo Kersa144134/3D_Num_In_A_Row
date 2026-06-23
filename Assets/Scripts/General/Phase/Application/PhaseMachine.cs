@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using UniRx;
 using PhaseSystem.Domain;
+using StreamSystem.Application;
 using UpdateSystem.Application;
 using UpdateSystem.Domain;
 
@@ -32,6 +33,9 @@ namespace PhaseSystem.Application
 
         /// <summary>Update を管理するサービス</summary>
         private readonly UpdatableManagement _updatableManagement = new UpdatableManagement();
+
+        /// <summary>Stream を管理するサービス</summary>
+        private readonly StreamManagement _streamManagement = new StreamManagement();
 
         // ======================================================
         // フィールド
@@ -194,19 +198,40 @@ namespace PhaseSystem.Application
             // 遷移前フェーズを保持
             PhaseType previousPhaseType = _currentPhaseType.Value;
 
+            // --------------------------------------------------
             // 終了処理
+            // --------------------------------------------------
             _updatableManagement.ExecutePhaseExit(previousPhaseType);
+
+            // イベント購読解除
+            _streamManagement.UnbindStreams();
+
             _currentState.OnExitState();
 
-            // 新しい State 取得
+            // --------------------------------------------------
+            // State 切替
+            // --------------------------------------------------
             _currentPhaseType.Value = nextPhaseType;
+
             _currentState = _stateRepository.GetPhaseState(nextPhaseType);
 
-            // Updatables 再構築
+            // --------------------------------------------------
+            // フェーズ定義反映
+            // --------------------------------------------------
+            // Update 対象再構築
             _updatableManagement.RebuildUpdatables(ResolvePhaseUpdatables());
 
+            // Stream 購読対象再構築
+            _streamManagement.RebuildStreams(ResolvePhaseStreams());
+
+            // --------------------------------------------------
             // 開始処理
+            // --------------------------------------------------
+            // イベント購読
+            _streamManagement.BindStreams();
+
             _updatableManagement.ExecutePhaseEnter(nextPhaseType);
+
             if (_currentState is IPhaseEnterHandler handler)
             {
                 handler.OnEnterState(previousPhaseType);
@@ -216,25 +241,70 @@ namespace PhaseSystem.Application
                 _currentState.OnEnterState();
             }
 
-            if (nextPhaseType is PhaseType.ChangePlayer)
+            // --------------------------------------------------
+            // 特殊処理
+            // --------------------------------------------------
+            if (nextPhaseType == PhaseType.ChangePlayer)
             {
                 NextPlayer();
             }
         }
 
         /// <summary>
+        /// 現在のフェーズ定義に基づき、購読対象となる StreamBindable 配列を解決する
+        /// </summary>
+        /// <returns>購読対象となる StreamBindable 配列</returns>
+        private IStreamBindable[] ResolvePhaseStreams()
+        {
+            // フェーズ定義未実装の場合は空配列を返却
+            if (!(_currentState is IPhaseStreamDefinition streamDefinition))
+            {
+                return Array.Empty<IStreamBindable>();
+            }
+
+            // フェーズが要求する Updatable 種別を取得
+            UpdatableType[] types = streamDefinition.GetStreamTypes();
+
+            // 解決結果格納用リスト
+            List<IStreamBindable> result = new List<IStreamBindable>();
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                UpdatableType type = types[i];
+
+                // コンテキストから対応する Updatable を取得
+                IUpdatable updatable = _updatableContexts.Get(type);
+
+                if (updatable == null)
+                {
+                    throw new InvalidOperationException($"Updatableが見つかりません。Type: {type}");
+                }
+
+                // StreamBindable 未実装の場合
+                if (!(updatable is IStreamBindable streamBindable))
+                {
+                    throw new InvalidOperationException($"IStreamBindable が実装されていません。Type: {type}");
+                }
+
+                result.Add(streamBindable);
+            }
+
+            return result.ToArray();
+        }
+        
+        /// <summary>
         /// 現在のフェーズ定義に基づき、実行対象となる Updatable 配列を解決する
         /// </summary>
         /// <returns>実行対象となる Updatable 配列</returns>
         private IUpdatable[] ResolvePhaseUpdatables()
         {
-            if (!(_currentState is IPhaseUpdatableDefinition definition))
+            if (!(_currentState is IPhaseUpdatableDefinition updatableDefinition))
             {
                 return Array.Empty<IUpdatable>();
             }
 
             // フェーズが要求する Updatable 種別を取得
-            UpdatableType[] types = definition.GetUpdatableTypes();
+            UpdatableType[] types = updatableDefinition.GetUpdatableTypes();
 
             List<IUpdatable> result = new List<IUpdatable>();
 

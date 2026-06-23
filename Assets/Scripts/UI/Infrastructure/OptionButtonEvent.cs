@@ -42,7 +42,7 @@ namespace UISystem.Infrastructure
         public OptionButtonData Data => _data;
 
         // ======================================================
-        // UniRx ïœêî
+        // UniRx ä÷òA
         // ======================================================
 
         /// <summary>

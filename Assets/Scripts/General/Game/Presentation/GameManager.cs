@@ -125,7 +125,7 @@ namespace GameSystem.Presentation
         private const float SCREEN_FADE_HOLD_TIME_SECONDS = 0.5f;
 
         // ======================================================
-        // UniRx ïœêî
+        // UniRx ä÷òA
         // ======================================================
 
         /// <summary>çwì«ä«óù</summary>

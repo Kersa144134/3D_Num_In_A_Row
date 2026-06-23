@@ -36,8 +36,8 @@ namespace UpdateSystem.Application
         /// </summary>
         public UpdatableManagement()
         {
-            // Runner を生成する
             UpdatableRunner runner = new UpdatableRunner();
+
             _runner = runner;
             _modifier = runner;
         }
@@ -93,10 +93,12 @@ namespace UpdateSystem.Application
 
             IUpdatable[] buffer = new IUpdatable[safeArray.Length];
 
+            // 有効要素数
             int index = 0;
 
             for (int i = 0; i < safeArray.Length; i++)
             {
+                // 対象取得
                 IUpdatable updatable = safeArray[i];
 
                 if (updatable == null)
@@ -118,6 +120,7 @@ namespace UpdateSystem.Application
                 result[i] = buffer[i];
             }
 
+            // ランナーへ反映
             _modifier.Replace(result);
         }
     }

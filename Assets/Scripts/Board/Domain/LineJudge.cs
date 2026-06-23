@@ -39,7 +39,7 @@ namespace BoardSystem.Domain
         private readonly int _connectCount;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>ライン成立イベントリスト Subject</summary>

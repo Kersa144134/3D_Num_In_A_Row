@@ -15,10 +15,6 @@ namespace UpdateSystem.Domain
     /// </summary>
     public interface IUpdatableRunnerModifier
     {
-        // ======================================================
-        // ’uŠ·ˆ—
-        // ======================================================
-
         /// <summary>
         /// “o˜^‚³‚ê‚Ä‚¢‚é Updatable ‚ğŠÛ‚²‚Æ’uŠ·‚·‚é
         /// </summary>

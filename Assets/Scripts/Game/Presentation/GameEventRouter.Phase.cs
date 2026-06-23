@@ -135,9 +135,6 @@ namespace GameSystem.Presentation
                     // ボード入力種別キャッシュをリセット
                     _currentBoardInputType.Value = BoardInputType.Drop;
 
-                    // ボード回転準備イベント発火
-                    _onDropRequested.OnNext(Unit.Default);
-
                     // スキップ入力購読解除
                     UnbindEventSkipStream();
 

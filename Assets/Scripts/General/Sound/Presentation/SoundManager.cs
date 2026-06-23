@@ -118,7 +118,7 @@ namespace SoundSystem.Presentation
         private const float SE_PLAY_INTERVAL = 0.05f;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>イベント購読管理</summary>

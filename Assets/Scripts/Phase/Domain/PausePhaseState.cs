@@ -16,13 +16,14 @@ namespace PhaseSystem.Domain
     public sealed class PausePhaseState : PhaseStateBase
     {
         // ======================================================
-        // IPhaseUpdatableDefinition 実装
+        // IPhaseStreamDefinition 実装
         // ======================================================
 
         /// <summary>
-        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// フェーズごとに購読開始される Updatable 種別
         /// </summary>
-        public override UpdatableType[] GetUpdatableTypes()
+        /// <returns>Updatable種別配列</returns>
+        public override UpdatableType[] GetStreamTypes()
         {
             return new UpdatableType[]
             {
@@ -30,7 +31,21 @@ namespace PhaseSystem.Domain
             };
         }
 
+        // ======================================================
+        // IPhaseUpdatableDefinition 実装
+        // ======================================================
 
+        /// <summary>
+        /// フェーズごとに有効化される Updatable 種別
+        /// </summary>
+        /// <returns>Updatable 種別配列</returns>
+        public override UpdatableType[] GetUpdatableTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.MainUIPresenter
+            };
+        }
 
         // ======================================================
         // IPhaseState 実装

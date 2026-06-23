@@ -35,7 +35,7 @@ namespace UISystem.Application
         private CancellationTokenSource _randomAnimationCancellation;
 
         // ======================================================
-        // UniRx ïœêî
+        // UniRx ä÷òA
         // ======================================================
 
         /// <summary>åªç›ï\é¶íl</summary>

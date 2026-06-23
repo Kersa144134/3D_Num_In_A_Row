@@ -70,7 +70,7 @@ namespace BoardSystem.Presentation
         private const string TAG_FRAME_NONE = "FrameNone";
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>列選択表示の表示状態通知用 Subject</summary>

@@ -46,7 +46,7 @@ namespace UISystem.Infrastructure
         public RectTransform RectTransform => _rectTransform;
 
         // ======================================================
-        // UniRx ïœêî
+        // UniRx ä÷òA
         // ======================================================
 
         // --------------------------------------------------

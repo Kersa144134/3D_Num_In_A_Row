@@ -16,12 +16,31 @@ namespace PhaseSystem.Domain
     public sealed class PlayPhaseState : PhaseStateBase, IPhaseEnterHandler
     {
         // ======================================================
+        // IPhaseStreamDefinition 実装
+        // ======================================================
+
+        /// <summary>
+        /// フェーズごとに購読開始される Updatable 種別
+        /// </summary>
+        /// <returns>Updatable種別配列</returns>
+        public override UpdatableType[] GetStreamTypes()
+        {
+            return new UpdatableType[]
+            {
+                UpdatableType.BoardPresenter,
+                UpdatableType.CameraPresenter,
+                UpdatableType.MainUIPresenter
+            };
+        }
+
+        // ======================================================
         // IPhaseUpdatableDefinition 実装
         // ======================================================
 
         /// <summary>
-        /// このフェーズで更新対象となる Updatable 種別を返す
+        /// フェーズごとに有効化される Updatable 種別
         /// </summary>
+        /// <returns>Updatable 種別配列</returns>
         public override UpdatableType[] GetUpdatableTypes()
         {
             return new UpdatableType[]

@@ -25,7 +25,7 @@ namespace BoardSystem.Presentation
     /// 目並べプレゼンター
     /// </summary>
     [UpdatableBind(UpdatableType.BoardPresenter)]
-    public sealed class BoardPresenter : MonoBehaviour, IUpdatable
+    public sealed class BoardPresenter : MonoBehaviour, IUpdatable, IStreamBindable
     {
         // ======================================================
         // インスペクタ設定
@@ -143,9 +143,24 @@ namespace BoardSystem.Presentation
         // UniRx 変数
         // ======================================================
 
+        // --------------------------------------------------
+        // 購読管理
+        // --------------------------------------------------
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
 
+        /// <summary>ドロップ入力購読</summary>
+        private IDisposable _dropInputSubscription;
+
+        /// <summary>回転入力購読管理</summary>
+        private IDisposable _rotateInputSubscription;
+
+        /// <summary>プレイヤー ID 通知ストリーム</summary>
+        private IObservable<int> _playerStream;
+
+        // --------------------------------------------------
+        // イベント
+        // --------------------------------------------------
         /// <summary>駒落下入力通知用 Subject</summary>
         private readonly Subject<Unit> _onDropInputted = new Subject<Unit>();
 
@@ -166,16 +181,10 @@ namespace BoardSystem.Presentation
         public IObservable<IReadOnlyList<LineCompleteEvent>> OnLineComplete => _onLineComplete;
 
         /// <summary>ライン削除通知用 Subject</summary>
-        private readonly Subject<Unit> _onLineDelete = new();
+        private readonly Subject<Unit> _onLineDelete = new Subject<Unit>();
 
         /// <summary>ライン削除通知ストリーム</summary>
         public IObservable<Unit> OnLineDelete => _onLineDelete;
-
-        /// <summary>ライン位置通知ストリーム</summary>
-        public IObservable<LinePositionInfo> OnLinePositionNotified => _deleteHandler.OnLinePositionNotified;
-
-        /// <summary>ライン発光実行ストリーム</summary>
-        public IObservable<Unit> OnLineEmissionExecuted => _deleteHandler.OnLineEmissionExecuted;
 
         /// <summary>プレイヤー行動終了通知用 Subject</summary>
         private readonly Subject<Unit> _onPlayerEnd = new Subject<Unit>();
@@ -183,17 +192,14 @@ namespace BoardSystem.Presentation
         /// <summary>プレイヤー行動終了ストリーム</summary>
         public IObservable<Unit> OnPlayerEnd => _onPlayerEnd;
 
-        /// <summary>プレイヤーインデックス購読</summary>
-        private IDisposable _playerIndexSubscription;
-
-        /// <summary>ドロップ入力購読</summary>
-        private IDisposable _dropInputSubscription;
-
-        /// <summary>回転入力購読管理</summary>
-        private IDisposable _rotateInputSubscription;
-
         /// <summary>列選択表示の表示状態</summary>
         public IReadOnlyReactiveProperty<bool> IsColumnSelectVisible => _view.IsColumnSelectVisible;
+
+        /// <summary>ライン位置通知ストリーム</summary>
+        public IObservable<LinePositionInfo> OnLinePositionNotified => _deleteHandler.OnLinePositionNotified;
+
+        /// <summary>ライン発光実行ストリーム</summary>
+        public IObservable<Unit> OnLineEmissionExecuted => _deleteHandler.OnLineEmissionExecuted;
 
         // ======================================================
         // IUpdatable イベント
@@ -279,9 +285,6 @@ namespace BoardSystem.Presentation
                     break;
                 }
             }
-
-            // イベント購読
-            Subscribe();
         }
 
         public void OnUpdate(in float unscaledDeltaTime)
@@ -337,13 +340,42 @@ namespace BoardSystem.Presentation
         public void OnExit()
         {
             // 購読解除
-            _disposables?.Dispose();
-            _model?.Dispose();
-            _deleteHandler?.Dispose();
-
-            UnbindPlayerChangeStream();
+            UnbindStreams();
             UnbindDropInputStream();
             UnbindRotateInputStream();
+
+            _model?.Dispose();
+            _deleteHandler?.Dispose();
+        }
+
+        // ======================================================
+        // IStreamBindable イベント
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void BindStreams()
+        {
+            _disposables?.Dispose();
+            _disposables = new CompositeDisposable();
+
+            _playerStream
+                .Subscribe(player =>
+                {
+                    _currentPlayer = player;
+                })
+                .AddTo(_disposables);
+
+            Subscribe();
+        }
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void UnbindStreams()
+        {
+            _disposables?.Dispose();
         }
 
         // ======================================================
@@ -351,19 +383,12 @@ namespace BoardSystem.Presentation
         // ======================================================
 
         /// <summary>
-        /// プレイヤー変更ストリームを購読する
+        /// イベントストリームを受け取る
         /// </summary>
         /// <param name="player">プレイヤー ID 通知ストリーム</param>
-        public void BindPlayerChangeStream(in IObservable<int> player)
+        public void SetStreams(in IObservable<int> player)
         {
-            // 多重購読防止
-            _playerIndexSubscription?.Dispose();
-
-            _playerIndexSubscription = player
-                .Subscribe(player =>
-                {
-                    _currentPlayer = player;
-                });
+            _playerStream = player;
         }
 
         /// <summary>
@@ -463,15 +488,6 @@ namespace BoardSystem.Presentation
             _deleteHandler.OnLineDeleteExecuted
                 .Subscribe(_ => _soundManager?.PlaySE(SeType.Piece_Delete, 0.75f))
                 .AddTo(_disposables);
-        }
-
-        /// <summary>
-        /// プレイヤー変更ストリームの購読を解除する
-        /// </summary>
-        private void UnbindPlayerChangeStream()
-        {
-            _playerIndexSubscription?.Dispose();
-            _playerIndexSubscription = null;
         }
 
         // --------------------------------------------------

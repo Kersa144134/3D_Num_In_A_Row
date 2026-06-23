@@ -135,7 +135,7 @@ namespace InputSystem.Presentation
         public Vector2 Pointer => _pointer;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>イベント購読管理</summary>
@@ -288,7 +288,7 @@ namespace InputSystem.Presentation
         /// <param name="mapping">入力マッピング変更ストリーム</param>
         /// <param name="pointerPosition">ポインター座標変更ストリーム</param>
         public void BindStreams(
-            IObservable<int> mapping,
+            IReadOnlyReactiveProperty<int> mapping,
             IObservable<Vector2> pointerPosition)
         {
             mapping

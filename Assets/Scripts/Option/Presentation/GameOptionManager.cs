@@ -110,7 +110,7 @@ namespace OptionSystem.Presentation
         public float PointerSpeed => _currentRules.PointerSpeed;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>ゲームスピード変更購読</summary>
@@ -180,9 +180,9 @@ namespace OptionSystem.Presentation
         // イベント購読
         // --------------------------------------------------
         /// <summary>
-        /// イベントストリームを購読する
+        /// イベントストリームをまとめて購読する
         /// </summary>
-        public void BindStream(IObservable<float> onGameSpeedChangeRequested)
+        public void BindStreams(in IObservable<float> onGameSpeedChangeRequested)
         {
             _onGameSpeedChangeSubscription = onGameSpeedChangeRequested
                 .Subscribe(timeScale =>

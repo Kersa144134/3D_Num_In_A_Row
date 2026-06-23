@@ -31,7 +31,7 @@ namespace PhaseSystem.Application
         private int _finishTransitionCount = 0;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>Play フェーズへ遷移した回数</summary>

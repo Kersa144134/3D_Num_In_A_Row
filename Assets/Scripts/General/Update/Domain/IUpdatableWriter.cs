@@ -3,7 +3,7 @@
 // 作成者   : 高橋一翔
 // 作成日時 : 2026-04-22
 // 更新日時 : 2026-04-22
-// 概要     : Updatable登録専用インターフェース
+// 概要     : Updatable 登録専用インターフェース
 // ======================================================
 
 #nullable enable
@@ -11,16 +11,12 @@
 namespace UpdateSystem.Domain
 {
     /// <summary>
-    /// Updatable登録専用インターフェース
+    /// Updatable 登録専用インターフェース
     /// </summary>
     public interface IUpdatableWriter
     {
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
-
         /// <summary>
-        /// Updatableを識別子で登録する
+        /// Updatable を識別子で登録する
         /// 同一識別子への複数登録を許可する
         /// </summary>
         /// <param name="type">Updatable種別</param>

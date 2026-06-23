@@ -39,7 +39,7 @@ namespace GameSystem.Application
         private Scene _previousScene;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>ロード進捗イベント通知用 Subject</summary>

@@ -19,7 +19,7 @@ namespace UISystem.Application
     public sealed class UIEventRouter : IDisposable
     {
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>購読管理</summary>

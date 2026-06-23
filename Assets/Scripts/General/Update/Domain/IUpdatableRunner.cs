@@ -17,10 +17,6 @@ namespace UpdateSystem.Domain
     /// </summary>
     public interface IUpdatableRunner
     {
-        // ======================================================
-        // フレーム更新
-        // ======================================================
-
         /// <summary>
         /// 毎フレームの Update 処理を実行する
         /// </summary>
@@ -32,10 +28,6 @@ namespace UpdateSystem.Domain
         /// </summary>
         /// <param name="unscaledDeltaTime">timeScale の影響を受けない経過時間</param>
         void OnLateUpdate(in float unscaledDeltaTime);
-
-        // ======================================================
-        // フェーズ処理
-        // ======================================================
 
         /// <summary>
         /// フェーズ開始時の処理を実行する

@@ -100,7 +100,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             if (_gameOptionManager != null)
             {
-                _gameOptionManager.BindStream(_onGameSpeedChangeRequested);
+                _gameOptionManager.BindStreams(_onGameSpeedChangeRequested);
             }
 
             // --------------------------------------------------
@@ -198,14 +198,14 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             if (_titleUIPresenter != null)
             {
-                _titleUIPresenter.BindStreams(
-                    _onExitGameInput,
+                _titleUIPresenter.SetStreams(
                     _onGamepadUsed,
-                    _onSceneStartAnimationSkiped);
+                    _onExitGameInput,
+                    _onSceneStartAnimationSkipped);
 
-                // 直後にキャッシュ状態を同期
-                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
-
+                // 入力デバイス状態更新
+                _onGamepadUsed.Value = _cachedActiveDevice == InputDeviceType.Gamepad;
+                
                 _titleUIPresenter.OnUpdateGameOption
                     .Subscribe(e => HandleGameOptionUpdated(e))
                     .AddTo(_disposables);
@@ -250,23 +250,21 @@ namespace GameSystem.Presentation
 
             if (_mainUIPresenter != null)
             {
-                _mainUIPresenter.BindStreams(
-                    _currentPhase,
-                    _onPlayerChanged,
+                _mainUIPresenter.SetStreams(
+                    _onTurnChanged,
+                    _phaseMachine.LimitTime,
                     _onScoreUpdated,
                     _onScoreAdded,
-                    _onPauseInput,
-                    _currentPhase.Select(phase => phase != PhaseType.Play && phase != PhaseType.Pause),
-                    _onGamepadUsed,
-                    _onColumnSelectVisibleChanged,
-                    _onDropRequested,
-                    _onRotateRequested,
-                    _onTurnChanged,
                     _onComboAdded,
-                    _phaseMachine.LimitTime);
+                    _onGamepadUsed,
+                    _currentPhase.Select(phase => phase != PhaseType.Play && phase != PhaseType.Pause),
+                    _onPauseInput,
+                    _currentBoardInputType,
+                    _onPlayerChanged,
+                    _onColumnSelectVisibleChanged);
 
-                // 直後にキャッシュ状態を同期
-                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
+                // 入力デバイス状態更新
+                _onGamepadUsed.Value = _cachedActiveDevice == InputDeviceType.Gamepad;
 
                 // Ready アニメーション終了時
                 _mainUIPresenter.OnReadyAnimationEnd
@@ -323,13 +321,13 @@ namespace GameSystem.Presentation
 
             if (_resultUIPresenter != null)
             {
-                _resultUIPresenter.BindStreams(
+                _resultUIPresenter.SetStreams(
                     _onGamepadUsed,
-                    _onSceneStartAnimationSkiped);
+                    _onSceneStartAnimationSkipped);
 
-                // 直後にキャッシュ状態を同期
-                _onGamepadUsed.OnNext(_cachedActiveDevice == InputDeviceType.Gamepad);
-
+                // 入力デバイス状態更新
+                _onGamepadUsed.Value = _cachedActiveDevice == InputDeviceType.Gamepad;
+                
                 // リザルト順位アニメーション終了時
                 _resultUIPresenter.OnStartResultAnimationEnd
                     .Subscribe(_ => UnbindEventSkipStream())
@@ -369,7 +367,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             if (_cameraPresenter != null)
             {
-                _cameraPresenter.BindStreams(
+                _cameraPresenter.SetStreams(
                     _currentPhase
                         .Where(phase => phase == PhaseType.ChangePlayer)
                         .Select(_ => Unit.Default),
@@ -402,7 +400,7 @@ namespace GameSystem.Presentation
                         continue;
                     }
 
-                    boardPresenter.BindPlayerChangeStream(_onPlayerChanged);
+                    boardPresenter.SetStreams(_onPlayerChanged);
 
                     boardPresenter.OnPlayerEnd
                         .Subscribe(_ => NotifyPhaseChangeRequested(PhaseType.ChangePlayer))
@@ -499,7 +497,7 @@ namespace GameSystem.Presentation
 
                     // スキップ入力
                     // シーンスタートアニメーションスキップ通知
-                    BindEventSkipStream(_onSceneStartAnimationSkiped, Unit.Default);
+                    BindEventSkipStream(_onSceneStartAnimationSkipped, Unit.Default);
                 })
                 .AddTo(_disposables);
 
@@ -705,9 +703,6 @@ namespace GameSystem.Presentation
             _inputManager.ButtonB.OnDown
                 .Subscribe(async _ =>
                 {
-                    // ボード回転準備イベント発火
-                    _onRotateRequested.OnNext(Unit.Default);
-
                     // 入力購読解除
                     UnbindInputCommands();
 
@@ -822,9 +817,6 @@ namespace GameSystem.Presentation
             _inputManager.ButtonB.OnDown
                 .Subscribe(async _ =>
                 {
-                    // 駒落下準備イベント発火
-                    _onDropRequested.OnNext(Unit.Default);
-
                     // 入力購読解除
                     UnbindInputCommands();
 

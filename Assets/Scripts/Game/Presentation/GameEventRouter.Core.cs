@@ -165,10 +165,6 @@ namespace GameSystem.Presentation
         /// <summary>現在フェーズストリーム</summary>
         private readonly IReadOnlyReactiveProperty<PhaseType> _currentPhase;
 
-        /// <summary>現在ボード入力種別ストリーム</summary>
-        private readonly ReactiveProperty<BoardInputType> _currentBoardInputType
-            = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
-
         /// <summary>フェーズ変更リクエスト通知用 Subject</summary>
         private readonly Subject<PhaseChangeEvent> _onPhaseChangeRequested = new Subject<PhaseChangeEvent>();
 
@@ -209,10 +205,10 @@ namespace GameSystem.Presentation
         // 入力
         // --------------------------------------------------
         /// <summary>入力マッピング変更用 Subject</summary>
-        private readonly Subject<int> _onMappingChanged = new Subject<int>();
+        private readonly ReactiveProperty<int> _onMappingChanged = new ReactiveProperty<int>();
 
         /// <summary>ゲームパッド検知用 Subject</summary>
-        private readonly Subject<bool> _onGamepadUsed = new Subject<bool>();
+        private readonly ReactiveProperty<bool> _onGamepadUsed = new ReactiveProperty<bool>();
 
         /// <summary>ポインター座標変更用 Subject</summary>
         private readonly Subject<Vector2> _onPointerPositionChanged = new Subject<Vector2>();
@@ -228,6 +224,10 @@ namespace GameSystem.Presentation
 
         /// <summary>ポーズ入力用 Subject</summary>
         private readonly Subject<Unit> _onPauseInput = new Subject<Unit>();
+
+        /// <summary>現在ボード入力種別ストリーム</summary>
+        private readonly ReactiveProperty<BoardInputType> _currentBoardInputType
+            = new ReactiveProperty<BoardInputType>(BoardInputType.Drop);
 
         // --------------------------------------------------
         // UI
@@ -245,17 +245,11 @@ namespace GameSystem.Presentation
         public IObservable<Unit> OnFadeCompleted => _onFadeCompleted;
 
         /// <summary>シーンスタートアニメーションスキップ通知用 Subject</summary>
-        private readonly Subject<Unit> _onSceneStartAnimationSkiped = new Subject<Unit>();
+        private readonly Subject<Unit> _onSceneStartAnimationSkipped = new Subject<Unit>();
 
         // --------------------------------------------------
         // ボード
         // --------------------------------------------------
-        /// <summary>駒落下入力用 Subject</summary>
-        private readonly Subject<Unit> _onDropRequested = new Subject<Unit>();
-
-        /// <summary>ボード回転入力用 Subject</summary>
-        private readonly Subject<Unit> _onRotateRequested = new Subject<Unit>();
-
         /// <summary>駒落下入力用 Subject</summary>
         private readonly Subject<Unit> _onDropExecuted = new Subject<Unit>();
 

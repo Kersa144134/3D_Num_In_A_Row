@@ -76,7 +76,7 @@ namespace ScoreSystem.Presentation
         private const int LINE_LENGTH_SCALE_BASE = 2;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>プレイヤー別累計スコア配列</summary>

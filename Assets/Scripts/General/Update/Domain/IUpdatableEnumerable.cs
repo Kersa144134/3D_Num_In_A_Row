@@ -15,10 +15,6 @@ namespace UpdateSystem.Domain
     /// </summary>
     public interface IUpdatableEnumerable
     {
-        // ======================================================
-        // パブリックメソッド
-        // ======================================================
-
         /// <summary>
         /// 登録されている全ての IUpdatable を取得する
         /// </summary>

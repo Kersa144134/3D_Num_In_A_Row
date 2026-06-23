@@ -145,7 +145,7 @@ namespace UISystem.Presentation
         private static readonly int[] LIMIT_TIME_DIGITS = { 2, 2 };
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>イベント購読管理</summary>

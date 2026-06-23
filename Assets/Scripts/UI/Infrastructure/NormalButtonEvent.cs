@@ -18,7 +18,7 @@ namespace UISystem.Infrastructure
     public sealed class NormalButtonEvent : BaseButtonEvent
     {
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>

@@ -25,7 +25,7 @@ namespace InputSystem.Domain
         private bool _wasPressed = false;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>押すイベント用 Subject</summary>

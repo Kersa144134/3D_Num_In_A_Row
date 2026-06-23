@@ -13,6 +13,7 @@ using UnityEngine.UI;
 using TMPro;
 using UniRx;
 using AnimationSystem.Infrastructure;
+using BoardSystem.Domain;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
 using PhaseSystem.Domain;
@@ -30,7 +31,7 @@ namespace UISystem.Presentation
     /// メインシーンにおける UI 演出を管理するプレゼンター
     /// </summary>
     [UpdatableBind(UpdatableType.MainUIPresenter)]
-    public sealed class MainUIPresenter : BaseUIPresenter, IUpdatable
+    public sealed class MainUIPresenter : BaseUIPresenter, IUpdatable, IStreamBindable
     {
         // ======================================================
         // インスペクタ設定
@@ -263,12 +264,51 @@ namespace UISystem.Presentation
         private static readonly int IS_SWITCH_PROJECTION_HASH = Animator.StringToHash("IsSwitchProjection");
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
+        // --------------------------------------------------
+        // 購読管理
+        // --------------------------------------------------
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
 
+        /// <summary>ターン数変更ストリーム</summary>
+        private IObservable<int> _turnChangedStream;
+
+        /// <summary>制限時間変更ストリーム</summary>
+        private IObservable<float> _limitTimeChangedStream;
+
+        /// <summary>スコア更新ストリーム</summary>
+        private IObservable<ScoreEvent> _scoreUpdatedStream;
+
+        /// <summary>スコア加算ストリーム</summary>
+        private IObservable<ScoreEvent> _scoreAddedStream;
+
+        /// <summary>コンボ加算ストリーム</summary>
+        private IObservable<int> _comboAddedStream;
+
+        /// <summary>ゲームパッド使用状態ストリーム</summary>
+        private IObservable<bool> _gamepadUsedStream;
+
+        /// <summary>ポインターロック状態ストリーム</summary>
+        private IObservable<bool> _pointerLockStream;
+
+        /// <summary>ポーズ入力ストリーム</summary>
+        private IObservable<Unit> _pauseInputStream;
+
+        /// <summary>ボード入力種別通知ストリーム</summary>
+        private IReadOnlyReactiveProperty<BoardInputType> _boardInputTypeStream;
+
+        /// <summary>プレイヤー変更ストリーム</summary>
+        private IObservable<int> _playerChangeStream;
+
+        /// <summary>列選択表示状態ストリーム</summary>
+        private IObservable<bool> _columnSelectVisibleChangedStream;
+
+        // --------------------------------------------------
+        // イベント
+        // --------------------------------------------------
         /// <summary>Ready アニメーション終了通知用 Subject</summary>
         private readonly Subject<Unit> _onReadyAnimationEnd = new Subject<Unit>();
 
@@ -442,6 +482,9 @@ namespace UISystem.Presentation
         {
             base.OnPhaseEnterInternal(phase);
 
+            // フェーズキャッシュ
+            _currentPhase = phase;
+
             // 制限時間表示更新
             SetLimitTimeVisible(phase == PhaseType.Play);
 
@@ -487,8 +530,6 @@ namespace UISystem.Presentation
                     SetPauseState(true);
 
                     break;
-
-
 
                 case PhaseType.Finish:
                     // 終了演出再生
@@ -542,6 +583,9 @@ namespace UISystem.Presentation
         {
             base.OnExitInternal();
 
+            // イベント購読解除
+            UnbindStreams();
+            
             if (_uiView is MainUIView mainUIView)
             {
                 mainUIView.Dispose();
@@ -551,6 +595,161 @@ namespace UISystem.Presentation
             StopBgm();
         }
 
+        // ======================================================
+        // IStreamBindable イベント
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        public void BindStreams()
+        {
+            _disposables?.Dispose();
+            _disposables = new CompositeDisposable();
+
+            _turnChangedStream
+                .DistinctUntilChanged()
+                .Subscribe(turn => UpdateTurnCountDisplay(turn))
+                .AddTo(_disposables);
+
+            _limitTimeChangedStream
+                .DistinctUntilChanged()
+                .Subscribe(time => UpdateLimitTimeDisplay(time))
+                .AddTo(_disposables);
+
+            _scoreUpdatedStream
+                .Subscribe(e => UpdateCurrentScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
+
+            _scoreAddedStream
+                .Subscribe(e => UpdateAddScore(e.PlayerId, e.LineLength))
+                .AddTo(_disposables);
+
+            _comboAddedStream
+                .DistinctUntilChanged()
+                .Subscribe(combo => UpdateComboCountDisplay(combo))
+                .AddTo(_disposables);
+
+            _gamepadUsedStream
+                .Subscribe(isUsed =>
+                {
+                    // 現在の入力デバイス状態を保持
+                    _isGamePadInput = isUsed;
+
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+
+                    // 入力状態に応じて入力アイコン表示を更新
+                    SetInputIconVisible(isUsed);
+                })
+                .AddTo(_disposables);
+
+            _pointerLockStream
+                .DistinctUntilChanged()
+                .Subscribe(isLock =>
+                {
+                    _isPointerLock = isLock;
+
+                    // ロック状態でない場合にポインター表示
+                    SetPointerVisible(!isLock);
+                })
+                .AddTo(_disposables);
+
+            _pauseInputStream
+                .Subscribe(_ =>
+                {
+                    // 現在時間取得
+                    float currentTime = Time.time;
+
+                    // クールダウン未満なら処理なし
+                    if (currentTime - _lastPausePhaseChangeTime < PAUSE_PHASE_CHANGE_COOLDOWN)
+                    {
+                        return;
+                    }
+
+                    // Play → Pause
+                    if (_currentPhase == PhaseType.Play)
+                    {
+                        _onPhaseChangeRequested.OnNext(PhaseType.Pause);
+                        _lastPausePhaseChangeTime = currentTime;
+
+                        return;
+                    }
+
+                    // Pause → Play
+                    if (_currentPhase == PhaseType.Pause &&
+                        _uiStateController.GetActiveCanvasType() == CanvasType.Pause)
+                    {
+                        _onPhaseChangeRequested.OnNext(PhaseType.Play);
+                        _lastPausePhaseChangeTime = currentTime;
+                    }
+                })
+                .AddTo(_disposables);
+
+            _boardInputTypeStream
+                .DistinctUntilChanged()
+                .Subscribe(inputType =>
+                {
+                    switch (inputType)
+                    {
+                        case BoardInputType.Drop:
+                            {
+                                // 平行投影へ切り替え
+                                SetSwitchProjection(false);
+
+                                // 落下操作説明を表示
+                                SetInputInfoActive(_inputInfoPieceDrop);
+
+                                break;
+                            }
+
+                        case BoardInputType.Rotate:
+                            {
+                                // 透視投影へ切り替え
+                                SetSwitchProjection(true);
+
+                                // 回転操作説明を表示
+                                SetInputInfoActive(_inputInfoBoardRotation);
+
+                                break;
+                            }
+                    }
+                })
+                .AddTo(_disposables);
+
+            // プレイヤー切り替えアニメーション
+            _playerChangeStream
+                .Subscribe(playerIndex => _intermittentCanvasAnimator?.SetInteger(IS_PLAYER_ID_HASH, playerIndex))
+                .AddTo(_disposables);
+
+            _columnSelectVisibleChangedStream
+                .DistinctUntilChanged()
+                .Subscribe(isVisible =>
+                {
+                    _isPointerTarget = isVisible;
+
+                    UpdatePointerTargetAnimation(isVisible);
+                })
+                .AddTo(_disposables);
+
+            Subscribe();
+        }
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void UnbindStreams()
+        {
+            _disposables?.Dispose();
+        }
+        
         // ======================================================
         // 入力継承イベント
         // ======================================================
@@ -862,169 +1061,41 @@ namespace UISystem.Presentation
         /// <summary>
         /// イベントストリームをまとめて購読する
         /// </summary>
-        /// <param name="phase">フェーズ状態を通知するストリーム</param>
-        /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
-        /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
-        /// <param name="scoreUpdated">スコア加算を通知するストリーム</param>
-        /// <param name="onPauseInput">ポーズ入力を通知するストリーム</param>
-        /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
-        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
-        /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
-        /// <param name="dropRequested">落下入力予約を通知するストリーム</param>
-        /// <param name="rotateRequested">回転入力予約を通知するストリーム</param>
         /// <param name="turnChanged">ターンの現在ターン数を通知するストリーム</param>
         /// <param name="limitTimeChanged">制限時間の残り時間を通知するストリーム</param>
-        public void BindStreams(
-            in IObservable<PhaseType> phase,
-            in IObservable<int> playerChange,
+        /// <param name="scoreUpdated">スコア更新を通知するストリーム</param>
+        /// <param name="scoreAdded">スコア加算を通知するストリーム</param>
+        /// <param name="comboAdded">コンボ加算を通知するストリーム</param>
+        /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
+        /// <param name="pointerLock">ポインターロック状態を通知するストリーム</param>
+        /// <param name="pauseInput">ポーズ入力を通知するストリーム</param>
+        /// <param name="boardInputType">ボード入力種別を通知するストリーム</param>
+        /// <param name="playerChange">プレイヤーインデックス変更を通知するストリーム</param>
+        /// <param name="columnSelectVisibleChanged">列選択表示の表示状態を通知するストリーム</param>
+        public void SetStreams(
+            in IObservable<int> turnChanged,
+            in IObservable<float> limitTimeChanged,
             in IObservable<ScoreEvent> scoreUpdated,
             in IObservable<ScoreEvent> scoreAdded,
-            in IObservable<Unit> onPauseInput,
-            in IObservable<bool> pointerLock,
-            in IObservable<bool> gamepadUsed,
-            in IObservable<bool> columnSelectVisibleChanged,
-            in IObservable<Unit> dropRequested,
-            in IObservable<Unit> rotateRequested,
-            in IObservable<int> turnChanged,
             in IObservable<int> comboAdded,
-            in IObservable<float> limitTimeChanged)
+            in IObservable<bool> gamepadUsed,
+            in IObservable<bool> pointerLock,
+            in IObservable<Unit> pauseInput,
+            in IReadOnlyReactiveProperty<BoardInputType> boardInputType,
+            in IObservable<int> playerChange,
+            in IObservable<bool> columnSelectVisibleChanged)
         {
-            phase
-                .Skip(1)
-                .Subscribe(type => _currentPhase = type)
-                .AddTo(_disposables);
-
-            // プレイヤー切り替えアニメーション
-            playerChange
-                .Subscribe(playerIndex => _intermittentCanvasAnimator?.SetInteger(IS_PLAYER_ID_HASH, playerIndex))
-                .AddTo(_disposables);
-
-            scoreUpdated
-                .Subscribe(e => UpdateCurrentScore(e.PlayerId, e.LineLength))
-                .AddTo(_disposables);
-
-            scoreAdded
-                .Subscribe(e => UpdateAddScore(e.PlayerId, e.LineLength))
-                .AddTo(_disposables);
-
-            onPauseInput
-                .Subscribe(_ =>
-                {
-                    switch (_currentPhase)
-                    {
-                        case PhaseType.Play:
-                            {
-                                float currentTime = Time.time;
-
-                                // 時間経過判定
-                                if (currentTime - _lastPausePhaseChangeTime >= PAUSE_PHASE_CHANGE_COOLDOWN)
-                                {
-                                    // ポーズフェーズ遷移通知
-                                    _onPhaseChangeRequested.OnNext(PhaseType.Pause);
-
-                                    _lastPausePhaseChangeTime = currentTime;
-                                }
-
-                                break;
-                            }
-
-                        case PhaseType.Pause:
-                            {
-                                // ポーズ画面が表示中かを確認
-                                if (_uiStateController.GetActiveCanvasType() == CanvasType.Pause)
-                                {
-                                    float currentTime = Time.time;
-
-                                    // 時間経過判定
-                                    if (currentTime - _lastPausePhaseChangeTime >= PAUSE_PHASE_CHANGE_COOLDOWN)
-                                    {
-                                        // プレイフェーズ遷移通知
-                                        _onPhaseChangeRequested.OnNext(PhaseType.Play);
-
-                                        _lastPausePhaseChangeTime = currentTime;
-                                    }
-                                }
-
-                                break;
-                            }
-                    }
-                })
-                .AddTo(_disposables);
-
-            pointerLock
-                .DistinctUntilChanged()
-                .Subscribe(isLock =>
-                {
-                    _isPointerLock = isLock;
-
-                    // ロック状態でない場合にポインター表示
-                    SetPointerVisible(!isLock);
-                })
-                .AddTo(_disposables);
-
-            gamepadUsed
-                .Subscribe(isUsed =>
-                {
-                    // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isUsed;
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
-                    // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType, selectedButtonEvent);
-
-                    // 入力状態に応じて入力アイコン表示を更新
-                    SetInputIconVisible(isUsed);
-                })
-                .AddTo(_disposables);
-
-            columnSelectVisibleChanged
-                .DistinctUntilChanged()
-                .Subscribe(isVisible =>
-                {
-                    _isPointerTarget = isVisible;
-
-                    UpdatePointerTargetAnimation(isVisible);
-                })
-                .AddTo(_disposables);
-
-            dropRequested
-                .Subscribe(_ =>
-                {
-                    SetSwitchProjection(false);
-
-                    SetInputInfoActive(_inputInfoPieceDrop);
-                })
-                .AddTo(_disposables);
-
-            rotateRequested
-                .Subscribe(_ =>
-                {
-                    SetSwitchProjection(true);
-
-                    SetInputInfoActive(_inputInfoBoardRotation);
-                })
-                .AddTo(_disposables);
-
-            turnChanged
-                .DistinctUntilChanged()
-                .Subscribe(turn => UpdateTurnCountDisplay(turn))
-                .AddTo(_disposables);
-
-            comboAdded
-                .DistinctUntilChanged()
-                .Subscribe(combo => UpdateComboCountDisplay(combo))
-                .AddTo(_disposables);
-
-            limitTimeChanged
-                .DistinctUntilChanged()
-                .Subscribe(time => UpdateLimitTimeDisplay(time))
-                .AddTo(_disposables);
+            _turnChangedStream = turnChanged;
+            _limitTimeChangedStream = limitTimeChanged;
+            _scoreUpdatedStream = scoreUpdated;
+            _scoreAddedStream = scoreAdded;
+            _comboAddedStream = comboAdded;
+            _gamepadUsedStream = gamepadUsed;
+            _pointerLockStream = pointerLock;
+            _pauseInputStream = pauseInput;
+            _boardInputTypeStream = boardInputType;
+            _playerChangeStream = playerChange;
+            _columnSelectVisibleChangedStream = columnSelectVisibleChanged;
         }
 
         // ======================================================

@@ -124,7 +124,7 @@ namespace BoardSystem.Presentation
         private const float ALBEDO_INTENSITY = 3.0f;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>列選択表示の表示状態</summary>

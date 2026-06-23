@@ -58,7 +58,7 @@ namespace InputSystem.Application
         public IGamepadInputSource ActiveController { get; private set; }
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>現在アクティブなデバイス種別</summary>

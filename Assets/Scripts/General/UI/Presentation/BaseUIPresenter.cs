@@ -232,7 +232,7 @@ namespace UISystem.Presentation
             = new Dictionary<(UIActionType uiActionType, DialogType dialogType), NormalButtonEvent>();
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>イベント購読管理</summary>

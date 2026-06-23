@@ -9,6 +9,7 @@
 using AnimationSystem.Infrastructure;
 using InputSystem.Presentation;
 using OptionSystem.Presentation;
+using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using ScoreSystem.Presentation;
 using SoundSystem.Domain;
@@ -29,7 +30,7 @@ namespace UISystem.Presentation
     /// タイトルシーンにおける UI 演出を管理するプレゼンター
     /// </summary>
     [UpdatableBind(UpdatableType.ResultUIPresenter)]
-    public sealed class ResultUIPresenter : BaseUIPresenter, IUpdatable
+    public sealed class ResultUIPresenter : BaseUIPresenter, IUpdatable, IStreamBindable
     {
         // ======================================================
         // インスペクタ設定
@@ -212,12 +213,24 @@ namespace UISystem.Presentation
         private static readonly int IS_END_HASH = Animator.StringToHash("IsEnd");
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
+        // --------------------------------------------------
+        // 購読管理
+        // --------------------------------------------------
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        private CompositeDisposable _disposables;
 
+        /// <summary>ゲームパッド使用状態通知ストリーム</summary>
+        private IObservable<bool> _gamepadUsedStream;
+
+        /// <summary>リザルトスタートアニメーションスキップ通知ストリーム</summary>
+        private IObservable<Unit> _resultStartAnimationSkippedStream;
+
+        // --------------------------------------------------
+        // イベント
+        // --------------------------------------------------
         /// <summary>リザルトスタートアニメーション終了通知用 Subject</summary>
         private readonly Subject<Unit> _onStarttResultAnimationEnd = new Subject<Unit>();
 
@@ -383,19 +396,78 @@ namespace UISystem.Presentation
         {
             base.OnExitInternal();
 
+            // イベント購読解除
+            UnbindStreams();
+            
             // BGM 停止
             StopBgm();
         }
 
         // ======================================================
+        // IStreamBindable イベント
+        // ======================================================
+
+        /// <summary>
+        /// イベントストリームをまとめて購読する
+        /// </summary>
+        public void BindStreams()
+        {
+            _disposables?.Dispose();
+            _disposables = new CompositeDisposable();
+
+            _gamepadUsedStream
+                .DistinctUntilChanged()
+                .Subscribe(isUsed =>
+                {
+                    // 現在の入力デバイス状態を保持
+                    _isGamePadInput = isUsed;
+
+                    // 現在アクティブなキャンバス状態を取得
+                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
+
+                    // 最後に選択していたボタンを取得
+                    BaseButtonEvent selectedButtonEvent =
+                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
+
+                    // 入力状態に応じて初期選択を適用
+                    SetSelectionState(activeCanvasType, selectedButtonEvent);
+                })
+                .AddTo(_disposables);
+
+            _resultStartAnimationSkippedStream
+                .Subscribe(_ =>
+                {
+                    // フェードアウト未完了の場合処理なし
+                    if (!_onFadeOutEnd)
+                    {
+                        return;
+                    }
+
+                    OnRankAnimationFinish();
+
+                    // BGM 音量更新
+                    _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 0.25f);
+
+                    // BGM 再生位置更新
+                    SetPlaybackPosition(1);
+                })
+                .AddTo(_disposables);
+        }
+
+        /// <summary>
+        /// イベントストリームを受け取る
+        /// </summary>
+        public void UnbindStreams()
+        {
+            _disposables?.Dispose();
+        }
+        
+        // ======================================================
         // 入力継承イベント
         // ======================================================
 
         /// <summary>キャンセル入力時</summary>
-        protected override void OnCancelInput()
-        {
-
-        }
+        protected override void OnCancelInput() { }
 
         // ======================================================
         // ボタン派生イベント
@@ -590,48 +662,13 @@ namespace UISystem.Presentation
         /// イベントストリームをまとめて購読する
         /// </summary>
         /// <param name="gamepadUsed">ゲームパッド使用状態を通知するストリーム</param>
-        /// <param name="resultStartAnimationSkiped">リザルトスタートアニメーションのスキップを通知するストリーム</param>
-        public void BindStreams(
+        /// <param name="resultStartAnimationSkipped">リザルトスタートアニメーションのスキップを通知するストリーム</param>
+        public void SetStreams(
             in IObservable<bool> gamepadUsed,
-            in IObservable<Unit> resultStartAnimationSkiped)
+            in IObservable<Unit> resultStartAnimationSkipped)
         {
-            gamepadUsed
-                .DistinctUntilChanged()
-                .Subscribe(isUsed =>
-                {
-                    // 現在の入力デバイス状態を保持
-                    _isGamePadInput = isUsed;
-
-                    // 現在アクティブなキャンバス状態を取得
-                    CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
-
-                    // 最後に選択していたボタンを取得
-                    BaseButtonEvent selectedButtonEvent =
-                        _uiStateController.GetLastSelectedButtonEvent(activeCanvasType);
-
-                    // 入力状態に応じて初期選択を適用
-                    SetSelectionState(activeCanvasType, selectedButtonEvent);
-                })
-                .AddTo(_disposables);
-
-            resultStartAnimationSkiped
-                .Subscribe(_ =>
-                {
-                    // フェードアウト未完了の場合処理なし
-                    if (!_onFadeOutEnd)
-                    {
-                        return;
-                    }
-
-                    OnRankAnimationFinish();
-
-                    // BGM 音量更新
-                    _soundManager?.SetBGMVolume(BgmType.Result, 0.2f, 0.25f);
-
-                    // BGM 再生位置更新
-                    SetPlaybackPosition(1);
-                })
-                .AddTo(_disposables);
+            _gamepadUsedStream = gamepadUsed;
+            _resultStartAnimationSkippedStream = resultStartAnimationSkipped;
         }
 
         // ======================================================
@@ -669,6 +706,8 @@ namespace UISystem.Presentation
                     SetPointerVisible(true);
                 })
                 .AddTo(_disposables);
+
+            Subscribe();
         }
 
         /// <summary>

@@ -32,7 +32,7 @@ namespace BoardSystem.Application
         private readonly BoardView _view;
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>ライン発光実行通知用 Subject</summary>

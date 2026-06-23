@@ -33,7 +33,7 @@ namespace BoardSystem.Domain
         private readonly PiecePlacement _piecePlacement = new PiecePlacement();
 
         // ======================================================
-        // UniRx 変数
+        // UniRx 関連
         // ======================================================
 
         /// <summary>ライン成立ストリーム</summary>
