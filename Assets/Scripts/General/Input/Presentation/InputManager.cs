@@ -257,7 +257,7 @@ namespace InputSystem.Presentation
                 _dPad
             );
 
-            // インゲームマッピングでないポインターロック中かつゲームパッド入力時は処理なし
+            // インゲームマッピングでない場合かつゲームパッド入力時は処理なし
             if (_currentMappingIndex != 0 && _deviceSwitchService.ActiveDeviceType.Value == InputDeviceType.Gamepad)
             {
                 return;
@@ -292,12 +292,7 @@ namespace InputSystem.Presentation
             IObservable<Vector2> pointerPosition)
         {
             mapping
-                .DistinctUntilChanged()
-                .Subscribe(index =>
-                {
-                    ApplyInputMapping(index);
-
-                })
+                .Subscribe(index => ApplyInputMapping(index))
                 .AddTo(_disposables);
 
             pointerPosition
@@ -327,7 +322,6 @@ namespace InputSystem.Presentation
 
             _deviceSwitchService.SetMapping(index);
 
-            // 適用中のインデックスを更新
             _currentMappingIndex = index;
         }
     }

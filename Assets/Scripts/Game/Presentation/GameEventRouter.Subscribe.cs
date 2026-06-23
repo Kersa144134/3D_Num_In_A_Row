@@ -7,18 +7,19 @@
 //            購読関連処理をまとめたファイル
 // ======================================================
 
-using System;
-using System.Linq;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UniRx;
 using BoardSystem.Domain;
 using BoardSystem.Presentation;
+using Cysharp.Threading.Tasks;
 using InputSystem.Domain;
+using InputSystem.Presentation;
 using PhaseSystem.Application;
 using PhaseSystem.Domain;
 using ScoreSystem.Domain;
 using SoundSystem.Domain;
+using System;
+using System.Linq;
+using UniRx;
+using UnityEngine;
 
 namespace GameSystem.Presentation
 {

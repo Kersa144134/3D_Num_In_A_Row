@@ -30,12 +30,12 @@ namespace GameSystem.Presentation
         private void NotifyMappingChanged(in int mappingIndex)
         {
             // 現在のマッピング番号と一致している場合は処理なし
-            if (_currentMappingIndex == mappingIndex)
+            if (_onMappingChanged.Value == mappingIndex)
             {
                 return;
             }
 
-            _currentMappingIndex = mappingIndex;
+            _onMappingChanged.Value = mappingIndex;
         }
 
         /// <summary>

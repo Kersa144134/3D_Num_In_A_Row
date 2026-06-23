@@ -550,6 +550,8 @@ namespace UISystem.Presentation
                     OnStartTitleAnimationFinish();
                 })
                 .AddTo(_disposables);
+
+            Debug.Log("a");
         }
 
         /// <summary>
@@ -998,6 +1000,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutStart()
         {
+            base.OnFadeOutStart();
+            
             // タイトルスタートアニメーション起動
             _startCanvasAnimator?.SetTrigger(IS_START_HASH);
         }
@@ -1081,7 +1085,7 @@ namespace UISystem.Presentation
                             break;
                     }
                 })
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             // タイトル表示開始アニメーション終了通知
             _startCanvasAnimationEventNotifier.OnAnimationEnd
@@ -1092,7 +1096,7 @@ namespace UISystem.Presentation
                     // アニメーション終了通知
                     _onStartTitleAnimationEnd.OnNext(Unit.Default);
                 })
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             // ゲーム開始アニメーションチェックポイント通知
             _startPlayAnimationEventNotifier.OnAnimationCheckPoint
@@ -1138,7 +1142,7 @@ namespace UISystem.Presentation
                         return;
                     }
                 })
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
         }
 
         /// <summary>
@@ -1184,6 +1188,10 @@ namespace UISystem.Presentation
 
             // 次のキャンバス状態を取得する
             CanvasType nextCanvasType = _uiStateController.GetActiveCanvasType();
+
+            // スタート画面のボタンを操作可能に更新
+            SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleStart), true);
+            SetButtonInteractable(_uiActionButtonResolver.GetNormalButton(UIActionType.TitleOption), true);
 
             // 最後に選択されていたボタンを取得する
             BaseButtonEvent selectedButtonEvent =

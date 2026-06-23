@@ -95,9 +95,6 @@ namespace GameSystem.Presentation
         // --------------------------------------------------
         // 入力
         // --------------------------------------------------
-        /// <summary>現在の入力マッピング番号</summary>
-        private int _currentMappingIndex = -1;
-
         /// <summary>現在アクティブな入力デバイスのキャッシュ</summary>
         private InputDeviceType _cachedActiveDevice = InputDeviceType.Gamepad;
 
@@ -368,7 +365,8 @@ namespace GameSystem.Presentation
 
             if (_gameOptionManager == null ||
                 _inputManager == null ||
-                _scoreManager == null)
+                _scoreManager == null ||
+                _soundManager == null)
             {
                 Debug.LogError("[GameEventRouter] クラスの初期化に失敗しました。");
 

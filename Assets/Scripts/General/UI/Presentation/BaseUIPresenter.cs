@@ -236,7 +236,7 @@ namespace UISystem.Presentation
         // ======================================================
 
         /// <summary>イベント購読管理</summary>
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+        protected readonly CompositeDisposable _baseDisposables = new CompositeDisposable();
 
         /// <summary>UI イベント用購読管理</summary>
         protected CompositeDisposable _uiEventDisposables;
@@ -498,20 +498,20 @@ namespace UISystem.Presentation
         {
             fadeInSeconds
                 .Subscribe(time => FadeInAsync(time).Forget())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             fadeOutSeconds
                 .Subscribe(time => FadeOutAsync(time).Forget())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             fadeCompleted
                 .Take(1)
                 .Subscribe(_ => Subscribe())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             cancelInput
                 .Subscribe(_ => OnCancelInput())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
         }
         
         // ======================================================
@@ -531,7 +531,7 @@ namespace UISystem.Presentation
             {
                 _onDialogEvent
                     .Subscribe(eventType => HandleDialogEventReceived(eventType))
-                    .AddTo(_disposables);
+                    .AddTo(_baseDisposables);
             }
         }
 
@@ -604,7 +604,7 @@ namespace UISystem.Presentation
         /// </summary>
         protected virtual void Dispose()
         {
-            _disposables?.Dispose();
+            _baseDisposables?.Dispose();
             _uiEventDisposables?.Dispose();
             _uiEventDisposables = null;
 

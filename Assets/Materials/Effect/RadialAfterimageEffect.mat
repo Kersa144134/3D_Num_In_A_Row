@@ -109,7 +109,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _SampleCount: 3
-    - _ScaleSpeed: 0
+    - _ScaleSpeed: 4
     - _ScaleStep: 0.2
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0

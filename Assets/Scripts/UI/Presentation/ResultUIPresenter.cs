@@ -604,6 +604,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutStart()
         {
+            base.OnFadeOutStart();
+
             // BGM 再生
             StartBgm();
         }
@@ -613,6 +615,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutFinish()
         {
+            base.OnFadeOutFinish();
+            
             // リザルト順位表示アニメーション開始
             _resultRankAnimator?.SetTrigger(IS_START_HASH);
             _resultCanvasAnimator?.SetTrigger(IS_START_HASH);
@@ -688,12 +692,12 @@ namespace UISystem.Presentation
             // 順位アニメーションチェックポイント通知
             _resultRankAnimationEventNotifier.OnAnimationCheckPoint
                 .Subscribe(_ => OnRankAnimationCheckPoint())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
 
             // 順位アニメーション終了通知
             _resultRankAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ => OnRankAnimationFinish())
-                .AddTo(_disposables);
+                .AddTo(_baseDisposables);
             
             // キャンバスアニメーション終了通知
             _resultCanvasAnimationEventNotifier.OnAnimationEnd
@@ -705,9 +709,7 @@ namespace UISystem.Presentation
                     // ポインター表示
                     SetPointerVisible(true);
                 })
-                .AddTo(_disposables);
-
-            Subscribe();
+                .AddTo(_baseDisposables);
         }
 
         /// <summary>

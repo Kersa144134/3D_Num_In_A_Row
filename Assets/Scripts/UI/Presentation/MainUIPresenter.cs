@@ -1012,6 +1012,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutStart()
         {
+            base.OnFadeOutStart();
+
             // BGM 再生
             StartBgm();
         }
@@ -1021,6 +1023,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected override void OnFadeOutFinish()
         {
+            base.OnFadeOutFinish();
+
             // UI イベント購読
             SubscribeUiEvents();
         }
@@ -1120,22 +1124,22 @@ namespace UISystem.Presentation
                 // コンボ加算演出
                 mainUIView.OnComboVisible
                     .Subscribe(_ => _comboAnimator?.SetTrigger(ADD_COMBO_HASH))
-                    .AddTo(_disposables);
+                    .AddTo(_baseDisposables);
 
                 // 残り時間警告表示
                 mainUIView.OnWarningVisible
                     .Subscribe(_ => _limitTimeAnimator?.SetTrigger(IS_WARNING_HASH))
-                    .AddTo(_disposables);
+                    .AddTo(_baseDisposables);
 
                 // スコア加算アニメーション開始
                 mainUIView.OnAddScoreAnimationStarted
                     .Subscribe(playerIndex => _soundManager?.PlaySE(SeType.Score_Add))
-                    .AddTo(_disposables);
+                    .AddTo(_baseDisposables);
 
                 // スコア加算アニメーション終了
                 mainUIView.OnAddScoreAnimationFinished
                     .Subscribe(playerIndex => _soundManager?.StopLoopSE(SeType.Score_Add))
-                    .AddTo(_disposables);
+                    .AddTo(_baseDisposables);
             }
 
             // UI イベント購読
