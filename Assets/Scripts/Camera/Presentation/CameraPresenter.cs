@@ -470,11 +470,7 @@ namespace CameraSystem.Presentation
                 .AddTo(_disposables);
 
             _gamepadUsedStream
-                .Subscribe(isUsed =>
-                {
-                    // ゲームパッド使用状態を更新
-                    _isGamepadUsed = isUsed;
-                })
+                .Subscribe(isUsed => _isGamepadUsed = isUsed)
                 .AddTo(_disposables);
 
             _rotationPreparationStream
@@ -551,6 +547,22 @@ namespace CameraSystem.Presentation
         public void UnbindStreams()
         {
             _disposables?.Dispose();
+
+            // --------------------------------------------------
+            // SE 停止
+            // --------------------------------------------------
+            if (_isRotationSePlayed)
+            {
+                _soundManager?.StopLoopSE(SeType.Camera_Rotation);
+
+                _isRotationSePlayed = false;
+            }
+            if (_isZoomSePlayed)
+            {
+                _soundManager?.StopLoopSE(SeType.Camera_Zoom);
+
+                _isZoomSePlayed = false;
+            }
         }
         
         // ======================================================

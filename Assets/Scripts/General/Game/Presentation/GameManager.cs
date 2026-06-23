@@ -78,9 +78,9 @@ namespace GameSystem.Presentation
         /// <summary>遷移先シーン名</summary>
         private string _targetScene = string.Empty;
 
-        /// <summary>シーン切り替え直後かどうかを示すフラグ</summary>
-        private bool _isAfterSceneChange = true;
-
+        /// <summary>シーン遷移完了待機中かどうか</summary>
+        private bool _isSceneInitializing = true;
+        
         /// <summary>シーン遷移中かどうかを示すフラグ</summary>
         private bool _isSceneTransitioning = false;
 
@@ -171,7 +171,6 @@ namespace GameSystem.Presentation
             _currentScene = SceneManager.GetActiveScene().name;
             _targetScene = _currentScene;
             _targetPhase = _startPhase;
-            _isAfterSceneChange = true;
         }
 
         private void Start()
@@ -254,14 +253,14 @@ namespace GameSystem.Presentation
                 // 非同期シーン遷移を開始する
                 ChangeScene(_targetScene).Forget();
 
-                // 多重実行防止フラグを有効化
+                // シーン遷移有効化
                 _isSceneTransitioning = true;
 
                 return;
             }
 
-            // シーン切替直後は 1 フレーム停止
-            if (_isAfterSceneChange)
+            // 起動時のシーン遷移中は処理なし
+            if (_isSceneInitializing)
             {
                 return;
             }
@@ -276,10 +275,9 @@ namespace GameSystem.Presentation
 
         private void LateUpdate()
         {
-            // シーン切替直後は 1 フレーム停止
-            if (_isAfterSceneChange)
+            // 起動時のシーン遷移中は処理なし
+            if (_isSceneInitializing)
             {
-                _isAfterSceneChange = false;
                 return;
             }
 
@@ -465,6 +463,7 @@ namespace GameSystem.Presentation
         {
             if (string.IsNullOrEmpty(nextScene))
             {
+                // シーン遷移フラグ解除
                 _isSceneTransitioning = false;
 
                 return;
@@ -560,6 +559,9 @@ namespace GameSystem.Presentation
 
             // フェードアウト時間を通知
             _onSceneChanged.OnNext(SCREEN_FADE_DURATION_SECONDS);
+
+            // シーン遷移完了
+            _isSceneInitializing = false;
         }
 
         // --------------------------------------------------

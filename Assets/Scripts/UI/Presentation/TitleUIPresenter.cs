@@ -550,8 +550,6 @@ namespace UISystem.Presentation
                     OnStartTitleAnimationFinish();
                 })
                 .AddTo(_disposables);
-
-            Debug.Log("a");
         }
 
         /// <summary>
@@ -723,6 +721,7 @@ namespace UISystem.Presentation
                 // --------------------------------------------------
                 case UIActionType.DialogNo:
                     OnDialogCanvasCancelInput();
+
                     break;
             }
         }
@@ -837,6 +836,7 @@ namespace UISystem.Presentation
             if (actionType == UIActionType.OptionCancel)
             {
                 OnOptionCanvasCancelInput();
+
                 return;
             }
 

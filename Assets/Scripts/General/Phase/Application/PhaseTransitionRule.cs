@@ -6,8 +6,8 @@
 // 概要     : フェーズ遷移条件を一元管理するクラス
 // ======================================================
 
-using PhaseSystem.Domain;
 using UniRx;
+using PhaseSystem.Domain;
 
 namespace PhaseSystem.Application
 {

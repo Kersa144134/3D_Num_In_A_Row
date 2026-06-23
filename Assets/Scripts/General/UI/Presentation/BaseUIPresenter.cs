@@ -378,6 +378,7 @@ namespace UISystem.Presentation
                 // フォーカス座標通知
                 _onFocusPosition.OnNext(canvasPosition);
             }
+
             OnLateUpdateInternal(unscaledDeltaTime);
         }
 
