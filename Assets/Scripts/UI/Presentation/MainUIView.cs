@@ -221,6 +221,15 @@ namespace UISystem.Presentation
                             CURRENT_SCORE_FORMAT,
                             SCORE_DIGITS);
                 }
+
+                // アニメーション制御配列生成
+                _scoreAnimationControllers = new NumberAnimationController[length];
+
+                for (int i = 0; i < length; i++)
+                {
+                    // アニメーション制御生成
+                    _scoreAnimationControllers[i] = new NumberAnimationController();
+                }
             }
 
             if (_addScoreTexts != null)
@@ -284,23 +293,14 @@ namespace UISystem.Presentation
         /// </summary>
         public void Subscribe()
         {
-            if (_currentScoreTexts == null)
+            if (_scoreAnimationControllers == null)
             {
                 return;
             }
 
-            // スコア表示数取得
-            int length = _currentScoreTexts.Length;
-
-            // アニメーション制御配列生成
-            _scoreAnimationControllers = new NumberAnimationController[length];
-
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < _scoreAnimationControllers.Length; i++)
             {
                 int cacheIndex = i;
-
-                // アニメーション制御生成
-                _scoreAnimationControllers[i] = new NumberAnimationController();
 
                 // 数値変化通知を購読
                 _scoreAnimationControllers[i].CurrentValue
