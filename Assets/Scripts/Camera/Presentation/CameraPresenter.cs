@@ -435,26 +435,7 @@ namespace CameraSystem.Presentation
                     // --------------------------------------------------
                     if (_isInputLock)
                     {
-                        // 速度を初期化
-                        _positionUseCase.ResetVelocity();
-                        _rotationUseCase.ResetVelocity();
-                        _distanceUseCase.ResetVelocity();
-
-                        // --------------------------------------------------
-                        // SE 停止
-                        // --------------------------------------------------
-                        if (_isRotationSePlayed)
-                        {
-                            _soundManager?.StopLoopSE(SeType.Camera_Rotation);
-
-                            _isRotationSePlayed = false;
-                        }
-                        if (_isZoomSePlayed)
-                        {
-                            _soundManager?.StopLoopSE(SeType.Camera_Zoom);
-
-                            _isZoomSePlayed = false;
-                        }
+                        ResetCameraState();
 
                         return;
                     }
@@ -548,23 +529,9 @@ namespace CameraSystem.Presentation
         {
             _disposables?.Dispose();
 
-            // --------------------------------------------------
-            // SE 停止
-            // --------------------------------------------------
-            if (_isRotationSePlayed)
-            {
-                _soundManager?.StopLoopSE(SeType.Camera_Rotation);
-
-                _isRotationSePlayed = false;
-            }
-            if (_isZoomSePlayed)
-            {
-                _soundManager?.StopLoopSE(SeType.Camera_Zoom);
-
-                _isZoomSePlayed = false;
-            }
+            ResetCameraState();
         }
-        
+
         // ======================================================
         // パブリックメソッド
         // ======================================================
@@ -595,6 +562,37 @@ namespace CameraSystem.Presentation
         // プライベートメソッド
         // ======================================================
 
+        // --------------------------------------------------
+        // 状態
+        // --------------------------------------------------
+        /// <summary>
+        /// カメラ操作状態を初期化
+        /// </summary>
+        private void ResetCameraState()
+        {
+            _positionUseCase.ResetVelocity();
+            _rotationUseCase.ResetVelocity();
+            _distanceUseCase.ResetVelocity();
+
+            // --------------------------------------------------
+            // SE 停止
+            // --------------------------------------------------
+            // 回転 SE
+            if (_isRotationSePlayed)
+            {
+                _soundManager?.StopLoopSE(SeType.Camera_Rotation);
+
+                _isRotationSePlayed = false;
+            }
+            // ズーム SE
+            if (_isZoomSePlayed)
+            {
+                _soundManager?.StopLoopSE(SeType.Camera_Zoom);
+
+                _isZoomSePlayed = false;
+            }
+        }
+        
         // --------------------------------------------------
         // 位置
         // --------------------------------------------------

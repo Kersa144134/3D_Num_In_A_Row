@@ -77,9 +77,6 @@ namespace GameSystem.Presentation
 
         /// <summary>遷移先シーン名</summary>
         private string _targetScene = string.Empty;
-
-        /// <summary>シーン遷移完了待機中かどうか</summary>
-        private bool _isSceneInitializing = true;
         
         /// <summary>シーン遷移中かどうかを示すフラグ</summary>
         private bool _isSceneTransitioning = false;
@@ -234,6 +231,11 @@ namespace GameSystem.Presentation
             );
 
             // --------------------------------------------------
+            // イベント購読
+            // --------------------------------------------------
+            Subscribe();
+
+            // --------------------------------------------------
             // 非同期初期化処理
             // --------------------------------------------------
             InitializeAsync().Forget();
@@ -241,9 +243,6 @@ namespace GameSystem.Presentation
         
         private void Update()
         {
-            // --------------------------------------------------
-            // 再起動判定
-            // --------------------------------------------------
             // --------------------------------------------------
             // シーン遷移判定
             // --------------------------------------------------
@@ -259,12 +258,6 @@ namespace GameSystem.Presentation
                 return;
             }
 
-            // 起動時のシーン遷移中は処理なし
-            if (_isSceneInitializing)
-            {
-                return;
-            }
-
             // --------------------------------------------------
             // フェーズ処理
             // --------------------------------------------------
@@ -275,12 +268,6 @@ namespace GameSystem.Presentation
 
         private void LateUpdate()
         {
-            // 起動時のシーン遷移中は処理なし
-            if (_isSceneInitializing)
-            {
-                return;
-            }
-
             // --------------------------------------------------
             // フェーズ処理
             // --------------------------------------------------
@@ -317,9 +304,6 @@ namespace GameSystem.Presentation
         {
             // サウンド初期化
             await _soundManager.InitializeAudioAsync();
-
-            // イベント購読
-            Subscribe();
 
             // シーン変更後イベント
             TriggerSceneChangedEventAsync().Forget();
@@ -472,7 +456,7 @@ namespace GameSystem.Presentation
             // --------------------------------------------------
             // ロード処理
             // --------------------------------------------------
-            // ロード処理
+            // ロード開始処理
             UniTask loadTask = BeginSceneLoad(nextScene);
 
             // 最低保証時間
@@ -525,8 +509,6 @@ namespace GameSystem.Presentation
         /// </summary>
         private async UniTask BeginSceneLoad(string nextScene)
         {
-            _sceneLoader ??= new SceneLoader();
-
             // イベント購読
             _eventRouter.BindSceneLoadProgressStream(_sceneLoader.OnLoadProgress);
 
@@ -538,12 +520,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private async UniTask CommitSceneLoad()
         {
-            if (_sceneLoader == null)
-            {
-                return;
-            }
-
-            // イベント購読
+            // イベント購読解除
             _eventRouter.UnbindSceneLoadProgressStream();
 
             await _sceneLoader.CommitSceneChangeAsync();
@@ -559,9 +536,6 @@ namespace GameSystem.Presentation
 
             // フェードアウト時間を通知
             _onSceneChanged.OnNext(SCREEN_FADE_DURATION_SECONDS);
-
-            // シーン遷移完了
-            _isSceneInitializing = false;
         }
 
         // --------------------------------------------------
@@ -578,7 +552,6 @@ namespace GameSystem.Presentation
                 return;
             }
 
-            // 遷移先フェーズを更新
             _targetPhase = nextPhase;
         }
 
@@ -587,6 +560,7 @@ namespace GameSystem.Presentation
         /// </summary>
         private void RequestChangePhase(in PhaseType nextPhase)
         {
+            // 同一フェーズなら更新しない
             if (CurrentPhase.Value == nextPhase)
             {
                 return;

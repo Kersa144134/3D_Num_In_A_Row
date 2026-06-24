@@ -48,6 +48,18 @@ namespace UISystem.Presentation
         [SerializeField]
         protected GameObject _pointer;
 
+        /// <summary>ポインターのクリックアニメーター</summary>
+        [SerializeField]
+        protected Animator _pointerClickAnimator;
+
+        // --------------------------------------------------
+        // パネル
+        // --------------------------------------------------
+        [Header("パネル")]
+        /// <summary>クリック判定に使用する背景パネル配列</summary>
+        [SerializeField]
+        protected NormalPanelEvent[] _backgroundPanelArray;
+
         // --------------------------------------------------
         // 演出 <2 値化>
         // --------------------------------------------------
@@ -293,6 +305,9 @@ namespace UISystem.Presentation
         // 定数
         // ======================================================
 
+        /// <summary>IsClick パラメータ名</summary>
+        private static readonly int IS_CLICK_HASH = Animator.StringToHash("IsClick");
+
         /// <summary>IsTarget パラメータ名</summary>
         private static readonly int IS_TARGET_HASH = Animator.StringToHash("IsTarget");
 
@@ -336,6 +351,7 @@ namespace UISystem.Presentation
             // アニメーター速度をタイムスケール非依存に設定
             SetAnimatorUnscaledTime(_effectAnimator);
             SetAnimatorUnscaledTime(_pointerAnimator);
+            SetAnimatorUnscaledTime(_pointerClickAnimator);
 
             OnEnterInternal();
         }
@@ -548,6 +564,9 @@ namespace UISystem.Presentation
             _eventRouter.OnClick
                 .Subscribe(clickEvent =>
                 {
+                    // クリックアニメーション
+                    _pointerClickAnimator?.SetTrigger(IS_CLICK_HASH);
+
                     OnClickEventInternal(clickEvent);
                 })
                 .AddTo(_uiEventDisposables);
@@ -705,6 +724,10 @@ namespace UISystem.Presentation
             {
                 _eventRouter.RegisterPanelEvent(panelEvent);
             }
+            foreach (BasePanelEvent panelEvent in _backgroundPanelArray)
+            {
+                _eventRouter.RegisterPanelEvent(panelEvent);
+            }
         }
 
         // --------------------------------------------------
@@ -757,16 +780,12 @@ namespace UISystem.Presentation
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
-            // SE 再生
             // ダイアログではない場合
             if (activeCanvasType != CanvasType.Dialog)
             {
-                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-            }
+                // SE 再生
+                _soundManager?.PlaySE(SeType.UI_Click);
 
-            // ダイアログ以外は処理なし
-            if (activeCanvasType != CanvasType.Dialog)
-            {
                 return;
             }
 
@@ -776,6 +795,9 @@ namespace UISystem.Presentation
                 return;
             }
 
+            // SE 再生
+            _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
+            
             // ダイアログキャンバス非表示
             _uiStateController.HideDialogCanvas();
 

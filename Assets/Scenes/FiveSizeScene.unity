@@ -1123,6 +1123,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc59f92d9379a324487c735d005fce27, type: 3}
+--- !u!95 &3306658965066873526 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5519082237735874296, guid: bc59f92d9379a324487c735d005fce27, type: 3}
+  m_PrefabInstance: {fileID: 3306658965066873525}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &4851169573257154343
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1201,6 +1206,9 @@ MonoBehaviour:
     - _type: 2
       _button: {fileID: 6269229279123222295}
   _pointer: {fileID: 214436002}
+  _pointerClickAnimator: {fileID: 3306658965066873526}
+  _backgroundPanelArray:
+  - {fileID: 7888282558615229475}
   _binarizationFeature: {fileID: -8730554414990554021, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   _binarizationMaterial: {fileID: -876546973899608171, guid: ef1746de5cdeda74db5993680b2d0191, type: 3}
   _isBinarizationEnabled: 0
@@ -1498,6 +1506,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+--- !u!114 &7888282558615229475 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 767877885628519464, guid: 6eb850f95661a784fbe9b6f817d5cda8, type: 3}
+  m_PrefabInstance: {fileID: 7888282558615229474}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14dc32ba13f3c724cb65eff73f5dc188, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIInfrastructure::UISystem.Infrastructure.NormalPanelEvent
 --- !u!1001 &8901975305569929040
 PrefabInstance:
   m_ObjectHideFlags: 0
