@@ -604,6 +604,7 @@ namespace UISystem.Presentation
         /// </summary>
         public void BindStreams()
         {
+            // CompositeDisposable 初期化
             _disposables?.Dispose();
             _disposables = new CompositeDisposable();
 
@@ -1024,9 +1025,6 @@ namespace UISystem.Presentation
         protected override void OnFadeOutFinish()
         {
             base.OnFadeOutFinish();
-
-            // UI イベント購読
-            SubscribeUiEvents();
         }
 
         // ======================================================
@@ -1142,21 +1140,10 @@ namespace UISystem.Presentation
                     .AddTo(_baseDisposables);
             }
 
-            // UI イベント購読
-            SubscribeUiEvents();
-        }
-
-        /// <summary>
-        /// UI イベント購読
-        /// </summary>
-        protected override void SubscribeUiEvents()
-        {
-            base.SubscribeUiEvents();
-
             // プレイヤー切り替えアニメーション終了通知
             _intermittentCanvasAnimationEventNotifier.OnAnimationEnd
                 .Subscribe(_ => _onChangePlayerAnimationEnd.OnNext(Unit.Default))
-                .AddTo(_uiEventDisposables);
+                .AddTo(_baseDisposables);
 
             // アウトゲーム関連アニメーション終了通知
             _outgameCanvasCanvasAnimationEventNotifier.OnAnimationEnd
@@ -1174,7 +1161,7 @@ namespace UISystem.Presentation
                         _onFinishAnimationEnd.OnNext(Unit.Default);
                     }
                 })
-                .AddTo(_uiEventDisposables);
+                .AddTo(_baseDisposables);
         }
 
         /// <summary>

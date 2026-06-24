@@ -414,6 +414,7 @@ namespace CameraSystem.Presentation
         /// </summary>
         public void BindStreams()
         {
+            // CompositeDisposable ‰Šú‰»
             _disposables?.Dispose();
             _disposables = new CompositeDisposable();
 

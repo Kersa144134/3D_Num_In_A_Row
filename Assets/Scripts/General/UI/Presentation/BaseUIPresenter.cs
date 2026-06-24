@@ -209,9 +209,6 @@ namespace UISystem.Presentation
         /// <summary>ポインターロックフラグ</summary>
         protected bool _isPointerLock = false;
 
-        /// <summary>ポインターが表示されているかどうか</summary>
-        protected bool _isPointerVisible = false;
-
         /// <summary>フェードアウト完了フラグ</summary>
         protected bool _onFadeOutEnd = false;
 
@@ -560,7 +557,8 @@ namespace UISystem.Presentation
         /// </summary>
         protected virtual void SubscribeUiEvents()
         {
-            // CompositeDisposable 生成
+            // CompositeDisposable 初期化
+            _uiEventDisposables?.Dispose();
             _uiEventDisposables = new CompositeDisposable();
 
             // クリック通知
@@ -568,10 +566,7 @@ namespace UISystem.Presentation
                 .Subscribe(clickEvent =>
                 {
                     // クリックアニメーション
-                    if (_isPointerVisible)
-                    {
-                        _pointerClickAnimator?.SetTrigger(IS_CLICK_HASH);
-                    }
+                    _pointerClickAnimator?.SetTrigger(IS_CLICK_HASH);
 
                     OnClickEventInternal(clickEvent);
                 })
@@ -644,8 +639,6 @@ namespace UISystem.Presentation
         {
             _uiEventDisposables?.Dispose();
             _uiEventDisposables = null;
-
-            _eventRouter?.Dispose();
         }
 
         /// <summary>
@@ -790,10 +783,7 @@ namespace UISystem.Presentation
             if (activeCanvasType != CanvasType.Dialog)
             {
                 // SE 再生
-                if (_isPointerVisible)
-                {
-                    _soundManager?.PlaySE(SeType.UI_Click);
-                }
+                _soundManager?.PlaySE(SeType.UI_Click);
 
                 return;
             }
@@ -802,19 +792,13 @@ namespace UISystem.Presentation
             if (panelEvent is not NormalPanelEvent)
             {
                 // SE 再生
-                if (_isPointerVisible)
-                {
-                    _soundManager?.PlaySE(SeType.UI_Click);
-                }
+                _soundManager?.PlaySE(SeType.UI_Click);
 
                 return;
             }
 
             // SE 再生
-            if (_isPointerVisible)
-            {
-                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-            }
+            _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
 
             // ダイアログキャンバス非表示
             _uiStateController.HideDialogCanvas();
@@ -997,7 +981,16 @@ namespace UISystem.Presentation
         {
             _uiView.SetPointerVisible(isVisible);
 
-            _isPointerVisible = isVisible;
+            if (isVisible)
+            {
+                // UI イベント購読
+                SubscribeUiEvents();
+            }
+            else
+            {
+                // UI イベント購読解除
+                DisposeUiEvents();
+            }
         }
 
         /// <summary>

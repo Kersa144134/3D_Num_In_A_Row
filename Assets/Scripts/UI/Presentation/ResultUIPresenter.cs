@@ -412,6 +412,7 @@ namespace UISystem.Presentation
         /// </summary>
         public void BindStreams()
         {
+            // CompositeDisposable 初期化
             _disposables?.Dispose();
             _disposables = new CompositeDisposable();
 
@@ -701,14 +702,7 @@ namespace UISystem.Presentation
             
             // キャンバスアニメーション終了通知
             _resultCanvasAnimationEventNotifier.OnAnimationEnd
-                .Subscribe(_ =>
-                {
-                    // UI イベント購読
-                    SubscribeUiEvents();
-
-                    // ポインター表示
-                    SetPointerVisible(true);
-                })
+                .Subscribe(_ => SetPointerVisible(true))
                 .AddTo(_baseDisposables);
         }
 

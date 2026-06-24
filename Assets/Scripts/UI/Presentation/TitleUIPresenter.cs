@@ -502,6 +502,7 @@ namespace UISystem.Presentation
         /// </summary>
         public void BindStreams()
         {
+            // CompositeDisposable 初期化
             _disposables?.Dispose();
             _disposables = new CompositeDisposable();
 
@@ -1143,14 +1144,6 @@ namespace UISystem.Presentation
                     }
                 })
                 .AddTo(_baseDisposables);
-        }
-
-        /// <summary>
-        /// UI イベント購読
-        /// </summary>
-        protected override void SubscribeUiEvents()
-        {
-            base.SubscribeUiEvents();
 
             // ゲーム開始アニメーション終了通知
             _startPlayAnimationEventNotifier.OnAnimationEnd
@@ -1368,9 +1361,6 @@ namespace UISystem.Presentation
         /// </summary>
         private void OnStartTitleAnimationFinish()
         {
-            // UI イベント購読
-            SubscribeUiEvents();
-
             // ポインター表示
             SetPointerVisible(true);
 
