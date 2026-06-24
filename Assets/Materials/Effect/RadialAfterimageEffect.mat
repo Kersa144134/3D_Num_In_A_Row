@@ -84,7 +84,7 @@ Material:
     m_Floats:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
-    - _AlphaFadeDistance: 2
+    - _AlphaFadeDistance: 0.6061442
     - _AlphaToMask: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
@@ -97,7 +97,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EffectStrength: 1
+    - _EffectStrength: 0.78119123
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0

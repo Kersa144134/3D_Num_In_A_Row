@@ -209,6 +209,9 @@ namespace UISystem.Presentation
         /// <summary>ポインターロックフラグ</summary>
         protected bool _isPointerLock = false;
 
+        /// <summary>ポインターが表示されているかどうか</summary>
+        protected bool _isPointerVisible = false;
+
         /// <summary>フェードアウト完了フラグ</summary>
         protected bool _onFadeOutEnd = false;
 
@@ -565,7 +568,10 @@ namespace UISystem.Presentation
                 .Subscribe(clickEvent =>
                 {
                     // クリックアニメーション
-                    _pointerClickAnimator?.SetTrigger(IS_CLICK_HASH);
+                    if (_isPointerVisible)
+                    {
+                        _pointerClickAnimator?.SetTrigger(IS_CLICK_HASH);
+                    }
 
                     OnClickEventInternal(clickEvent);
                 })
@@ -780,24 +786,36 @@ namespace UISystem.Presentation
             // 現在アクティブなキャンバス状態を取得
             CanvasType activeCanvasType = _uiStateController.GetActiveCanvasType();
 
-            // ダイアログではない場合
+            // ダイアログ以外の場合
             if (activeCanvasType != CanvasType.Dialog)
             {
                 // SE 再生
-                _soundManager?.PlaySE(SeType.UI_Click);
+                if (_isPointerVisible)
+                {
+                    _soundManager?.PlaySE(SeType.UI_Click);
+                }
 
                 return;
             }
 
-            // NormalPanelEvent 以外は処理なし
+            // NormalPanelEvent 以外の場合
             if (panelEvent is not NormalPanelEvent)
             {
+                // SE 再生
+                if (_isPointerVisible)
+                {
+                    _soundManager?.PlaySE(SeType.UI_Click);
+                }
+
                 return;
             }
 
             // SE 再生
-            _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
-            
+            if (_isPointerVisible)
+            {
+                _soundManager?.PlaySE(SeType.UI_HideDialog, 0.5f);
+            }
+
             // ダイアログキャンバス非表示
             _uiStateController.HideDialogCanvas();
 
@@ -978,6 +996,8 @@ namespace UISystem.Presentation
         protected virtual void SetPointerVisible(in bool isVisible)
         {
             _uiView.SetPointerVisible(isVisible);
+
+            _isPointerVisible = isVisible;
         }
 
         /// <summary>
